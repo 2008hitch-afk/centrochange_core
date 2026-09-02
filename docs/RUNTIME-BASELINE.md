@@ -19,7 +19,7 @@ Evidenze raccolte il 2026-09-02 sul workstation reale. Il nuovo site contiene so
 |---|---:|---:|---|
 | Frappe | 16.31.0 | 16.31.0 | `bench version` |
 | ERPNext | 16.32.0 | 16.32.0 | `bench version` |
-| Builder | non installato | 1.33.0, `41987c0` | `bench version` |
+| Builder | non installato | tag `v1.33.0`, commit `41987c0` | `bench version` |
 | MariaDB | 11.8.8 | 11.8.8 | runtime/image |
 | Redis | 8.6.5 | 8.6.5 | runtime/image |
 | Python | 3.14.2 | 3.14.2 | runtime |
@@ -31,13 +31,17 @@ Da Contabilita_Barci è stato riusato soltanto il pattern Compose: configuratore
 
 | Componente | Versione/tag | Stato |
 |---|---|---|
-| base image | `frappe/erpnext:v16.32.0` | VALIDATED LOCALLY |
+| base image | `frappe/erpnext:v16.32.0@sha256:481168fa7ba34bb9803e80139dff6df80bc161352cc7b478ae90b0c0da814f90` | VALIDATED LOCALLY |
 | Frappe / ERPNext | 16.31.0 / 16.32.0 | VALIDATED LOCALLY |
-| Builder | 1.33.0 commit `41987c0` | NEEDS ARCHITECT REVIEW |
+| MariaDB | `11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c` | VALIDATED LOCALLY |
+| Redis | `8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9` | VALIDATED LOCALLY |
+| Builder | tag `v1.33.0`, commit `41987c064da4650e6901b5da82b7c76add452ebf` | VALIDATED LOCALLY |
 | centrochange_core | 0.0.1 scaffold `bench new-app` | VALIDATED LOCALLY |
 | Marley Health | non installato | OPEN — Spike 02 |
 
-**NEEDS ARCHITECT REVIEW:** Builder non pubblica un branch `version-16`. È pinato al commit master `41987c0`, che dichiara Frappe `>=15,<18`. Build, install, migrate e HTTP sono riusciti, ma la policy di pinning/aggiornamento Builder va confermata prima dello Spike 02.
+## Policy di pinning e upgrade
+
+Le image runtime sono pin `tag@sha256:digest`; Builder è recuperato esclusivamente dal tag ufficiale `v1.33.0` e il Docker build termina in errore se il commit non coincide esattamente con `41987c064da4650e6901b5da82b7c76add452ebf`. Non esiste tracking o auto-update di `master`, tag o digest. Ogni upgrade richiede una nuova PR, modifica intenzionale dei pin e test runtime completi.
 
 ## Isolamento ambiente
 
@@ -70,7 +74,8 @@ Il configuratore crea il site se assente, installa ERPNext/Builder/app, esegue `
 
 ## Evidenze e test
 
-- image indipendente: `sha256:5a77c3a2fdf1ee38e7c64fa66d031e4b2f9e4073a2be6e60aa8cf464e934bebe`;
+- rebuild hardening image indipendente: `sha256:3b2af1e8e826c3291a48de35fb1b514b09f331504d4034d61b1e22f060ef92c3`;
+- il build ha clonato Builder dal tag `v1.33.0` e ha verificato lo SHA `41987c064da4650e6901b5da82b7c76add452ebf`;
 - configurator: exit code `0`; app installate `frappe`, `erpnext`, `builder`, `centrochange_core`;
 - `GET /api/method/ping` e `/login`: `200`;
 - backend, frontend, websocket, queue-short, queue-long, scheduler: `running`;
@@ -81,4 +86,4 @@ Il configuratore crea il site se assente, installa ERPNext/Builder/app, esegue `
 
 ## Decisione proposta dopo Spike 01
 
-Proporre allo Spike 02: `frappe/erpnext:v16.32.0`, Frappe 16.31.0, ERPNext 16.32.0, MariaDB 11.8.8, Redis 8.6.5, Compose `centrochange-dev` e Builder 1.33.0 pinato a `41987c0`, condizionatamente alla architecture review Builder.
+Proporre allo Spike 02 la baseline pinata documentata sopra: Frappe 16.31.0, ERPNext 16.32.0, MariaDB 11.8.8, Redis 8.6.5, Compose `centrochange-dev` e Builder `v1.33.0` / `41987c0`.

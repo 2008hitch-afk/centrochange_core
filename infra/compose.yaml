@@ -99,7 +99,7 @@ services:
     networks: [centrochange-dev-net]
 
   db:
-    image: mariadb:11.8.8
+    image: mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c
     restart: unless-stopped
     command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--skip-character-set-client-handshake"]
     environment:
@@ -116,7 +116,7 @@ services:
     networks: [centrochange-dev-net]
 
   redis-cache:
-    image: redis:8.6.5-alpine
+    image: redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -128,7 +128,7 @@ services:
     networks: [centrochange-dev-net]
 
   redis-queue:
-    image: redis:8.6.5-alpine
+    image: redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
