@@ -1,0 +1,155 @@
+name: centrochange-dev
+
+x-app-image: &app-image
+  image: centrochange-dev:frappe-v16.32.0
+  build:
+    context: ..
+    dockerfile: infra/Dockerfile
+  pull_policy: build
+  restart: unless-stopped
+
+x-configured-app: &configured-app
+  <<: *app-image
+  depends_on:
+    configurator:
+      condition: service_completed_successfully
+  volumes:
+    - centrochange-dev-sites:/home/frappe/frappe-bench/sites
+
+services:
+  configurator:
+    <<: *app-image
+    restart: "no"
+    environment:
+      SITE_NAME: ${SITE_NAME:?Set in CENTROCHANGE_ENV_FILE}
+      DB_PASSWORD: ${DB_PASSWORD:?Set in CENTROCHANGE_ENV_FILE}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set in CENTROCHANGE_ENV_FILE}
+    entrypoint: ["bash", "-ec"]
+    command:
+      - |
+        bench set-config -g db_host db
+        bench set-config -gp db_port 3306
+        bench set-config -g redis_cache redis://redis-cache:6379
+        bench set-config -g redis_queue redis://redis-queue:6379
+        bench set-config -g redis_socketio redis://redis-queue:6379
+        bench set-config -gp socketio_port 9000
+        if [ ! -f "sites/$${SITE_NAME}/site_config.json" ]; then
+          bench new-site "$${SITE_NAME}" --db-host db --mariadb-user-host-login-scope '%' --mariadb-root-password "$${DB_PASSWORD}" --admin-password "$${ADMIN_PASSWORD}" --install-app erpnext --install-app builder --install-app centrochange_core --set-default
+        fi
+        bench --site "$${SITE_NAME}" migrate
+        bench --site "$${SITE_NAME}" enable-scheduler
+    volumes:
+      - centrochange-dev-sites:/home/frappe/frappe-bench/sites
+    depends_on:
+      db:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+      redis-queue:
+        condition: service_healthy
+    networks: [centrochange-dev-net]
+
+  backend:
+    <<: *configured-app
+    environment:
+      GUNICORN_THREADS: "4"
+      GUNICORN_WORKERS: "2"
+      GUNICORN_TIMEOUT: "120"
+    networks: [centrochange-dev-net]
+
+  frontend:
+    <<: *app-image
+    command: ["nginx-entrypoint.sh"]
+    environment:
+      BACKEND: backend:8000
+      SOCKETIO: websocket:9000
+      FRAPPE_SITE_NAME_HEADER: ${SITE_NAME:?Set in CENTROCHANGE_ENV_FILE}
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+    ports:
+      - "127.0.0.1:${HTTP_PORT:?Set in CENTROCHANGE_ENV_FILE}:8080"
+    volumes:
+      - centrochange-dev-sites:/home/frappe/frappe-bench/sites
+    depends_on:
+      backend:
+        condition: service_started
+      websocket:
+        condition: service_started
+    networks: [centrochange-dev-net]
+
+  websocket:
+    <<: *configured-app
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    networks: [centrochange-dev-net]
+
+  queue-short:
+    <<: *configured-app
+    command: ["bench", "worker", "--queue", "short,default"]
+    networks: [centrochange-dev-net]
+
+  queue-long:
+    <<: *configured-app
+    command: ["bench", "worker", "--queue", "long,default,short"]
+    networks: [centrochange-dev-net]
+
+  scheduler:
+    <<: *configured-app
+    command: ["bench", "schedule"]
+    networks: [centrochange-dev-net]
+
+  db:
+    image: mariadb:11.8.8
+    restart: unless-stopped
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--skip-character-set-client-handshake"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?Set in CENTROCHANGE_ENV_FILE}
+      MARIADB_AUTO_UPGRADE: "1"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - centrochange-dev-db-data:/var/lib/mysql
+    networks: [centrochange-dev-net]
+
+  redis-cache:
+    image: redis:8.6.5-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - centrochange-dev-redis-cache-data:/data
+    networks: [centrochange-dev-net]
+
+  redis-queue:
+    image: redis:8.6.5-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - centrochange-dev-redis-queue-data:/data
+    networks: [centrochange-dev-net]
+
+volumes:
+  centrochange-dev-db-data:
+    name: centrochange-dev-db-data
+  centrochange-dev-sites:
+    name: centrochange-dev-sites
+  centrochange-dev-redis-cache-data:
+    name: centrochange-dev-redis-cache-data
+  centrochange-dev-redis-queue-data:
+    name: centrochange-dev-redis-queue-data
+
+networks:
+  centrochange-dev-net:
+    name: centrochange-dev-net
+    driver: bridge

@@ -1,75 +1,84 @@
 # Runtime Baseline — Centro Change
 
-**Stato:** DA COMPILARE DA CODEX DURANTE SPIKE 01
+**Stato:** SPIKE 01 VALIDATED LOCALLY — proposta soggetta a architecture review.
 
-Questo file deve essere aggiornato solo con evidenza runtime reale.
+Evidenze raccolte il 2026-09-02 sul workstation reale. Il nuovo site contiene solo metadati standard e dati sintetici, mai dati cliente.
 
 ## Host
 
-- OS host: `TBD`
-- WSL2 distro: `TBD`
-- Docker Engine/Desktop: `TBD`
-- Docker Compose: `TBD`
-- CPU/RAM disponibili: `TBD`
+- Host: Windows 10 Pro build `26200`, 24 logical processor, 15.9 GiB RAM.
+- WSL2 kernel: `6.6.87.2-microsoft-standard-WSL2`.
+- Docker runtime: `Barcicletta-Ubuntu`, Ubuntu `24.04.4 LTS`; Engine `29.7.2`, Compose `v5.4.0`.
+- Clone operativo: `/home/barcicletta/src/centrochange_core`.
+- `Ubuntu-24.04` (Ubuntu `24.04.3 LTS`) non ha Docker integration abilitata.
+- Risorse WSL osservate: 24 vCPU, 7.7 GiB RAM, 2.0 GiB swap.
 
 ## Stack live rilevato
 
-| Componente | Versione runtime live | Fonte/comando | Note |
-|---|---|---|---|
-| Frappe | TBD | TBD | |
-| ERPNext | TBD | TBD | |
-| Builder | TBD | TBD | |
-| MariaDB | TBD | TBD | |
-| Redis | TBD | TBD | |
-| Python | TBD | TBD | |
-| Node | TBD | TBD | |
+| Componente | Contabilita_Barci live | Centro Change live | Fonte |
+|---|---:|---:|---|
+| Frappe | 16.31.0 | 16.31.0 | `bench version` |
+| ERPNext | 16.32.0 | 16.32.0 | `bench version` |
+| Builder | non installato | 1.33.0, `41987c0` | `bench version` |
+| MariaDB | 11.8.8 | 11.8.8 | runtime/image |
+| Redis | 8.6.5 | 8.6.5 | runtime/image |
+| Python | 3.14.2 | 3.14.2 | runtime |
+| Node | 24.12.0 | 24.12.0 | runtime base image |
+
+Da Contabilita_Barci è stato riusato soltanto il pattern Compose: configuratore one-shot, servizi backend/frontend/websocket, due Redis, queue e scheduler. Non sono stati riusati image, app, mount, dati, Neo4j, variabili o secret Barcicletta.
 
 ## Baseline Centro Change proposta
 
-| Componente | Versione/tag proposta | Motivo | Stato |
-|---|---|---|---|
-| Frappe | TBD | | RUNTIME VALIDATION REQUIRED |
-| ERPNext | TBD | | RUNTIME VALIDATION REQUIRED |
-| Builder | TBD | | RUNTIME VALIDATION REQUIRED |
-| centrochange_core | repository current | app custom | RUNTIME VALIDATION REQUIRED |
-| Marley Health | TBD / non installato baseline | Spike 02 | OPEN |
+| Componente | Versione/tag | Stato |
+|---|---|---|
+| base image | `frappe/erpnext:v16.32.0` | VALIDATED LOCALLY |
+| Frappe / ERPNext | 16.31.0 / 16.32.0 | VALIDATED LOCALLY |
+| Builder | 1.33.0 commit `41987c0` | NEEDS ARCHITECT REVIEW |
+| centrochange_core | 0.0.1 scaffold `bench new-app` | VALIDATED LOCALLY |
+| Marley Health | non installato | OPEN — Spike 02 |
+
+**NEEDS ARCHITECT REVIEW:** Builder non pubblica un branch `version-16`. È pinato al commit master `41987c0`, che dichiara Frappe `>=15,<18`. Build, install, migrate e HTTP sono riusciti, ma la policy di pinning/aggiornamento Builder va confermata prima dello Spike 02.
 
 ## Isolamento ambiente
 
-- Compose project: `TBD`
-- Site name: `TBD`
-- HTTP localhost port: `TBD`
-- DB volume: `TBD`
-- sites volume: `TBD`
-- Redis volume/network: `TBD`
-- network: `TBD`
-- secret env path esterno a Git: `TBD`
+```text
+Docker Engine (Barcicletta-Ubuntu)
+├── barcicletta-dev / barcicletta-shadow   [immutati; porte 8080 / 8081]
+└── centrochange-dev
+    ├── image: centrochange-dev:frappe-v16.32.0
+    ├── site: centrochange.local; frontend: 127.0.0.1:8082
+    ├── network: centrochange-dev-net
+    ├── volumes: centrochange-dev-db-data, centrochange-dev-sites
+    └── Redis: centrochange-dev-redis-cache-data, centrochange-dev-redis-queue-data
+```
 
-## Non interferenza
-
-Codex deve registrare prova che start/stop/rebuild di Centro Change non modifica o interrompe gli altri stack locali.
-
-- baseline altri stack prima: `TBD`
-- test Centro Change: `TBD`
-- baseline altri stack dopo: `TBD`
-- risultato: `PASS / PARTIAL / FAIL`
+DB e Redis non espongono porte host. Le credenziali locali sono esterne a Git in `~/.config/centrochange-dev/runtime.env` (0600); nel repository resta solo `infra/runtime.env.example` con placeholder.
 
 ## Bootstrap ripetibile
 
-Comandi/procedura finale:
-
 ```text
-TBD by Codex
+cd /home/barcicletta/src/centrochange_core/infra
+mkdir -p ~/.config/centrochange-dev && chmod 700 ~/.config/centrochange-dev
+cp runtime.env.example ~/.config/centrochange-dev/runtime.env
+chmod 600 ~/.config/centrochange-dev/runtime.env
+# sostituire placeholder con secret locali non versionati
+docker compose --env-file ~/.config/centrochange-dev/runtime.env up -d --build
+curl -fsS http://127.0.0.1:8082/api/method/ping
 ```
 
-## Evidenze
+Il configuratore crea il site se assente, installa ERPNext/Builder/app, esegue `migrate` e abilita lo scheduler. Un eventuale reset DEV è limitato a `centrochange-dev-*`: `docker compose --env-file … down --volumes`; mai applicarlo ai progetti Barcicletta.
 
-- issue: `TBD`
-- PR: `TBD`
-- test: `TBD`
-- log sintetico: `TBD`
-- rischi residui: `TBD`
+## Evidenze e test
+
+- image indipendente: `sha256:5a77c3a2fdf1ee38e7c64fa66d031e4b2f9e4073a2be6e60aa8cf464e934bebe`;
+- configurator: exit code `0`; app installate `frappe`, `erpnext`, `builder`, `centrochange_core`;
+- `GET /api/method/ping` e `/login`: `200`;
+- backend, frontend, websocket, queue-short, queue-long, scheduler: `running`;
+- `bench doctor`: 2 worker online e scheduler abilitato;
+- restart completo Centro Change: ping `200`;
+- network e sites volume sono `centrochange-dev-*`, separati da `barcicletta-dev_*` e `barcicletta-shadow_*`;
+- prima/dopo i test, tutti i container Barcicletta DEV/SHADOW osservati erano `Up`, senza restart o comandi rivolti a loro.
 
 ## Decisione proposta dopo Spike 01
 
-`TBD — Codex deve proporre la baseline esatta, senza dichiararla definitiva autonomamente.`
+Proporre allo Spike 02: `frappe/erpnext:v16.32.0`, Frappe 16.31.0, ERPNext 16.32.0, MariaDB 11.8.8, Redis 8.6.5, Compose `centrochange-dev` e Builder 1.33.0 pinato a `41987c0`, condizionatamente alla architecture review Builder.
