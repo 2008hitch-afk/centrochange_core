@@ -1,0 +1,52 @@
+# Secrets / environment
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+
+# Frappe runtime / sites
+sites/
+logs/
+config/
+*.log
+
+# Backups / dumps
+*.sql
+*.sql.gz
+*.dump
+*.bak
+backups/
+private/backups/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Node
+node_modules/
+.npm/
+.yarn/
+
+# Build / cache
+dist/
+build/
+.cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local synthetic runtime artifacts
+runtime/
+tmp/
