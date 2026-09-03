@@ -152,7 +152,7 @@ Event       = EV00002
 | S02-CONF-001 | `apply_strict_user_permissions` might solve zero-assignment leakage | Frappe v16 permission/query implementation inspection | **FAIL** as proposed solution | Strict mode can exclude blank Link values when a relevant User Permission exists | It does not create a restriction for a user with no applicable User Permission; Patient also has no Practitioner Link to leverage | Keep `apply_strict_user_permissions=0` during baseline; do not treat strict as Patient assignment solution | No toggle required for this hypothesis |
 | S02-PAT-006 | Understand why default Physician sees all Patients | Standard `DocPerm` inspection | **OBSERVED** | Standard behavior is explained deterministically | `Physician` on `Patient` has `read=1`, `write=1`, `create=1`, `delete=1`, `share=1` | Any DocShare assignment model must first remove/restrict global role access | Test reversible Custom DocPerm + DocShare design |
 | S02-PERM-006 | A Custom DocPerm can override standard permissions without patching Marley core | Frappe `get_valid_perms`, `setup_custom_perms`, `copy_perms` implementation inspection | **OBSERVED** | Frappe uses Custom DocPerm for a DocType when custom permissions exist, rather than adding standard DocPerm rows for that DocType | No runtime mutation has been performed yet; effect on Centro Change workflows is untested | Candidate native configuration path exists, but it is global and security-sensitive | Design transactional Custom DocPerm + DocShare test before persisting |
-| S02-PAT-007 | Restricted Physician Custom DocPerm must make zero assignment expose zero Patients before any DocShare exists | Transactional `setup_custom_perms('Patient')`, zeroed Physician Patient rights, temporary removal of A/B Patient User Permissions, rollback | **PARTIAL** | In the tested A list path, `frappe.get_list('Patient')` was denied with `PermissionError`; rollback restored `Custom DocPerm=0`, both experimental Patient User Permissions, and `DocShare=0` | Probe harness then failed because `frappe.has_permission()` was called with unsupported `print_logs`; B list plus A/B `has_permission` and direct-read probes were not executed | Restricted Custom DocPerm is promising for the zero-assignment invariant, but evidence is insufficient for PASS and says nothing yet about DocShare assignment | Repeat the same transaction using `frappe.permissions.has_permission` and complete A/B list/direct probes before adding shares |
+| S02-PAT-007 | Restricted Physician Custom DocPerm must make zero assignment expose zero Patients before any DocShare exists | Transactional `setup_custom_perms('Patient')`, zeroed Physician Patient rights, temporary removal of A/B Patient User Permissions, rollback | **PASS** | With no Patient shares, both A and B were denied `get_list('Patient')`; `frappe.permissions.has_permission` returned false for read/write on Patient A and B; direct read/write checks were denied with `PermissionError`; rollback restored `Custom DocPerm=0`, both Patient User Permissions, and `DocShare=0` | Scope is limited to zero assignment in normal list/document paths; no DocShare assignment, revocation, reassignment, report/export or Marley endpoint behavior has been tested yet | Restricted Physician Custom DocPerm satisfies the zero-assignment invariant in the tested scope and is a viable foundation for the DocShare experiment; the overall assignment model remains OPEN | Add transactional DocShare A -> Patient A and B -> Patient B; verify assigned-only list/read/write and cross-access denial |
 
 ## Detailed evidence notes
 
@@ -307,15 +307,15 @@ Preconditions observed before the mutation:
 - no Patient `DocShare` existed;
 - the two experimental direct Patient User Permissions were present.
 
-Inside one transaction, standard Patient permissions were copied to `Custom DocPerm`, all Patient rights on the `Physician` custom row were set to zero, and the two direct Patient User Permissions were temporarily deleted. Before any DocShare was created, A's normal list probe returned:
+Inside one transaction, standard Patient permissions were copied to `Custom DocPerm`, all Patient rights on the `Physician` custom row were set to zero, and the two direct Patient User Permissions were temporarily deleted. Before any DocShare was created, both A and B were denied the normal Patient list path:
 
 ```text
 PermissionError: Insufficient Permission for Patient
 ```
 
-The probe then stopped because the test harness called the top-level `frappe.has_permission()` wrapper with the unsupported keyword `print_logs`; therefore B symmetry and document-level read checks were not reached.
+Using the runtime `frappe.permissions.has_permission()` implementation, both users returned `False` for `read` and `write` on both synthetic Patient records. Direct document `read` and `write` permission checks for both records were also denied with `PermissionError`.
 
-The `finally` rollback restored the pre-test persistent state exactly as checked immediately afterward:
+The transaction was then rolled back. The persistent state was checked immediately afterward and matched the pre-test state exactly:
 
 ```text
 Custom DocPerm Patient = 0
@@ -323,7 +323,7 @@ Patient User Permission A/B = 2
 Patient DocShare = 0
 ```
 
-Result is **PARTIAL**, not PASS. The valid positive evidence is limited to A's list path under zero assignment. The next probe must use `frappe.permissions.has_permission()` and complete both users' list and direct-document checks before testing any DocShare.
+Result: **PASS** for the exact zero-assignment invariant in the tested normal list and document paths. This does not yet prove that DocShare provides the required assigned-only allow-list, nor revocation, reassignment, leak-vector behavior, or the final set of workflow rights.
 
 ## Current assessment by capability
 
@@ -340,7 +340,7 @@ Result is **PARTIAL**, not PASS. The valid positive evidence is limited to A's l
 | Zero-Patient assignment with direct User Permission model | **FAIL** |
 | `apply_strict_user_permissions` as zero-assignment fix | **FAIL** as hypothesis |
 | Native Patient -> Practitioner relation | **Not found in inspected scope** |
-| Restricted Custom DocPerm zero-assignment behavior | **PARTIAL** — A list denied; symmetry/direct probes incomplete |
+| Restricted Custom DocPerm zero-assignment behavior | **PASS** — A/B list denied; read/write denied; rollback restored baseline |
 | Custom DocPerm + DocShare assignment model | **OPEN** |
 | Same-practitioner overlap rejection | **OPEN** |
 | Practitioner Availability enforcement | **OPEN** |
@@ -356,7 +356,7 @@ Result is **PARTIAL**, not PASS. The valid positive evidence is limited to A's l
 ### Phase 1 — Patient assignment security — gating
 
 1. Design a **transactional** test of a restricted `Physician` Custom DocPerm on `Patient` plus Frappe DocShare.
-2. Prove the zero-assignment invariant: professional with zero shares sees zero Patients.
+2. Prove the zero-assignment invariant: professional with zero shares sees zero Patients. **PASS in S02-PAT-007 for tested normal list/document paths.**
 3. Share Patient A to A and Patient B to B; verify list, `has_permission`, direct read and direct write.
 4. Remove a Share and verify access disappears immediately.
 5. Reassign Patient A from A to B and test ordering/transaction semantics so there is no leakage window.
