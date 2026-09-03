@@ -154,6 +154,7 @@ Event       = EV00002
 | S02-PERM-006 | A Custom DocPerm can override standard permissions without patching Marley core | Frappe `get_valid_perms`, `setup_custom_perms`, `copy_perms` implementation inspection | **OBSERVED** | Frappe uses Custom DocPerm for a DocType when custom permissions exist, rather than adding standard DocPerm rows for that DocType | No runtime mutation has been performed yet; effect on Centro Change workflows is untested | Candidate native configuration path exists, but it is global and security-sensitive | Design transactional Custom DocPerm + DocShare test before persisting |
 | S02-PAT-007 | Restricted Physician Custom DocPerm must make zero assignment expose zero Patients before any DocShare exists | Transactional `setup_custom_perms('Patient')`, zeroed Physician Patient rights, temporary removal of A/B Patient User Permissions, rollback | **PASS** | With no Patient shares, both A and B were denied `get_list('Patient')`; `frappe.permissions.has_permission` returned false for read/write on Patient A and B; direct read/write checks were denied with `PermissionError`; rollback restored `Custom DocPerm=0`, both Patient User Permissions, and `DocShare=0` | Scope is limited to zero assignment in normal list/document paths; no DocShare assignment, revocation, reassignment, report/export or Marley endpoint behavior has been tested yet | Restricted Physician Custom DocPerm satisfies the zero-assignment invariant in the tested scope and is a viable foundation for the DocShare experiment; the overall assignment model remains OPEN | Add transactional DocShare A -> Patient A and B -> Patient B; verify assigned-only list/read/write and cross-access denial |
 | S02-PAT-008 | A DocShare allow-list must expose only the Patient assigned to each professional when Physician has no global Patient rights | Restricted Physician Custom DocPerm + transactional `DocShare` A -> Patient A and B -> Patient B with read/write, direct Patient User Permissions temporarily removed, rollback | **PASS** | A listed only Patient A and had read/write plus direct read/write on A while all equivalent checks on Patient B were denied; B showed the symmetric result for Patient B; rollback restored `Custom DocPerm=0`, both experimental Patient User Permissions, and `DocShare=0` | Scope is limited to normal list, `has_permission`, and direct document read/write paths; share revocation, reassignment ordering, create/delete/share rights, report/export/query paths and Marley endpoints remain untested | Native Custom DocPerm + DocShare can implement assigned-only Patient read/write in the tested scope; overall assignment model is promising but not yet sufficient for persistence | Remove an active Patient DocShare transactionally and verify access disappears immediately for list, `has_permission`, and direct read/write |
+| S02-PAT-009 | Revoking an active Patient DocShare must remove access immediately without affecting another professional's assignment | Restricted Physician Custom DocPerm + transactional A/B DocShares; `frappe.share.remove('Patient', Patient A, A)` followed by immediate permission probes | **PASS** | Before revocation A saw Patient A and B saw Patient B; immediately after removing A's share, A's Patient list was denied and read/write plus direct read/write were denied for both Patients; B still listed only Patient B with read/write true on B and false on A; rollback restored `Custom DocPerm=0`, both experimental Patient User Permissions, and `DocShare=0` | Tested in one process/transaction with cache cleared; no concurrent-request or commit-boundary reassignment behavior has yet been proven | Native DocShare revocation removes the assignment grant immediately in the tested permission paths and does not broaden another user's access; reassignment still requires transaction-order validation | Reassign Patient A from A to B in one transaction, remove old share before adding new share, and verify intermediate/final access semantics |
 
 ## Detailed evidence notes
 
@@ -365,6 +366,38 @@ Patient DocShare = 0
 
 Result: **PASS** for assigned-only Patient list/read/write isolation in the tested normal Frappe permission paths. This materially strengthens the Custom DocPerm + DocShare candidate, but does not yet establish safe revocation, reassignment, create/delete/share policy, leak-vector behavior, or final architectural fit.
 
+### Transactional DocShare revocation probe
+
+The validated restricted Custom DocPerm + DocShare setup was recreated transactionally. Before revocation, A listed only Patient A and B listed only Patient B, with read permission true on the assigned record.
+
+The A -> Patient A share was then removed with native `frappe.share.remove()` and caches were cleared. Without leaving the transaction, A immediately changed to:
+
+```text
+Patient list -> PermissionError
+Patient A read/write -> false / false
+Patient A direct read/write -> PermissionError / PermissionError
+Patient B read/write -> false / false
+Patient B direct read/write -> PermissionError / PermissionError
+```
+
+B remained isolated and unaffected:
+
+```text
+visible Patients -> [Spike02 Patient B]
+Patient A read/write -> false / false
+Patient B read/write -> true / true
+```
+
+Rollback again restored the persistent baseline:
+
+```text
+Custom DocPerm Patient = 0
+Patient User Permission A/B = 2
+Patient DocShare = 0
+```
+
+Result: **PASS** for immediate revocation in the tested normal permission paths. This does not yet prove behavior across concurrent requests or the commit boundary of a real reassignment transaction.
+
 ## Current assessment by capability
 
 | Capability | Current evidence |
@@ -381,7 +414,7 @@ Result: **PASS** for assigned-only Patient list/read/write isolation in the test
 | `apply_strict_user_permissions` as zero-assignment fix | **FAIL** as hypothesis |
 | Native Patient -> Practitioner relation | **Not found in inspected scope** |
 | Restricted Custom DocPerm zero-assignment behavior | **PASS** — A/B list denied; read/write denied; rollback restored baseline |
-| Custom DocPerm + DocShare assignment model | **PARTIAL** — assigned-only A/B list/read/write PASS; revocation, reassignment, workflow rights and leak vectors remain open |
+| Custom DocPerm + DocShare assignment model | **PARTIAL** — assigned-only A/B and immediate revocation PASS; reassignment, workflow rights and leak vectors remain open |
 | Same-practitioner overlap rejection | **OPEN** |
 | Practitioner Availability enforcement | **OPEN** |
 | Reschedule / move / cancel / history | **OPEN** |
@@ -398,7 +431,7 @@ Result: **PASS** for assigned-only Patient list/read/write isolation in the test
 1. Design a **transactional** test of a restricted `Physician` Custom DocPerm on `Patient` plus Frappe DocShare.
 2. Prove the zero-assignment invariant: professional with zero shares sees zero Patients. **PASS in S02-PAT-007 for tested normal list/document paths.**
 3. Share Patient A to A and Patient B to B; verify list, `has_permission`, direct read and direct write. **PASS in S02-PAT-008 for tested normal list/document paths.**
-4. Remove a Share and verify access disappears immediately.
+4. Remove a Share and verify access disappears immediately. **PASS in S02-PAT-009 for tested normal list/document paths.**
 5. Reassign Patient A from A to B and test ordering/transaction semantics so there is no leakage window.
 6. Determine which create/delete/share rights are actually required by the Centro Change workflow; do not preserve broad Marley defaults by assumption.
 
