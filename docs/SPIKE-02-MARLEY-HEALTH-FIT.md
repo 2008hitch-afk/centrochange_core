@@ -156,7 +156,7 @@ Event       = EV00002
 | S02-PAT-008 | A DocShare allow-list must expose only the Patient assigned to each professional when Physician has no global Patient rights | Restricted Physician Custom DocPerm + transactional `DocShare` A -> Patient A and B -> Patient B with read/write, direct Patient User Permissions temporarily removed, rollback | **PASS** | A listed only Patient A and had read/write plus direct read/write on A while all equivalent checks on Patient B were denied; B showed the symmetric result for Patient B; rollback restored `Custom DocPerm=0`, both experimental Patient User Permissions, and `DocShare=0` | Scope is limited to normal list, `has_permission`, and direct document read/write paths; share revocation, reassignment ordering, create/delete/share rights, report/export/query paths and Marley endpoints remain untested | Native Custom DocPerm + DocShare can implement assigned-only Patient read/write in the tested scope; overall assignment model is promising but not yet sufficient for persistence | Remove an active Patient DocShare transactionally and verify access disappears immediately for list, `has_permission`, and direct read/write |
 | S02-PAT-009 | Revoking an active Patient DocShare must remove access immediately without affecting another professional's assignment | Restricted Physician Custom DocPerm + transactional A/B DocShares; `frappe.share.remove('Patient', Patient A, A)` followed by immediate permission probes | **PASS** | Before revocation A saw Patient A and B saw Patient B; immediately after removing A's share, A's Patient list was denied and read/write plus direct read/write were denied for both Patients; B still listed only Patient B with read/write true on B and false on A; rollback restored `Custom DocPerm=0`, both experimental Patient User Permissions, and `DocShare=0` | Tested in one process/transaction with cache cleared; no concurrent-request or commit-boundary reassignment behavior has yet been proven | Native DocShare revocation removes the assignment grant immediately in the tested permission paths and does not broaden another user's access; reassignment still requires transaction-order validation | Reassign Patient A from A to B in one transaction, remove old share before adding new share, and verify intermediate/final access semantics |
 | S02-PAT-010 | Reassigning a Patient must avoid a dual-access state inside the assignment transaction | Restricted Physician Custom DocPerm + A/B DocShares; remove A -> Patient A first, verify midpoint, then add B -> Patient A in the same Frappe DB transaction | **PASS** in tested single-session sequencing | Initial state: A saw Patient A and B did not. Midpoint after removing A but before adding B: A could not list/read Patient A and B still could not read it. Final in-transaction state: A remained denied while B listed Patient A and Patient B and had read/write on Patient A. Frappe connection reported `REPEATABLE-READ` and `autocommit=0`; rollback restored `Custom DocPerm=0`, both experimental Patient User Permissions, and `DocShare=0` | This probe observed one application/DB session only; it did not exercise a concurrent request or another worker across the commit boundary | `remove-old -> add-new` in one transaction avoids an in-transaction dual-access state and is the safe candidate ordering; production reassignment should be atomic, but cross-session visibility/cache behavior still needs evidence | Validate what another Frappe session sees before and after reassignment commit; do not claim complete no-leakage semantics until that boundary is tested |
-| S02-PAT-011 | A concurrent Frappe session must not grant the new assignee access to Patient A before the reassignment transaction commits, and should observe the new grant after commit | Temporary committed restricted Custom DocPerm + initial DocShares; separate writer session performed remove A -> Patient A then add B -> Patient A without commit; separate observer session probed before commit and a fresh observer probed after commit | **PARTIAL** | While writer was uncommitted, observer B listed only Patient B and `read Patient A = false`; after writer commit, fresh observer B listed Patient A and Patient B and `read Patient A = true`; final cleanup restored `Custom DocPerm=0`, both Patient User Permissions, and `DocShare=0` | Observer output for A was missing both before and after commit, so the test does not yet prove that the old assignee retains only the previously committed grant before commit and loses it immediately after commit; wrapper also emitted a harmless `trap: EXIT` error after cleanup due script line-ending handling | Evidence supports atomic visibility for the new assignee across the commit boundary, but complete cross-session reassignment security remains unproven until A-side visibility is captured explicitly | Repeat a reduced cross-session probe with explicit non-loop A and B outputs before and after commit; verify A sees Patient A before commit and loses it after commit while B changes only after commit |
+| S02-PAT-011 | A concurrent Frappe session must observe only the committed assignment before reassignment commit and the new assignment after commit | Temporary committed restricted Custom DocPerm + initial DocShares; separate writer session performed remove A -> Patient A then add B -> Patient A without commit; explicit fresh observer sessions for A and B probed before and after commit | **PASS** in tested cross-session boundary | Before commit: A listed Patient A and `read Patient A = true`, while B listed only Patient B and `read Patient A = false`. After commit: A's Patient list was denied and `read Patient A = false`, while B listed Patient A and Patient B and `read Patient A = true`. The final baseline was subsequently restored and verified as `Custom DocPerm=0`, two direct Patient User Permissions with A -> Patient A and B -> Patient B, and `DocShare=0` | Scope uses fresh observer sessions and normal Patient list/read permission paths; long-lived observer transactions, write-path cross-session checks, workflow rights and leak vectors remain untested. The V2 cleanup harness initially had a `use`/`user` typo and left the temporary baseline at `0/0/0`; an immediate deterministic restore recreated the two original experimental User Permissions and verified `0/2/0` | Together with S02-PAT-010, the evidence supports atomic `remove-old -> add-new -> commit` reassignment semantics in the tested Frappe/MariaDB paths without a pre-commit grant to B or post-commit grant to A | Determine the minimum create/delete/share rights required by the Patient workflow, then proceed to leak-vector validation |
 
 ## Detailed evidence notes
 
@@ -448,35 +448,41 @@ Patient DocShare = 0
 
 Result: **PASS** for the exact single-session transactional sequencing tested. No point in that sequence exposed Patient A to both A and B simultaneously. This is not yet proof of cross-session or multi-worker behavior around commit; that remains a separate gating concern before claiming complete reassignment security.
 
-### Cross-session reassignment commit-boundary probe — partial
+### Cross-session reassignment commit-boundary probe
 
-A temporary committed candidate permission setup was created only to permit observation from independent Frappe sessions. Initial committed state was A -> Patient A and B -> Patient B under restricted `Physician` Custom DocPerm. A separate writer session then removed A -> Patient A and added B -> Patient A without committing, while an independent observer session queried permissions.
+A temporary committed candidate permission setup was created so independent Frappe sessions could observe the assignment around a real commit boundary. Initial committed state was A -> Patient A and B -> Patient B under restricted `Physician` Custom DocPerm. A separate writer session then removed A -> Patient A and added B -> Patient A without committing. Explicit fresh observer sessions for A and B were run before commit and again after commit.
 
-Observed for B while the writer transaction was still uncommitted:
+While the writer transaction was still uncommitted:
 
 ```text
+A visible -> [Spike02 Patient A]
+A read Patient A -> true
 B visible -> [Spike02 Patient B]
 B read Patient A -> false
 ```
 
-After releasing and committing the writer, a fresh observer session reported:
+After the writer committed, fresh observer sessions reported:
 
 ```text
+A Patient list -> PermissionError
+A read Patient A -> false
 B visible -> [Spike02 Patient A, Spike02 Patient B]
 B read Patient A -> true
 ```
 
-This is positive evidence that the new assignee does not observe the uncommitted grant and sees it after commit. However, the observer harness did not emit A-side lines before or after commit, so the old assignee side of the boundary is not yet proven. The shell wrapper also emitted `trap: EXIT` after the explicit cleanup because of line-ending handling; this occurred after cleanup and did not alter the runtime result.
+Result: **PASS** for the tested cross-session commit boundary. The old assignee continues to observe the previously committed grant before commit; the new assignee does not receive the uncommitted grant. After commit, the old grant is gone and the new grant is visible.
 
-Cleanup was verified twice and the persistent baseline ended at:
+The V2 cleanup harness then hit a test-script typo (`use` instead of `user`) while recreating the two experimental direct Patient User Permissions, leaving the temporary post-test state at `0 / 0 / 0`. This was a harness cleanup defect, not a permission-engine result. A separate deterministic restore was immediately executed and verified:
 
 ```text
 Custom DocPerm Patient = 0
 Patient User Permission A/B = 2
 Patient DocShare = 0
+A -> Patient -> Spike02 Patient A
+B -> Patient -> Spike02 Patient B
 ```
 
-Result: **PARTIAL**. Repeat with explicit A and B probes rather than a loop before treating cross-session reassignment semantics as complete.
+The PASS is limited to fresh cross-session list/read observations around the tested commit boundary; long-lived observer transactions, cross-session write behavior, workflow rights and leak vectors remain outside this result.
 
 ## Current assessment by capability
 
@@ -494,8 +500,8 @@ Result: **PARTIAL**. Repeat with explicit A and B probes rather than a loop befo
 | `apply_strict_user_permissions` as zero-assignment fix | **FAIL** as hypothesis |
 | Native Patient -> Practitioner relation | **Not found in inspected scope** |
 | Restricted Custom DocPerm zero-assignment behavior | **PASS** — A/B list denied; read/write denied; rollback restored baseline |
-| Custom DocPerm + DocShare assignment model | **PARTIAL** — assigned-only A/B, immediate revocation and single-session safe reassignment ordering PASS; B-side cross-session commit visibility positive; workflow rights, complete A/B commit-boundary behavior and leak vectors remain open |
-| Patient reassignment security | **PARTIAL** — single-session sequencing PASS; cross-session B side shows old committed state before commit and new state after commit, but A side still needs explicit evidence |
+| Custom DocPerm + DocShare assignment model | **PARTIAL** — assigned-only A/B, immediate revocation, safe single-session sequencing and fresh cross-session commit-boundary reassignment are PASS; workflow rights and leak vectors remain open |
+| Patient reassignment security | **PASS** in tested scope — remove-old/add-new sequencing and fresh A/B observer behavior across commit are consistent with atomic reassignment |
 | Same-practitioner overlap rejection | **OPEN** |
 | Practitioner Availability enforcement | **OPEN** |
 | Reschedule / move / cancel / history | **OPEN** |
@@ -512,10 +518,10 @@ Result: **PARTIAL**. Repeat with explicit A and B probes rather than a loop befo
 2. Prove the zero-assignment invariant: professional with zero shares sees zero Patients. **PASS in S02-PAT-007 for tested normal list/document paths.**
 3. Share Patient A to A and Patient B to B; verify list, `has_permission`, direct read and direct write. **PASS in S02-PAT-008 for tested normal list/document paths.**
 4. Remove a Share and verify access disappears immediately. **PASS in S02-PAT-009 for tested normal list/document paths.**
-5. Reassign Patient A from A to B and test ordering/transaction semantics so there is no leakage window. **PASS in S02-PAT-010 for single-session remove-old/add-new sequencing; S02-PAT-011 gives PARTIAL cross-session evidence because only B-side observer output was captured.**
+5. Reassign Patient A from A to B and test ordering/transaction semantics so there is no leakage window. **PASS in S02-PAT-010 for single-session sequencing and S02-PAT-011 for fresh cross-session A/B visibility across commit.**
 6. Determine which create/delete/share rights are actually required by the Centro Change workflow; do not preserve broad Marley defaults by assumption.
 
-Before treating reassignment security as complete, repeat the cross-session boundary test with explicit A and B output before and after commit.
+Patient reassignment is now sufficiently positive for the tested security gate; the overall assignment architecture remains **PARTIAL** until workflow rights and leak vectors are validated.
 
 Do not persist a new permission architecture until these probes demonstrate the invariant safely.
 
