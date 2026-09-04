@@ -157,6 +157,7 @@ Event       = EV00002
 | S02-PAT-009 | Revoking an active Patient DocShare must remove access immediately without affecting another professional's assignment | Restricted Physician Custom DocPerm + transactional A/B DocShares; `frappe.share.remove('Patient', Patient A, A)` followed by immediate permission probes | **PASS** | Before revocation A saw Patient A and B saw Patient B; immediately after removing A's share, A's Patient list was denied and read/write plus direct read/write were denied for both Patients; B still listed only Patient B with read/write true on B and false on A; rollback restored `Custom DocPerm=0`, both experimental Patient User Permissions, and `DocShare=0` | Tested in one process/transaction with cache cleared; no concurrent-request or commit-boundary reassignment behavior has yet been proven | Native DocShare revocation removes the assignment grant immediately in the tested permission paths and does not broaden another user's access; reassignment still requires transaction-order validation | Reassign Patient A from A to B in one transaction, remove old share before adding new share, and verify intermediate/final access semantics |
 | S02-PAT-010 | Reassigning a Patient must avoid a dual-access state inside the assignment transaction | Restricted Physician Custom DocPerm + A/B DocShares; remove A -> Patient A first, verify midpoint, then add B -> Patient A in the same Frappe DB transaction | **PASS** in tested single-session sequencing | Initial state: A saw Patient A and B did not. Midpoint after removing A but before adding B: A could not list/read Patient A and B still could not read it. Final in-transaction state: A remained denied while B listed Patient A and Patient B and had read/write on Patient A. Frappe connection reported `REPEATABLE-READ` and `autocommit=0`; rollback restored `Custom DocPerm=0`, both experimental Patient User Permissions, and `DocShare=0` | This probe observed one application/DB session only; it did not exercise a concurrent request or another worker across the commit boundary | `remove-old -> add-new` in one transaction avoids an in-transaction dual-access state and is the safe candidate ordering; production reassignment should be atomic, but cross-session visibility/cache behavior still needs evidence | Validate what another Frappe session sees before and after reassignment commit; do not claim complete no-leakage semantics until that boundary is tested |
 | S02-PAT-011 | A concurrent Frappe session must observe only the committed assignment before reassignment commit and the new assignment after commit | Temporary committed restricted Custom DocPerm + initial DocShares; separate writer session performed remove A -> Patient A then add B -> Patient A without commit; explicit fresh observer sessions for A and B probed before and after commit | **PASS** in tested cross-session boundary | Before commit: A listed Patient A and `read Patient A = true`, while B listed only Patient B and `read Patient A = false`. After commit: A's Patient list was denied and `read Patient A = false`, while B listed Patient A and Patient B and `read Patient A = true`. The final baseline was subsequently restored and verified as `Custom DocPerm=0`, two direct Patient User Permissions with A -> Patient A and B -> Patient B, and `DocShare=0` | Scope uses fresh observer sessions and normal Patient list/read permission paths; long-lived observer transactions, write-path cross-session checks, workflow rights and leak vectors remain untested. The V2 cleanup harness initially had a `use`/`user` typo and left the temporary baseline at `0/0/0`; an immediate deterministic restore recreated the two original experimental User Permissions and verified `0/2/0` | Together with S02-PAT-010, the evidence supports atomic `remove-old -> add-new -> commit` reassignment semantics in the tested Frappe/MariaDB paths without a pre-commit grant to B or post-commit grant to A | Determine the minimum create/delete/share rights required by the Patient workflow, then proceed to leak-vector validation |
+| S02-PAT-012 | The Patient assignment grant should expose only workflow rights that are actually required, without silently preserving broad Physician privileges | Restricted Physician Custom DocPerm with all Patient role rights zero plus DocShare `read=1, write=1, share=0`; runtime `has_permission` and direct `check_permission` probes; source inspection of Frappe v16 `has_permission` share fallback | **PARTIAL** | For A, assigned Patient read/write were allowed; create/delete/share/report/export were denied. Patient B remained denied for read/write/delete/share/print/email. Rollback restored `Custom DocPerm=0`, two direct Patient User Permissions and `DocShare=0` | `print` and `email` were allowed on the assigned Patient even though those Custom DocPerm rights were zero. Frappe v16 explicitly maps `email` and `print` share checks to the `read` DocShare right (`rights = ['read' if ptype in ('email', 'print') else ptype]`), and standard DocShare has no independent print/email fields. Therefore native DocPerm + DocShare cannot express `read=yes` while `print/email=no` through this mechanism alone. No authoritative Centro Change requirement for practitioner print/email has yet been found | The candidate gives a much narrower privilege surface than default Marley, but its effective grant is `read/write + print/email`, not pure `read/write`. This is a policy/fit gap, not yet an architecture failure: it matters only if Centro Change requires print/email suppression for practitioners | Resolve the intended practitioner policy for Patient print/email from the correct product/security source; if suppression is required, evaluate whether a supported hook/small extension can enforce it without patching Frappe/Marley core |
 
 ## Detailed evidence notes
 
@@ -484,6 +485,41 @@ B -> Patient -> Spike02 Patient B
 
 The PASS is limited to fresh cross-session list/read observations around the tested commit boundary; long-lived observer transactions, cross-session write behavior, workflow rights and leak vectors remain outside this result.
 
+### Patient workflow privilege surface under DocShare
+
+With the restricted `Physician` Custom DocPerm foundation and A -> Patient A / B -> Patient B shares configured as `read=1, write=1, share=0`, A's effective permissions were probed at both DocType and document level.
+
+Observed on A's assigned Patient:
+
+```text
+read   = true
+write  = true
+delete = false
+share  = false
+print  = true
+email  = true
+```
+
+At DocType level, `create`, `delete`, `share`, `report` and `export` were false. The unassigned Patient B remained denied for all tested rights, including print/email.
+
+Runtime source inspection explains the surprising print/email behavior. Frappe v16 `has_permission()` defines shareable rights including `email` and `print`, then maps both to the `read` share right:
+
+```text
+rights = ["read" if ptype in ("email", "print") else ptype]
+```
+
+`DocShare` itself exposes standard fields for `read`, `write`, `share` and `submit`; there are no independent standard print/email fields. Therefore a normal DocShare that grants read also satisfies print/email permission checks on that shared document.
+
+Result: **PARTIAL**. The candidate successfully removes the broad Marley Physician rights for create/delete/share/report/export while preserving assigned read/write, but its effective native grant also includes print/email. No authoritative Centro Change requirement has yet established whether practitioner print/email must be forbidden, so this is currently a policy/fit gap rather than a demonstrated architecture failure.
+
+Rollback restored the persistent baseline exactly:
+
+```text
+Custom DocPerm Patient = 0
+Patient User Permission A/B = 2
+Patient DocShare = 0
+```
+
 ## Current assessment by capability
 
 | Capability | Current evidence |
@@ -500,8 +536,9 @@ The PASS is limited to fresh cross-session list/read observations around the tes
 | `apply_strict_user_permissions` as zero-assignment fix | **FAIL** as hypothesis |
 | Native Patient -> Practitioner relation | **Not found in inspected scope** |
 | Restricted Custom DocPerm zero-assignment behavior | **PASS** — A/B list denied; read/write denied; rollback restored baseline |
-| Custom DocPerm + DocShare assignment model | **PARTIAL** — assigned-only A/B, immediate revocation, safe single-session sequencing and fresh cross-session commit-boundary reassignment are PASS; workflow rights and leak vectors remain open |
+| Custom DocPerm + DocShare assignment model | **PARTIAL** — assigned-only A/B, immediate revocation, safe single-session sequencing and fresh cross-session commit-boundary reassignment are PASS; workflow privilege policy and leak vectors remain open |
 | Patient reassignment security | **PASS** in tested scope — remove-old/add-new sequencing and fresh A/B observer behavior across commit are consistent with atomic reassignment |
+| Patient workflow privilege surface | **PARTIAL** — create/delete/share/report/export denied as desired in the candidate; assigned read implies print/email through Frappe share semantics, and Centro Change policy for those rights is not yet resolved |
 | Same-practitioner overlap rejection | **OPEN** |
 | Practitioner Availability enforcement | **OPEN** |
 | Reschedule / move / cancel / history | **OPEN** |
@@ -519,9 +556,9 @@ The PASS is limited to fresh cross-session list/read observations around the tes
 3. Share Patient A to A and Patient B to B; verify list, `has_permission`, direct read and direct write. **PASS in S02-PAT-008 for tested normal list/document paths.**
 4. Remove a Share and verify access disappears immediately. **PASS in S02-PAT-009 for tested normal list/document paths.**
 5. Reassign Patient A from A to B and test ordering/transaction semantics so there is no leakage window. **PASS in S02-PAT-010 for single-session sequencing and S02-PAT-011 for fresh cross-session A/B visibility across commit.**
-6. Determine which create/delete/share rights are actually required by the Centro Change workflow; do not preserve broad Marley defaults by assumption.
+6. Determine which create/delete/share rights are actually required by the Centro Change workflow; do not preserve broad Marley defaults by assumption. **S02-PAT-012 confirms create/delete/share/report/export can remain denied, but Frappe read sharing also grants print/email; intended Centro Change policy for those two rights remains to be resolved.**
 
-Patient reassignment is now sufficiently positive for the tested security gate; the overall assignment architecture remains **PARTIAL** until workflow rights and leak vectors are validated.
+Patient reassignment is now sufficiently positive for the tested security gate; the overall assignment architecture remains **PARTIAL** until workflow policy and leak vectors are validated.
 
 Do not persist a new permission architecture until these probes demonstrate the invariant safely.
 
