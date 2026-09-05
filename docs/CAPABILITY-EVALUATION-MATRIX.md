@@ -92,7 +92,7 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 | CC-CAP-017 | Note organizzative | native Communication/comment mechanisms evaluated | `CC Organizational Note` | secretary access, professional access, API/report/export/direct, audit | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-018 | Note professionali riservate | native/private record mechanisms; Marley clinical records evaluated | `CC Professional Note` | secretary denial, assigned professional scope, API/report/export/direct/query leak tests | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-019 | Scheda paziente unificata | Desk/Form/dashboard composition; Marley patient views | custom workspace/page if needed | data aggregation, permission inheritance, performance, leakage between sections | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-020 | Patient history / clinical feed | Marley patient history endpoints | guarded extension or custom feed | assigned/cross patient, endpoint arguments, list/direct/API, non-empty fixtures, permission bypass | SPIKE 02 IN PROGRESS — KNOWN ENDPOINT FAILURE |
+| CC-CAP-020 | Patient history / clinical feed | Marley patient history endpoints | guarded extension or custom feed | assigned/cross patient, endpoint arguments, list/direct/API, non-empty fixtures, permission bypass | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-021 | Patient progress / clinical analytics | Marley patient progress methods | guarded extension/custom analytics | cross-patient reads, SQL/get_all paths, empty/non-empty fixtures, report/export consistency | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-022 | Chiusura giornaliera sedute | Frappe scheduler/queue/workflow primitives | `CC Session Closure` | Pending/Closed/Auto Locked/Reopened, retries, idempotence, permissions, audit | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-023 | Reminder 21:00 | Notification/email + scheduler | scheduled job in `centrochange_core` | only pending sessions, duplicate prevention, retry, timezone, delivery failure | RUNTIME VALIDATION REQUIRED |
@@ -126,7 +126,16 @@ Lo Spike 02 ha gia osservato il legame nativo `User -> Healthcare Practitioner` 
 
 ### CC-CAP-020
 
-Nel runtime Marley corrente, un test con dati sintetici ha osservato che `patient_history.get_feed(name)` puo restituire un `Patient Medical Record` del Patient B quando il contesto utente A non ha normale permesso di lettura sul Patient B. Il finding e **endpoint-scoped** e non prova che tutti gli endpoint Marley abbiano lo stesso comportamento. Deve alimentare la valutazione del minimo guard/extension surface e i test regressivi correlati.
+Decisione owner del **2026-09-05**: **EXTENSION**.
+
+Evidenza Spike 02 `S02-PAT-013`–`S02-PAT-021`:
+
+- `patient_history.get_feed` e `get_feed_for_dt` hanno entrambi evidenza runtime non-vuota di FAIL sul confine di assegnazione Patient;
+- sostituire semplicemente `frappe.db.get_all` con `frappe.get_list` non applica automaticamente il confine, anche perche `Patient Medical Record.patient` usa `ignore_user_permissions=1` nel runtime osservato;
+- un guard esplicito basato sul permesso di lettura del Patient preserva il risultato autorizzato e nega il cross-patient nel probe;
+- Frappe espone `override_whitelisted_methods` come superficie supportata per intercettare i due metodi senza patchare Marley core.
+
+Classificazione confermata: riusare la Patient History Marley dietro una piccola estensione in `centrochange_core`, con override protetti e regression test. Questa decisione resta limitata a CC-CAP-020 e non decide il riuso Marley complessivo A/B/C.
 
 ## 6. Security surface minima per capability sensibili
 
