@@ -97,6 +97,28 @@ Evidenza principale: Spike 02 `S02-PAT-013`–`S02-PAT-021`. I due endpoint PMR 
 
 Questa decisione è limitata a **CC-CAP-020**. Non determina da sola l'esito complessivo Marley A/B/C e non approva automaticamente Patient Progress o altre capability Marley.
 
+## TD-012 — CC-CAP-021 Patient Progress / clinical analytics
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-05
+
+Classificazione capability: **DEFERRED / EXCLUDE FROM CURRENT SURFACE**.
+
+Decisione:
+
+- non esporre né sviluppare la pagina/funzionalità Marley Patient Progress nello scope corrente di Centro Change;
+- non correggere ora l'intera superficie analytics Marley solo perché disponibile nell'app;
+- mantenere la capability riapribile se emergerà un requisito funzionale reale di andamento clinico, assessment o terapia;
+- in caso di riapertura, rivalutare una extension selettiva o analytics custom Centro Change con autorizzazione server-side esplicita;
+- nessuna patch a Frappe o Marley core.
+
+Evidenza principale: Spike 02 / testlab `S02-PAT-015`, `S02-PROG-001`–`S02-PROG-006`.
+
+Nel runtime osservato, i sei percorsi Patient Progress effettivamente eseguibili testati con fixture non vuote non rispettano il confine A/B quando il caller passa esplicitamente Patient B, mentre `get_therapy_sessions_distribution_data` fallisce per incompatibilità con il controllo Frappe v16 sui campi SELECT. Il JS Marley corrente inoltre mantiene il grafico di distribuzione nascosto/commentato come broken.
+
+Conseguenza: la capability non è eliminata definitivamente; viene esclusa dalla superficie corrente per ridurre rischio di sicurezza, superficie custom e tempo di sviluppo finché non esiste un requisito che ne giustifichi la riapertura.
+
+Questa decisione è limitata a **CC-CAP-021** e non determina da sola l'esito complessivo Marley A/B/C.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
