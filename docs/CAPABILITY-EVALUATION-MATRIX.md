@@ -77,7 +77,7 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 | CC-CAP-001 | Runtime foundation e isolamento DEV | Frappe/ERPNext container pattern; Docker Compose | infra Centro Change dedicata | versioni, rebuild, restart, network/volume isolation, no cross-project impact | EVIDENCE AVAILABLE / REVIEW REQUIRED |
 | CC-CAP-002 | Identita professionista | User, Employee; Marley `Healthcare Practitioner`; eventuale Sales Person solo proiezione | `CC Professional` se il fit nativo/app e insufficiente | identity mapping, permission scope, disable/reassignment, list/direct/API | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-003 | Anagrafica paziente | Contact/Customer dove semanticamente corretti; Marley `Patient` | `CC Patient` o extension fields se necessario | identity semantics, codice fiscale/UID, CRUD, privacy, direct/API/report/export | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-004 | Assegnazione paziente-professionista | Frappe User Permission / DocShare / supported permission hooks; Marley relations se pertinenti | assignment model + permission hooks in `centrochange_core` | own/cross patient, reassignment, revoke, list/direct/API/report/export/query | RUNTIME VALIDATION REQUIRED |
+| CC-CAP-004 | Assegnazione paziente-professionista | Frappe User Permission / DocShare / supported permission hooks; Marley relations se pertinenti | assignment model + permission hooks in `centrochange_core` | own/cross patient, reassignment, revoke, list/direct/API/report/export/query | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-005 | Segregazione appuntamenti per professionista | Frappe permissions/User Permission; Marley `Patient Appointment` | custom permission layer o custom appointment | list own/cross, direct read/write, API, report/export, reassignment | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-006 | Appuntamento/seduta | ERPNext/Frappe scheduling primitives; Marley `Patient Appointment` | `CC Appointment/Session` se semantica insufficiente | create/update/move/cancel, lifecycle, history, required fields, extension fit | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-007 | Disponibilita professionista | Marley `Practitioner Availability` / schedules | custom availability model | recurring availability, exception/absence, timezone, access scope, edit history | RUNTIME VALIDATION REQUIRED |
@@ -124,6 +124,22 @@ Spike 01 ha prodotto evidenze runtime locali su stack pinato, network/volume ded
 ### CC-CAP-002 / 004 / 005
 
 Lo Spike 02 ha gia osservato il legame nativo `User -> Healthcare Practitioner` e sta valutando User Permission/DocShare e propagazione verso Patient/Patient Appointment. Nessuna decisione finale di riuso Marley e ancora autorizzata.
+
+### CC-CAP-004
+
+Decisione owner del **2026-09-05**: **EXTENSION**.
+
+Evidenza Spike 02 `S02-PAT-001`–`S02-PAT-012` e testlab `CAP004-SURFACE-001`, `CAP004-SURFACES-002`:
+
+- il default Marley `Physician` sul `Patient` e troppo ampio e non soddisfa l'isolamento assegnato/non assegnato;
+- la sola `User Permission: Patient` non e sufficiente come modello completo, perche il caso zero-assignment riapre la visibilita globale nel runtime testato;
+- un `Custom DocPerm` restrittivo sul Patient, combinato con `DocShare` read/write sul singolo Patient assegnato, ha mantenuto A e B isolati nei normali path list/direct;
+- revoca e riassegnazione hanno mostrato comportamento coerente con il pattern atomico `remove-old -> add-new -> commit`, incluso il confine cross-session osservato;
+- nel probe `CAP004-SURFACES-002`, `frappe.get_list`, `frappe.client.get_list`, `frappe.client.get` e reportview hanno rispettato il boundary A/B; Data Export e stato negato senza diritto export;
+- `frappe.get_all` ha invece mostrato entrambi i Patient, confermando che custom/third-party endpoint basati su `get_all`/raw query/SQL richiedono un guard Patient esplicito;
+- rollback e cleanup hanno ripristinato `Custom DocPerm=0`, `DocShare=0` e preservato le due User Permission sintetiche persistenti.
+
+Classificazione confermata: usare il motore Frappe come base e implementare in `centrochange_core` una piccola estensione server-side per assegnazione, revoca, riassegnazione atomica e guard espliciti sugli endpoint non permission-aware. La policy print/email sul Patient assegnato resta un punto separato da definire. Questa decisione non chiude automaticamente `CC-CAP-033`.
 
 ### CC-CAP-020
 
