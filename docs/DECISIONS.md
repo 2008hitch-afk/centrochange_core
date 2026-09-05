@@ -162,6 +162,27 @@ Nel runtime osservato, A vede solo Appointment A e B solo Appointment B su `frap
 
 Questa decisione è limitata a **CC-CAP-005**. Non decide automaticamente lifecycle/seduta (`CC-CAP-006`), availability (`CC-CAP-007`), no-double-booking (`CC-CAP-008`) o prenotazione pubblica/backend-only (`CC-CAP-009`/`010`).
 
+## TD-015 — CC-CAP-006 Appuntamento/seduta
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-05
+
+Classificazione capability: **CONFIGURATION**.
+
+Decisione:
+
+- usare Marley `Patient Appointment` come record base dell'appuntamento/seduta di Centro Change;
+- riusare il lifecycle nativo osservato per creazione, data/ora, durata iniziale, stati, calendario/Event, spostamento, cancellazione e storico Version;
+- non introdurre nello scope corrente un `CC Appointment/Session` custom, perché l'evidenza runtime non mostra un beneficio sufficiente a giustificare duplicazione di modello e manutenzione;
+- trattare separatamente la sicurezza dei mutatori Marley non permission-aware secondo `CC-CAP-005` / TD-014;
+- lasciare a capability separate availability (`CC-CAP-007`), concurrency/double booking (`CC-CAP-008`), booking pubblico/backend-only (`CC-CAP-009`/`010`) e snapshot storico servizio/durata/prezzo (`CC-CAP-013`);
+- non patchare Frappe o Marley core.
+
+Evidenza principale: Spike 02 `S02-SCHED-001`, `S02-SCHED-002`; testlab `CAP006-INVENTORY-001` e `CAP006-LIFECYCLE-003`.
+
+Nel runtime osservato, il reschedule ha aggiornato coerentemente `appointment_date`, `appointment_time`, `appointment_datetime`, `appointment_end_datetime` e l'Event associato e ha prodotto una nuova `Version`. La cancellazione funzionale ha portato Appointment ed Event a `Cancelled`. `duration` è `set_only_once`: un tentativo programmatico 60 -> 45 può ritornare da `save()` senza eccezione ma lo stato persistito resta 60, l'Event resta coerente e non compare una Version spuriosa; il comportamento è quindi un caveat API/UX da non interpretare come mutazione riuscita. Rollback e cleanup hanno ripristinato Appointment A/B ed Event A/B alla baseline.
+
+Questa decisione è limitata a **CC-CAP-006** e non modifica né sostituisce le decisioni sulle capability collegate sopra indicate.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:

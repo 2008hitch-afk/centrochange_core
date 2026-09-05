@@ -79,7 +79,7 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 | CC-CAP-003 | Anagrafica paziente | Contact/Customer dove semanticamente corretti; Marley `Patient` | `CC Patient` o extension fields se necessario | identity semantics, codice fiscale/UID, CRUD, privacy, direct/API/report/export | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-004 | Assegnazione paziente-professionista | Frappe User Permission / DocShare / supported permission hooks; Marley relations se pertinenti | assignment model + permission hooks in `centrochange_core` | own/cross patient, reassignment, revoke, list/direct/API/report/export/query | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-005 | Segregazione appuntamenti per professionista | Frappe permissions/User Permission; Marley `Patient Appointment` | custom permission layer o custom appointment | list own/cross, direct read/write, API, report/export, reassignment | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
-| CC-CAP-006 | Appuntamento/seduta | ERPNext/Frappe scheduling primitives; Marley `Patient Appointment` | `CC Appointment/Session` se semantica insufficiente | create/update/move/cancel, lifecycle, history, required fields, extension fit | RUNTIME VALIDATION REQUIRED |
+| CC-CAP-006 | Appuntamento/seduta | ERPNext/Frappe scheduling primitives; Marley `Patient Appointment` | `CC Appointment/Session` se semantica insufficiente | create/update/move/cancel, lifecycle, history, required fields, extension fit | **CONFIGURATION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-007 | Disponibilita professionista | Marley `Practitioner Availability` / schedules | custom availability model | recurring availability, exception/absence, timezone, access scope, edit history | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-008 | No double booking / slot concurrency | native appointment validation where available | transactional lock/constraint in `centrochange_core` | concurrent booking, retry, stale slot, move collision, idempotence | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-009 | Primo incontro pubblico solo Marco/Francesca | Website/Builder + native scheduling filters; Marley portal if fit | custom booking endpoint/rule | public eligibility, allowed practitioners, race condition, abuse/input validation | RUNTIME VALIDATION REQUIRED |
@@ -156,6 +156,21 @@ Evidenza Spike 02 `S02-PERM-003`–`S02-PERM-005` e testlab `CAP005-SURFACE-001`
 - il probe ha eseguito rollback immediato e il cleanup finale ha verificato entrambi gli Appointment nuovamente `Scheduled`, con identita A/B e User Permission Practitioner preservate.
 
 Classificazione confermata: riusare `Patient Appointment` Marley e i normali meccanismi Frappe permission-aware, aggiungendo in `centrochange_core` guard server-side sui mutatori Marley non permission-aware. `update_status` e il bypass runtime gia provato e deve essere coperto da regression test. Questa decisione non chiude automaticamente `CC-CAP-006`, `007`, `008`, `009` o `010`.
+
+### CC-CAP-006
+
+Decisione owner del **2026-09-05**: **CONFIGURATION**.
+
+Evidenza Spike 02 `S02-SCHED-001`, `S02-SCHED-002` e testlab `CAP006-INVENTORY-001`, `CAP006-LIFECYCLE-003`:
+
+- Marley `Patient Appointment` espone i campi core richiesti, gli stati `Scheduled/Open/Confirmed/Checked In/Checked Out/Closed/Cancelled/No Show`, `track_changes=1` e relazione con `Event`;
+- un normale reschedule ha aggiornato data/ora, `appointment_datetime`, `appointment_end_datetime` e l'Event associato in modo coerente;
+- il reschedule ha prodotto una nuova `Version` con le modifiche osservate;
+- la cancellazione funzionale ha portato sia `Patient Appointment` sia `Event` a `Cancelled`;
+- `duration` e `set_only_once`: nel runtime testato un tentativo programmatico di cambiare 60 -> 45 puo ritornare da `save()` senza eccezione ma lo stato persistito resta correttamente a 60 minuti, l'Event resta coerente e non viene generata una Version spuriosa; questo e un caveat API/UX, non una perdita di integrita nel caso osservato;
+- rollback e cleanup hanno ripristinato esattamente Appointment A/B ed Event A/B alla baseline persistente.
+
+Classificazione confermata: usare Marley `Patient Appointment` come record base dell'appuntamento/seduta e configurarne il lifecycle, senza introdurre oggi un `CC Appointment/Session` custom. Restano separate la protezione dei mutatori non permission-aware (`CC-CAP-005`), availability (`007`), concorrenza/double booking (`008`), booking pubblico/backend-only (`009`/`010`) e snapshot storico servizio/durata/prezzo (`013`).
 
 ### CC-CAP-020
 
