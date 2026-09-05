@@ -141,6 +141,27 @@ Nel runtime osservato, `Custom DocPerm + DocShare` ha rispettato il confine A/B 
 
 Questa decisione è limitata a **CC-CAP-004**. Non decide automaticamente `CC-CAP-033` Permission model generale né sostituisce i test specifici delle altre capability sensibili.
 
+## TD-014 — CC-CAP-005 Segregazione appuntamenti per professionista
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-05
+
+Classificazione capability: **EXTENSION**.
+
+Decisione:
+
+- riutilizzare Marley `Patient Appointment` e la normale propagazione Frappe basata su `User Permission: Healthcare Practitioner` come base della segregazione appuntamenti;
+- mantenere i normali path permission-aware Frappe per list, direct access, client API, reportview, export e calendar, che nel runtime testato hanno rispettato il confine A/B;
+- non usare come trusted authorization boundary i mutatori whitelisted Marley che scrivono direttamente sul database senza controllo documentale esplicito;
+- proteggere in `centrochange_core` i mutatori Marley non permission-aware con un guard server-side esplicito sul `Patient Appointment` prima della mutazione; `update_status` è il bypass runtime già provato e deve essere coperto da regression test own/cross-appointment;
+- trattare `frappe.get_all`, `frappe.db.get_all`, raw query e SQL come primitive interne che richiedono guard espliciti quando esposte tramite endpoint custom/third-party;
+- non patchare Frappe o Marley core.
+
+Evidenza principale: Spike 02 `S02-PERM-003`–`S02-PERM-005`, testlab `CAP005-SURFACE-001` e `CAP005-BOUNDARY-003`.
+
+Nel runtime osservato, A vede solo Appointment A e B solo Appointment B su `frappe.get_list`, `frappe.client.get_list`, accesso diretto, reportview, export e `patient_appointment.get_events`; `make_encounter` ha negato una sorgente cross-practitioner grazie al controllo permission-aware di `get_mapped_doc`. Al contrario, `patient_appointment.update_status` ha consentito ad A di cambiare lo stato di Appointment B da `Scheduled` a `Confirmed` nonostante il normale `write` fosse negato. Il test ha eseguito rollback immediato e cleanup verificato.
+
+Questa decisione è limitata a **CC-CAP-005**. Non decide automaticamente lifecycle/seduta (`CC-CAP-006`), availability (`CC-CAP-007`), no-double-booking (`CC-CAP-008`) o prenotazione pubblica/backend-only (`CC-CAP-009`/`010`).
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
