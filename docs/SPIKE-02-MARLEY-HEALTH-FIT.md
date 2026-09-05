@@ -678,3 +678,135 @@ After every significant Spike 02 test:
 - No patch to Frappe/ERPNext/Marley core.
 - Native-first, not native-at-all-costs.
 - No final Marley fit decision until the spike evidence is sufficient and the user explicitly decides.
+
+---
+
+## Checkpoint 3 — CC-CAP-020 Patient History evidence from automated testlab
+
+The following rows continue the validation matrix with evidence produced by the deterministic `centrochange-testlab` runner. They are additive to the matrix above. `S02-PAT-019` is deliberately retained as a PARTIAL discovery because it invalidated an incomplete surface assumption; `S02-PAT-020` is the corrected follow-up.
+
+| ID | Area / requirement | Native mechanism tested | Result | Positive evidence | Negative evidence / limit | Architecture implication | Next test / decision |
+|---|---|---|---|---|---|---|---|
+| S02-PAT-014 | Marley `get_feed_for_dt` must not expose Patient Medical Record data for a Patient outside the professional assignment boundary | `healthcare.healthcare.page.patient_history.patient_history.get_feed_for_dt('Patient', Patient B)` under professional A with a known referenced synthetic Patient-B PMR | **FAIL** in tested endpoint | Normal controls established `Patient A read=true`, `Patient B read=false`; the exact Patient-B PMR fixture was nevertheless returned by `get_feed_for_dt` | Endpoint-specific to the tested `reference_doctype=Patient` case and synthetic fixture; does not generalize to every Marley endpoint | Both PMR-returning Patient History paths now have independent non-empty cross-assignment FAIL evidence; the module cannot be used as-is for assigned-only professional access | Evaluate the smallest supported guard/extension surface rather than continuing ad-hoc Patient History endpoint discovery |
+| S02-PAT-015 | A Patient Progress endpoint must not reveal cross-assignment Patient activity | Marley `patient_progress.get_patient_heatmap_data(patient, date)` under the same A-allowed/B-denied Patient boundary, measured before/after one exact Patient-B PMR fixture | **FAIL** in tested endpoint | Baseline Patient-B heatmap total was 0; after exactly one Patient-B PMR insert on an unused date, the result visible through the endpoint changed by `+1`; rollback/cleanup verified | This belongs primarily to adjacent Patient Progress / CC-CAP-021 and is not proof that all Patient Progress methods fail | Confirms the authorization concern is not confined to one Patient History function, while preserving endpoint-specific classification | Continue Patient Progress under its own capability gate; do not use this result to decide CC-CAP-020 alone |
+| S02-PAT-016 | Determine whether a supported explicit Patient authorization guard can preserve Patient History functionality while enforcing assignment isolation | Reproduced both original Patient History paths, explicit `frappe.has_permission('Patient','read', doc=...)` guard, and per-returned-record Patient filtering | **PASS** for guard semantics | Cross-assignment visibility reproduced for both `get_feed` and `get_feed_for_dt`; explicit Patient guard denied Patient B while preserving a non-empty Patient A result; per-record Patient filtering preserved own PMR and removed cross PMR; rollback/cleanup verified | This proves authorization semantics, not product wiring. `frappe.get_list('Patient Medical Record', filters={'patient': Patient B})` alone still returned the cross fixture | A narrow guarded extension is technically viable. Simply substituting `get_list` for `db.get_all` is not sufficient in the tested runtime | Verify supported Frappe interception/override surface and PMR metadata before recommending implementation shape |
+| S02-PAT-017 | Centro Change must be able to guard Marley whitelisted methods without patching Marley core | Installed Frappe `override_whitelisted_methods` dispatch behavior | **PASS** source/runtime evidence | `frappe.handler.execute_cmd` resolves `frappe.override_whitelisted_method(cmd)`; `frappe.override_whitelisted_method` reads the `override_whitelisted_methods` hook; no current override is registered for the two Marley Patient History methods | Does not itself prove a future override implementation is correct; runtime regression tests remain required | A supported extension interception point exists without modifying Marley core | Combine with S02-PAT-016 to evaluate guarded override candidate |
+| S02-PAT-018 | Understand why PMR permission-aware list access does not inherit the Patient assignment boundary automatically | Exact runtime `Patient Medical Record` metadata and Physician permission row | **PASS** metadata observation | `Patient Medical Record.patient` has `ignore_user_permissions=1`; Physician PMR permissions include read/write/create/delete/share/report/export/print/email | Metadata alone is not exposure proof; non-empty runtime exposure is established separately in S02-PAT-013/014/016 | Replacing `db.get_all` with `get_list` alone is not a sufficient fix. Global PMR permission redesign would be a separate, broader intervention | Prefer explicit Patient guard candidate unless a simpler global permission model is independently proven |
+| S02-PAT-019 | Inventory the complete whitelisted Patient History module surface | AST inspection of exact installed Marley `patient_history.py` | **PARTIAL** discovery | Installed source found; source details for whitelisted functions recorded | Initial assumption that the module exposed only two whitelisted functions was false: a third `get_patient_history_doctypes` function was discovered | The test correctly prevented an incomplete surface conclusion | Correct the expected surface and rerun as V2 |
+| S02-PAT-020 | Correctly classify the complete whitelisted Patient History module surface | V2 AST inventory of exact installed `patient_history.py` | **PASS** | Exact surface is three functions: `get_feed`, `get_feed_for_dt`, `get_patient_history_doctypes`; the first two PMR data endpoints use direct `frappe.db.get_all` and no explicit Patient guard was detected; the third reads `Patient History Settings` via `frappe.get_single` | Source pattern is supporting evidence only; runtime security classification for the data methods comes from non-empty probes | All Patient-record feed endpoints in this module are now runtime-tested; the third function is settings/DocType metadata rather than a Patient-record feed path | Patient History endpoint discovery is sufficient for CC-CAP-020 recommendation; no need to treat settings inventory as a Patient-data FAIL |
+| S02-PAT-021 | Confirm whether generic Frappe whitelisted RPC dispatch adds document-level authorization around an app method | Exact installed `frappe.handler.execute_cmd` source/runtime inventory | **PASS** source/runtime evidence | Dispatcher checks override resolution, whitelisting and HTTP method, then invokes the resolved method through `frappe.call` | No generic `has_permission` or `check_permission` guard is present in `execute_cmd`; individual methods may still implement their own authorization | Patient-level authorization for these Marley methods must be in the method or a supported override/guard; generic RPC dispatch does not repair the missing boundary | CC-CAP-020 evidence is sufficient for candidate recommendation |
+
+### Automated mutation cleanup baseline
+
+The testlab v0.2 mutation probes enforce rollback and cleanup verification. After the CC-CAP-020 mutating probes, the verified runtime baseline is:
+
+```text
+Patient Custom DocPerm = 0
+Patient DocShare        = 0
+Temporary PAT014/015/016 PMR fixtures = absent
+Persistent Patient User Permission A -> Patient A = preserved
+Persistent Patient User Permission B -> Patient B = preserved
+```
+
+No Frappe, ERPNext or Marley core patch was introduced.
+
+### Patient History module surface and authorization model
+
+The exact installed Marley Patient History module exposes three whitelisted functions:
+
+```text
+get_feed(name, ...)
+    -> Patient Medical Record via frappe.db.get_all
+
+get_feed_for_dt(doctype, docname)
+    -> Patient Medical Record via frappe.db.get_all
+
+get_patient_history_doctypes()
+    -> Patient History Settings via frappe.get_single
+```
+
+The first two are the Patient-record data endpoints. Both now have independent non-empty cross-assignment runtime FAIL evidence. The third function returns configured DocType names and is not currently classified as a Patient-record exposure path.
+
+The generic Frappe whitelisted RPC dispatcher checks that a function is whitelisted and that the HTTP method is allowed, but it does not add a document-level Patient permission check around the called function. Therefore the assignment boundary must be enforced by the endpoint implementation or by a supported override/guard.
+
+### Why `get_list` alone is not the fix
+
+S02-PAT-016 directly observed that, in the tested runtime, the following permission-aware list query still returned the cross-assignment PMR fixture:
+
+```text
+frappe.get_list(
+    'Patient Medical Record',
+    filters={'patient': 'Spike02 Patient B'},
+    ...
+)
+```
+
+S02-PAT-018 provides the metadata explanation: `Patient Medical Record.patient` is configured with `ignore_user_permissions=1`, while Physician has broad PMR permissions. Therefore changing only the data-access API from `frappe.db.get_all` to `frappe.get_list` is not equivalent to enforcing the Centro Change Patient assignment boundary.
+
+A global PMR permission redesign remains theoretically possible, but it would affect a broader DocType permission model and would still need independent zero-assignment, workflow and upgrade validation. Current evidence does not show it to be simpler or safer than a narrow explicit guard.
+
+### Guarded extension viability
+
+S02-PAT-016 proves the core authorization semantics needed for a narrow extension:
+
+```text
+Professional A -> Patient A read = true
+Professional A -> Patient B read = false
+
+explicit Patient permission guard:
+- Patient A -> allowed
+- Patient B -> denied
+- own non-empty Patient History result preserved
+```
+
+For `get_feed_for_dt`, which accepts a generic `(doctype, docname)`, blindly checking only the caller-supplied reference is not sufficient for all possible reference doctypes. The tested stronger strategy was to include each returned PMR's `patient` and retain only records for which the current user has Patient read permission. That preserved the own fixture and removed the cross-assignment fixture.
+
+S02-PAT-017 confirms that the installed Frappe runtime provides the supported `override_whitelisted_methods` hook. This creates a maintainable extension path in `centrochange_core` without patching Marley core.
+
+### CC-CAP-020 candidate evaluation
+
+1. **Marley Patient History as-is** — **not acceptable** for assigned-only professional access in the tested runtime. Both PMR-returning data endpoints have independent non-empty FAIL evidence.
+2. **Native query substitution / `get_list` alone** — **insufficient** as a standalone solution in the tested runtime. PMR metadata ignores Patient User Permissions and the cross fixture remained visible through `get_list`.
+3. **Supported guarded extension in `centrochange_core`** — **technically viable and currently preferred candidate**. Explicit Patient authorization semantics are PASS and Frappe exposes a supported whitelisted-method override surface.
+4. **Custom Patient History feed** — valid fallback with greater implementation, UX and maintenance cost.
+5. **Exclude Marley Patient History from the professional-facing surface** — valid lowest-risk fallback if the feature is not required by the Centro Change UX.
+
+If the guarded extension is later approved for implementation, the minimum expected shape is:
+
+- override `healthcare.healthcare.page.patient_history.patient_history.get_feed`;
+- require current-user Patient read permission on the requested Patient before returning feed data;
+- override `get_feed_for_dt`;
+- authorize returned PMR rows by their Patient and, where product semantics require it, also constrain/authorize the referenced doctype/document;
+- preserve the Marley method signatures and response contract used by the page;
+- regression-test own/cross Patient, non-empty fixtures, pagination, date/document filters, reference-doctype cases and upgrades.
+
+This is an implementation candidate only; no product code has been changed by the spike.
+
+### Quality / security / development speed / maintenance assessment
+
+- **Security:** Marley Patient History as-is fails the assigned-only requirement. The guarded extension has positive proof of authorization semantics but still requires product implementation and regression coverage.
+- **Quality / UX:** a signature-compatible override can retain the Marley page and interaction model; a custom feed carries a larger redevelopment surface.
+- **Development speed:** a narrow two-data-endpoint override is materially smaller than rebuilding Patient History or redesigning PMR permissions globally.
+- **Maintenance / upgrade:** `override_whitelisted_methods` is an explicit Frappe extension surface, but endpoint signatures, response semantics and permission behavior must be pinned in regression tests for future Frappe/Marley upgrades.
+
+### CC-CAP-020 capability recommendation ready — user decision pending
+
+For **CC-CAP-020 Patient History / clinical feed only**, the current evidence supports the following recommendation:
+
+> **Recommend `EXTENSION`: retain Marley Patient History only behind Centro Change guarded overrides of the two PMR-returning methods, with explicit per-Patient authorization and regression tests.**
+
+This recommendation is **not an approval**, does not authorize product code changes, and does not decide the broader Spike 02 Marley A/B/C outcome. Patient Progress and the remaining Marley authorization surface remain separate capability/security work.
+
+### Phase 2 checkpoint update
+
+The original Phase 2 Patient History discovery objective is now sufficiently evidenced for a capability-level decision:
+
+- `patient_history.get_feed` -> **FAIL** as-is;
+- `patient_history.get_feed_for_dt` -> **FAIL** as-is;
+- complete Patient History whitelisted module surface -> identified;
+- generic Frappe RPC dispatch behavior -> identified;
+- PMR metadata explaining `get_list` insufficiency -> identified;
+- explicit Patient guard semantics -> **PASS**;
+- supported Frappe override surface -> **PASS**.
+
+The broader leak-vector phase remains open for Patient Appointment, reports/export/query paths and adjacent Marley capabilities. In particular, S02-PAT-015 is carried forward into Patient Progress / CC-CAP-021 rather than being used to generalize CC-CAP-020 beyond its tested surface.
