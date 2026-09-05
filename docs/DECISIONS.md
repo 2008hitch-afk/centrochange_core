@@ -119,6 +119,28 @@ Conseguenza: la capability non è eliminata definitivamente; viene esclusa dalla
 
 Questa decisione è limitata a **CC-CAP-021** e non determina da sola l'esito complessivo Marley A/B/C.
 
+## TD-013 — CC-CAP-004 Assegnazione paziente-professionista
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-05
+
+Classificazione capability: **EXTENSION**.
+
+Decisione:
+
+- usare il motore permessi Frappe come base, con `Custom DocPerm` restrittivo sul `Patient` per il ruolo professionista e `DocShare` per concedere l'accesso al singolo Patient assegnato;
+- non usare la sola `User Permission: Patient` come modello completo di assegnazione, perché il caso zero-assignment non mantiene il deny-by-default nel runtime testato;
+- gestire in `centrochange_core` le operazioni di assegnazione, revoca e riassegnazione come estensione server-side controllata;
+- per la riassegnazione usare il pattern atomico `remove-old -> add-new -> commit`, supportato dalle evidenze single-session e cross-session dello Spike 02;
+- mantenere espliciti guard Patient negli endpoint custom/third-party che usano `frappe.get_all`, `frappe.db.get_all`, query raw o SQL, perché tali primitive non applicano il normale boundary documentale;
+- non patchare Frappe o Marley core;
+- mantenere aperta come policy separata la scelta su print/email del Patient assegnato, perché il DocShare read di Frappe abilita anche tali superfici nel runtime osservato.
+
+Evidenza principale: Spike 02 `S02-PAT-001`–`S02-PAT-012` più testlab `CAP004-SURFACE-001` e `CAP004-SURFACES-002`.
+
+Nel runtime osservato, `Custom DocPerm + DocShare` ha rispettato il confine A/B su list, `frappe.client.get_list`, `frappe.client.get`, reportview e ha negato Data Export senza relativo diritto. Revoca e riassegnazione hanno mostrato comportamento coerente con deny-before-grant e con il confine di commit. Il probe ha inoltre confermato che `get_all` vede entrambi i Patient e va quindi trattato come primitiva interna/privilegiata che richiede un guard esplicito quando esposta tramite endpoint.
+
+Questa decisione è limitata a **CC-CAP-004**. Non decide automaticamente `CC-CAP-033` Permission model generale né sostituisce i test specifici delle altre capability sensibili.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
