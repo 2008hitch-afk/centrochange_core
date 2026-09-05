@@ -158,6 +158,7 @@ Event       = EV00002
 | S02-PAT-010 | Reassigning a Patient must avoid a dual-access state inside the assignment transaction | Restricted Physician Custom DocPerm + A/B DocShares; remove A -> Patient A first, verify midpoint, then add B -> Patient A in the same Frappe DB transaction | **PASS** in tested single-session sequencing | Initial state: A saw Patient A and B did not. Midpoint after removing A but before adding B: A could not list/read Patient A and B still could not read it. Final in-transaction state: A remained denied while B listed Patient A and Patient B and had read/write on Patient A. Frappe connection reported `REPEATABLE-READ` and `autocommit=0`; rollback restored `Custom DocPerm=0`, both experimental Patient User Permissions, and `DocShare=0` | This probe observed one application/DB session only; it did not exercise a concurrent request or another worker across the commit boundary | `remove-old -> add-new` in one transaction avoids an in-transaction dual-access state and is the safe candidate ordering; production reassignment should be atomic, but cross-session visibility/cache behavior still needs evidence | Validate what another Frappe session sees before and after reassignment commit; do not claim complete no-leakage semantics until that boundary is tested |
 | S02-PAT-011 | A concurrent Frappe session must observe only the committed assignment before reassignment commit and the new assignment after commit | Temporary committed restricted Custom DocPerm + initial DocShares; separate writer session performed remove A -> Patient A then add B -> Patient A without commit; explicit fresh observer sessions for A and B probed before and after commit | **PASS** in tested cross-session boundary | Before commit: A listed Patient A and `read Patient A = true`, while B listed only Patient B and `read Patient A = false`. After commit: A's Patient list was denied and `read Patient A = false`, while B listed Patient A and Patient B and `read Patient A = true`. The final baseline was subsequently restored and verified as `Custom DocPerm=0`, two direct Patient User Permissions with A -> Patient A and B -> Patient B, and `DocShare=0` | Scope uses fresh observer sessions and normal Patient list/read permission paths; long-lived observer transactions, write-path cross-session checks, workflow rights and leak vectors remain untested. The V2 cleanup harness initially had a `use`/`user` typo and left the temporary baseline at `0/0/0`; an immediate deterministic restore recreated the two original experimental User Permissions and verified `0/2/0` | Together with S02-PAT-010, the evidence supports atomic `remove-old -> add-new -> commit` reassignment semantics in the tested Frappe/MariaDB paths without a pre-commit grant to B or post-commit grant to A | Determine the minimum create/delete/share rights required by the Patient workflow, then proceed to leak-vector validation |
 | S02-PAT-012 | The Patient assignment grant should expose only workflow rights that are actually required, without silently preserving broad Physician privileges | Restricted Physician Custom DocPerm with all Patient role rights zero plus DocShare `read=1, write=1, share=0`; runtime `has_permission` and direct `check_permission` probes; source inspection of Frappe v16 `has_permission` share fallback | **PARTIAL** | For A, assigned Patient read/write were allowed; create/delete/share/report/export were denied. Patient B remained denied for read/write/delete/share/print/email. Rollback restored `Custom DocPerm=0`, two direct Patient User Permissions and `DocShare=0` | `print` and `email` were allowed on the assigned Patient even though those Custom DocPerm rights were zero. Frappe v16 explicitly maps `email` and `print` share checks to the `read` DocShare right (`rights = ['read' if ptype in ('email', 'print') else ptype]`), and standard DocShare has no independent print/email fields. Therefore native DocPerm + DocShare cannot express `read=yes` while `print/email=no` through this mechanism alone. No authoritative Centro Change requirement for practitioner print/email has yet been found | The candidate gives a much narrower privilege surface than default Marley, but its effective grant is `read/write + print/email`, not pure `read/write`. This is a policy/fit gap, not yet an architecture failure: it matters only if Centro Change requires print/email suppression for practitioners | Resolve the intended practitioner policy for Patient print/email from the correct product/security source; if suppression is required, evaluate whether a supported hook/small extension can enforce it without patching Frappe/Marley core |
+| S02-PAT-013 | Marley Patient History must not expose medical-record data for a Patient outside the professional's assignment scope | Marley `healthcare.healthcare.page.patient_history.patient_history.get_feed(name)` invoked as professional A with caller-supplied Patient B and a known synthetic Patient Medical Record fixture | **FAIL** in tested endpoint | As `spike02.pro.a@example.invalid`, `get_feed('Spike02 Patient B')` returned synthetic record `HLC-PMR-2026-00001` with subject `SPIKE02 LEAK FIXTURE B`; because the fixture is non-empty and known in advance, the result is probative | Scope is this specific Marley endpoint and synthetic fixture. This does not prove every Marley endpoint bypasses Patient permissions and does not by itself determine Marley option A/B/C | Normal Frappe Patient permissions and Marley whitelisted endpoints must be treated as separate security surfaces. `get_feed(name)` cannot be relied on to enforce the candidate assigned-only boundary without an explicit supported guard or exclusion from the professional-facing surface | Preserve the fixture and test the next high-signal Marley endpoint independently; prioritize `get_feed_for_dt` and selected `patient_progress` methods before defining a mitigation surface |
 
 ## Detailed evidence notes
 
@@ -520,6 +521,43 @@ Patient User Permission A/B = 2
 Patient DocShare = 0
 ```
 
+### Marley `patient_history.get_feed` assignment-boundary failure
+
+A known synthetic `Patient Medical Record` fixture existed for Patient B:
+
+```text
+name               = HLC-PMR-2026-00001
+owner              = Administrator
+communication_date = 2026-09-05
+reference_doctype  = null
+reference_name     = null
+subject            = SPIKE02 LEAK FIXTURE B
+```
+
+The Marley Patient History function was invoked under professional A's Frappe identity with Patient B supplied as the target. The observed result contained that known Patient-B fixture.
+
+```text
+caller user  = spike02.pro.a@example.invalid
+target       = Spike02 Patient B
+returned PMR = HLC-PMR-2026-00001
+subject      = SPIKE02 LEAK FIXTURE B
+```
+
+This is stronger than an empty-feed probe: a known non-empty Patient-B record was returned while execution was under professional A.
+
+Result for the tested endpoint: **FAIL** for assigned-only Patient isolation.
+
+The conclusion is deliberately endpoint-scoped. It does not establish that every Marley endpoint bypasses Frappe permissions, and it does not select Marley option A/B/C.
+
+Architecture implication:
+
+- normal Frappe Patient permission paths and Marley whitelisted methods must be validated separately;
+- the candidate Custom DocPerm + DocShare assignment model is insufficient by itself if an application endpoint reads Patient-linked records without enforcing the same assignment boundary;
+- `patient_history.get_feed(name)` therefore needs an explicit supported permission guard/extension or exclusion from the professional-facing allowed surface;
+- no Frappe or Marley core patch is authorized by this finding.
+
+Next evidence remains incremental: test one additional high-signal Marley endpoint against a known cross-patient fixture before generalizing the result.
+
 ## Current assessment by capability
 
 | Capability | Current evidence |
@@ -536,14 +574,15 @@ Patient DocShare = 0
 | `apply_strict_user_permissions` as zero-assignment fix | **FAIL** as hypothesis |
 | Native Patient -> Practitioner relation | **Not found in inspected scope** |
 | Restricted Custom DocPerm zero-assignment behavior | **PASS** — A/B list denied; read/write denied; rollback restored baseline |
-| Custom DocPerm + DocShare assignment model | **PARTIAL** — assigned-only A/B, immediate revocation, safe single-session sequencing and fresh cross-session commit-boundary reassignment are PASS; workflow privilege policy and leak vectors remain open |
+| Custom DocPerm + DocShare assignment model | **PARTIAL** — assigned-only A/B, immediate revocation, safe single-session sequencing and fresh cross-session commit-boundary reassignment are PASS; workflow privilege policy and application leak vectors remain open |
 | Patient reassignment security | **PASS** in tested scope — remove-old/add-new sequencing and fresh A/B observer behavior across commit are consistent with atomic reassignment |
 | Patient workflow privilege surface | **PARTIAL** — create/delete/share/report/export denied as desired in the candidate; assigned read implies print/email through Frappe share semantics, and Centro Change policy for those rights is not yet resolved |
+| Marley `patient_history.get_feed` assignment isolation | **FAIL** in tested endpoint — A received known Patient-B PMR fixture |
 | Same-practitioner overlap rejection | **OPEN** |
 | Practitioner Availability enforcement | **OPEN** |
 | Reschedule / move / cancel / history | **OPEN** |
 | Reports / export / query leak vectors | **OPEN** |
-| Marley endpoints using permission-bypassing access | **OPEN** |
+| Other Marley endpoints using permission-bypassing access | **OPEN** |
 | Upgrade / maintenance risk | **OPEN** |
 | Final Marley A/B/C fit | **OPEN — no decision** |
 
@@ -570,7 +609,7 @@ For Patient and Patient Appointment:
 - direct document access;
 - report/query paths;
 - export paths;
-- relevant Marley whitelisted endpoints;
+- relevant Marley whitelisted endpoints — `patient_history.get_feed(name)` is **FAIL** in S02-PAT-013 for the tested cross-patient fixture;
 - any endpoint using `frappe.get_all` or other permission-bypassing access where user-facing data could leak.
 
 ### Phase 3 — Scheduling invariants
