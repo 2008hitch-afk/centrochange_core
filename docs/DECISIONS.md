@@ -79,6 +79,24 @@ Separare `CC Organizational Note` e `CC Professional Note`, con permessi server-
 - GitHub: source of truth tecnico;
 - issue → branch → PR → evidence → review → merge.
 
+## TD-011 — CC-CAP-020 Patient History / clinical feed
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-05
+
+Classificazione capability: **EXTENSION**.
+
+Decisione:
+
+- riutilizzare la Patient History di Marley come base funzionale/UI;
+- non usare i due endpoint PMR `get_feed` e `get_feed_for_dt` as-is nel perimetro professionisti assegnati;
+- applicare in `centrochange_core` un'estensione supportata tramite override dei metodi whitelisted, con autorizzazione esplicita sul Patient e regression test own/cross-patient;
+- non patchare Frappe o Marley core;
+- mantenere come fallback un feed custom o l'esclusione della Patient History se l'override non mantiene il contratto/upgrade path richiesto.
+
+Evidenza principale: Spike 02 `S02-PAT-013`–`S02-PAT-021`. I due endpoint PMR hanno FAIL runtime indipendenti sul confine di assegnazione; il guard esplicito sul Patient ha PASS semantico; il runtime Frappe espone `override_whitelisted_methods` come superficie di estensione supportata.
+
+Questa decisione è limitata a **CC-CAP-020**. Non determina da sola l'esito complessivo Marley A/B/C e non approva automaticamente Patient Progress o altre capability Marley.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
