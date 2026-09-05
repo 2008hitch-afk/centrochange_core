@@ -78,7 +78,7 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 | CC-CAP-002 | Identita professionista | User, Employee; Marley `Healthcare Practitioner`; eventuale Sales Person solo proiezione | `CC Professional` se il fit nativo/app e insufficiente | identity mapping, permission scope, disable/reassignment, list/direct/API | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-003 | Anagrafica paziente | Contact/Customer dove semanticamente corretti; Marley `Patient` | `CC Patient` o extension fields se necessario | identity semantics, codice fiscale/UID, CRUD, privacy, direct/API/report/export | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-004 | Assegnazione paziente-professionista | Frappe User Permission / DocShare / supported permission hooks; Marley relations se pertinenti | assignment model + permission hooks in `centrochange_core` | own/cross patient, reassignment, revoke, list/direct/API/report/export/query | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
-| CC-CAP-005 | Segregazione appuntamenti per professionista | Frappe permissions/User Permission; Marley `Patient Appointment` | custom permission layer o custom appointment | list own/cross, direct read/write, API, report/export, reassignment | RUNTIME VALIDATION REQUIRED |
+| CC-CAP-005 | Segregazione appuntamenti per professionista | Frappe permissions/User Permission; Marley `Patient Appointment` | custom permission layer o custom appointment | list own/cross, direct read/write, API, report/export, reassignment | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-006 | Appuntamento/seduta | ERPNext/Frappe scheduling primitives; Marley `Patient Appointment` | `CC Appointment/Session` se semantica insufficiente | create/update/move/cancel, lifecycle, history, required fields, extension fit | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-007 | Disponibilita professionista | Marley `Practitioner Availability` / schedules | custom availability model | recurring availability, exception/absence, timezone, access scope, edit history | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-008 | No double booking / slot concurrency | native appointment validation where available | transactional lock/constraint in `centrochange_core` | concurrent booking, retry, stale slot, move collision, idempotence | RUNTIME VALIDATION REQUIRED |
@@ -140,6 +140,22 @@ Evidenza Spike 02 `S02-PAT-001`–`S02-PAT-012` e testlab `CAP004-SURFACE-001`, 
 - rollback e cleanup hanno ripristinato `Custom DocPerm=0`, `DocShare=0` e preservato le due User Permission sintetiche persistenti.
 
 Classificazione confermata: usare il motore Frappe come base e implementare in `centrochange_core` una piccola estensione server-side per assegnazione, revoca, riassegnazione atomica e guard espliciti sugli endpoint non permission-aware. La policy print/email sul Patient assegnato resta un punto separato da definire. Questa decisione non chiude automaticamente `CC-CAP-033`.
+
+### CC-CAP-005
+
+Decisione owner del **2026-09-05**: **EXTENSION**.
+
+Evidenza Spike 02 `S02-PERM-003`–`S02-PERM-005` e testlab `CAP005-SURFACE-001`, `CAP005-BOUNDARY-003`:
+
+- le User Permission native sul `Healthcare Practitioner` hanno mantenuto A e B separati nei normali path `Patient Appointment` list/direct;
+- `frappe.get_list`, `frappe.client.get_list`, accesso diretto, reportview, Data Export e `patient_appointment.get_events` hanno restituito solo l'appuntamento del professionista corrente nel runtime testato;
+- `patient_appointment.make_encounter` ha negato una sorgente cross-practitioner grazie al controllo read permission eseguito da `get_mapped_doc`;
+- `frappe.get_all` ha mostrato entrambi gli Appointment, confermando che raw/get_all/SQL non sono un authorization boundary;
+- il normale write permission di A su Appointment B era negato e un `check_permission("write")` esplicito ha correttamente bloccato l'accesso;
+- Marley `patient_appointment.update_status`, invece, ha modificato Appointment B da `Scheduled` a `Confirmed` quando chiamato come A, perche usa `frappe.db.set_value` senza un controllo documentale esplicito;
+- il probe ha eseguito rollback immediato e il cleanup finale ha verificato entrambi gli Appointment nuovamente `Scheduled`, con identita A/B e User Permission Practitioner preservate.
+
+Classificazione confermata: riusare `Patient Appointment` Marley e i normali meccanismi Frappe permission-aware, aggiungendo in `centrochange_core` guard server-side sui mutatori Marley non permission-aware. `update_status` e il bypass runtime gia provato e deve essere coperto da regression test. Questa decisione non chiude automaticamente `CC-CAP-006`, `007`, `008`, `009` o `010`.
 
 ### CC-CAP-020
 
