@@ -39,6 +39,7 @@ Stati tecnici ammessi:
 - `CONFIGURATION`
 - `EXTENSION`
 - `CUSTOM`
+- `DEFERRED / EXCLUDE FROM CURRENT SURFACE`
 - `RUNTIME VALIDATION REQUIRED`
 
 Esiti dei singoli test:
@@ -93,7 +94,7 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 | CC-CAP-018 | Note professionali riservate | native/private record mechanisms; Marley clinical records evaluated | `CC Professional Note` | secretary denial, assigned professional scope, API/report/export/direct/query leak tests | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-019 | Scheda paziente unificata | Desk/Form/dashboard composition; Marley patient views | custom workspace/page if needed | data aggregation, permission inheritance, performance, leakage between sections | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-020 | Patient history / clinical feed | Marley patient history endpoints | guarded extension or custom feed | assigned/cross patient, endpoint arguments, list/direct/API, non-empty fixtures, permission bypass | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
-| CC-CAP-021 | Patient progress / clinical analytics | Marley patient progress methods | guarded extension/custom analytics | cross-patient reads, SQL/get_all paths, empty/non-empty fixtures, report/export consistency | RUNTIME VALIDATION REQUIRED |
+| CC-CAP-021 | Patient progress / clinical analytics | Marley patient progress methods | guarded extension/custom analytics | cross-patient reads, SQL/get_all paths, empty/non-empty fixtures, report/export consistency | **DEFERRED / EXCLUDE FROM CURRENT SURFACE — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-022 | Chiusura giornaliera sedute | Frappe scheduler/queue/workflow primitives | `CC Session Closure` | Pending/Closed/Auto Locked/Reopened, retries, idempotence, permissions, audit | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-023 | Reminder 21:00 | Notification/email + scheduler | scheduled job in `centrochange_core` | only pending sessions, duplicate prevention, retry, timezone, delivery failure | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-024 | Auto-lock 07:00 giorno successivo | scheduler/workflow extension | custom scheduled rule | boundary time, retries, idempotence, lock enforcement server-side | RUNTIME VALIDATION REQUIRED |
@@ -136,6 +137,21 @@ Evidenza Spike 02 `S02-PAT-013`–`S02-PAT-021`:
 - Frappe espone `override_whitelisted_methods` come superficie supportata per intercettare i due metodi senza patchare Marley core.
 
 Classificazione confermata: riusare la Patient History Marley dietro una piccola estensione in `centrochange_core`, con override protetti e regression test. Questa decisione resta limitata a CC-CAP-020 e non decide il riuso Marley complessivo A/B/C.
+
+### CC-CAP-021
+
+Decisione owner del **2026-09-05**: **DEFERRED / EXCLUDE FROM CURRENT SURFACE**.
+
+Evidenza testlab `S02-PAT-015`, `S02-PROG-001`–`S02-PROG-006`:
+
+- il modulo Marley Patient Progress installato espone sette metodi whitelisted con parametro `patient`; l'inventario sorgente ha rilevato accesso dati diretto e nessun guard Patient esplicito;
+- `get_patient_heatmap_data` ha evidenza runtime non-vuota di FAIL sul confine A/B;
+- `get_patient_assessment_data`, `get_therapy_assessment_correlation_data` e `get_assessment_parameter_data` hanno tutti riflesso marker sintetici di Patient B nel contesto professionista A, con normale Patient-B read negato;
+- `get_therapy_sessions_count` e `get_therapy_progress_data` hanno entrambi riflesso una Therapy Session sintetica di Patient B nel contesto A;
+- `get_therapy_sessions_distribution_data` non e eseguibile nel runtime Frappe 16.31 osservato per il formato `count(*)` rifiutato dal query layer; il JS Marley corrente mantiene inoltre il relativo grafico nascosto/commentato come broken;
+- tutti i test mutanti pertinenti hanno verificato rollback/cleanup e preservazione delle User Permission sintetiche persistenti.
+
+Classificazione confermata: non esporre ne sviluppare Patient Progress nello scope corrente. La capability resta riapribile se emerge un requisito funzionale reale; in quel caso rivalutare extension selettiva o analytics custom con autorizzazione server-side esplicita. Questa decisione non determina il riuso Marley complessivo A/B/C.
 
 ## 6. Security surface minima per capability sensibili
 
