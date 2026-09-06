@@ -74,7 +74,7 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 
 | ID | Capability | Candidati native / extension / app | Custom candidate/fallback | Test obbligatori principali | Stato corrente |
 |---|---|---|---|---|---|
-| CC-CAP-001 | Runtime foundation e isolamento DEV | Frappe/ERPNext container pattern; Docker Compose | infra Centro Change dedicata | versioni, rebuild, restart, network/volume isolation, no cross-project impact | EVIDENCE AVAILABLE / REVIEW REQUIRED |
+| CC-CAP-001 | Runtime foundation e isolamento DEV | Frappe/ERPNext container pattern; Docker Compose | infra Centro Change dedicata | versioni, rebuild, restart, network/volume isolation, no cross-project impact | **CONFIGURATION — OWNER CONFIRMED 2026-09-06** |
 | CC-CAP-002 | Identita professionista | User, Employee; Marley `Healthcare Practitioner`; eventuale Sales Person solo proiezione | `CC Professional` se il fit nativo/app e insufficiente | identity mapping, permission scope, disable/reassignment, list/direct/API | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-003 | Anagrafica paziente | Contact/Customer dove semanticamente corretti; Marley `Patient` | `CC Patient` o extension fields se necessario | identity semantics, codice fiscale/UID, CRUD, privacy, direct/API/report/export | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-004 | Assegnazione paziente-professionista | Frappe User Permission / DocShare / supported permission hooks; Marley relations se pertinenti | assignment model + permission hooks in `centrochange_core` | own/cross patient, reassignment, revoke, list/direct/API/report/export/query | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
@@ -119,7 +119,20 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 
 ### CC-CAP-001
 
-Spike 01 ha prodotto evidenze runtime locali su stack pinato, network/volume dedicati, restart, worker/scheduler e assenza di interferenza osservata con gli altri stack. La promozione architetturale resta separata dalla sola evidenza runtime.
+Decisione owner del **2026-09-06** sotto standing technical authorization: **CONFIGURATION**.
+
+Evidenza versionata in `docs/spikes/SPIKE-01-REUSE-ISOLATION.md` e `docs/RUNTIME-BASELINE.md`:
+
+- host Windows/WSL2/Docker e versioni live sono stati censiti;
+- `centrochange-dev` usa Compose project, DB, Redis, sites volume, network, naming e porta localhost dedicati;
+- Frappe/ERPNext/Builder e `centrochange_core` sono pinati e installati senza patch upstream;
+- secret/config locali restano fuori Git; nel repository rimangono solo template placeholder;
+- install, migrate, asset build, backend/frontend/websocket, worker, scheduler, Desk, website, health check e restart sono stati validati;
+- il bootstrap e documentato come procedura ripetibile;
+- durante start/stop/rebuild e test Centro Change, gli altri stack locali osservati sono rimasti `Up` senza restart o comandi rivolti a loro;
+- i dati usati sono sintetici.
+
+Classificazione confermata: riusare il runtime upstream tramite configurazione infrastrutturale Centro Change dedicata e pinata. Backup/restore (`CC-CAP-035`/`036`), upgrade/migration safety (`037`) e operational deploy reproducibility (`040`) restano capability separate.
 
 ### CC-CAP-002 / 004 / 005
 
