@@ -81,7 +81,7 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 | CC-CAP-005 | Segregazione appuntamenti per professionista | Frappe permissions/User Permission; Marley `Patient Appointment` | custom permission layer o custom appointment | list own/cross, direct read/write, API, report/export, reassignment | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-006 | Appuntamento/seduta | ERPNext/Frappe scheduling primitives; Marley `Patient Appointment` | `CC Appointment/Session` se semantica insufficiente | create/update/move/cancel, lifecycle, history, required fields, extension fit | **CONFIGURATION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-007 | Disponibilita professionista | Marley `Practitioner Availability` / schedules | custom availability model | recurring availability, exception/absence, timezone, access scope, edit history | **EXTENSION — OWNER CONFIRMED 2026-09-06** |
-| CC-CAP-008 | No double booking / slot concurrency | native appointment validation where available | transactional lock/constraint in `centrochange_core` | concurrent booking, retry, stale slot, move collision, idempotence | RUNTIME VALIDATION REQUIRED |
+| CC-CAP-008 | No double booking / slot concurrency | native appointment validation where available | transactional lock/constraint in `centrochange_core` | concurrent booking, retry, stale slot, move collision, idempotence | **EXTENSION — OWNER CONFIRMED 2026-09-06** |
 | CC-CAP-009 | Primo incontro pubblico solo Marco/Francesca | Website/Builder + native scheduling filters; Marley portal if fit | custom booking endpoint/rule | public eligibility, allowed practitioners, race condition, abuse/input validation | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-010 | Sedute successive solo backend | Desk/role permissions / workflow | custom server-side transition/rule | public route denial, backend allow, API bypass attempts | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-011 | Prestazioni / catalogo servizi | Item, Item Group | custom service metadata only if needed | semantics, active/inactive, duration linkage, reporting compatibility | RUNTIME VALIDATION REQUIRED |
@@ -188,7 +188,22 @@ Evidenza testlab `CAP007-INVENTORY-001`, `CAP007-AVAILABILITY-002`, `CAP007-SCHE
 - le modifiche a `Practitioner Schedule` hanno prodotto `Version` history;
 - rollback e cleanup finali hanno rimosso schedule, child rows, availability e Version sintetiche e hanno preservato le User Permission Practitioner persistenti.
 
-Classificazione confermata: riusare Marley per il modello dati e la logica di disponibilita, aggiungendo in `centrochange_core` una piccola estensione server-side per autorizzare il self-service solo sul Practitioner associato all'utente e consentire alla gestione centrale uno scope piu ampio. Nessuna patch a Frappe o Marley core. Il nome/ruolo definitivo di segreteria/admin resta separato; concurrency e double-booking restano `CC-CAP-008`.
+Classificazione confermata: riusare Marley per il modello dati e la logica di disponibilita, aggiungendo in `centrochange_core` una piccola estensione server-side per autorizzare il self-service solo sul Practitioner associato all'utente e consentire alla gestione centrale uno scope piu ampio. Nessuna patch a Frappe o Marley core. Il nome/ruolo definitivo di segreteria/admin resta separato.
+
+### CC-CAP-008
+
+Decisione owner del **2026-09-06**: **EXTENSION**.
+
+Evidenza testlab `CAP008-INVENTORY-001`, `CAP008-CONCURRENCY-003`, `CAP008-RESCHEDULE-004`:
+
+- i normali overlap e move collision sequenziali Marley sono stati respinti correttamente;
+- l'inventario runtime non ha rilevato `FOR UPDATE`, named lock, vincolo univoco composito sullo slot o campo idempotency dedicato nel boundary nativo osservato;
+- il race su nuove create e stato classificato `NON_PROBATIVE` per lock contention precedente al barrier e non e stato usato come prova di sicurezza;
+- il follow-up probativo su due Appointment gia committati ha mostrato che entrambi i worker possono completare `validate_overlaps()` e poi committare sullo stesso Practitioner/timeslot, producendo un double booking concorrente;
+- nello stesso scenario, un lock transazionale sulla riga stabile `Healthcare Practitioner` prima di save/revalidation ha serializzato i due worker: uno ha committato, il secondo ha rieseguito il controllo sullo stato aggiornato ed e stato respinto con `OverlapError`;
+- rollback e cleanup hanno rimosso tutte le fixture Appointment/Event di test e preservato la baseline A/B.
+
+Classificazione confermata: mantenere Marley `Patient Appointment` e la validazione overlap come base, aggiungendo in `centrochange_core` un boundary transazionale di serializzazione sui path create/reschedule sensibili. La vera idempotenza request-id/replay resta separata e va affrontata dove necessaria, in particolare nel booking pubblico `CC-CAP-009`. Nessuna patch a Frappe o Marley core.
 
 ### CC-CAP-020
 

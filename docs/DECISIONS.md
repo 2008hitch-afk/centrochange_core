@@ -207,6 +207,28 @@ Nel runtime osservato, `Practitioner Schedule` ha supportato orari distinti per 
 
 Questa decisione è limitata a **CC-CAP-007**. Non definisce il nome/ruolo definitivo della gestione centrale e non chiude `CC-CAP-008` concurrency/double-booking né le capability di booking pubblico/backend-only.
 
+## TD-017 — CC-CAP-008 No double booking / slot concurrency
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-06
+
+Classificazione capability: **EXTENSION**.
+
+Decisione:
+
+- mantenere Marley `Patient Appointment` e la sua validazione overlap come base funzionale per i controlli sequenziali;
+- non considerare la sola `validate_overlaps()` un boundary atomico di concorrenza, perché il runtime ha dimostrato che due reschedule concorrenti possono completare entrambi il controllo nativo e poi committare sullo stesso Practitioner/timeslot;
+- serializzare in `centrochange_core` i path sensibili di creazione/spostamento appuntamento tramite lock transazionale su una riga stabile `Healthcare Practitioner` prima della re-validazione e della write;
+- mantenere il lock fino al commit/rollback della mutazione, così la richiesta concorrente successiva rilegge lo stato aggiornato e viene respinta dal normale `OverlapError` Marley se lo slot è ormai occupato;
+- non patchare Frappe o Marley core;
+- trattare la vera idempotenza request-id/replay come responsabilità separata: il runtime nativo evita il duplicato su retry sequenziale già committato ma non fornisce una chiave di idempotenza o un contratto di replay del risultato originale;
+- mantenere booking pubblico (`CC-CAP-009`) e relative protezioni anti-abuso/idempotenza come capability separate.
+
+Evidenza principale: testlab `CAP008-INVENTORY-001`, `CAP008-CONCURRENCY-003`, `CAP008-RESCHEDULE-004`.
+
+Nel runtime osservato, Marley ha respinto correttamente overlap e move collision nei path sequenziali e un retry dopo commit non ha creato un secondo appuntamento. L'inventario ha però rilevato assenza di `FOR UPDATE`, named lock, vincolo univoco sullo slot o campo idempotency dedicato. Il primo test di race su nuove create è stato correttamente classificato `NON_PROBATIVE` a causa di lock contention precedente al barrier. Il follow-up su due Appointment già committati è stato invece probativo: entrambi i worker hanno completato il controllo overlap nativo e sono riusciti a committare sul medesimo Practitioner/timeslot. Nello stesso probe, il candidato lock `Healthcare Practitioner ... FOR UPDATE` ha serializzato i due reschedule: una sola richiesta ha committato e la seconda è stata respinta con `OverlapError`. Rollback e cleanup hanno rimosso tutte le fixture sintetiche e preservato Appointment/Event A/B.
+
+Questa decisione è limitata a **CC-CAP-008**. Non decide automaticamente booking pubblico/backend-only (`009`/`010`) né la strategia generale di idempotenza per integrazioni future.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
