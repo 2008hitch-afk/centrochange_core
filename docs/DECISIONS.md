@@ -229,6 +229,28 @@ Nel runtime osservato, Marley ha respinto correttamente overlap e move collision
 
 Questa decisione è limitata a **CC-CAP-008**. Non decide automaticamente booking pubblico/backend-only (`009`/`010`) né la strategia generale di idempotenza per integrazioni future.
 
+## TD-018 — CC-CAP-001 Runtime foundation e isolamento DEV
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-06 (standing technical authorization)
+
+Classificazione capability: **CONFIGURATION**.
+
+Decisione:
+
+- riusare il runtime Frappe/ERPNext/Builder ufficiale tramite un Compose project Centro Change dedicato e pin espliciti delle versioni/image;
+- mantenere `centrochange-dev` isolato dagli altri stack locali con DB, Redis, sites volume, network e naming dedicati;
+- mantenere secret/config runtime fuori da Git e usare nel repository solo template con placeholder;
+- conservare bootstrap, migrate, asset build, worker/scheduler, restart e health check come procedura ripetibile e versionata;
+- non dipendere da image, mount, dati, app o secret di altri progetti locali;
+- non patchare Frappe/ERPNext/Builder core;
+- classificare la capability come `CONFIGURATION`, non `PROVEN NATIVE`, perché l'isolamento e il pinning richiedono una configurazione infrastrutturale dedicata; non `CUSTOM`, perché non richiede un runtime framework proprietario né codice prodotto per il foundation layer.
+
+Evidenza principale: `docs/spikes/SPIKE-01-REUSE-ISOLATION.md` e `docs/RUNTIME-BASELINE.md`.
+
+Lo Spike 01 ha censito host/WSL/Docker e versioni, creato `centrochange-dev` con DB/Redis/sites/network dedicati, installato Frappe/ERPNext/Builder/`centrochange_core`, verificato migrate/assets/backend/frontend/websocket/worker/scheduler/Desk/website, eseguito restart con ping positivo, documentato bootstrap ripetibile e osservato che gli altri stack locali sono rimasti `Up` senza restart o comandi rivolti a loro. Le credenziali sono rimaste fuori Git e i dati di test sono sintetici.
+
+Questa decisione è limitata a **CC-CAP-001**. Backup/restore (`035`/`036`), upgrade/migration safety (`037`) e operational deploy reproducibility (`040`) restano capability separate con validation dedicata.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
