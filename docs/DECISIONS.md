@@ -183,6 +183,30 @@ Nel runtime osservato, il reschedule ha aggiornato coerentemente `appointment_da
 
 Questa decisione è limitata a **CC-CAP-006** e non modifica né sostituisce le decisioni sulle capability collegate sopra indicate.
 
+## TD-016 — CC-CAP-007 Disponibilita professionista
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-06
+
+Classificazione capability: **EXTENSION**.
+
+Decisione:
+
+- usare Marley `Practitioner Schedule` come baseline ricorrente settimanale, con uno schedule dedicato per ciascun professionista;
+- usare Marley `Practitioner Availability` di tipo `Unavailable` per ferie, assenze ed eccezioni;
+- consentire sia la gestione centrale sia il self-service del singolo professionista;
+- instradare il self-service attraverso una piccola estensione server-side in `centrochange_core` che risolve il mapping `User -> Healthcare Practitioner` e consente la mutazione solo quando il Practitioner target coincide con quello dell'utente;
+- negare prima della scrittura ogni tentativo del professionista di modificare lo schedule o creare un'assenza per un Practitioner diverso dal proprio;
+- consentire alla gestione centrale autorizzata di usare lo stesso servizio con scope più ampio; il ruolo finale segreteria/admin resta da definire separatamente;
+- mantenere `Practitioner Schedule` dedicato uno-per-professionista per evitare che una modifica self-service ad uno schedule condiviso alteri la baseline altrui;
+- preservare lo storico `Version` sulle modifiche agli schedule ricorrenti;
+- non patchare Frappe o Marley core.
+
+Evidenza principale: testlab `CAP007-INVENTORY-001`, `CAP007-AVAILABILITY-002`, `CAP007-SCHEDULE-004`, `CAP007-OWNER-005`, `CAP007-GUARD-006`.
+
+Nel runtime osservato, `Practitioner Schedule` ha supportato orari distinti per giorno e `Practitioner Availability` `Unavailable` ha bloccato server-side gli appuntamenti nelle eccezioni. La configurazione permission basata solo su `if_owner` non è sufficiente: A ha potuto creare un record di disponibilità con scope sul Practitioner B. Nel probe finale guarded, A ha invece potuto modificare il proprio schedule e creare la propria assenza, mentre i corrispondenti tentativi su B sono stati negati prima di qualsiasi write; Administrator ha gestito correttamente entrambi come identità di controllo per la gestione centrale. Le modifiche agli schedule hanno prodotto `Version` history e rollback/cleanup hanno rimosso tutte le fixture sintetiche preservando le User Permission Practitioner persistenti.
+
+Questa decisione è limitata a **CC-CAP-007**. Non definisce il nome/ruolo definitivo della gestione centrale e non chiude `CC-CAP-008` concurrency/double-booking né le capability di booking pubblico/backend-only.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
