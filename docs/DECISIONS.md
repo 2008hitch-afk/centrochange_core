@@ -251,6 +251,106 @@ Lo Spike 01 ha censito host/WSL/Docker e versioni, creato `centrochange-dev` con
 
 Questa decisione è limitata a **CC-CAP-001**. Backup/restore (`035`/`036`), upgrade/migration safety (`037`) e operational deploy reproducibility (`040`) restano capability separate con validation dedicata.
 
+## TD-019 — CC-CAP-002 Identita professionista
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **EXTENSION**.
+
+Decisione: mantenere `User + Healthcare Practitioner + User Permission` come baseline nativa/app, ma implementare in `centrochange_core` un lifecycle service di offboarding/reassignment che riconcilia atomicamente status, User state e User Permission, revocando il vecchio principal e concedendo il nuovo in modo deterministico. Il flag `Healthcare Practitioner.status` non e un authorization boundary sufficiente.
+
+Evidenza principale: testlab `CAP002-IDENTITY-001`, `CAP002-LIFECYCLE-002`. Mapping e isolamento A/B sono riusabili; disable e reassignment mostrano gap di lifecycle/security; cleanup verificato.
+
+## TD-020 — CC-CAP-003 Anagrafica paziente
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **EXTENSION**.
+
+Decisione: mantenere Marley `Patient` come master, aggiungendo guard/override/esclusione per gli endpoint non permission-aware, a partire da `get_patient_detail`, e una policy esplicita di retention/disable/delete-unlink. `uid unique` e riusabile ma non costituisce validazione del codice fiscale italiano.
+
+Evidenza principale: `CAP003-PATIENT-IDENTITY-001`, `CAP003-PATIENT-MASTER-002`, con boundary standard riusato da `CAP004-SURFACES-002`. Confermato cross-assignment leakage via `get_patient_detail`; cleanup verificato.
+
+## TD-021 — CC-CAP-009 Primo incontro pubblico
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **EXTENSION**.
+
+Decisione: non usare Marley `patient_portal.make_appointment` as-is come authorization boundary. Riutilizzare disponibilita/schedule di CC-CAP-007 e serializzazione di CC-CAP-008 dietro un ingress server-side Centro Change che valida Patient identity, practitioner ammessi, appointment type, slot/data e idempotency.
+
+Evidenza principale: `CAP009-BASELINE-002`, `CAP009-PUBLIC-BOUNDARY-003`. Un Website User non correlato ha creato booking caller-controlled, anche su practitioner nascosto, off-schedule e nel passato; cleanup verificato.
+
+## TD-022 — CC-CAP-010 Sedute successive solo backend
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **EXTENSION**.
+
+Decisione: mantenere `Patient Appointment` e i normali path backend permission-aware, ma centralizzare in `centrochange_core` il guard server-side post-first e proteggere/override/escludere i mutatori Marley non permission-aware. La sola rimozione della UI pubblica non e sufficiente.
+
+Evidenza principale: `CAP010-BACKEND-ONLY-001`. Backend control positivo; REST/direct ordinari negano; portal e generic mutator hanno mostrato bypass; cleanup verificato.
+
+## TD-023 — CC-CAP-011 Catalogo servizi
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **EXTENSION**.
+
+Decisione: usare ERPNext `Item` come master servizio/economico e `Item Group` come tassonomia, con una sottile estensione Centro Change che collega il servizio al profilo scheduling e applica eligibility/disabled guard server-side. Evitare due master autorevoli indipendenti.
+
+Evidenza principale: `CAP011-CATALOG-PRICE-SNAPSHOT-INVENTORY-001` e Wave 2 runtime evidence.
+
+## TD-024 — CC-CAP-012 Prezzi
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **CONFIGURATION**.
+
+Decisione: usare Price List + `Item Price` effective-dated come fonte autorevole del prezzo corrente. Non introdurre un pricing engine custom nello scope corrente. La data di cattura nello snapshot appuntamento e policy separata gestita insieme a CC-CAP-013.
+
+Evidenza principale: `CAP012-EFFECTIVE-PRICE-002` PASS con cleanup verificato.
+
+## TD-025 — CC-CAP-013 Snapshot storico servizio/durata/prezzo
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **EXTENSION**.
+
+Decisione: riusare `Patient Appointment.duration` come durata snapshot e aggiungere campi supportati per service identity/label, prezzo, valuta e Price List provenance. Settlement/accounting futuro deve consumare lo snapshot e non ri-risolvere la tariffa corrente.
+
+Evidenza principale: `CAP013-CATALOG-PRICE-SNAPSHOT-001`. Marley ri-risolve il rate corrente e non conserva lo snapshot economico completo; cleanup verificato.
+
+## TD-026 — CC-CAP-014 Pagato Si/No + metodo informativo MVP
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **EXTENSION**.
+
+Decisione: usare `Mode of Payment` soltanto come tassonomia/riferimento e introdurre in Centro Change il settlement operativo minimo (paid flag, metodo, attore/data/correzione/audit), senza generare automaticamente Sales Invoice, Payment Entry, GL Entry o Payment Ledger Entry.
+
+Evidenza principale: `CAP014-SETTLEMENT-002` PASS; zero side effect contabili e cleanup verificato.
+
+## TD-027 — CC-CAP-015 Future accounting pathway
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **DEFERRED / EXCLUDE FROM CURRENT SURFACE**.
+
+Decisione: non attivare accounting nello scope corrente. Conservare il pathway futuro `CC Settlement -> Sales Invoice -> Payment Entry` come design da riaprire con idempotency key deterministica, reversal/correction, snapshot provenance, migrazione e rehearsal di integrita contabile.
+
+Evidenza principale: `CAP015-PATHWAY-001` PARTIAL e inventory Wave 3. Nessuna mutation contabile eseguita; il risultato partial della source assertion non modifica la decisione di deferire.
+
+## TD-028 — CC-CAP-016 Pacchetti
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-08 (standing technical authorization)
+
+Classificazione capability: **CUSTOM**.
+
+Decisione: implementare un modello append-oriented dedicato `CC Package Template`, `CC Patient Package`, `CC Package Ledger`, con grant/reserve/release/consume/adjust, concurrency, idempotenza e correction audit. Non forzare Product Bundle o Subscription come saldo consumabile per paziente.
+
+Evidenza principale: `CAP016-PACKAGE-002` PASS. Il surrogate ToDo ha validato il pattern transazionale/`FOR UPDATE`/event-key ma non rappresenta lo schema prodotto; cleanup verificato.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
