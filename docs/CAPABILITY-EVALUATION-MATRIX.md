@@ -75,21 +75,21 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 | ID | Capability | Candidati native / extension / app | Custom candidate/fallback | Test obbligatori principali | Stato corrente |
 |---|---|---|---|---|---|
 | CC-CAP-001 | Runtime foundation e isolamento DEV | Frappe/ERPNext container pattern; Docker Compose | infra Centro Change dedicata | versioni, rebuild, restart, network/volume isolation, no cross-project impact | **CONFIGURATION — OWNER CONFIRMED 2026-09-06** |
-| CC-CAP-002 | Identita professionista | User, Employee; Marley `Healthcare Practitioner`; eventuale Sales Person solo proiezione | `CC Professional` se il fit nativo/app e insufficiente | identity mapping, permission scope, disable/reassignment, list/direct/API | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-003 | Anagrafica paziente | Contact/Customer dove semanticamente corretti; Marley `Patient` | `CC Patient` o extension fields se necessario | identity semantics, codice fiscale/UID, CRUD, privacy, direct/API/report/export | RUNTIME VALIDATION REQUIRED |
+| CC-CAP-002 | Identita professionista | User, Employee; Marley `Healthcare Practitioner`; eventuale Sales Person solo proiezione | `CC Professional` se il fit nativo/app e insufficiente | identity mapping, permission scope, disable/reassignment, list/direct/API | **EXTENSION — OWNER CONFIRMED 2026-09-08** |
+| CC-CAP-003 | Anagrafica paziente | Contact/Customer dove semanticamente corretti; Marley `Patient` | `CC Patient` o extension fields se necessario | identity semantics, codice fiscale/UID, CRUD, privacy, direct/API/report/export | **EXTENSION — OWNER CONFIRMED 2026-09-08** |
 | CC-CAP-004 | Assegnazione paziente-professionista | Frappe User Permission / DocShare / supported permission hooks; Marley relations se pertinenti | assignment model + permission hooks in `centrochange_core` | own/cross patient, reassignment, revoke, list/direct/API/report/export/query | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-005 | Segregazione appuntamenti per professionista | Frappe permissions/User Permission; Marley `Patient Appointment` | custom permission layer o custom appointment | list own/cross, direct read/write, API, report/export, reassignment | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-006 | Appuntamento/seduta | ERPNext/Frappe scheduling primitives; Marley `Patient Appointment` | `CC Appointment/Session` se semantica insufficiente | create/update/move/cancel, lifecycle, history, required fields, extension fit | **CONFIGURATION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-007 | Disponibilita professionista | Marley `Practitioner Availability` / schedules | custom availability model | recurring availability, exception/absence, timezone, access scope, edit history | **EXTENSION — OWNER CONFIRMED 2026-09-06** |
 | CC-CAP-008 | No double booking / slot concurrency | native appointment validation where available | transactional lock/constraint in `centrochange_core` | concurrent booking, retry, stale slot, move collision, idempotence | **EXTENSION — OWNER CONFIRMED 2026-09-06** |
-| CC-CAP-009 | Primo incontro pubblico solo Marco/Francesca | Website/Builder + native scheduling filters; Marley portal if fit | custom booking endpoint/rule | public eligibility, allowed practitioners, race condition, abuse/input validation | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-010 | Sedute successive solo backend | Desk/role permissions / workflow | custom server-side transition/rule | public route denial, backend allow, API bypass attempts | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-011 | Prestazioni / catalogo servizi | Item, Item Group | custom service metadata only if needed | semantics, active/inactive, duration linkage, reporting compatibility | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-012 | Prezzi | Item Price / Price List | custom pricing rule only where native fit fails | effective price, historical changes, role access, future accounting compatibility | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-013 | Snapshot storico servizio/durata/prezzo sulla seduta | supported custom fields / snapshot on native appointment | fields/doctype in `centrochange_core` | price/duration changes after booking, historical immutability, audit | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-014 | Pagato Si/No + metodo informativo MVP | Mode of Payment as reference; ERP accounting evaluated but not auto-triggered | `CC Settlement` | payment flag semantics, correction/audit, permissions, no unintended Payment Entry | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-015 | Future invoice/payment/accounting pathway | Sales Invoice, Payment Entry, Payment Ledger | adapter from `CC Settlement` | mapping, idempotent posting, reversal, migration path, accounting integrity | DEFERRED / RUNTIME VALIDATION REQUIRED BEFORE ACTIVATION |
-| CC-CAP-016 | Pacchetti | Product Bundle / Subscription evaluated for semantic fit | `CC Package Template`, `CC Patient Package`, `CC Package Ledger` | reserve/release/consume/adjust, concurrency, idempotence, correction/audit | RUNTIME VALIDATION REQUIRED |
+| CC-CAP-009 | Primo incontro pubblico solo Marco/Francesca | Website/Builder + native scheduling filters; Marley portal if fit | custom booking endpoint/rule | public eligibility, allowed practitioners, race condition, abuse/input validation | **EXTENSION — OWNER CONFIRMED 2026-09-08** |
+| CC-CAP-010 | Sedute successive solo backend | Desk/role permissions / workflow | custom server-side transition/rule | public route denial, backend allow, API bypass attempts | **EXTENSION — OWNER CONFIRMED 2026-09-08** |
+| CC-CAP-011 | Prestazioni / catalogo servizi | Item, Item Group | custom service metadata only if needed | semantics, active/inactive, duration linkage, reporting compatibility | **EXTENSION — OWNER CONFIRMED 2026-09-08** |
+| CC-CAP-012 | Prezzi | Item Price / Price List | custom pricing rule only where native fit fails | effective price, historical changes, role access, future accounting compatibility | **CONFIGURATION — OWNER CONFIRMED 2026-09-08** |
+| CC-CAP-013 | Snapshot storico servizio/durata/prezzo sulla seduta | supported custom fields / snapshot on native appointment | fields/doctype in `centrochange_core` | price/duration changes after booking, historical immutability, audit | **EXTENSION — OWNER CONFIRMED 2026-09-08** |
+| CC-CAP-014 | Pagato Si/No + metodo informativo MVP | Mode of Payment as reference; ERP accounting evaluated but not auto-triggered | `CC Settlement` | payment flag semantics, correction/audit, permissions, no unintended Payment Entry | **EXTENSION — OWNER CONFIRMED 2026-09-08** |
+| CC-CAP-015 | Future invoice/payment/accounting pathway | Sales Invoice, Payment Entry, Payment Ledger | adapter from `CC Settlement` | mapping, idempotent posting, reversal, migration path, accounting integrity | **DEFERRED / EXCLUDE FROM CURRENT SURFACE — OWNER CONFIRMED 2026-09-08** |
+| CC-CAP-016 | Pacchetti | Product Bundle / Subscription evaluated for semantic fit | `CC Package Template`, `CC Patient Package`, `CC Package Ledger` | reserve/release/consume/adjust, concurrency, idempotence, correction/audit | **CUSTOM — OWNER CONFIRMED 2026-09-08** |
 | CC-CAP-017 | Note organizzative | native Communication/comment mechanisms evaluated | `CC Organizational Note` | secretary access, professional access, API/report/export/direct, audit | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-018 | Note professionali riservate | native/private record mechanisms; Marley clinical records evaluated | `CC Professional Note` | secretary denial, assigned professional scope, API/report/export/direct/query leak tests | RUNTIME VALIDATION REQUIRED |
 | CC-CAP-019 | Scheda paziente unificata | Desk/Form/dashboard composition; Marley patient views | custom workspace/page if needed | data aggregation, permission inheritance, performance, leakage between sections | RUNTIME VALIDATION REQUIRED |
@@ -134,9 +134,34 @@ Evidenza versionata in `docs/spikes/SPIKE-01-REUSE-ISOLATION.md` e `docs/RUNTIME
 
 Classificazione confermata: riusare il runtime upstream tramite configurazione infrastrutturale Centro Change dedicata e pinata. Backup/restore (`CC-CAP-035`/`036`), upgrade/migration safety (`037`) e operational deploy reproducibility (`040`) restano capability separate.
 
-### CC-CAP-002 / 004 / 005
+### CC-CAP-002
 
-Lo Spike 02 ha gia osservato il legame nativo `User -> Healthcare Practitioner` e sta valutando User Permission/DocShare e propagazione verso Patient/Patient Appointment. Nessuna decisione finale di riuso Marley e ancora autorizzata.
+Decisione owner del **2026-09-08** sotto standing technical authorization: **EXTENSION**.
+
+Evidenza testlab `CAP002-IDENTITY-001`, `CAP002-LIFECYCLE-002`:
+
+- Marley/Frappe fornisce un mapping nativo utile `User -> Healthcare Practitioner` e le User Permission Practitioner isolano correttamente A/B nei normali path list/direct;
+- `Healthcare Practitioner.status=Disabled` non revoca da solo la visibilita permission-aware osservata;
+- disabilitare `User.enabled` lascia persistente la User Permission Practitioner, quindi lo stato applicativo non coincide automaticamente con revoca del security principal;
+- il reassignment documentale `Practitioner.user_id A -> C` non ha dimostrato un lifecycle nativo completo e sicuro;
+- rollback e cleanup sono verificati.
+
+Classificazione confermata: mantenere Marley `Healthcare Practitioner` e Frappe `User`/User Permission come baseline, aggiungendo in `centrochange_core` un servizio server-side di offboarding/reassignment che riconcilia status, User state e User Permission con revoca/grant deterministici e regression test list/direct/API.
+
+### CC-CAP-003
+
+Decisione owner del **2026-09-08** sotto standing technical authorization: **EXTENSION**.
+
+Evidenza testlab `CAP003-PATIENT-IDENTITY-001`, `CAP003-PATIENT-MASTER-002` e boundary riusato `CAP004-SURFACES-002`:
+
+- Marley `Patient` e una baseline master utilizzabile e il campo `uid` e univoco;
+- l'unicita di `uid` non equivale a validazione formale del codice fiscale italiano e il campo osservato resta mutabile;
+- create/read/update, Active/Disabled, Customer/Contact coupling e Version history sono riusabili;
+- `frappe.client.get` rispetta il boundary A/B, mentre Marley `get_patient_detail` restituisce Patient B nel contesto professionista A, confermando leakage cross-assignment su un endpoint non permission-aware;
+- l'hard delete non puo essere assunto come semplice cascade per i link Contact/Customer;
+- rollback e cleanup sono verificati.
+
+Classificazione confermata: mantenere Marley `Patient`, proteggendo o escludendo in `centrochange_core` gli endpoint Patient non permission-aware e definendo una policy esplicita di retention/disable/delete-unlink. Una eventuale validazione codice fiscale va introdotta solo come requisito dedicato.
 
 ### CC-CAP-004
 
@@ -217,6 +242,110 @@ Evidenza testlab `CAP008-INVENTORY-001`, `CAP008-CONCURRENCY-003`, `CAP008-RESCH
 - rollback e cleanup hanno rimosso tutte le fixture Appointment/Event di test e preservato la baseline A/B.
 
 Classificazione confermata: mantenere Marley `Patient Appointment` e la validazione overlap come base, aggiungendo in `centrochange_core` un boundary transazionale di serializzazione sui path create/reschedule sensibili. La vera idempotenza request-id/replay resta separata e va affrontata dove necessaria, in particolare nel booking pubblico `CC-CAP-009`. Nessuna patch a Frappe o Marley core.
+
+### CC-CAP-009
+
+Decisione owner del **2026-09-08** sotto standing technical authorization: **EXTENSION**.
+
+Evidenza testlab `CAP009-BASELINE-002`, `CAP009-PUBLIC-BOUNDARY-003`:
+
+- il baseline ha confermato Practitioner A/B non esposti nel portal (`show_in_portal=0`), schedule link vuoti e default appointment type non configurato;
+- con fixture positiva completa, un Website User non correlato ha potuto creare booking scegliendo caller-controlled Patient e Practitioner;
+- il path ha consentito booking verso Practitioner nascosto, off-schedule e in data passata;
+- il retry non offre un contratto idempotente di replay: il secondo tentativo e stato respinto da overlap, non riconciliato con il risultato originario;
+- cleanup e stato verificato.
+
+Classificazione confermata: riusare schedule/availability di `CC-CAP-007` e serializzazione di `CC-CAP-008`, ma esporre il booking pubblico solo tramite un ingress server-side Centro Change che valida identita Patient, practitioner ammessi, appointment type, slot/date e idempotency; non usare `patient_portal.make_appointment` as-is come boundary di autorizzazione.
+
+### CC-CAP-010
+
+Decisione owner del **2026-09-08** sotto standing technical authorization: **EXTENSION**.
+
+Evidenza testlab `CAP010-BACKEND-ONLY-001`:
+
+- il controllo backend permission-aware ha consentito la creazione autorizzata di una seduta successiva;
+- REST/client/direct create e REST update ordinari hanno rispettato i permessi e negato il Website User;
+- il Website User ha tuttavia potuto creare appuntamenti successivi e cross-patient attraverso il portal Marley;
+- un mutatore generico `set_request_status` ha consentito una mutazione di stato non coerente con il boundary backend-only; `update_status` resta inoltre il regression sentinel gia provato da CC-CAP-005;
+- cleanup e stato verificato.
+
+Classificazione confermata: mantenere `Patient Appointment` e i normali path backend permission-aware, aggiungendo un authorization service server-side che decide se un create/mutation path e ammesso dopo il primo incontro e protegge/override/esclude tutti gli endpoint Marley non permission-aware. Il boundary deve restare server-side, non UI-only.
+
+### CC-CAP-011
+
+Decisione owner del **2026-09-08** sotto standing technical authorization: **EXTENSION**.
+
+Evidenza testlab `CAP011-CATALOG-PRICE-SNAPSHOT-INVENTORY-001` e runtime Wave 2:
+
+- ERPNext `Item` / `Item Group` forniscono un master catalogo e tassonomia riusabili;
+- il collegamento tra servizio economico e scheduling Marley non e nativamente un'unica fonte autorevole;
+- `Item.disabled` non deve essere assunto come guard automatico sufficiente per impedire booking del relativo servizio.
+
+Classificazione confermata: usare `Item` come master servizio/economico e `Item Group` per tassonomia/reporting, aggiungendo una sottile estensione Centro Change che collega il servizio al profilo scheduling e applica eligibility/disabled guard server-side. Evitare due master indipendenti per la stessa prestazione.
+
+### CC-CAP-012
+
+Decisione owner del **2026-09-08** sotto standing technical authorization: **CONFIGURATION**.
+
+Evidenza testlab `CAP012-EFFECTIVE-PRICE-002`:
+
+- Price List + `Item Price` effective-dated hanno fornito la semantica di prezzo richiesta nel runtime testato;
+- il modello puo essere riusato come fonte autorevole del prezzo corrente senza introdurre un motore prezzi custom;
+- la data esatta di cattura del prezzo nello snapshot appuntamento resta policy di prodotto separata.
+
+Classificazione confermata: configurare Price List + effective-dated Item Price come sistema prezzi. Le esigenze di storico sulla singola seduta sono risolte da `CC-CAP-013`, non duplicando la tariffa in un secondo master.
+
+### CC-CAP-013
+
+Decisione owner del **2026-09-08** sotto standing technical authorization: **EXTENSION**.
+
+Evidenza testlab `CAP013-CATALOG-PRICE-SNAPSHOT-001`:
+
+- `Patient Appointment.duration` si comporta come snapshot stabile della durata iniziale;
+- Marley non conserva sulla seduta uno snapshot completo e autorevole di service identity/label, prezzo, valuta e Price List provenance;
+- il billing Marley osservato ri-risolve la tariffa corrente dall'Appointment Type, quindi una variazione successiva puo influenzare una seduta storica se non viene introdotto uno snapshot esplicito;
+- cleanup e stato verificato.
+
+Classificazione confermata: riusare la durata nativa e aggiungere campi snapshot supportati su `Patient Appointment` per servizio, label, prezzo, valuta e provenienza tariffaria. Futuro settlement/accounting deve leggere questi snapshot invece di ri-risolvere il prezzo corrente.
+
+### CC-CAP-014
+
+Decisione owner del **2026-09-08** sotto standing technical authorization: **EXTENSION**.
+
+Evidenza testlab `CAP014-SETTLEMENT-002`:
+
+- `Mode of Payment` e riusabile come tassonomia/riferimento informativo;
+- la mutation sintetica ha dimostrato che un Mode of Payment informativo non mappato puo essere creato/modificato/disabilitato senza generare `Sales Invoice`, `Payment Entry`, `GL Entry` o `Payment Ledger Entry`;
+- cleanup e stato verificato.
+
+Classificazione confermata: introdurre in Centro Change uno stato settlement operativo minimo (pagato si/no, metodo informativo, attore/data/correzione e audit) referenziando `Mode of Payment`, senza attivare automaticamente accounting ERPNext.
+
+### CC-CAP-015
+
+Decisione owner del **2026-09-08** sotto standing technical authorization: **DEFERRED / EXCLUDE FROM CURRENT SURFACE**.
+
+Evidenza testlab `CAP015-PATHWAY-001` (`PARTIAL`) e source inventory Wave 3:
+
+- i boundary di posting ERPNext (`Sales Invoice`, `Payment Entry`, Payment Ledger/GL) sono stati identificati;
+- `Payment Entry.reference_no` non fornisce da solo una chiave di idempotenza applicativa sufficiente;
+- nessuna mutation contabile e stata eseguita e il pathway non e richiesto per l'MVP informativo;
+- una assertion sorgente del probe ha sovrastimato un segnale `creates_sales_invoice`, ma il risultato non cambia la scelta di non attivare accounting ora.
+
+Classificazione confermata: mantenere il pathway futuro documentato ma escluso dalla superficie corrente. Prima dell'attivazione servono mapping `CC Settlement -> Sales Invoice -> Payment Entry`, idempotency key deterministica, reversal/correction, snapshot provenance, rehearsal di migrazione e integrita contabile.
+
+### CC-CAP-016
+
+Decisione owner del **2026-09-08** sotto standing technical authorization: **CUSTOM**.
+
+Evidenza testlab `CAP016-PACKAGE-002` e inventory Wave 3:
+
+- `Product Bundle` rappresenta composizione statica di articoli e non un saldo consumabile per paziente;
+- `Subscription` e orientata a billing ricorrente e puo generare/submittare invoice, semantica non adatta al package ledger operativo corrente;
+- il transaction surrogate del probe ha validato grant/reserve/release/consume/adjust, serializzazione `FOR UPDATE` contro overspend e idempotenza tramite event key deterministica;
+- il surrogate ToDo e solo strumento di test, non schema prodotto;
+- cleanup e stato verificato.
+
+Classificazione confermata: implementare un modello Centro Change dedicato, append-oriented, con `CC Package Template`, `CC Patient Package` e `CC Package Ledger`, includendo reserve/release/consume/adjust, concurrency, idempotenza e correction audit. Non forzare Product Bundle/Subscription come modello di saldo paziente.
 
 ### CC-CAP-020
 
