@@ -1,6 +1,6 @@
 # Centro Change — Capability Evaluation Matrix
 
-**Stato:** CANONICAL PLAN / RUNTIME VALIDATION IN PROGRESS  
+**Stato:** CANONICAL PLAN / RUNTIME VALIDATION COMPLETE — 40/40 TECHNICALLY DETERMINED  
 **Issue:** #5  
 **Test execution repository:** `2008hitch-afk/centrochange-testlab`
 
@@ -68,7 +68,7 @@ ChatGPT prepara task
 
 I test vengono eseguiti **una capability alla volta**. L'utente puo mantenere come unico intervento un gate `OK` prima di iniziare la capability successiva; non deve eseguire manualmente i singoli comandi di test.
 
-## 4. Matrice canonica iniziale
+## 4. Matrice canonica
 
 Questa versione include tutte le capability esplicitamente presenti nelle fonti tecniche correnti. Nuovi requisiti scoperti successivamente devono ricevere un nuovo ID senza rinumerare quelli esistenti.
 
@@ -90,30 +90,30 @@ Questa versione include tutte le capability esplicitamente presenti nelle fonti 
 | CC-CAP-014 | Pagato Si/No + metodo informativo MVP | Mode of Payment as reference; ERP accounting evaluated but not auto-triggered | `CC Settlement` | payment flag semantics, correction/audit, permissions, no unintended Payment Entry | **EXTENSION — OWNER CONFIRMED 2026-09-08** |
 | CC-CAP-015 | Future invoice/payment/accounting pathway | Sales Invoice, Payment Entry, Payment Ledger | adapter from `CC Settlement` | mapping, idempotent posting, reversal, migration path, accounting integrity | **DEFERRED / EXCLUDE FROM CURRENT SURFACE — OWNER CONFIRMED 2026-09-08** |
 | CC-CAP-016 | Pacchetti | Product Bundle / Subscription evaluated for semantic fit | `CC Package Template`, `CC Patient Package`, `CC Package Ledger` | reserve/release/consume/adjust, concurrency, idempotence, correction/audit | **CUSTOM — OWNER CONFIRMED 2026-09-08** |
-| CC-CAP-017 | Note organizzative | native Communication/comment mechanisms evaluated | `CC Organizational Note` | secretary access, professional access, API/report/export/direct, audit | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-018 | Note professionali riservate | native/private record mechanisms; Marley clinical records evaluated | `CC Professional Note` | secretary denial, assigned professional scope, API/report/export/direct/query leak tests | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-019 | Scheda paziente unificata | Desk/Form/dashboard composition; Marley patient views | custom workspace/page if needed | data aggregation, permission inheritance, performance, leakage between sections | RUNTIME VALIDATION REQUIRED |
+| CC-CAP-017 | Note organizzative | native Communication/comment mechanisms evaluated | `CC Organizational Note` | secretary access, professional access, API/report/export/direct, audit | **CONFIGURATION — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-018 | Note professionali riservate | native/private record mechanisms; Marley clinical records evaluated | `CC Professional Note` | secretary denial, assigned professional scope, API/report/export/direct/query leak tests | **CUSTOM — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-019 | Scheda paziente unificata | Desk/Form/dashboard composition; Marley patient views | custom workspace/page if needed | data aggregation, permission inheritance, performance, leakage between sections | **EXTENSION — OWNER CONFIRMED 2026-09-09** |
 | CC-CAP-020 | Patient history / clinical feed | Marley patient history endpoints | guarded extension or custom feed | assigned/cross patient, endpoint arguments, list/direct/API, non-empty fixtures, permission bypass | **EXTENSION — OWNER CONFIRMED 2026-09-05** |
 | CC-CAP-021 | Patient progress / clinical analytics | Marley patient progress methods | guarded extension/custom analytics | cross-patient reads, SQL/get_all paths, empty/non-empty fixtures, report/export consistency | **DEFERRED / EXCLUDE FROM CURRENT SURFACE — OWNER CONFIRMED 2026-09-05** |
-| CC-CAP-022 | Chiusura giornaliera sedute | Frappe scheduler/queue/workflow primitives | `CC Session Closure` | Pending/Closed/Auto Locked/Reopened, retries, idempotence, permissions, audit | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-023 | Reminder 21:00 | Notification/email + scheduler | scheduled job in `centrochange_core` | only pending sessions, duplicate prevention, retry, timezone, delivery failure | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-024 | Auto-lock 07:00 giorno successivo | scheduler/workflow extension | custom scheduled rule | boundary time, retries, idempotence, lock enforcement server-side | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-025 | Regola 48h | workflow/permission extension if fit | centralized business rule | exact boundary, timezone, override roles, API bypass, audit | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-026 | Sblocco/correzione chiusure | Role Permission / Workflow | custom correction action | authorized roles only, immutable audit, repeated corrections, direct/API | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-027 | Email / Communication / Notification | Frappe Email Account, Communication, Notification | custom templates/jobs only if required | permissions, retry, duplicate prevention, failure visibility, no secret leakage | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-028 | Reporting operativo | native Report infrastructure | custom Script/Query Report | correctness, role filtering, assigned-patient isolation, performance | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-029 | Export/print/email document surfaces | Frappe print/export/email infrastructure | explicit server-side guards/extensions | same permission boundary as UI/direct access; hidden-field/data leakage | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-030 | Dashboard direzionale | native dashboard/report/chart | custom dashboard | aggregate correctness, role scope, privacy, performance | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-031 | Sito pubblico branded | Frappe Website / Builder | custom blocks/pages | reproducible build, Git versionability, responsive UX, no admin leakage | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-032 | Builder/Git reproducibility | Builder supported workflow and pinned source | custom build/deploy automation | rebuild from clean state, asset parity, version pinning, upgrade path | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-033 | Permission model generale | Frappe Role Permission, User Permission, DocShare, supported hooks | centralized `centrochange_core` permission logic | list/direct/API/report/export/query, reassignment, cache, strict user permissions | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-034 | Audit business | Version/audit facilities where sufficient | custom immutable audit events | actor/time/before-after, protected access, correction trail, export restrictions | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-035 | Backup | bench/native DB+files backup primitives | orchestration/runbook only | DB + public/private files + config, encryption/location policy, failure handling | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-036 | Restore / disaster recovery | bench restore primitives | automated isolated restore procedure | clean-environment restore, version compatibility, integrity checks, measured RTO evidence | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-037 | Upgrade/migration safety | pinned upstream versions + Frappe migrations | migration code in `centrochange_core` | clean upgrade rehearsal, schema migration, regression suite, rollback strategy | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-038 | API/web endpoint authorization | Frappe whitelisted/REST permission mechanisms; app endpoints | wrappers/guards in `centrochange_core` | caller-controlled IDs, cross-user reads/writes, get_all/sql bypass, error behavior | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-039 | Direct/query/report leakage regression suite | native permission-aware APIs where applicable | test/guard layer | REST, URL direct, List, Report, export, custom query, app endpoints | RUNTIME VALIDATION REQUIRED |
-| CC-CAP-040 | Operational deploy reproducibility | Compose + pinned images/apps | deploy scripts/runbook | fresh build/start, migrate, health checks, rollback, no manual container patching | RUNTIME VALIDATION REQUIRED |
+| CC-CAP-022 | Chiusura giornaliera sedute | Frappe scheduler/queue/workflow primitives | `CC Session Closure` | Pending/Closed/Auto Locked/Reopened, retries, idempotence, permissions, audit | **EXTENSION — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-023 | Reminder 21:00 | Notification/email + scheduler | scheduled job in `centrochange_core` | only pending sessions, duplicate prevention, retry, timezone, delivery failure | **EXTENSION — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-024 | Auto-lock 07:00 giorno successivo | scheduler/workflow extension | custom scheduled rule | boundary time, retries, idempotence, lock enforcement server-side | **EXTENSION — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-025 | Regola 48h | workflow/permission extension if fit | centralized business rule | exact boundary, timezone, override roles, API bypass, audit | **EXTENSION — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-026 | Sblocco/correzione chiusure | Role Permission / Workflow | custom correction action | authorized roles only, immutable audit, repeated corrections, direct/API | **EXTENSION — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-027 | Email / Communication / Notification | Frappe Email Account, Communication, Notification | custom templates/jobs only if required | permissions, retry, duplicate prevention, failure visibility, no secret leakage | **EXTENSION — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-028 | Reporting operativo | native Report infrastructure | custom Script/Query Report | correctness, role filtering, assigned-patient isolation, performance | **CUSTOM — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-029 | Export/print/email document surfaces | Frappe print/export/email infrastructure | explicit server-side guards/extensions | same permission boundary as UI/direct access; hidden-field/data leakage | **CONFIGURATION — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-030 | Dashboard direzionale | native dashboard/report/chart | custom dashboard | aggregate correctness, role scope, privacy, performance | **CUSTOM — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-031 | Sito pubblico branded | Frappe Website / Builder | custom blocks/pages | reproducible build, Git versionability, responsive UX, no admin leakage | **DEFERRED / EXCLUDE FROM CURRENT SURFACE — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-032 | Builder/Git reproducibility | Builder supported workflow and pinned source | custom build/deploy automation | rebuild from clean state, asset parity, version pinning, upgrade path | **DEFERRED / EXCLUDE FROM CURRENT SURFACE — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-033 | Permission model generale | Frappe Role Permission, User Permission, DocShare, supported hooks | centralized `centrochange_core` permission logic | list/direct/API/report/export/query, reassignment, cache, strict user permissions | **CUSTOM — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-034 | Audit business | Version/audit facilities where sufficient | custom immutable audit events | actor/time/before-after, protected access, correction trail, export restrictions | **CUSTOM — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-035 | Backup | bench/native DB+files backup primitives | orchestration/runbook only | DB + public/private files + config, encryption/location policy, failure handling | **CONFIGURATION — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-036 | Restore / disaster recovery | bench restore primitives | automated isolated restore procedure | clean-environment restore, version compatibility, integrity checks, measured RTO evidence | **DEFERRED / EXCLUDE FROM CURRENT SURFACE — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-037 | Upgrade/migration safety | pinned upstream versions + Frappe migrations | migration code in `centrochange_core` | clean upgrade rehearsal, schema migration, regression suite, rollback strategy | **DEFERRED / EXCLUDE FROM CURRENT SURFACE — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-038 | API/web endpoint authorization | Frappe whitelisted/REST permission mechanisms; app endpoints | wrappers/guards in `centrochange_core` | caller-controlled IDs, cross-user reads/writes, get_all/sql bypass, error behavior | **CUSTOM — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-039 | Direct/query/report leakage regression suite | native permission-aware APIs where applicable | test/guard layer | REST, URL direct, List, Report, export, custom query, app endpoints | **CUSTOM — OWNER CONFIRMED 2026-09-09** |
+| CC-CAP-040 | Operational deploy reproducibility | Compose + pinned images/apps | deploy scripts/runbook | fresh build/start, migrate, health checks, rollback, no manual container patching | **CUSTOM — OWNER CONFIRMED 2026-09-09** |
 
 ## 5. Known evidence already available
 
@@ -375,6 +375,24 @@ Evidenza testlab `S02-PAT-015`, `S02-PROG-001`–`S02-PROG-006`:
 
 Classificazione confermata: non esporre ne sviluppare Patient Progress nello scope corrente. La capability resta riapribile se emerge un requisito funzionale reale; in quel caso rivalutare extension selettiva o analytics custom con autorizzazione server-side esplicita. Questa decisione non determina il riuso Marley complessivo A/B/C.
 
+### CC-CAP-017..040 — final technical dispositions
+
+Decisione owner del **2026-09-09** sotto standing technical authorization; `CC-CAP-037` confermata esplicitamente: **40/40 technical dispositions**.
+
+Evidenza autorevole: `centrochange-testlab` coordinator #56, issue/probe capability-specific e `centrochange_core` #18. Sintesi:
+
+- `CC-CAP-017/018/019`: note organizzative `CONFIGURATION`, note professionali riservate `CUSTOM`, scheda paziente unificata `EXTENSION`, sulla base della recovery Wave 4 con cleanup verificato.
+- `CC-CAP-022..026`: `EXTENSION` per lifecycle giornaliero/reminder/auto-lock/cancellation-policy/correction; il ciclo temporale ha verificato timezone, scheduler, idempotenza e server-side enforcement. Per `CC-CAP-025`, il probe cancellation-specific ha provato `<48h => LATE CANCELLATION / DUE` e waiver backoffice auditata; l'esatta uguaglianza a `48:00:00` resta una policy business non definita.
+- `CC-CAP-027..030`: `EXTENSION`, `CUSTOM`, `CONFIGURATION`, `CUSTOM` rispettivamente per Communication/Notification, reporting operativo, export/print/email e dashboard, secondo i boundary security/ops provati.
+- `CC-CAP-031/032/036`: `DEFERRED / EXCLUDE FROM CURRENT SURFACE` finché sito Builder, clean rebuild e restore/DR non sono riproducibili dal deploy path versionato completo.
+- `CC-CAP-033/034`: `CUSTOM` per permission model generale e audit business; i primitivi Frappe restano riusabili ma non sufficienti come contratto complessivo.
+- `CC-CAP-035`: `CONFIGURATION`; le primitive `bench backup --with-files` coprono DB/public/private/config tramite runbook, mantenendo raw artifacts fuori Git.
+- `CC-CAP-037`: `DEFERRED / EXCLUDE FROM CURRENT SURFACE`, con **TEST OUTCOME: PARTIAL** sul run isolato `centrochange-cap037-20260909r2`. Provati CURRENT → checkpoint completo hashato → TARGET migrate exit `0` → target health/hooks/services → restore CURRENT con successo nel log e pin/health ripristinati → `cleanup.verified=true`; nessun manual SQL/source/upstream patch e nessun contatto con `centrochange-dev`. Residui: inventari normalizzati pre/post di schema, Custom Field e Custom DocPerm non catturati e restore exit code non preservato indipendentemente. Questi gap impediscono la promozione a `CONFIGURATION` senza un nuovo ciclo discriminante completo.
+- `CC-CAP-038/039`: `CUSTOM` per endpoint authorization e leakage regression suite sui caller-controlled IDs e sui path REST/direct/list/report/export/query/app endpoint.
+- `CC-CAP-040`: `CUSTOM`; il clean-deploy FAIL e discriminante perché la recipe prodotto versionata non dichiara completamente il bootstrap Healthcare/Marley. Il provisioner testlab CAP037 non costituisce prova di deploy riproducibile del prodotto.
+
+La technical classification non equivale a product implementation: le estensioni/custom/deferred indicate restano lavoro downstream separato.
+
 ## 6. Security surface minima per capability sensibili
 
 Quando una capability tocca dati o autorizzazioni, i test devono considerare, se applicabili:
@@ -438,5 +456,7 @@ Questa matrice e stata ricostruita dalle fonti tecniche versionate correnti:
 - `docs/DECISIONS.md`
 - `docs/RUNTIME-BASELINE.md`
 - Spike 01 e Spike 02 / relative issue runtime
+- `2008hitch-afk/centrochange-testlab` issue #56 e issue/probe capability-specific
+- `centrochange_core` issue #18
 
 Non sostituisce i requisiti funzionali del cliente e non inventa decisioni non ancora approvate.
