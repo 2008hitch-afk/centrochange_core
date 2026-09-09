@@ -351,6 +351,58 @@ Decisione: implementare un modello append-oriented dedicato `CC Package Template
 
 Evidenza principale: `CAP016-PACKAGE-002` PASS. Il surrogate ToDo ha validato il pattern transazionale/`FOR UPDATE`/event-key ma non rappresenta lo schema prodotto; cleanup verificato.
 
+## TD-029 — CC-CAP-017..040 final technical dispositions
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-09-09 (standing technical authorization; CC-CAP-037 explicitly confirmed)
+
+Il programma di capability evaluation ha raggiunto **40/40 technical dispositions**. Le classificazioni canoniche per l'ultima ondata sono:
+
+| Capability | Classificazione |
+|---|---|
+| CC-CAP-017 | CONFIGURATION |
+| CC-CAP-018 | CUSTOM |
+| CC-CAP-019 | EXTENSION |
+| CC-CAP-022 | EXTENSION |
+| CC-CAP-023 | EXTENSION |
+| CC-CAP-024 | EXTENSION |
+| CC-CAP-025 | EXTENSION |
+| CC-CAP-026 | EXTENSION |
+| CC-CAP-027 | EXTENSION |
+| CC-CAP-028 | CUSTOM |
+| CC-CAP-029 | CONFIGURATION |
+| CC-CAP-030 | CUSTOM |
+| CC-CAP-031 | DEFERRED / EXCLUDE FROM CURRENT SURFACE |
+| CC-CAP-032 | DEFERRED / EXCLUDE FROM CURRENT SURFACE |
+| CC-CAP-033 | CUSTOM |
+| CC-CAP-034 | CUSTOM |
+| CC-CAP-035 | CONFIGURATION |
+| CC-CAP-036 | DEFERRED / EXCLUDE FROM CURRENT SURFACE |
+| CC-CAP-037 | DEFERRED / EXCLUDE FROM CURRENT SURFACE |
+| CC-CAP-038 | CUSTOM |
+| CC-CAP-039 | CUSTOM |
+| CC-CAP-040 | CUSTOM |
+
+Decisione e conseguenze principali:
+
+- `CC-CAP-017`: usare le primitive Communication/comment compatibili con la nota organizzativa tramite configurazione; la nota professionale riservata resta separata.
+- `CC-CAP-018`: usare un record Centro Change dedicato per la nota professionale riservata, con boundary server-side e anti-leakage.
+- `CC-CAP-019`: comporre la scheda paziente unificata come estensione dei record/view esistenti, preservando i permission boundary delle sezioni.
+- `CC-CAP-022`–`026`: implementare lifecycle giornaliero, reminder, auto-lock, regola di cancellazione tardiva e correzioni come estensioni server-side/scheduler idempotenti e auditabili. Per `CC-CAP-025`, il comportamento `<48h` e la waiver autorizzata sono determinati; l'esatta uguaglianza a `48:00:00` resta una policy business esplicitamente non inventata.
+- `CC-CAP-027`: riusare Communication/Notification/Email Queue con estensioni per retry, deduplica, failure semantics e boundary di accesso.
+- `CC-CAP-028`: reporting operativo custom dove servono aggregazioni e isolamento assegnato non garantiti dal solo report nativo.
+- `CC-CAP-029`: riusare e configurare le superfici native export/print/email quando mantengono lo stesso boundary permission-aware.
+- `CC-CAP-030`: dashboard direzionale custom per controllare aggregazioni, privacy e bypass via heatmap/raw/query.
+- `CC-CAP-031`, `032`: escludere dalla superficie corrente finché sito Builder e asset non sono riproducibili da una clean deploy recipe versionata.
+- `CC-CAP-033`: permission model generale custom/centralizzato in `centrochange_core`, mantenendo i primitivi Frappe come base ma proteggendo endpoint/get_all/raw SQL e mutatori non permission-aware.
+- `CC-CAP-034`: audit business custom/immutabile per actor/time/before-after/correction trail dove `Version` da sola non soddisfa il contratto.
+- `CC-CAP-035`: usare le primitive supportate `bench backup --with-files` tramite configurazione/runbook; backup raw resta fuori Git.
+- `CC-CAP-036`: mantenere deferred finché un restore/DR completo e misurato è riproducibile dal deploy path versionato corrente.
+- `CC-CAP-037`: **TEST OUTCOME PARTIAL** sul rehearsal isolato `centrochange-cap037-20260909r2`. Sono provati CURRENT → checkpoint DB/public/private/site-config hashato → TARGET migrate con exit `0` → target health/hooks/services → restore CURRENT con successo nel log e pin/health ripristinati → `cleanup.verified=true`, senza manual SQL/source/upstream patch e senza toccare `centrochange-dev`. Restano mancanti gli inventari normalizzati pre/post di schema, Custom Field e Custom DocPerm e un exit code restore indipendentemente preservato. Questi gap impediscono di promuovere la capability a `CONFIGURATION`; la capability viene quindi esclusa dalla superficie operativa di upgrade corrente e può essere riaperta con un nuovo ciclo discriminante completo.
+- `CC-CAP-038`, `039`: endpoint authorization e leakage regression richiedono guard/test layer custom sui caller-controlled IDs e sui path REST/direct/list/report/export/query/app endpoint.
+- `CC-CAP-040`: `CUSTOM`; il FAIL di clean deploy è discriminante perché la recipe prodotto versionata non dichiara completamente il bootstrap Healthcare/Marley. Il testlab provisioner CAP037 non va reinterpretato come prova di deploy riproducibile del prodotto.
+
+Evidenza autorevole: `centrochange-testlab` coordinator #56 e issue/probe capability-specific; per `CC-CAP-037`, issue #65 e run finale `centrochange-cap037-20260909r2`. Product implementation resta separata da queste classificazioni.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
