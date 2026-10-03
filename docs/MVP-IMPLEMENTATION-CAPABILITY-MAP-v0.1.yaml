@@ -1,0 +1,116 @@
+schema_version: "1.0"
+artifact: MVP_IMPLEMENTATION_CAPABILITY_MAP
+version: "0.1"
+client_id: HC-0005
+prepared_on: "2026-10-03"
+
+legacy_capabilities:
+  source: docs/CAPABILITY-EVALUATION-MATRIX.md
+  runtime_evidence_repo: 2008hitch-afk/centrochange-testlab
+  rule: "Reuse technical disposition and decisive evidence; implementation still requires new product regression."
+  active:
+    - {id: CC-CAP-001, class: CONFIGURATION, wave: 0}
+    - {id: CC-CAP-002, class: EXTENSION, wave: 1}
+    - {id: CC-CAP-003, class: EXTENSION, wave: 1}
+    - {id: CC-CAP-004, class: EXTENSION, wave: 1}
+    - {id: CC-CAP-005, class: EXTENSION, wave: 2}
+    - {id: CC-CAP-006, class: CONFIGURATION, wave: 2}
+    - {id: CC-CAP-007, class: EXTENSION, wave: 2}
+    - {id: CC-CAP-008, class: EXTENSION, wave: 2}
+    - {id: CC-CAP-009, class: EXTENSION, wave: 2}
+    - {id: CC-CAP-010, class: EXTENSION, wave: 2}
+    - {id: CC-CAP-011, class: EXTENSION, wave: 2}
+    - {id: CC-CAP-012, class: CONFIGURATION, wave: 2}
+    - {id: CC-CAP-013, class: EXTENSION, wave: 2}
+    - {id: CC-CAP-014, class: EXTENSION, wave: 3}
+    - {id: CC-CAP-016, class: CUSTOM, wave: 3}
+    - {id: CC-CAP-017, class: CONFIGURATION, wave: 3}
+    - {id: CC-CAP-018, class: CUSTOM, wave: 3}
+    - {id: CC-CAP-019, class: EXTENSION, wave: 3}
+    - {id: CC-CAP-020, class: EXTENSION, wave: 3}
+    - {id: CC-CAP-022, class: EXTENSION, wave: 3}
+    - {id: CC-CAP-023, class: EXTENSION, wave: 3}
+    - {id: CC-CAP-024, class: EXTENSION, wave: 3}
+    - {id: CC-CAP-025, class: EXTENSION, wave: 3}
+    - {id: CC-CAP-026, class: EXTENSION, wave: 3}
+    - {id: CC-CAP-027, class: EXTENSION, wave: 4}
+    - {id: CC-CAP-028, class: CUSTOM, wave: 4}
+    - {id: CC-CAP-029, class: CONFIGURATION, wave: 4}
+    - {id: CC-CAP-030, class: CUSTOM, wave: 4}
+    - {id: CC-CAP-033, class: CUSTOM, wave: 1}
+    - {id: CC-CAP-034, class: CUSTOM, wave: 1}
+    - {id: CC-CAP-035, class: CONFIGURATION, wave: 4}
+    - {id: CC-CAP-038, class: CUSTOM, wave: 1}
+    - {id: CC-CAP-039, class: CUSTOM, wave: 1}
+    - {id: CC-CAP-040, class: CUSTOM, wave: 0}
+  deferred:
+    - CC-CAP-021
+    - CC-CAP-031
+    - CC-CAP-032
+    - CC-CAP-036
+    - CC-CAP-037
+  historical_replaced_by_current_delivery_scope:
+    - id: CC-CAP-015
+      note: "Old future accounting pathway is not implementation evidence for accepted Finance/Admin; current delivery capabilities 041-050 govern."
+
+delivery_capabilities:
+  status: DESIGN_APPROVED_IMPLEMENTATION_REQUIRED
+  runtime_validated: false
+  items:
+    - id: CC-CAP-041
+      name: Finance domain bridge and master mapping
+      work_package: WP-01
+      wave: 5
+    - id: CC-CAP-042
+      name: Receivables, Sales Invoice and payment lifecycle
+      work_package: WP-02
+      wave: 5
+    - id: CC-CAP-043
+      name: Bank import, reconciliation and overdue controls
+      work_package: WP-03
+      wave: 5
+    - id: CC-CAP-044
+      name: Incoming e-invoice and controlled Purchase Invoice lifecycle
+      work_package: WP-04
+      wave: 5
+    - id: CC-CAP-045
+      name: Professional expected-vs-received economics
+      work_package: WP-05
+      wave: 5
+    - id: CC-CAP-046
+      name: Administrative exception queue
+      work_package: WP-05
+      wave: 5
+    - id: CC-CAP-047
+      name: Finance reporting, permissions and audit integration
+      work_package: WP-06
+      wave: 5
+    - id: CC-CAP-048
+      name: Provider-neutral SDI transport adapter
+      work_package: WP-07
+      wave: 6
+    - id: CC-CAP-049
+      name: Provider-neutral ordinary TS submission adapter
+      work_package: WP-08
+      wave: 6
+    - id: CC-CAP-050
+      name: Integrated Finance/Admin verification, UAT and release readiness
+      work_package: WP-09
+      wave: 7
+
+bootstrap_seed:
+  frappe_erpnext_image: "frappe/erpnext:v16.32.0@sha256:481168fa7ba34bb9803e80139dff6df80bc161352cc7b478ae90b0c0da814f90"
+  builder:
+    tag: "v1.33.0"
+    commit: "41987c064da4650e6901b5da82b7c76add452ebf"
+  marley_healthcare:
+    tag: "v16.5.2"
+    commit: "934d6c162868139dfbe80c23d6102adb7ec25adb"
+    status: VERIFIED_SEED_PIN_REQUIRES_WP00_CLEAN_REVALIDATION
+  mariadb: "11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c"
+  redis: "8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+
+first_gate:
+  milestone: M0_REPRODUCIBLE_CLEAN_RUNTIME
+  issue_scope: WP-00
+  must_pass_before_feature_waves: true
