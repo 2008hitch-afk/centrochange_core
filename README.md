@@ -12,9 +12,11 @@ Non è ancora una baseline definitiva di produzione. Le decisioni che dipendono 
 
 L'implementazione HC-0005 è autorizzata. La guida canonica per il build è:
 
+- `docs/MVP-GOAL-ROADMAP-v0.1.md`
 - `docs/MVP-IMPLEMENTATION-BASELINE-v0.1.md`
 - `docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml`
-- epic GitHub #20
+- macro-goal corrente: GOAL-01 / issue #22
+- implementation epic #20
 - primo task eseguibile: WP-00 / issue #21
 
 Le evidenze delle 40 capability già validate vengono riusate come vincoli architetturali e regression basis; Finance/Admin / SdI / TS sono tracciati nelle nuove capability di delivery `CC-CAP-041..050`.
