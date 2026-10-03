@@ -92,3 +92,10 @@ Prima di scrivere feature code, Codex deve chiudere `WP-00 / M0 — Reproducible
 Le 40 capability storiche sono evidenza architetturale da riusare: non vanno ridiscusse da zero, ma i relativi scenari decisivi devono diventare regression test del prodotto quando pertinenti.
 
 Le capability Finance/Admin `CC-CAP-041..050` derivano dal delivery design approvato e richiedono nuova implementazione/evidenza.
+
+
+## Macro-goal execution
+
+Current macro-goal: **GOAL-01 — MVP DEV End-to-End (#22)**.
+
+Codex should work autonomously within the active goal and should not stop after each child issue. Stop only for a material blocker as defined in `docs/MVP-GOAL-ROADMAP-v0.1.md`.
