@@ -82,3 +82,13 @@ Codex esegue runtime, implementazione e test.
 GitHub è il canale di coordinamento.
 
 Se una decisione architetturale non è ancora definita, Codex deve produrre evidenza e una **raccomandazione**, non trasformarla autonomamente in decisione finale.
+
+## Implementation mode — HC-0005
+
+L'implementazione del MVP Centro Change è autorizzata dal gate HC-0005 DECISION-052.
+
+Prima di scrivere feature code, Codex deve chiudere `WP-00 / M0 — Reproducible Clean Runtime` (issue #21).
+
+Le 40 capability storiche sono evidenza architetturale da riusare: non vanno ridiscusse da zero, ma i relativi scenari decisivi devono diventare regression test del prodotto quando pertinenti.
+
+Le capability Finance/Admin `CC-CAP-041..050` derivano dal delivery design approvato e richiedono nuova implementazione/evidenza.
