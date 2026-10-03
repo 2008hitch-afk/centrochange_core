@@ -1,0 +1,45 @@
+schema_version: "1.0"
+roadmap_id: CENTROCHANGE-MVP-GOAL-ROADMAP-v0.1
+status: OWNER_APPROVED
+approved_on: "2026-10-03"
+client_id: HC-0005
+repository: 2008hitch-afk/centrochange_core
+current_goal: GOAL-01
+goals:
+  - id: GOAL-01
+    name: MVP_DEV_END_TO_END
+    issue: 22
+    status: ACTIVE
+    child_issues:
+      - 20
+      - 21
+    next: GOAL-02
+    production_authorized: false
+    real_client_data_authorized: false
+  - id: GOAL-02
+    name: MVP_READY_FOR_CLIENT_UAT
+    issue: 23
+    status: QUEUED
+    next: GOAL-03
+  - id: GOAL-03
+    name: PRODUCTION_READINESS
+    issue: 24
+    status: QUEUED
+    next: GOAL-04
+  - id: GOAL-04
+    name: GO_LIVE_AND_STABILIZATION
+    issue: 25
+    status: QUEUED
+    requires_explicit_production_authorization: true
+    next: GOAL-05
+  - id: GOAL-05
+    name: DELIVERY_CLOSURE_AND_CONTINUITY
+    issue: 26
+    status: QUEUED
+    next: null
+governance:
+  codex_autonomous_within_active_goal: true
+  stop_on_material_blocker_only: true
+  github_is_technical_source_of_truth: true
+  goal_completion_requires_evidence: true
+  next_goal_not_auto_authorized: true
