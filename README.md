@@ -4,9 +4,20 @@ Repository tecnico della soluzione **Centro Change** costruita su Frappe Framewo
 
 ## Stato
 
-**BOOTSTRAP TECNICO / RUNTIME VALIDATION**
+**IMPLEMENTATION AUTHORIZED / WP-00 CLEAN RUNTIME**
 
 Non è ancora una baseline definitiva di produzione. Le decisioni che dipendono dal runtime devono essere validate tramite spike e riportate con evidenze.
+
+## Baseline implementativa corrente
+
+L'implementazione HC-0005 è autorizzata. La guida canonica per il build è:
+
+- `docs/MVP-IMPLEMENTATION-BASELINE-v0.1.md`
+- `docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml`
+- epic GitHub #20
+- primo task eseguibile: WP-00 / issue #21
+
+Le evidenze delle 40 capability già validate vengono riusate come vincoli architetturali e regression basis; Finance/Admin / SdI / TS sono tracciati nelle nuove capability di delivery `CC-CAP-041..050`.
 
 ## Principi architetturali
 
