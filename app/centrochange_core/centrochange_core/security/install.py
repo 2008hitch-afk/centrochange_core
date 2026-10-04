@@ -24,7 +24,12 @@ def configure():
 	create_custom_fields({"Patient Appointment": [{
 		"fieldname": "cc_center", "label": "Centro Change Center", "fieldtype": "Link", "options": "Branch",
 		"insert_after": "company",
-	}]})
+	}], "Practitioner Schedule": [
+		{"fieldname":"cc_practitioner", "label":"Centro Change Practitioner", "fieldtype":"Link", "options":"Healthcare Practitioner"},
+		{"fieldname":"cc_center", "label":"Centro Change Center", "fieldtype":"Link", "options":"Branch"},
+	], "Practitioner Availability": [
+		{"fieldname":"cc_center", "label":"Centro Change Center", "fieldtype":"Link", "options":"Branch"},
+	]})
 	# Override the complete Patient permission set, preserving deny-by-default for professionals.
 	permissions = {
 		"Patient": [

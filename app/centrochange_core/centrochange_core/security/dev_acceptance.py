@@ -4,7 +4,7 @@ from centrochange_core.security import lifecycle as service
 from centrochange_core.security.api import discover_patient, get_patient_detail
 
 
-def run():
+def run(extra_checks=None):
 	if frappe.session.user != 'Administrator' or frappe.conf.get('cc_synthetic_dev') != 1:
 		frappe.throw('Synthetic DEV Administrator required')
 	frappe.db.savepoint('cc_security_acceptance')
@@ -35,6 +35,8 @@ def run():
 			for label, principal in [('CC SYNTHETIC A',pro1),('CC SYNTHETIC B',pro2)]]
 		patient, cross = [frappe.get_doc({'doctype':'Patient', 'first_name':label, 'sex':'Female',
 			'uid':uid}).insert().name for label,uid in [('CC SYNTHETIC OWN','CC-SYNTH-OWN'),('CC SYNTHETIC CROSS','CC-SYNTH-CROSS')]]
+		if extra_checks:
+			checks.extend(extra_checks(locals()))
 		frappe.set_user(pro1)
 		denied('zero assignment list denied', lambda:frappe.get_list('Patient', pluck='name'))
 		denied('zero assignment direct denied', lambda:frappe.get_doc('Patient',patient).check_permission())

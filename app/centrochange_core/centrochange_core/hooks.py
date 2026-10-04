@@ -33,6 +33,8 @@ extend_doctype_class = {
     "User": ["centrochange_core.security.mixins.UserMixin"],
 }
 doc_events = {
+    "Practitioner Schedule": {event: "centrochange_core.scheduling.availability.protected_schedule" for event in ("validate", "on_trash")},
+    "Practitioner Availability": {event: "centrochange_core.scheduling.availability.protected_schedule" for event in ("validate", "on_cancel", "on_trash")},
     "CC Audit Event": {event: "centrochange_core.security.audit.immutable"
                        for event in ("validate", "on_trash")},
     "CC Center Membership": {event: "centrochange_core.security.lifecycle.protected_relationship"
@@ -185,6 +187,8 @@ override_whitelisted_methods = {
 # Hook on document methods and events
 
 # doc_events = {
+    "Practitioner Schedule": {event: "centrochange_core.scheduling.availability.protected_schedule" for event in ("validate", "on_trash")},
+    "Practitioner Availability": {event: "centrochange_core.scheduling.availability.protected_schedule" for event in ("validate", "on_cancel", "on_trash")},
 # 	"*": {
 # 		"on_update": "method",
 # 		"on_cancel": "method",
