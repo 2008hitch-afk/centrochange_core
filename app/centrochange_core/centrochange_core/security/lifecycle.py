@@ -63,7 +63,7 @@ def set_membership(user, center, active, reason):
 	if active not in (0, 1) or user in ("Guest", "Administrator"):
 		frappe.throw("Invalid operational center membership")
 	name = frappe.db.get_value("CC Center Membership", {"user": user, "center": center}, for_update=True)
-	doc = frappe.get_doc("CC Center Membership", name) if name else frappe.get_doc({
+	doc = frappe.get_doc("CC Center Membership", name, for_update=True) if name else frappe.get_doc({
 		"doctype": "CC Center Membership", "user": user, "center": center,
 	})
 	before = {"active": doc.active} if name else None
@@ -86,12 +86,12 @@ def set_assignment(patient, center, practitioner=None, active=1, reason=None):
 	if active not in (0, 1):
 		frappe.throw("Invalid assignment state")
 	if practitioner and active:
-		identity = frappe.get_doc("Healthcare Practitioner", practitioner)
+		identity = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 		if identity.status != "Active" or not identity.user_id or not enabled(identity.user_id) or center not in centers(identity.user_id):
 			frappe.throw("Practitioner must be active and assigned to this center")
 	filters = {"patient": patient, "center": center, "practitioner": practitioner or ["is", "not set"]}
 	name = frappe.db.get_value("CC Patient Assignment", filters, for_update=True)
-	doc = frappe.get_doc("CC Patient Assignment", name) if name else frappe.get_doc({
+	doc = frappe.get_doc("CC Patient Assignment", name, for_update=True) if name else frappe.get_doc({
 		"doctype": "CC Patient Assignment", "patient": patient, "center": center, "practitioner": practitioner,
 	})
 	before = {"active": doc.active} if name else None
@@ -122,11 +122,11 @@ def reassign(patient, center, old_practitioner, new_practitioner, reason):
 def set_practitioner_state(practitioner, active, reason):
 	lock()
 	require_manager()
-	doc = frappe.get_doc("Healthcare Practitioner", practitioner)
+	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 	active = int(frappe.utils.cint(active))
 	if active not in (0, 1) or doc.user_id in (None, "", "Guest", "Administrator"):
 		frappe.throw("A valid linked operational principal is required")
-	user = frappe.get_doc("User", doc.user_id)
+	user = frappe.get_doc("User", doc.user_id, for_update=True)
 	if "CC Professional" not in roles(user.name):
 		frappe.throw("Principal is not a Centro Change professional")
 	before = {"status": doc.status, "enabled": user.enabled}
@@ -148,7 +148,7 @@ def set_practitioner_state(practitioner, active, reason):
 def replace_principal(practitioner, new_user, reason):
 	lock()
 	require_manager()
-	doc = frappe.get_doc("Healthcare Practitioner", practitioner)
+	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 	if new_user in ("Administrator", "Guest") or not enabled(new_user) or "CC Professional" not in roles(new_user):
 		frappe.throw("Replacement must be an enabled Centro Change professional")
 	old_user = doc.user_id

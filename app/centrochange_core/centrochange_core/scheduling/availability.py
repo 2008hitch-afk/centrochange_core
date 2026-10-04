@@ -7,7 +7,7 @@ from centrochange_core.security.lifecycle import lock
 
 
 def require_practitioner(practitioner, center):
-	doc=frappe.get_doc('Healthcare Practitioner',practitioner)
+	doc=frappe.get_doc('Healthcare Practitioner',practitioner,for_update=True)
 	if not enabled() or doc.status != 'Active':
 		frappe.throw('Active authorized practitioner required',frappe.PermissionError)
 	if not is_manager():
@@ -43,12 +43,13 @@ def set_schedule(practitioner,center,time_slots,reason):
 			frappe.throw('Recurring schedule intervals overlap')
 		slots.append({'day':row['day'],'from_time':str(start),'to_time':str(end)})
 	name=frappe.db.get_value('Practitioner Schedule',{'cc_practitioner':practitioner,'cc_center':center},for_update=True)
-	doc=frappe.get_doc('Practitioner Schedule',name) if name else frappe.get_doc({'doctype':'Practitioner Schedule',
+	doc=frappe.get_doc('Practitioner Schedule',name,for_update=True) if name else frappe.get_doc({'doctype':'Practitioner Schedule',
 		'schedule_name':'CC-'+frappe.generate_hash(length=16),'cc_practitioner':practitioner,'cc_center':center})
 	before=[{'day':row.day,'from_time':str(get_time(row.from_time)),'to_time':str(get_time(row.to_time))} for row in doc.time_slots]
 	if name and before==slots and not doc.disabled:
 		return {'name':name}
 	with internal_write('cc_schedule_write'):
+		doc.disabled=0
 		doc.set('time_slots',slots)
 		doc.save(ignore_permissions=True)
 		if not any(row.schedule==doc.name for row in identity.practitioner_schedules):
@@ -82,3 +83,68 @@ def create_absence(practitioner,center,start_date,end_date,start_time,end_time,r
 def protected_schedule(doc,method=None):
 	if not frappe.flags.get('cc_schedule_write'):
 		frappe.throw('Schedules and absences must use the guarded service',frappe.PermissionError)
+
+
+def schedule_query(user=None):
+	from centrochange_core.security.guards import current_rows,roles,practitioner_for,names_condition
+	if is_manager(user):
+		return ''
+	filters={'cc_center':['in',centers(user) or ['']]}
+	if 'CC Professional' in roles(user):
+		filters['cc_practitioner']=practitioner_for(user) or ''
+	elif 'CC Secretariat' not in roles(user):
+		return '1=0'
+	return names_condition('Practitioner Schedule',current_rows('Practitioner Schedule',filters,pluck='name'))
+
+
+def availability_query(user=None):
+	from centrochange_core.security.guards import current_rows,roles,practitioner_for,names_condition
+	if is_manager(user):
+		return ''
+	filters={'cc_center':['in',centers(user) or ['']],'scope_type':'Healthcare Practitioner'}
+	if 'CC Professional' in roles(user):
+		filters['scope']=practitioner_for(user) or ''
+	elif 'CC Secretariat' not in roles(user):
+		return '1=0'
+	return names_condition('Practitioner Availability',current_rows('Practitioner Availability',filters,pluck='name'))
+
+
+def schedule_permission(doc,user=None,ptype=None):
+	from centrochange_core.security.guards import roles,practitioner_for
+	if is_manager(user):
+		return True
+	if not enabled(user) or ptype not in ('read','select') or doc.cc_center not in centers(user):
+		return False
+	if 'CC Professional' in roles(user):
+		return doc.cc_practitioner==practitioner_for(user)
+	return 'CC Secretariat' in roles(user)
+
+
+def availability_permission(doc,user=None,ptype=None):
+	from centrochange_core.security.guards import roles,practitioner_for
+	if is_manager(user):
+		return True
+	if not enabled(user) or ptype not in ('read','select') or doc.cc_center not in centers(user) or doc.scope_type!='Healthcare Practitioner':
+		return False
+	if 'CC Professional' in roles(user):
+		return doc.scope==practitioner_for(user)
+	return 'CC Secretariat' in roles(user)
+
+
+@frappe.whitelist(methods=['POST'])
+@atomic
+def cancel_absence(availability,reason):
+	lock()
+	doc=frappe.get_doc('Practitioner Availability',availability,for_update=True)
+	if doc.scope_type!='Healthcare Practitioner' or doc.type!='Unavailable':
+		frappe.throw('Only managed practitioner absences can be cancelled')
+	require_practitioner(doc.scope,doc.cc_center)
+	if doc.docstatus==2:
+		return {'name':doc.name,'replay':True}
+	if doc.docstatus!=1:
+		frappe.throw('A submitted absence is required')
+	with internal_write('cc_schedule_write'):
+		doc.flags.ignore_permissions=True
+		doc.cancel()
+	append('ABSENCE_CANCELLED',doc.doctype,doc.name,{'docstatus':1},{'docstatus':2},reason)
+	return {'name':doc.name,'replay':False}

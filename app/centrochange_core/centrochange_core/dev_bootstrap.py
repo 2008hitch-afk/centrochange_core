@@ -47,10 +47,14 @@ def smoke():
 	"""Exercise native Healthcare documents in a rolled-back synthetic transaction."""
 	setup()
 	frappe.db.savepoint("wp00_smoke")
+	previous_smoke = frappe.flags.get("cc_runtime_smoke")
+	previous_test = frappe.in_test
+	frappe.in_test = True
+	frappe.flags.cc_runtime_smoke = True
 	try:
 		patient = frappe.get_doc({
 			"doctype": "Patient", "first_name": "WP00 SYNTHETIC Patient",
-			"sex": "Female", "email": "patient.wp00@example.invalid",
+			"sex": "Female", "email": "patient.wp00@example.invalid", "invite_user": 0,
 		}).insert()
 		practitioner = frappe.get_doc({
 			"doctype": "Healthcare Practitioner", "first_name": "WP00 SYNTHETIC Practitioner",
@@ -75,3 +79,5 @@ def smoke():
 		return {"patient": True, "practitioner": True, "appointment": True, "cleanup": "rollback"}
 	finally:
 		frappe.db.rollback(save_point="wp00_smoke")
+		frappe.flags.cc_runtime_smoke = previous_smoke
+		frappe.in_test = previous_test

@@ -48,5 +48,8 @@ def discover_patient(center, uid):
 def before_request():
 	# Defense for retained sessions if a post-commit invalidation callback fails.
 	from centrochange_core.security.guards import enabled
+	from centrochange_core.scheduling.public_booking import SERVICE_USER
+	if frappe.session.user == SERVICE_USER:
+		frappe.throw("Ingress service cannot authenticate interactively", frappe.PermissionError)
 	if frappe.session.user != "Guest" and not enabled():
 		frappe.throw("Disabled principal cannot access Centro Change", frappe.PermissionError)

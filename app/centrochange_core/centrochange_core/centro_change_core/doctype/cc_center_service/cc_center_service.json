@@ -1,0 +1,57 @@
+{
+ "doctype": "DocType",
+ "name": "CC Center Service",
+ "module": "Centro Change Core",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "fields": [
+  {
+   "fieldname": "center",
+   "fieldtype": "Link",
+   "options": "Branch",
+   "reqd": 1,
+   "label": "Center"
+  },
+  {
+   "fieldname": "appointment_type",
+   "fieldtype": "Link",
+   "options": "Appointment Type",
+   "reqd": 1,
+   "label": "Appointment Type"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "default": "1",
+   "label": "Enabled"
+  }
+ ],
+ "field_order": [
+  "center",
+  "appointment_type",
+  "enabled"
+ ],
+ "permissions": [
+  {
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0,
+   "role": "CC Manager"
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": []
+}
