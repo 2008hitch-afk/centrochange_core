@@ -13,11 +13,14 @@ RUN git config --global http.version HTTP/1.1 \
     && bench get-app --branch "${BUILDER_TAG}" builder https://github.com/frappe/builder.git \
     && test "$(git -C apps/builder rev-parse HEAD)" = "${BUILDER_REF}"
 
-RUN bench get-app --branch "${HEALTHCARE_TAG}" healthcare https://github.com/earthians/marley.git \
+# Marley portal imports this public build-time setting from common_site_config.
+RUN bench set-config -gp socketio_port 9000 \
+    && bench get-app --branch "${HEALTHCARE_TAG}" healthcare https://github.com/earthians/marley.git \
     && test "$(git -C apps/healthcare rev-parse HEAD)" = "${HEALTHCARE_REF}"
 
 COPY --chown=frappe:frappe app/centrochange_core /home/frappe/frappe-bench/apps/centrochange_core
 
 RUN uv pip install --no-cache --python /home/frappe/frappe-bench/env/bin/python --editable /home/frappe/frappe-bench/apps/centrochange_core \
     && printf '\n%s\n' centrochange_core >> sites/apps.txt \
-    && bench build --app frappe --app erpnext --app builder --app healthcare --app centrochange_core
+    && bench build \
+    && cp -a sites/assets/. assets/

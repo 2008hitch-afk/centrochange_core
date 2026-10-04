@@ -41,3 +41,37 @@ def setup():
 		frappe.throw("Synthetic company chart of accounts is missing")
 	frappe.db.commit()
 	return {"synthetic_dev": True, "company": COMPANY, "setup_complete": True}
+
+
+def smoke():
+	"""Exercise native Healthcare documents in a rolled-back synthetic transaction."""
+	setup()
+	frappe.db.savepoint("wp00_smoke")
+	try:
+		patient = frappe.get_doc({
+			"doctype": "Patient", "first_name": "WP00 SYNTHETIC Patient",
+			"sex": "Female", "email": "patient.wp00@example.invalid",
+		}).insert()
+		practitioner = frappe.get_doc({
+			"doctype": "Healthcare Practitioner", "first_name": "WP00 SYNTHETIC Practitioner",
+			"status": "Active",
+		}).insert()
+		appointment_type = frappe.get_doc({
+			"doctype": "Appointment Type", "appointment_type": "WP00 SYNTHETIC Smoke",
+			"allow_booking_for": "Practitioner", "default_duration": 30,
+		}).insert()
+		appointment = frappe.get_doc({
+			"doctype": "Patient Appointment", "patient": patient.name,
+			"practitioner": practitioner.name, "company": COMPANY,
+			"appointment_type": appointment_type.name, "appointment_for": "Practitioner",
+			"appointment_date": "2099-01-05", "appointment_time": "10:00:00",
+			"duration": 30, "paid_amount": 0,
+		}).insert()
+		appointment.reload()
+		assert appointment.patient == patient.name
+		assert appointment.practitioner == practitioner.name
+		assert appointment.duration == 30
+		assert not appointment.invoiced and not appointment.ref_sales_invoice
+		return {"patient": True, "practitioner": True, "appointment": True, "cleanup": "rollback"}
+	finally:
+		frappe.db.rollback(save_point="wp00_smoke")
