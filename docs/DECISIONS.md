@@ -419,3 +419,11 @@ Quando uno spike produce evidenza sufficiente:
 2. aggiornare la decisione da `RUNTIME VALIDATION REQUIRED` a stato confermato o sostituito;
 3. documentare conseguenze e migrazioni;
 4. non usare la parola `APPROVATO` come sostituto della decisione dell'utente/owner.
+
+## TD-031 — CC-CAP-013 data di selezione della tariffa
+
+Data: 2026-10-04. Fonte: risposta esplicita dell'utente alla policy lasciata separata da TD-024 / testlab CAP011-013.
+
+Decisione: usare **la data della prenotazione**, nel timezone Europe/Rome, per selezionare Item Price effective-dated. Catturare e congelare lo snapshot prezzo/valuta/provenance alla prenotazione. La data prevista della seduta non seleziona la tariffa. Una modifica successiva del catalogo o uno spostamento non ricalcola lo snapshot storico della stessa seduta.
+
+WP-05: la regola di compenso sulle sedute svolte ma non incassate resta OPEN; mantenere la logica parametrica e non inferire una scelta. Le altre wave proseguono.
