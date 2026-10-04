@@ -403,6 +403,14 @@ Decisione e conseguenze principali:
 
 Evidenza autorevole: `centrochange-testlab` coordinator #56 e issue/probe capability-specific; per `CC-CAP-037`, issue #65 e run finale `centrochange-cap037-20260909r2`. Product implementation resta separata da queste classificazioni.
 
+## TD-030 — CC-CAP-025 confine esatto delle 48 ore
+
+**Stato:** CONFERMATA DALL'OWNER — 2026-10-04
+
+La cancellazione a esattamente `48:00:00` dalla seduta è **puntuale**. La condizione late/due è strettamente `<48h`; `>=48h` è puntuale. Questa decisione chiude il confine lasciato aperto da TD-029 e non cambia la waiver autorizzata/auditata né le altre policy di correzione.
+
+Fonte canonica: HC-0005 `DECISION-012-48h-boundary.md`, approvata il 2026-09-09, riletta tramite connettore GitHub. Risposta owner nella sessione GOAL-01 del 2026-10-04 ne conferma la semantica (issue #29). Il testo locale TD-029 era rimasto arretrato rispetto a questa decisione. In Wave 3 convertire il confine in regressioni `47:59:59`, `48:00:00`, `48:00:01`, includendo timezone e accesso API. La decisione business non è ancora evidenza runtime del prodotto.
+
 ## Regola di aggiornamento
 
 Quando uno spike produce evidenza sufficiente:
