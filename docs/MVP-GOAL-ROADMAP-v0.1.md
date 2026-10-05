@@ -39,8 +39,8 @@ A goal does not automatically authorize the next goal where a separate HITCH gat
 
 | Goal | GitHub issue | Status | Current authority |
 |---|---:|---|---|
-| GOAL-01 — MVP DEV End-to-End | #22 | **ACTIVE** | Implementation authorized by HC-0005 DECISION-052 |
-| GOAL-02 — MVP Ready for Client UAT | #23 | QUEUED | Requires GOAL-01 completion/review |
+| GOAL-01 — MVP DEV End-to-End | #22 | **OWNER ACCEPTED / DEV PASS** | Accepted by HC-0005 DECISION-055 |
+| GOAL-02 — MVP Ready for Client UAT | #23 | **WAITING OWNER AUTHORIZATION** | GOAL-01 accepted; separate authorization required |
 | GOAL-03 — Production Readiness | #24 | QUEUED | Requires GOAL-02/UAT basis |
 | GOAL-04 — Go-Live & Stabilization | #25 | QUEUED | Requires explicit production/go-live authorization |
 | GOAL-05 — Delivery Closure & Continuity | #26 | QUEUED | Requires stabilized live delivery |
@@ -218,7 +218,9 @@ The completion report must record the candidate learning artifacts produced or `
 
 ## 10. Current command for Codex
 
-For the current phase:
+GOAL-01 is formally accepted by HC-0005 DECISION-055.
 
-> Execute **GOAL-01 (#22)** autonomously according to this roadmap, `AGENTS.md`, the MVP Implementation Baseline and Capability Map. Start from #21 and continue through the technical child work needed to reach GOAL-01 Done. Stop only for a material blocker as defined in GOAL-01.
+There is currently **no authorized next macro-goal command**.
+
+GOAL-02 (#23) remains pending explicit HITCH Owner authorization. Until that gate is approved, Codex must not start GOAL-02 or expand scope into UAT, production readiness, real data, provider credentials or real SdI/TS traffic.
 
