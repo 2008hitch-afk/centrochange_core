@@ -39,7 +39,7 @@ A goal does not automatically authorize the next goal where a separate HITCH gat
 
 | Goal | GitHub issue | Status | Current authority |
 |---|---:|---|---|
-| GOAL-01 — MVP DEV End-to-End | #22 | **ACTIVE** | Implementation authorized by HC-0005 DECISION-052 |
+| GOAL-01 — MVP DEV End-to-End | #22 | **DONE / DEV PASS** | [Completion report](MVP-GOAL-COMPLETION-REPORT-2026-10-05.md); draft stack awaits review |
 | GOAL-02 — MVP Ready for Client UAT | #23 | QUEUED | Requires GOAL-01 completion/review |
 | GOAL-03 — Production Readiness | #24 | QUEUED | Requires GOAL-02/UAT basis |
 | GOAL-04 — Go-Live & Stabilization | #25 | QUEUED | Requires explicit production/go-live authorization |

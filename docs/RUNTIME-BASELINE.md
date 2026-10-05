@@ -1,5 +1,7 @@
 # Runtime Baseline — Centro Change
 
+> Baseline corrente GOAL-01: Frappe 16.31.0 / ERPNext 16.32.0 / Builder 1.33.0 / Marley Healthcare 16.5.2 e app Centro Change implementata. Pin e bootstrap sono in `infra/Dockerfile` e `infra/compose.yaml`; final immutable acceptance **PASS**, fresh/recreate and complete regression, in [WP-09](evidence/WP-09-2026-10-05.md). Le sezioni seguenti conservano le evidenze storiche degli spike e non descrivono lo stato corrente delle feature.
+
 **Stato:** SPIKE 01 VALIDATED LOCALLY — proposta soggetta a architecture review.
 
 Evidenze raccolte il 2026-09-02 sul workstation reale. Il nuovo site contiene solo metadati standard e dati sintetici, mai dati cliente.

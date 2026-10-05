@@ -9,7 +9,7 @@ goals:
   - id: GOAL-01
     name: MVP_DEV_END_TO_END
     issue: 22
-    status: ACTIVE
+    status: DONE_DEV
     child_issues:
       - 20
       - 21

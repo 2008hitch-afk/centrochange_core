@@ -1,210 +1,47 @@
-# Centro Change — Technical Architecture Baseline
+# Centro Change — implemented DEV architecture
 
-**Stato:** PROPOSTA / RUNTIME VALIDATION REQUIRED
+**Status: IMPLEMENTED DEV / GOAL-01 DONE / DEV PASS.**
 
-Questo documento traduce la baseline tecnica corrente in una forma operativa per sviluppo e test. Le scelte che dipendono dal comportamento reale di Frappe/ERPNext/Builder devono essere confermate tramite spike.
+The approved scope and native/extension/custom boundaries remain those of [the implementation baseline](docs/MVP-IMPLEMENTATION-BASELINE-v0.1.md), [capability map](docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml) and HC-0005 delivery decisions. Current implementation evidence is in [the GOAL-01 report](docs/MVP-GOAL-COMPLETION-REPORT-2026-10-05.md). This document records implementation; it does not authorize architecture, fiscal or production changes.
 
-## 1. Stack candidato
+## Native ownership
 
-- Frappe Framework v16 (versione esatta da validare runtime)
-- ERPNext v16 (versione esatta da validare runtime)
-- Frappe Builder compatibile
-- custom app `centrochange_core`
-- Marley Health: solo spike di fit, non dipendenza decisa
+Frappe owns authentication, User/Role primitives, permission hooks, private File storage, Communication/Notification Log, scheduler/queues and native backup. ERPNext owns Company, Customer, Supplier, Account, Cost Center, Item/Item Price/Price List, Mode of Payment, Sales Invoice, Purchase Invoice, Payment Entry, Bank/Bank Account/Bank Transaction, GL and Payment Ledger. Marley Healthcare owns the central Patient, Healthcare Practitioner identity, canonical Patient Appointment, Practitioner Schedule and Practitioner Availability. Branch is the shared center registry; explicit native Cost Center/Company mappings carry accounting context.
 
-## 2. Ownership
+No upstream core is patched. Supported doctype mixins, events, permission queries and whitelisted-method overrides implement the required guards in `centrochange_core`. Exact pinned versions and commits are in `infra/Dockerfile` and `infra/compose.yaml`.
 
-### Frappe/ERPNext master dove il fit è corretto
+## Operational extensions
 
-- User / autenticazione / ruoli base
-- Contact
-- Customer come identità economico-amministrativa del paziente, se confermato
-- Item / Item Group per prestazioni
-- Item Price / Price List
-- Mode of Payment
-- Email Account / Communication / Notification
-- report / print / export infrastructure
-- futura Sales Invoice / Payment Entry / Payment Ledger solo quando verrà attivata vera contabilità
+- `security`: center membership, patient/practitioner assignment, replacement/reassignment/offboarding, current transactional reads, minimal append-only audit and direct/API/export/report/session guards. Native identity is reused through exact UID discovery and explicit audited assignment. DEV intake accepts fictional inputs and freezes a payload-bound retry key.
+- `scheduling`: native appointment booking/move/cancel, recurring availability and exceptions, patient/practitioner overlap prevention, serialized concurrent mutation, fixed public Marco/Francesca first-meeting ingress and backend-only subsequent sessions. Item Price is resolved on the Europe/Rome booking date; service/price/currency/duration snapshots stay immutable through catalog changes and rescheduling.
+- `operations`: organizational notes separate from author-only clinical notes; native appointment closure/disposition extensions; append-only operational settlements and package grant/reserve/consume/release/correct/adjust events. Exactly 48 elapsed hours is timely. 21:00 reminder and next-day 07:00 lock use Europe/Rome boundaries, retry-safe catch-up and synchronous lock enforcement. Native internal notifications are delivered by real workers.
 
-### Centro Change master
+Operational paid status is an audited fact, not accounting settlement. Package balance derives from its ledger; it is not a second money ledger. No package sale price is inferred from unit count and service tariff. Native shared Patient fields are not a clinical-note store. Management/Secretariat/Finance/Accountant do not inherit private-note access.
 
-- assegnazione paziente-professionista
-- note organizzative
-- note professionali riservate
-- regole calendario specifiche non coperte adeguatamente dal nativo
-- chiusura giornaliera
-- settlement operativo MVP
-- pacchetti e ledger
-- regola 48h
-- audit business specifico
-- permission logic dinamica
-- snapshot storici di servizio/durata/prezzo applicati alla seduta
+## Finance/Admin extensions
 
-## 3. Principi di estensione
+`CC Economic Source Link` freezes session and accounting context and links native document lines; it is a bridge, not accounting truth. Explicit mapping/review services control native invoice drafts, submit, payments, cancellation, credit and amendment. Bank import uses native Bank Transaction; suggestions never auto-post, and human selection records native allocations/payments with replay protection.
 
-Ordine di preferenza:
+Payment agreements retain Immediate/Month End/Specific Date terms. Previous unpaid debt blocks a subsequent booking/performance unless an authorized, audited reason and extended deadline are recorded. Original native debt remains. Local patient email traces are simulated native Communication; no real SMTP delivery is claimed.
 
-1. native Frappe/ERPNext;
-2. estensione supportata del nativo;
-3. app ufficiale pertinente;
-4. custom `centrochange_core`;
-5. integrazione esterna.
+Incoming XML is bounded, fictional and privately retained with immutable hash/identity. Explicit supplier/line/account/tax review precedes native Purchase Invoice creation. Compensation rules and snapshots are explicit and parametric; missing rules or performed-but-unpaid policy UNSET produce unknown amounts and administrative review, never implicit zero. Expected/received comparison reads native Supplier invoices. The condition-based queue supports assignment, priority, deadlines, defer/reappearance and automatic resolution when the underlying condition clears.
 
-Sono da evitare:
+Reports compose operational sources and native submitted/cancelled/return/payment states in a bounded center/date scope. Shared Customer/Supplier figures remain shared fiscal-subject totals; no patient/professional allocation or undefined margin is invented. Accountant is read-only. Finance generic mutation and unscoped native report/helper paths are controlled server-side.
 
-- fork del core;
-- monkey patch non supportate;
-- modifica manuale di container running come soluzione persistente;
-- business logic critica solo in configurazioni non versionate;
-- controlli di autorizzazione solo lato UI.
+## Separate fiscal adapters
 
-## 4. Modello professionista candidato
+SdI and TS have separate provider-neutral simulated adapters. Private immutable transactions/payloads and append-only attempts retain source/document versions, request hashes, actor provenance, normalized states, synthetic protocols/receipts and bounded retry classification. Real short workers execute simulations; replay and recovery do not duplicate attempts. Accepted correction descendants resolve unresolved administrative ancestors without rewriting history.
 
-```text
-User
-├── Employee (se utile)
-├── CC Professional oppure Healthcare Practitioner
-└── Sales Person opzionale come proiezione economica
-```
+TS separately retains exact source/invoice/patient, explicit fictional expense classification, opposition and subject/transmitter snapshots. Missing/unverified inputs remain pending and cannot submit. Management may record explicit synthetic eligibility for DEV tests. TS never calls SdI. Commercialista verification, final real fiscal population/correction responsibilities, SdI route, TS subject/transmitter/credentials and production activation remain gates.
 
-`Sales Person` non è identità operativa né meccanismo di sicurezza.
+## Interfaces and runtime
 
-## 5. Prestazioni e prezzi
+`/centrochange`, `/finanza` and `/primo_incontro` compose guarded APIs; supported native Desk pages handle accounting/catalog/identity administration. Browser controls never substitute for server authorization. Finance responses from an older request/center/view cannot overwrite the current view.
 
-Riutilizzare Item / Item Price / Price List se confermato dal runtime.
-Ogni appuntamento deve conservare snapshot di:
+The isolated `centrochange-dev` Compose project uses pinned images/apps, localhost HTTP, private DB/Redis networks and four dedicated named volumes. Fresh bootstrap completes native ERPNext setup, installs all apps, migrates, builds/exposes assets and starts backend, frontend, scheduler, two workers and WebSocket. The final candidate uses a committed image without source binds; the separately versioned development overlay is only for development/debugging. Empty-volume database startup has an initial health grace period and becomes healthy as soon as checks succeed.
 
-- prestazione/nome applicato;
-- durata applicata;
-- prezzo applicato.
+## Verification and boundaries
 
-## 6. Pagamenti MVP
+Versioned direct, actual HTTP and pinned Playwright harnesses exercise nonempty authorized/unauthorized paths, concurrency, native money trace, corrections, privacy, idempotency and worker execution. Direct fixtures fully roll back and clear callbacks; HTTP/browser fixtures use exact synthetic ownership cleanup. Source-byte parity, fresh runtime snapshots and destroy/recreate equivalence are separate evidence. Native backup is encrypted/integrity checked outside Git; restore/DR and upgrades remain deferred.
 
-L'MVP non registra automaticamente una `Payment Entry` quando un professionista indica “Pagato Sì”.
-
-Modello candidato `CC Settlement`:
-
-- riferimento seduta/pacchetto;
-- amount snapshot;
-- paid yes/no;
-- Mode of Payment;
-- autore/data consolidamento;
-- audit;
-- eventuale riferimento futuro a Sales Invoice / Payment Entry.
-
-Path futuro:
-
-```text
-CC Settlement → Sales Invoice → Payment Entry → Payment Ledger
-```
-
-## 7. Pacchetti
-
-Custom in `centrochange_core`, senza forzare Product Bundle/Subscription se la semantica non coincide.
-
-Modello candidato:
-
-- `CC Package Template`
-- `CC Package Template Line`
-- `CC Patient Package`
-- `CC Package Ledger`
-
-Eventi minimi ledger:
-
-- RESERVE
-- RELEASE
-- CONSUME
-- ADMIN_ADJUSTMENT
-
-Richiesti idempotenza e controllo concorrenza.
-
-## 8. Note e segregazione
-
-Separare fisicamente:
-
-- `CC Organizational Note`
-- `CC Professional Note`
-
-La segregazione deve valere su UI, API, report, export e accesso diretto.
-
-## 9. Calendario / appointment
-
-Non assumere che ERPNext `Appointment` standard sia adatto.
-Prima di creare DocType custom per Patient/Practitioner/Appointment/Availability va eseguito lo spike Marley Health.
-
-Requisiti non negoziabili:
-
-- primo incontro pubblico solo con Marco/Francesca;
-- sedute successive solo backend;
-- professionista opera solo sui pazienti assegnati;
-- no double booking;
-- disponibilità/indisponibilità;
-- concorrenza sullo slot;
-- storico cancellazioni/spostamenti;
-- snapshot economico/storico.
-
-## 10. Chiusura giornaliera
-
-Business logic custom sopra scheduler/queue Frappe.
-
-Modello candidato `CC Session Closure`:
-
-- Pending
-- Closed
-- Auto Locked
-- Reopened/Corrected
-
-Automazioni:
-
-- 21:00 reminder solo se pendenti;
-- 07:00 giorno successivo auto-lock;
-- sblocco solo ruoli autorizzati;
-- regola 48h centralizzata e testabile.
-
-## 11. Website/UI
-
-### Builder / Website
-Per sito pubblico branded, contenuti e funnel di prenotazione iniziale.
-
-### Desk / Workspace / Form / List / Report
-Preferire per backoffice standard quando l'UX è sufficiente.
-
-### UI custom mirate
-Solo dove portano valore operativo chiaro:
-
-- calendario multi-professionista;
-- chiusura giornaliera;
-- scheda paziente unificata;
-- dashboard direzionale.
-
-## 12. Ambienti
-
-Pattern candidato:
-
-```text
-Windows / WSL2 / Docker
-├── altri stack locali                [isolati]
-└── centrochange-dev                  [nuovo Compose project]
-    ├── DB dedicato
-    ├── Redis dedicato
-    ├── site volume dedicato
-    ├── network dedicata
-    └── image Centro Change dedicata
-```
-
-Il riuso è di pattern/tooling, non di stato applicativo o codice client-specific.
-
-## 13. Gate
-
-Prima del feature development esteso chiudere gli spike critici su:
-
-1. runtime baseline / reuse & isolation;
-2. Marley Health fit;
-3. permission model;
-4. double booking;
-5. Builder/Git reproducibility;
-6. package ledger;
-7. scheduler 21:00/07:00;
-8. settlement vs ERP accounting;
-9. reporting/export permissions;
-10. backup/restore.
+GOAL-01 is DEV and synthetic only. It does not authorize UAT, real data/providers, real SdI/TS traffic or production. Open policy values and later-goal recommendations are recorded explicitly in the completion report. Technical controls alone are not a compliance certification.

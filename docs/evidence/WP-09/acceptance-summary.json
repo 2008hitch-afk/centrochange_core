@@ -1,0 +1,355 @@
+{
+  "status": "PASS",
+  "scope": "synthetic isolated DEV, simulated providers",
+  "application_build_commit": "6743131",
+  "deployment_recipe_commit": "43d24bb",
+  "image": {
+    "status": "PASS",
+    "source_commit": "43d24bb8c581111c8b2f6b2f1701f3ac271abb14",
+    "tracked_app_files": 162,
+    "app_manifest_sha256": "9f2044282e039f4bdc2ef10d0f67de62755f51c10b8c90208656035bcd2c3e54",
+    "runtime_image": "sha256:bd1ac57f9c95df0daf48e20db226965eb0e4ccee91d93393a81fc3a7cfc4a7a5",
+    "source_overlays": false,
+    "app_services": 6
+  },
+  "fresh_c": {
+    "runtime": {
+      "result": "PASS",
+      "http_login_desk": true,
+      "assets": true,
+      "websocket_upgrade": true,
+      "workers": true,
+      "scheduler_enabled": true,
+      "native_smoke_cleanup": true,
+      "bootstrap_negative_guards": true,
+      "baseline_sha256": "98b1192ffada845219e4f9cc796cf4ef9ef2e1ef6c65663a9bf67f6622fc30c1"
+    },
+    "doctype_count": 976,
+    "snapshot_file_sha256": "54250cf050ebc935c2550496bb826ed8d5817505bfa118a49c2202106435de70",
+    "suites": [
+      {
+        "suite": "direct",
+        "status": "PASS",
+        "cleanup": "rollback",
+        "checks": 176
+      },
+      {
+        "suite": "security",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 38
+      },
+      {
+        "suite": "finance",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 24
+      },
+      {
+        "suite": "receivables",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 17
+      },
+      {
+        "suite": "banking",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 16
+      },
+      {
+        "suite": "incoming",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 12
+      },
+      {
+        "suite": "professional",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 17
+      },
+      {
+        "suite": "reporting",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 20
+      },
+      {
+        "suite": "sdi",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 6
+      },
+      {
+        "suite": "ts",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 8
+      },
+      {
+        "suite": "browser",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "report_checks": [
+          15,
+          5,
+          1
+        ]
+      },
+      {
+        "suite": "finance_browser",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "report_checks": [
+          15
+        ]
+      }
+    ],
+    "post_suite": {
+      "synthetic_dev": 1,
+      "unpaid_policy": "UNSET",
+      "counts": {
+        "Patient": 0,
+        "Healthcare Practitioner": 0,
+        "Patient Appointment": 0,
+        "Sales Invoice": 0,
+        "Purchase Invoice": 0,
+        "Payment Entry": 0,
+        "Bank Transaction": 0,
+        "CC Fiscal Transaction": 0,
+        "CC Patient Package": 0,
+        "CC Private Note": 0,
+        "CC Incoming Invoice": 0
+      },
+      "scheduled_jobs": [
+        {
+          "method": "centrochange_core.finance.ts.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 16:56:06.940263"
+        },
+        {
+          "method": "centrochange_core.finance.sdi.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 16:56:02.963704"
+        },
+        {
+          "method": "centrochange_core.finance.admin_queue.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 16:56:05.697601"
+        },
+        {
+          "method": "centrochange_core.finance.collections.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 16:56:01.484936"
+        },
+        {
+          "method": "centrochange_core.operations.notifications.dispatch_pending",
+          "stopped": 0,
+          "last_execution": "2026-10-05 16:56:06.668642"
+        },
+        {
+          "method": "centrochange_core.operations.automation.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 16:56:05.699140"
+        }
+      ]
+    }
+  },
+  "fresh_d": {
+    "runtime": {
+      "result": "PASS",
+      "http_login_desk": true,
+      "assets": true,
+      "websocket_upgrade": true,
+      "workers": true,
+      "scheduler_enabled": true,
+      "native_smoke_cleanup": true,
+      "bootstrap_negative_guards": true,
+      "baseline_sha256": "98b1192ffada845219e4f9cc796cf4ef9ef2e1ef6c65663a9bf67f6622fc30c1"
+    },
+    "image": {
+      "status": "PASS",
+      "source_commit": "43d24bb8c581111c8b2f6b2f1701f3ac271abb14",
+      "tracked_app_files": 162,
+      "app_manifest_sha256": "9f2044282e039f4bdc2ef10d0f67de62755f51c10b8c90208656035bcd2c3e54",
+      "runtime_image": "sha256:bd1ac57f9c95df0daf48e20db226965eb0e4ccee91d93393a81fc3a7cfc4a7a5",
+      "source_overlays": false,
+      "app_services": 6
+    },
+    "suites_status": "PASS",
+    "suites": [
+      {
+        "suite": "direct",
+        "status": "PASS",
+        "cleanup": "rollback",
+        "checks": 176
+      },
+      {
+        "suite": "security",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 38
+      },
+      {
+        "suite": "finance",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 24
+      },
+      {
+        "suite": "receivables",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 17
+      },
+      {
+        "suite": "banking",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 16
+      },
+      {
+        "suite": "incoming",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 12
+      },
+      {
+        "suite": "professional",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 17
+      },
+      {
+        "suite": "reporting",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 20
+      },
+      {
+        "suite": "sdi",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 6
+      },
+      {
+        "suite": "ts",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "checks": 8
+      },
+      {
+        "suite": "browser",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "report_checks": [
+          15,
+          5,
+          1
+        ]
+      },
+      {
+        "suite": "finance_browser",
+        "status": "PASS",
+        "cleanup": "PASS",
+        "report_checks": [
+          15
+        ]
+      }
+    ],
+    "post_suite": {
+      "synthetic_dev": 1,
+      "unpaid_policy": "UNSET",
+      "counts": {
+        "Patient": 0,
+        "Healthcare Practitioner": 0,
+        "Patient Appointment": 0,
+        "Sales Invoice": 0,
+        "Purchase Invoice": 0,
+        "Payment Entry": 0,
+        "Bank Transaction": 0,
+        "CC Fiscal Transaction": 0,
+        "CC Patient Package": 0,
+        "CC Private Note": 0,
+        "CC Incoming Invoice": 0
+      },
+      "scheduled_jobs": [
+        {
+          "method": "centrochange_core.finance.ts.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 17:16:02.295473"
+        },
+        {
+          "method": "centrochange_core.finance.sdi.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 17:16:02.180955"
+        },
+        {
+          "method": "centrochange_core.finance.admin_queue.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 17:16:01.718712"
+        },
+        {
+          "method": "centrochange_core.finance.collections.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 17:16:02.006159"
+        },
+        {
+          "method": "centrochange_core.operations.notifications.dispatch_pending",
+          "stopped": 0,
+          "last_execution": "2026-10-05 17:16:01.899323"
+        },
+        {
+          "method": "centrochange_core.operations.automation.catch_up",
+          "stopped": 0,
+          "last_execution": "2026-10-05 17:16:01.633303"
+        }
+      ]
+    }
+  },
+  "backup": {
+    "status": "PASS",
+    "site": "centrochange.local",
+    "components": [
+      {
+        "kind": "database",
+        "size": 1175957,
+        "sha256": "e24834da49bc450f76bfa4514c7b1981c9e020266c556977abc49e600127f6e8"
+      },
+      {
+        "kind": "public_files",
+        "size": 178,
+        "sha256": "b7eed00e21cbcc599c57f05887c0068ba4147163a1c415268e61e58b19e776eb"
+      },
+      {
+        "kind": "private_files",
+        "size": 139,
+        "sha256": "2437034480a337ef2b3d458310c58380cba0e29a900934c6c307031d407a4399"
+      },
+      {
+        "kind": "configuration",
+        "size": 270,
+        "sha256": "6be7624ac4f2ac971093bb01f8c7589e134a2065648f1576ea5d00757244a937"
+      }
+    ],
+    "encrypted_sha256": "2b7414ea62f4a317b4833539bf43882c0c5cd3e4b68996f9c570218073bdcaf4",
+    "encrypted_size": 1178762,
+    "raw_files_removed": true,
+    "restore_tested": false,
+    "key_policy": "0600 local DEV-only key; production key custody and retention remain gated"
+  },
+  "destroy_recreate": {
+    "status": "PASS",
+    "normalized_snapshot_equal": true,
+    "snapshot_file_sha256": "54250cf050ebc935c2550496bb826ed8d5817505bfa118a49c2202106435de70",
+    "normalized_baseline_sha256": "98b1192ffada845219e4f9cc796cf4ef9ef2e1ef6c65663a9bf67f6622fc30c1",
+    "image_and_app_manifest_equal": true
+  },
+  "totals_per_cycle": {
+    "direct_checks": 176,
+    "http_groups": 158,
+    "browser_checks": 35,
+    "actual_notification_worker_checks": 1
+  }
+}
