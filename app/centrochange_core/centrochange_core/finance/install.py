@@ -10,6 +10,8 @@ def ensure_roles():
 
 def configure():
     ensure_roles()
+    frappe.db.set_single_value("CC Finance Settings","unpaid_compensation_policy","HC-0005 DECISION-054")
+    frappe.db.add_unique("CC Unpaid Threshold",["practitioner","sequence"],constraint_name="cc_unpaid_threshold_sequence")
     create_custom_fields({'Branch':[
         {'fieldname':'cc_company','label':'Accounting Company','fieldtype':'Link','options':'Company','read_only':1},
         {'fieldname':'cc_cost_center','label':'Accounting Cost Center','fieldtype':'Link','options':'Cost Center','read_only':1},

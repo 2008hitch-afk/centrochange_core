@@ -19,7 +19,8 @@
   "defer_until",
   "resolved_at",
   "condition_hash",
-  "resolution_reason"
+  "resolution_reason",
+  "condition_details"
  ],
  "fields": [
   {
@@ -104,6 +105,12 @@
    "fieldname": "resolution_reason",
    "label": "Resolution Reason",
    "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "condition_details",
+   "label": "Condition Details",
+   "fieldtype": "Long Text",
+   "read_only": 1
   }
  ],
  "permissions": [

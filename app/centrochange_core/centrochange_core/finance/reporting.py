@@ -49,9 +49,9 @@ def summary(center,start,end,customer=None,practitioner=None):
         patients=set(current_rows('Patient',{'customer':customer},pluck='name'));sessions=[r for r in sessions if r.patient in patients]
     currencies={r.currency for r in sales+purchases}
     if currencies-{'EUR'}:frappe.throw('Separate currency reporting is required before combining these documents')
-    expected_rows=_bounded('CC Professional Expectation',{'center':center},['name','appointment','practitioner','source','state','amount','amount_known','currency','creation'])
+    expected_rows=_bounded('CC Professional Expectation',{'center':center},['name','appointment','practitioner','source','state','amount','amount_known','currency','creation','sequence'])
     session_ids={r.name for r in sessions};latest={}
-    for row in sorted(expected_rows,key=lambda r:(r.creation,r.name)):
+    for row in sorted(expected_rows,key=lambda r:(r.sequence or 0,r.creation,r.name)):
         if row.appointment in session_ids:latest[row.appointment]=row
     # Performed sessions without an expectation are visible unknowns, never silently absent zero cost.
     performed={r.name for r in sessions if r.cc_performed}
@@ -96,7 +96,7 @@ def bootstrap(center=None):
         'customers':masters('Customer',['name','customer_name']),'suppliers':masters('Supplier',['name','supplier_name','tax_id']),
         'accounts':masters('Account',['name','root_type','account_type','is_group','disabled','company']),
         'items':_bounded('Item',{'disabled':0,'is_stock_item':0},['name','item_name','is_purchase_item','is_sales_item']),
-        'practitioners':practitioners,'assignees':assignees,'unpaid_policy':frappe.db.get_single_value('CC Finance Settings','unpaid_compensation_policy') or 'UNSET',
+        'practitioners':practitioners,'assignees':assignees,'unpaid_policy':professional_economics.POLICY,
         'fiscal_verified':bool(frappe.db.get_single_value('CC Finance Settings','fiscal_configuration_verified')),'simulation_only':True}
 
 
@@ -111,4 +111,8 @@ def records(center,doctype):
         'CC Professional Expectation':['name','appointment','practitioner','state','amount','amount_known','problem','rule']}
     if doctype not in allowed_types:frappe.throw('Unsupported workspace record type')
     field='center' if doctype.startswith('CC ') else 'cc_center'
+    if doctype=='CC Professional Expectation':
+        latest=professional_economics.latest_expectations(center)
+        if len(latest)>500:frappe.throw('Narrow the report filters; more than 500 composing records')
+        return [{k:r.get(k) for k in allowed_types[doctype]} for r in latest.values()]
     return _bounded(doctype,{field:center},allowed_types[doctype])

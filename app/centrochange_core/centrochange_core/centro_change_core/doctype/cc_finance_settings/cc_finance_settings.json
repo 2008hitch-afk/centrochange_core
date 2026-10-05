@@ -47,8 +47,9 @@
    "fieldname": "unpaid_compensation_policy",
    "label": "Performed Unpaid Compensation Policy",
    "fieldtype": "Select",
-   "default": "UNSET",
-   "options": "UNSET\nEarn When Performed\nEarn When Patient Paid"
+   "default": "HC-0005 DECISION-054",
+   "options": "HC-0005 DECISION-054",
+   "read_only": 1
   },
   {
    "fieldname": "fiscal_configuration_verified",
