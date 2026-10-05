@@ -14,7 +14,9 @@
   "bank_account",
   "unpaid_compensation_policy",
   "fiscal_configuration_verified",
-  "simulation_only"
+  "simulation_only",
+  "sales_tax_template",
+  "receipt_mode"
  ],
  "fields": [
   {
@@ -60,6 +62,18 @@
    "fieldtype": "Check",
    "default": "1",
    "read_only": 1
+  },
+  {
+   "fieldname": "sales_tax_template",
+   "label": "Configured Sales Tax Template",
+   "fieldtype": "Link",
+   "options": "Sales Taxes and Charges Template"
+  },
+  {
+   "fieldname": "receipt_mode",
+   "label": "Configured Receipt Mode",
+   "fieldtype": "Link",
+   "options": "Mode of Payment"
   }
  ],
  "permissions": [

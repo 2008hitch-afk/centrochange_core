@@ -173,7 +173,7 @@ def protected_relationship(doc, method=None):
 
 
 def protect_share(doc, method=None):
-	if doc.share_doctype in ('CC Economic Source Link','Customer','Supplier','Cost Center'):
+	if doc.share_doctype in ('CC Economic Source Link','Customer','Supplier','Cost Center','Account','Sales Invoice','Purchase Invoice','Payment Entry','GL Entry','Payment Ledger Entry','Bank Transaction'):
 		frappe.throw('Accounting shares cannot override the finance scope',frappe.PermissionError)
 	if doc.share_doctype == "CC Private Note":
 		frappe.throw("Private notes cannot be shared", frappe.PermissionError)
