@@ -87,6 +87,6 @@ function absenceModal(){modal('Registra assenza',label('Professionista',select('
 async function init(){
   $('#modal').addEventListener('close',()=>{$('#modal-submit').hidden=false;});
   const today=new Date().toLocaleDateString('en-CA',{timeZone:'Europe/Rome'});$('#start').value=today;$('#end').value=today;
-  state.boot=await operations('workspace.bootstrap');$('#center').innerHTML=options(state.boot.centers,'branch');if(state.boot.center)$('#center').value=state.boot.center;await refresh();
+  state.boot=await operations('workspace.bootstrap');if(state.boot.roles.some(r=>['CC Manager','CC Secretariat','CC Finance','CC Accountant'].includes(r)))$('#navigation').insertAdjacentHTML('beforeend','<a class="nav-button" href="/finanza">Finanza</a>');$('#center').innerHTML=options(state.boot.centers,'branch');if(state.boot.center)$('#center').value=state.boot.center;await refresh();
 }
 init().catch(error=>notify(error.message,true));
