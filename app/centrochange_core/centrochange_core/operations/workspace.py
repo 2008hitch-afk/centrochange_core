@@ -48,8 +48,15 @@ def patient_history(patient,center):
     if 'CC Professional' in roles():
         private=frappe.get_list('CC Private Note',filters={'patient':patient,'center':center},
             fields=['name','content','authored_by','creation','corrects'],order_by='creation desc',page_length=100)
+    from centrochange_core.operations.packages import balance
+    packages=[]
+    for row in frappe.get_list('CC Patient Package',filters={'patient':patient},fields=['name','template'],page_length=100):
+        doc=frappe.get_doc('CC Patient Package',row.name)
+        if center in [eligible.center for eligible in doc.centers]:
+            packages.append({'name':row.name,'label':frappe.db.get_value('CC Package Template',row.template,'title'),
+                **balance(row.name,center)})
     return {'appointments':appointments[:100],'truncated':len(appointments)>100,
-        'settlements':settlements,'organizational_notes':organizational,'private_notes':private}
+        'settlements':settlements,'organizational_notes':organizational,'private_notes':private,'packages':packages}
 
 
 @frappe.whitelist()

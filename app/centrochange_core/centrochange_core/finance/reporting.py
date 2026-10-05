@@ -114,5 +114,12 @@ def records(center,doctype):
     if doctype=='CC Professional Expectation':
         latest=professional_economics.latest_expectations(center)
         if len(latest)>500:frappe.throw('Narrow the report filters; more than 500 composing records')
-        return [{k:r.get(k) for k in allowed_types[doctype]} for r in latest.values()]
+        result=[]
+        for r in latest.values():
+            row={k:r.get(k) for k in allowed_types[doctype]}
+            source=frappe.db.get_value('CC Economic Source Link',r.source,['customer','center','session_date'],as_dict=True)
+            if source and source.center==center:
+                row['appointment_label']=str(source.session_date)+' · '+(frappe.db.get_value('Customer',source.customer,'customer_name') or source.customer)
+            result.append(row)
+        return result
     return _bounded(doctype,{field:center},allowed_types[doctype])

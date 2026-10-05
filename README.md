@@ -4,7 +4,7 @@ Repository tecnico della soluzione **Centro Change** costruita su Frappe Framewo
 
 ## Stato
 
-**MVP DEV IMPLEMENTED — GOAL-01 DONE / DEV PASS**
+**GOAL-01 OWNER_ACCEPTED / DEV PASS — GOAL-02 UAT PREPARATION ACTIVE**
 
 Non è ancora una baseline definitiva di produzione. Le decisioni che dipendono dal runtime devono essere validate tramite spike e riportate con evidenze.
 
@@ -15,7 +15,7 @@ L'implementazione HC-0005 è autorizzata. La guida canonica per il build è:
 - `docs/MVP-GOAL-ROADMAP-v0.1.md`
 - `docs/MVP-IMPLEMENTATION-BASELINE-v0.1.md`
 - `docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml`
-- macro-goal corrente: GOAL-01 / issue #22
+- macro-goal corrente: GOAL-02 / issue #23, HC-0005 DECISION-056 (baseline accettata DECISION-055)
 - implementation epic #20
 - WP-00 e wave operative/Finance sullo stack draft #27–#52; verifica integrata WP-09 #53 / PR #54 e delta correttivo DECISION-054 #55
 

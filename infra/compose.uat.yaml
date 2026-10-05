@@ -1,0 +1,19 @@
+# Named immutable DEV UAT image, no source overlay. Reuse accepted runtime topology.
+x-uat-image: &uat-image
+  image: ${CC_UAT_IMAGE:?Set the named UAT candidate image}
+  pull_policy: never
+services:
+  configurator:
+    <<: *uat-image
+  backend:
+    <<: *uat-image
+  frontend:
+    <<: *uat-image
+  queue-short:
+    <<: *uat-image
+  queue-long:
+    <<: *uat-image
+  scheduler:
+    <<: *uat-image
+  websocket:
+    <<: *uat-image
