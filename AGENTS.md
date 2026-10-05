@@ -120,9 +120,9 @@ Le capability Finance/Admin `CC-CAP-041..050` derivano dal delivery design appro
 
 ## Macro-goal execution
 
-Current macro-goal: **GOAL-01 — MVP DEV End-to-End (#22)**.
+Current macro-goal: **GOAL-02 — MVP Ready for Client UAT (#23)**.
 
-Codex should work autonomously within the active goal and should not stop after each child issue. Stop only for a material blocker as defined in `docs/MVP-GOAL-ROADMAP-v0.1.md`.
+Codex should work autonomously within the active goal and should not stop after each child issue. Stop only for a material blocker as defined in `docs/MVP-GOAL-ROADMAP-v0.1.md`. GOAL-03 is not authorized.
 
 
 ## Cross-client Goal Learning Extraction
@@ -144,3 +144,20 @@ Deve:
 7. non promuovere mai autonomamente un learning a `APPROVATO`.
 
 Nei nuovi lavori è consentito consultare come generalized learning soltanto elementi `APPROVATO`; essi restano consultivi e devono essere verificati rispetto a documentazione ufficiale, sorgente pinned e runtime corrente.
+
+
+## GOAL-02 startup overlay
+
+GOAL-02 is authorized by HC-0005 DECISION-056.
+
+At GOAL-02 startup Codex must:
+
+1. treat GOAL-01 as the accepted DEV baseline;
+2. inspect `2008hitch-afk/erpnext-frappe-delivery-knowledge/learnings/approved/`;
+3. load only generalized learnings explicitly approved there and pertinent to the current UAT-readiness work;
+4. keep generalized learnings advisory and reverify version-sensitive behavior against official upstream documentation, pinned source and runtime;
+5. use synthetic deterministic demo/UAT data only;
+6. produce a named reproducible UAT candidate, client validation guide, known-limitations register, evidence package and GOAL-02 Completion Report;
+7. perform Goal Learning Extraction before proposing GOAL-02 Done.
+
+No production, real data, provider credentials, real SdI/TS traffic, GOAL-03 execution or automatic stack merge is authorized by DECISION-056.
