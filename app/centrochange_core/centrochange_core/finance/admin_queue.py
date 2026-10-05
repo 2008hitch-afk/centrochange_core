@@ -46,10 +46,16 @@ def _conditions(center):
             add('Professional Invoice Difference','Purchase Invoice',name,[row.name,row.problem])
     for row in current_rows('CC Economic Source Link',{'center':center},fields=['name','appointment','supplier']):
         if not row.supplier:add('Professional Supplier Mapping','CC Economic Source Link',row.name,'Missing historical supplier mapping')
-    for row in current_rows('CC Fiscal Transaction',{'center':center},fields=['name','domain','status','error_class']):
-        if row.status in ('REJECTED','FAILED_RETRYABLE','FAILED_TERMINAL','CORRECTION_REQUIRED','RETRY_REQUIRED','ELIGIBILITY_PENDING'):
-            corrected=current_rows('CC Fiscal Transaction',{'corrects':row.name,'status':['in',['ACCEPTED_OR_DELIVERED','ACCEPTED']]},pluck='name')
-            if not corrected:add(row.domain+' Fiscal Review','CC Fiscal Transaction',row.name,[row.status,row.error_class])
+    fiscal_rows=current_rows('CC Fiscal Transaction',{'center':center},fields=['name','domain','status','error_class','corrects'])
+    resolved={row.name for row in fiscal_rows if row.status in ('ACCEPTED_OR_DELIVERED','ACCEPTED')}
+    # An accepted correction resolves its entire retained ancestor chain, not only its parent.
+    while True:
+        ancestors={row.corrects for row in fiscal_rows if row.name in resolved and row.corrects}
+        if ancestors<=resolved:break
+        resolved.update(ancestors)
+    for row in fiscal_rows:
+        if row.name not in resolved and row.status in ('REJECTED','FAILED_RETRYABLE','FAILED_TERMINAL','CORRECTION_REQUIRED','RETRY_REQUIRED','ELIGIBILITY_PENDING'):
+            add(row.domain+' Fiscal Review','CC Fiscal Transaction',row.name,[row.status,row.error_class])
     return out
 
 

@@ -134,3 +134,7 @@ for dt,query in [('CC Fiscal Transaction','transaction_query'),('CC Fiscal Attem
     permission_query_conditions[dt]='centrochange_core.finance.fiscal.'+query
     has_permission[dt]='centrochange_core.finance.fiscal.permission'
 scheduler_events['cron']['*/5 * * * *'].append('centrochange_core.finance.sdi.catch_up')
+
+permission_query_conditions['CC TS Input Review']='centrochange_core.finance.ts.review_query'
+has_permission['CC TS Input Review']='centrochange_core.finance.fiscal.permission'
+scheduler_events['cron']['*/5 * * * *'].append('centrochange_core.finance.ts.catch_up')

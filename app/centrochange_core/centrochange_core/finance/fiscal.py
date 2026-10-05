@@ -70,7 +70,8 @@ def replay(request_key,request_hash,version_key,center):
 @frappe.whitelist(methods=['GET'])
 def status(name):
     doc=transaction(name)
-    return {**result(doc),'attempts':current_rows('CC Fiscal Attempt',{'transaction':doc.name},fields=['name','sequence','status','route','payload_hash','state_history_json','external_protocol','retryable','error_class','receipt_json','origin_actor','processed_by'])}
+    attempts=current_rows('CC Fiscal Attempt',{'transaction':doc.name},fields=['name','sequence','status','route','payload_hash','state_history_json','external_protocol','retryable','error_class','receipt_json','origin_actor','processed_by'])
+    return {**result(doc),'attempts':sorted(attempts,key=lambda row:(row.sequence,row.name))}
 
 
 def names(dt,user=None):

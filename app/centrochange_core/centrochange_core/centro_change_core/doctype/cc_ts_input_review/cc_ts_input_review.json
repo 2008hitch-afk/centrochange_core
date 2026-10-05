@@ -1,0 +1,189 @@
+{
+ "doctype": "DocType",
+ "name": "CC TS Input Review",
+ "module": "Centro Change Core",
+ "autoname": "hash",
+ "custom": 0,
+ "track_changes": 0,
+ "fields": [
+  {
+   "fieldname": "center",
+   "label": "Center",
+   "fieldtype": "Link",
+   "options": "Branch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source",
+   "label": "Source",
+   "fieldtype": "Link",
+   "options": "CC Economic Source Link",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice",
+   "label": "Invoice",
+   "fieldtype": "Link",
+   "options": "Sales Invoice",
+   "reqd": 1
+  },
+  {
+   "fieldname": "patient",
+   "label": "Patient",
+   "fieldtype": "Link",
+   "options": "Patient",
+   "reqd": 1
+  },
+  {
+   "fieldname": "opposition",
+   "label": "Opposition",
+   "fieldtype": "Select",
+   "options": "UNSET\nOpposed\nNo Opposition",
+   "reqd": 1
+  },
+  {
+   "fieldname": "eligibility",
+   "label": "Eligibility",
+   "fieldtype": "Select",
+   "options": "UNSET\nSYNTHETIC_ELIGIBLE\nSYNTHETIC_INELIGIBLE",
+   "reqd": 1
+  },
+  {
+   "fieldname": "expense_amount",
+   "label": "Expense Amount",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "expense_amount_known",
+   "label": "Expense Amount Known",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "currency",
+   "label": "Currency",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "expense_code",
+   "label": "Expense Code",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "subject_ref",
+   "label": "Subject Ref",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "transmitter_ref",
+   "label": "Transmitter Ref",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "payload_hash",
+   "label": "Payload Hash",
+   "fieldtype": "Data",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recorded_by",
+   "label": "Recorded By",
+   "fieldtype": "Link",
+   "options": "User"
+  }
+ ],
+ "field_order": [
+  "center",
+  "source",
+  "invoice",
+  "patient",
+  "opposition",
+  "eligibility",
+  "expense_amount",
+  "expense_amount_known",
+  "currency",
+  "expense_code",
+  "subject_ref",
+  "transmitter_ref",
+  "request_key",
+  "payload_hash",
+  "recorded_by"
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Secretariat",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Finance",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Accountant",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  }
+ ],
+ "engine": "InnoDB"
+}
