@@ -123,6 +123,8 @@ def close(appointment,paid,reason,mode_of_payment=None):
 	require_mutable(doc)
 	if doc.status=='Cancelled':
 		frappe.throw('Cancelled sessions require authorized economic correction')
+	from centrochange_core.finance.collections import require_booking as require_payment_clearance
+	require_payment_clearance(doc)
 	if start_utc(doc)+timedelta(minutes=doc.duration)>now_utc():
 		frappe.throw('Cannot mark a future or ongoing session performed')
 	revision=cint(doc.cc_revision)+1

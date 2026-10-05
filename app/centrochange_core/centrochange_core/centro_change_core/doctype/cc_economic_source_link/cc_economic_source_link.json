@@ -31,7 +31,9 @@
   "settlement_revision",
   "package",
   "captured_by",
-  "snapshot_hash"
+  "snapshot_hash",
+  "payment_terms_mode",
+  "payment_agreed_date"
  ],
  "fields": [
   {
@@ -178,6 +180,17 @@
    "label": "Snapshot Hash",
    "fieldtype": "Data",
    "reqd": 1
+  },
+  {
+   "fieldname": "payment_terms_mode",
+   "label": "Payment Terms Snapshot",
+   "fieldtype": "Select",
+   "options": "Immediate\nMonth End\nSpecific Date"
+  },
+  {
+   "fieldname": "payment_agreed_date",
+   "label": "Agreed Payment Date Snapshot",
+   "fieldtype": "Date"
   }
  ],
  "permissions": [

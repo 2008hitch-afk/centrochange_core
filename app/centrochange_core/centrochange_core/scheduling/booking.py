@@ -11,7 +11,7 @@ from centrochange_core.security.lifecycle import lock
 from centrochange_core.scheduling.availability import require_practitioner
 
 SNAPSHOTS=('cc_booking_key','cc_booking_date','cc_service_item','cc_service_label','cc_price_snapshot',
-	'cc_currency_snapshot','cc_price_list_snapshot','cc_item_price_source','duration','appointment_type','cc_package')
+	'cc_currency_snapshot','cc_price_list_snapshot','cc_item_price_source','cc_payment_terms_mode','cc_payment_agreed_date','duration','appointment_type','cc_package')
 
 
 def require_booking(patient,practitioner,center):
@@ -31,7 +31,7 @@ def require_booking(patient,practitioner,center):
 	require_practitioner(practitioner,center)
 
 
-def snapshot(appointment_type,center):
+def snapshot(appointment_type,center,patient=None):
 	profile=frappe.get_doc('Appointment Type',appointment_type,for_update=True)
 	if not frappe.db.get_value('CC Center Service',{'center':center,'appointment_type':appointment_type},'enabled',for_update=True):
 		frappe.throw('Service is not enabled in this center')
@@ -54,12 +54,17 @@ def snapshot(appointment_type,center):
 	price=prices[0]
 	if price.currency!=list_doc.currency or flt(price.price_list_rate)<0 or flt(profile.default_duration)<=0:
 		frappe.throw('Invalid service price/currency/duration')
-	return {'cc_booking_date':date,'cc_service_item':item.name,'cc_service_label':item.item_name,
+	from centrochange_core.finance.collections import _agreement
+	agreement=_agreement(patient,center) if patient else None
+	return {'cc_payment_terms_mode':agreement.mode if agreement else 'Immediate',
+		'cc_payment_agreed_date':agreement.due_date if agreement else None,'cc_booking_date':date,'cc_service_item':item.name,'cc_service_label':item.item_name,
 		'cc_price_snapshot':price.price_list_rate,'cc_currency_snapshot':price.currency,
 		'cc_price_list_snapshot':price_list,'cc_item_price_source':price.name,'duration':profile.default_duration}
 
 
 def validate_slot(doc):
+	from centrochange_core.finance.collections import require_booking as require_payment_clearance
+	require_payment_clearance(doc)
 	start=datetime.combine(getdate(doc.appointment_date),get_time(doc.appointment_time))
 	end=start+timedelta(minutes=flt(doc.duration))
 	# Native local-time collision arithmetic cannot safely represent DST folds/gaps.
@@ -118,7 +123,7 @@ def book(patient,practitioner,center,appointment_type,appointment_date,appointme
 			frappe.throw('Idempotency key was already used with a different booking')
 		return {'name':name,'replay':True}
 	company=frappe.db.get_single_value('Global Defaults','default_company')
-	doc=frappe.get_doc({'doctype':'Patient Appointment',**payload,**snapshot(appointment_type,center),
+	doc=frappe.get_doc({'doctype':'Patient Appointment',**payload,**snapshot(appointment_type,center,patient),
 		'cc_booking_key':key,'company':company,'appointment_for':'Practitioner','paid_amount':0})
 	with internal_write('cc_appointment_write'):
 		doc.insert(ignore_permissions=True)

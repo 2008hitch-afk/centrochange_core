@@ -63,6 +63,8 @@ def checks(fixture):
     assert frappe.db.count('GL Entry',{'voucher_no':credit})>0
     results.append('native credit correction preserves original invoice and source trace')
     # Two sessions, same center/customer/currency: explicit month-end aggregation.
+    from centrochange_core.finance.collections import agree
+    agree(patient,center,'Month End','Synthetic explicit monthly payment agreement')
     aggregate=[]
     for date in ('2099-03-16','2099-03-23'):
         frappe.flags.cc_test_clock=None
@@ -137,6 +139,9 @@ def prepare_http(fixture):
         setup(fixture['finance']['customer'])
         frappe.db.commit()
         from centrochange_core.scheduling.booking import book
+        collections_mode='Month End'
+        from centrochange_core.finance.collections import agree
+        agree(appointment.patient,appointment.cc_center,collections_mode,tag)
         frappe.flags.cc_test_clock=None
         second=book(appointment.patient,appointment.practitioner,appointment.cc_center,appointment.appointment_type,
             '2099-01-19','09:00:00',tag+'-second-due',tag)['name']
