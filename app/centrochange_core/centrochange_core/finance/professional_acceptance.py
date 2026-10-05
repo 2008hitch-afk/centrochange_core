@@ -17,12 +17,17 @@ def checks(fixture):
     rule=economics.configure_rule(**args)['name']
     assert economics.configure_rule(**args)['replay']
     reject(lambda:economics.configure_rule(**{**args,'value':101}))
+    unresolved=economics.capture(unpaid.name,'Synthetic missing threshold compensation',rule)
+    assert unresolved['state']=='REVIEW' and unresolved['amount'] is None
+    assert frappe.db.get_value('CC Professional Expectation',unresolved['name'],'problem')=='Professional Unpaid Threshold Missing'
+    paid_missing=economics.capture(paid.name,'Synthetic paid source still requires explicit threshold',rule)
+    assert paid_missing['state']=='REVIEW' and paid_missing['amount'] is None
+    economics.configure_threshold(center,prac,0,'synthetic-explicit-unpaid-threshold-zero','Synthetic explicit professional threshold')
     expected=economics.capture(paid.name,'Synthetic paid compensation snapshot',rule)
     assert expected['state']=='OK' and expected['amount']==100
     assert economics.capture(paid.name,'Synthetic expected replay',rule)['replay']
-    unresolved=economics.capture(unpaid.name,'Synthetic unpaid unresolved compensation',rule)
-    assert unresolved['state']=='REVIEW' and unresolved['amount'] is None
-    assert frappe.db.get_value('CC Professional Expectation',unresolved['name'],'problem')=='Professional Unpaid Threshold Missing'
+    suspended=economics.capture(unpaid.name,'Synthetic unpaid excess compensation',rule)
+    assert suspended['state']=='SUSPENDED' and suspended['amount'] is None
     missing=economics.capture(paid.name,'Synthetic missing rule')
     assert missing['state']=='REVIEW' and missing['amount'] is None
     economics.capture(paid.name,'Synthetic restore explicit snapshot',rule)

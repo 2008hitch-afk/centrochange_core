@@ -56,6 +56,20 @@ def checks(fixture):
     economics.configure_threshold(center,prac2,0,'threshold-second-zero','Synthetic independent professional N0')
     for source in pairs[p1,prac2]:assert economics.capture(source,'Synthetic second professional suspension',rules[prac2])['state']=='SUSPENDED'
     result.append('DECISION-054 independent professional N2/N0 thresholds and invalid/negative/fractional/missing values rejected')
+    set_assignment(p2,center,prac2,1,'Synthetic same-day threshold pair')
+    same_day=[]
+    for time in ('09:00:00','10:00:00'):
+        frappe.flags.cc_test_clock=None
+        appt=book(p2,prac2,center,'CC SYNTHETIC SESSION','2099-07-06',time,'threshold-same-day-'+time,'Synthetic same-day unpaid session')['name']
+        frappe.flags.cc_test_clock=lifecycle.start_utc(frappe.get_doc('Patient Appointment',appt))+timedelta(hours=1)
+        lifecycle.close(appt,0,'Synthetic same-day performed unpaid')
+        same_day.append(bridge.capture(appt,'Synthetic same-day source')['name'])
+    pairs[p2,prac2]=same_day
+    economics.configure_threshold(center,prac2,1,'threshold-same-day-one','Synthetic explicit same-day N1')
+    for source in reversed(same_day):economics.capture(source,'Synthetic reversed same-day capture',rules[prac2])
+    states=[economics.latest_expectations(center)[frappe.db.get_value('CC Economic Source Link',s,'appointment')].state for s in same_day]
+    assert states==['OK','SUSPENDED']
+    result.append('DECISION-054 same-day 09:00 precedes 10:00 using native time values, even with reversed capture order; current N1 update retains earlier N0 facts')
     for row in economics.latest_expectations(center).values():
         if row.patient not in (p1,p2):continue
         exceptions=frappe.get_all('CC Admin Exception',filters={'reference_name':row.appointment,'exception_type':'Professional Expectation Review','state':['!=','Closed']},fields=['name','condition_details'])

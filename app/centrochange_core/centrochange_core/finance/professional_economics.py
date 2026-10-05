@@ -105,7 +105,7 @@ def unpaid_pair(src):
     rows=current_rows('Patient Appointment',{'patient':src.patient,'practitioner':src.practitioner,'cc_performed':1},
         fields=['name','appointment_date','appointment_time','cc_paid'])
     unpaid=[]
-    for row in sorted(rows,key=lambda r:(str(r.appointment_date),str(r.appointment_time),r.name)):
+    for row in sorted(rows,key=lambda r:(frappe.utils.getdate(r.appointment_date),frappe.utils.get_time(r.appointment_time),r.name)):
         if not patient_paid(frappe._dict(appointment=row.name)):unpaid.append(row.name)
     return unpaid
 
@@ -129,7 +129,7 @@ def _capture(src,reason,rule=None,override=False):
         snapshot={k:doc.get(k) for k in ('name','valid_from','valid_to','basis','value','currency')}
     else:problem='Compensation Rule Unset'
     if not performed:problem='Eligibility Requires Review'
-    elif not paid and not config:problem='Professional Unpaid Threshold Missing'
+    elif not config:problem='Professional Unpaid Threshold Missing'
     suspended=bool(not problem and not paid and rank>config.max_unpaid_sessions_compensated and not override)
     if not problem and not suspended:
         amount=float((number(snapshot['value']) if snapshot['basis']=='Fixed Amount' else number(src.price)*number(snapshot['value'])/100).quantize(Decimal('.01')))
