@@ -1,0 +1,180 @@
+{
+ "doctype": "DocType",
+ "name": "CC Admin Exception",
+ "module": "Centro Change Core",
+ "custom": 0,
+ "autoname": "hash",
+ "track_changes": 0,
+ "field_order": [
+  "center",
+  "condition_key",
+  "exception_type",
+  "reference_doctype",
+  "reference_name",
+  "state",
+  "priority",
+  "assignee",
+  "detected_at",
+  "due_at",
+  "defer_until",
+  "resolved_at",
+  "condition_hash",
+  "resolution_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "center",
+   "label": "Center",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Branch"
+  },
+  {
+   "fieldname": "condition_key",
+   "label": "Condition Key",
+   "fieldtype": "Data",
+   "unique": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "exception_type",
+   "label": "Exception Type",
+   "fieldtype": "Data",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reference_doctype",
+   "label": "Reference Doctype",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "label": "Reference Name",
+   "fieldtype": "Dynamic Link",
+   "reqd": 1,
+   "options": "reference_doctype"
+  },
+  {
+   "fieldname": "state",
+   "label": "State",
+   "fieldtype": "Select",
+   "reqd": 1,
+   "options": "Open\nAssigned\nDeferred\nClosed"
+  },
+  {
+   "fieldname": "priority",
+   "label": "Priority",
+   "fieldtype": "Int",
+   "default": "2"
+  },
+  {
+   "fieldname": "assignee",
+   "label": "Assignee",
+   "fieldtype": "Link",
+   "options": "User"
+  },
+  {
+   "fieldname": "detected_at",
+   "label": "Detected At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "due_at",
+   "label": "Due At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "defer_until",
+   "label": "Defer Until",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "resolved_at",
+   "label": "Resolved At",
+   "fieldtype": "Datetime"
+  },
+  {
+   "fieldname": "condition_hash",
+   "label": "Condition Hash",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "resolution_reason",
+   "label": "Resolution Reason",
+   "fieldtype": "Small Text"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Secretariat",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Finance",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Accountant",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  }
+ ],
+ "engine": "InnoDB"
+}

@@ -122,3 +122,10 @@ doc_events['Purchase Invoice']={event:'centrochange_core.finance.incoming.protec
 doc_events["File"]={event:"centrochange_core.finance.files.protected" for event in ("validate","on_trash")}
 
 extend_doctype_class["File"]=["centrochange_core.finance.files.FinancialFileMixin"]
+
+for dt,query in [('CC Compensation Rule','rule_query'),('CC Professional Expectation','expectation_query'),('CC Professional Comparison','comparison_query')]:
+    permission_query_conditions[dt]='centrochange_core.finance.professional_economics.'+query
+    has_permission[dt]='centrochange_core.finance.professional_economics.permission'
+permission_query_conditions['CC Admin Exception']='centrochange_core.finance.admin_queue.query'
+has_permission['CC Admin Exception']='centrochange_core.finance.admin_queue.permission'
+scheduler_events['cron']['*/5 * * * *'].append('centrochange_core.finance.admin_queue.catch_up')

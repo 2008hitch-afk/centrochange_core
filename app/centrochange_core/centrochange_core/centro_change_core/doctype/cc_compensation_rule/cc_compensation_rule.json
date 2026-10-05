@@ -1,0 +1,161 @@
+{
+ "doctype": "DocType",
+ "name": "CC Compensation Rule",
+ "module": "Centro Change Core",
+ "custom": 0,
+ "autoname": "hash",
+ "track_changes": 0,
+ "field_order": [
+  "center",
+  "practitioner",
+  "service_item",
+  "valid_from",
+  "valid_to",
+  "basis",
+  "value",
+  "currency",
+  "request_key",
+  "payload_hash",
+  "recorded_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "center",
+   "label": "Center",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Branch"
+  },
+  {
+   "fieldname": "practitioner",
+   "label": "Practitioner",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fieldname": "service_item",
+   "label": "Service Item",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Item"
+  },
+  {
+   "fieldname": "valid_from",
+   "label": "Valid From",
+   "fieldtype": "Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "valid_to",
+   "label": "Valid To",
+   "fieldtype": "Date"
+  },
+  {
+   "fieldname": "basis",
+   "label": "Basis",
+   "fieldtype": "Select",
+   "reqd": 1,
+   "options": "Fixed Amount\nPercentage"
+  },
+  {
+   "fieldname": "value",
+   "label": "Value",
+   "fieldtype": "Currency",
+   "reqd": 1
+  },
+  {
+   "fieldname": "currency",
+   "label": "Currency",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "payload_hash",
+   "label": "Payload Hash",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "recorded_by",
+   "label": "Recorded By",
+   "fieldtype": "Link",
+   "options": "User"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Secretariat",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Finance",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Accountant",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  }
+ ],
+ "engine": "InnoDB"
+}

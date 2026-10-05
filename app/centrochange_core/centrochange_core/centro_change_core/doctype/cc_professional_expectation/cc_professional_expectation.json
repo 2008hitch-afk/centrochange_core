@@ -1,0 +1,194 @@
+{
+ "doctype": "DocType",
+ "name": "CC Professional Expectation",
+ "module": "Centro Change Core",
+ "custom": 0,
+ "autoname": "hash",
+ "track_changes": 0,
+ "field_order": [
+  "center",
+  "source",
+  "appointment",
+  "practitioner",
+  "supplier",
+  "rule",
+  "rule_snapshot",
+  "policy_snapshot",
+  "paid_snapshot",
+  "state",
+  "problem",
+  "amount",
+  "currency",
+  "snapshot_hash",
+  "recorded_by",
+  "amount_known"
+ ],
+ "fields": [
+  {
+   "fieldname": "center",
+   "label": "Center",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Branch"
+  },
+  {
+   "fieldname": "source",
+   "label": "Source",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "CC Economic Source Link"
+  },
+  {
+   "fieldname": "appointment",
+   "label": "Appointment",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Patient Appointment"
+  },
+  {
+   "fieldname": "practitioner",
+   "label": "Practitioner",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fieldname": "supplier",
+   "label": "Supplier",
+   "fieldtype": "Link",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "rule",
+   "label": "Rule",
+   "fieldtype": "Link",
+   "options": "CC Compensation Rule"
+  },
+  {
+   "fieldname": "rule_snapshot",
+   "label": "Rule Snapshot",
+   "fieldtype": "Long Text"
+  },
+  {
+   "fieldname": "policy_snapshot",
+   "label": "Policy Snapshot",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "paid_snapshot",
+   "label": "Paid Snapshot",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "state",
+   "label": "State",
+   "fieldtype": "Select",
+   "reqd": 1,
+   "options": "OK\nREVIEW"
+  },
+  {
+   "fieldname": "problem",
+   "label": "Problem",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "amount",
+   "label": "Amount",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "currency",
+   "label": "Currency",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "snapshot_hash",
+   "label": "Snapshot Hash",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "recorded_by",
+   "label": "Recorded By",
+   "fieldtype": "Link",
+   "options": "User"
+  },
+  {
+   "fieldname": "amount_known",
+   "label": "Amount Known",
+   "fieldtype": "Check",
+   "default": "0"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Secretariat",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Finance",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Accountant",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  }
+ ],
+ "engine": "InnoDB"
+}
