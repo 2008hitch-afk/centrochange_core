@@ -123,3 +123,24 @@ Le capability Finance/Admin `CC-CAP-041..050` derivano dal delivery design appro
 Current macro-goal: **GOAL-01 — MVP DEV End-to-End (#22)**.
 
 Codex should work autonomously within the active goal and should not stop after each child issue. Stop only for a material blocker as defined in `docs/MVP-GOAL-ROADMAP-v0.1.md`.
+
+
+## Cross-client Goal Learning Extraction
+
+Per la policy HITCH approvata, questo progetto partecipa alla knowledge base tecnica:
+
+`2008hitch-afk/erpnext-frappe-delivery-knowledge`
+
+Alla fine di ogni macro-goal ERPNext/Frappe, Codex deve eseguire una **Goal Learning Extraction**.
+
+Deve:
+
+1. rileggere issue, PR, test, failure, fix e fonti upstream usate nel goal;
+2. estrarre soltanto conoscenza tecnica generalizzabile;
+3. eliminare nomi, client_id, regole business, URL del progetto cliente, dati personali, secret e dettagli identificativi;
+4. creare/aggiornare esclusivamente learning con `status: CANDIDATE` sotto `learnings/candidates/` del repository comune;
+5. usare il template e la governance del repository comune;
+6. dichiarare `NO_GENERALIZABLE_LEARNING` nel completion report se non emerge nulla di riutilizzabile;
+7. non promuovere mai autonomamente un learning a `APPROVATO`.
+
+Nei nuovi lavori è consentito consultare come generalized learning soltanto elementi `APPROVATO`; essi restano consultivi e devono essere verificati rispetto a documentazione ufficiale, sorgente pinned e runtime corrente.
