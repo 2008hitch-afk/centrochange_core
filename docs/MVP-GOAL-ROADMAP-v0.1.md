@@ -208,6 +208,14 @@ GOAL-01 uses synthetic data only. Real client/patient data requires a separate a
 ### Production boundary
 No roadmap artifact itself authorizes production, provider credentials or real SdI/TS traffic.
 
+
+### Cross-client technical learning
+At the end of every macro-goal, Codex performs Goal Learning Extraction according to `AGENTS.md` and the governance in `2008hitch-afk/erpnext-frappe-delivery-knowledge`.
+
+Only sanitized `CANDIDATE` learning artifacts may be created autonomously. Promotion to `APPROVATO` requires HITCH review and explicit Owner approval.
+
+The completion report must record the candidate learning artifacts produced or `NO_GENERALIZABLE_LEARNING`. This housekeeping requirement does not alter the technical PASS/PARTIAL/FAIL result of the client goal.
+
 ## 10. Current command for Codex
 
 For the current phase:
