@@ -53,6 +53,30 @@ Per ogni requisito valutare nell'ordine:
 
 Se il nativo introduce semantica errata, rischio di sicurezza, UX significativamente peggiore o forte upgrade risk, preferire custom pulito.
 
+
+## Documentazione upstream e verifica della versione pinned
+
+Questa regola vale per **tutti i macro-goal** del progetto, inclusi GOAL-01, GOAL-02, GOAL-03, GOAL-04 e GOAL-05.
+
+Per ogni funzione o integrazione che dipende da Frappe, ERPNext, Healthcare/Marley, Builder o altre dipendenze upstream, Codex deve:
+
+1. consultare la documentazione ufficiale pertinente prima di introdurre comportamento custom o assumere semantica nativa;
+2. verificare che la documentazione sia compatibile con la **versione effettivamente pinned** nel progetto;
+3. quando la documentazione non è sufficiente o può riferirsi a una versione diversa, verificare anche il codice sorgente ufficiale della versione/tag/commit pinned;
+4. confermare sul runtime pinned i comportamenti critici che non sono dimostrabili in modo affidabile dalla sola documentazione o dal solo sorgente;
+5. preferire API, hook, DocType, workflow e punti di estensione ufficialmente supportati rispetto a patch, monkey-patch o dipendenze da dettagli interni non garantiti;
+6. documentare in issue/PR/evidenza ogni divergenza significativa tra documentazione ufficiale, sorgente pinned e comportamento runtime osservato.
+
+Ordine di autorità:
+
+- le decisioni business e di delivery approvate per HC-0005 definiscono **cosa** il sistema deve fare;
+- la documentazione ufficiale e il sorgente upstream pinned definiscono il comportamento tecnico supportato e i meccanismi disponibili;
+- l'evidenza runtime della versione pinned verifica **come** quel comportamento opera realmente nel nostro ambiente;
+- una fonte upstream non può sovrascrivere una decisione business approvata;
+- se documentazione, sorgente pinned e runtime sono in conflitto materiale, Codex deve fermarsi, produrre evidenza e richiedere una decisione invece di inferire silenziosamente.
+
+Non usare automaticamente la documentazione della versione più recente come prova valida per una versione pinned precedente.
+
 ## Git workflow
 
 - una issue per unità di lavoro;
