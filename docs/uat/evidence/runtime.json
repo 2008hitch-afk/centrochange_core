@@ -1,0 +1,11 @@
+{
+  "result": "PASS",
+  "http_login_desk": true,
+  "assets": true,
+  "websocket_upgrade": true,
+  "workers": true,
+  "scheduler_enabled": true,
+  "native_smoke_cleanup": true,
+  "bootstrap_negative_guards": true,
+  "baseline_sha256": "aa4eac47ebb96736f0418016c3f72f884a7bf549744b98164d6c0b9d76da69ca"
+}

@@ -4,9 +4,11 @@ Repository tecnico della soluzione **Centro Change** costruita su Frappe Framewo
 
 ## Stato
 
-**GOAL-01 OWNER_ACCEPTED / DEV PASS — GOAL-02 UAT PREPARATION ACTIVE**
+**GOAL-01 OWNER_ACCEPTED / DEV PASS — GOAL-02 TECHNICAL DONE / UAT READY**
 
 Non è ancora una baseline definitiva di produzione. Le decisioni che dipendono dal runtime devono essere validate tramite spike e riportate con evidenze.
+
+Candidate **goal02-20261005-rc1**: [Completion Report](docs/GOAL-02-COMPLETION-REPORT-2026-10-05.md), [Client Validation Guide](docs/uat/CLIENT-VALIDATION-GUIDE.md), [UAT Evidence Package](docs/uat/UAT-EVIDENCE-PACKAGE.md). UAT cliente e accettazione Owner restano da eseguire.
 
 ## Baseline implementativa corrente
 

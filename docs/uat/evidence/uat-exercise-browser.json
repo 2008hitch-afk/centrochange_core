@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "checks": [
+    "UAT professional A guide, nine scoped historical/future sessions and own private note",
+    "Epsilon package consumption and scoped remaining/reserved/available balance visible in history",
+    "operational delayed prior-view response cannot overwrite current Patients view",
+    "professional B sees Zeta only and exact foreign patient API denied",
+    "unlinked professional has no patient/session data",
+    "secretariat organizational notes, no private body and private-note direct API denied",
+    "operational mobile viewport no document overflow",
+    "overdue Theta has visible server-derived booking hold and authorized defer control",
+    "visible authorized defer removes current hold while preserving native 100 debt and original due date",
+    "Finance native patient partial balance and posted supplier liability visible",
+    "Finance foreign-center report and Management threshold POST denied server-side",
+    "Finance unknown/suspended compensation and no Management threshold control",
+    "separate pure simulated SdI/TS accepted and unresolved eligibility visible",
+    "Accountant native balances read-only UI",
+    "Accountant payment POST denied server-side without changing native balance",
+    "Management explicit threshold control and native append-only audit readable",
+    "private UAT seed/reset/credential methods unavailable through authenticated RPC",
+    "private UAT credential manifest has no website download route",
+    "role-scoped client guide mobile layout and substantive content",
+    "Guest guide redirects to native login",
+    "no application JavaScript exceptions"
+  ],
+  "errors": [],
+  "viewports": [
+    "1536x1024",
+    "390x844"
+  ],
+  "browser_plugin": "unavailable",
+  "fallback": "Playwright 1.58.2 pinned Docker image",
+  "dataset": "goal02-demo-v1"
+}

@@ -40,7 +40,7 @@ A goal does not automatically authorize the next goal where a separate HITCH gat
 | Goal | GitHub issue | Status | Current authority |
 |---|---:|---|---|
 | GOAL-01 — MVP DEV End-to-End | #22 | **OWNER_ACCEPTED / DEV PASS** | HC-0005 DECISION-055; [Completion report](MVP-GOAL-COMPLETION-REPORT-2026-10-05.md); no automatic stack merge |
-| GOAL-02 — MVP Ready for Client UAT | #23 | **ACTIVE** | HC-0005 DECISION-056; technical work #58 |
+| GOAL-02 — MVP Ready for Client UAT | #23 | **TECHNICAL DONE / UAT READY** | HC-0005 DECISION-056; [Completion report](GOAL-02-COMPLETION-REPORT-2026-10-05.md); client UAT / Owner acceptance pending |
 | GOAL-03 — Production Readiness | #24 | QUEUED | Requires GOAL-02/UAT basis |
 | GOAL-04 — Go-Live & Stabilization | #25 | QUEUED | Requires explicit production/go-live authorization |
 | GOAL-05 — Delivery Closure & Continuity | #26 | QUEUED | Requires stabilized live delivery |
@@ -212,5 +212,5 @@ No roadmap artifact itself authorizes production, provider credentials or real S
 
 For the current phase:
 
-> Execute **GOAL-01 (#22)** autonomously according to this roadmap, `AGENTS.md`, the MVP Implementation Baseline and Capability Map. Start from #21 and continue through the technical child work needed to reach GOAL-01 Done. Stop only for a material blocker as defined in GOAL-01.
+> Execute **GOAL-02 (#23)** autonomously under HC-0005 DECISION-056, reusing the GOAL-01 baseline accepted by DECISION-055. Follow `AGENTS.md`, the Implementation Baseline and the material-blocker rule; produce the named synthetic UAT candidate, validation package, whole-goal learning extraction and Completion Report. No automatic stack merge, real data/provider traffic, production or GOAL-03 authorization.
 

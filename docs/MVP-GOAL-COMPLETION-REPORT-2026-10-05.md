@@ -165,3 +165,9 @@ No product implementation, schema, runtime image, data or gate was changed for e
 ## Next-goal recommendation
 
 Review the stacked draft PRs and the recorded open policies, then explicitly authorize GOAL-02 (#23) for a named UAT candidate, deterministic demo data and client validation guide. No subsequent goal is automatically started.
+
+## Owner acceptance recorded after technical extraction
+
+HC-0005 DECISION-055 formally records **OWNER_ACCEPTED / DEV PASS** on 2026-10-05 (authoritative decision blob `ab6561885a41a50629cd521f751b7bdced6480f2`). The earlier pending-review/acceptance statements above describe the state at technical submission, now superseded by that decision. Generalized learning approval is recorded separately in the knowledge repository; original candidate files remain immutable.
+
+HC-0005 DECISION-056 authorizes GOAL-02 #23 (blob `9460a645c58cc25eab3cc473f4e65bfd6c741360`). The accepted DEV baseline and evidence are reused. No stack merge, production, real data/providers or GOAL-03 authorization follows from these records; the subsequent roadmap gates remain unchanged.

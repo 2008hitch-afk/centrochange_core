@@ -1,0 +1,19 @@
+{
+  "candidate": "goal02-20261005-rc1",
+  "status": "PASS / UAT READY",
+  "environment": "DEV synthetic only",
+  "source_commit": "e33ce0385ab921ff50857c4d5e8f61f4721476e0",
+  "image": "centrochange-uat:goal02-20261005-rc1",
+  "local_image_id": "sha256:41bf781af80ccce7a46831e5148bce08d8c606159ace0f750be639498eb9115a",
+  "image_id_is_registry_digest": false,
+  "source_overlay": false,
+  "app_manifest_sha256": "4fd9849bd051acf1d7c27e3edc59aae0925984a1cc2b8b5d8f6f6e24c3dee53c",
+  "tracked_app_files": 171,
+  "dataset": "goal02-demo-v1",
+  "dataset_anchor": "2026-10-05",
+  "semantic_sha256": "9e1a61146ce666e50f5bf78ccd9995989dbc302e9c2dc6f6942d370583a9c09a",
+  "client_uat": "NOT_EXECUTED",
+  "owner_acceptance": "PENDING",
+  "stack_merge": false,
+  "goal03_authorized": false
+}

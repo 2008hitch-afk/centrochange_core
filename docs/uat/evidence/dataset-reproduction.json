@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "dataset": "goal02-demo-v1",
+  "hash_before": "9e1a61146ce666e50f5bf78ccd9995989dbc302e9c2dc6f6942d370583a9c09a",
+  "hash_after_reset": "9e1a61146ce666e50f5bf78ccd9995989dbc302e9c2dc6f6942d370583a9c09a",
+  "semantic_state_equal": true,
+  "native_patient_names_stable": true,
+  "native_generated_item_price_and_schedule_ids_changed": true,
+  "generated_passwords_rotated": true,
+  "seed_replay_preserves_authorized_mutation": true,
+  "reset_owned_fixture_cleanup": "PASS"
+}
