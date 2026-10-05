@@ -43,6 +43,7 @@ def configure():
 	], "Practitioner Availability": [
 		{"fieldname":"cc_center", "label":"Centro Change Center", "fieldtype":"Link", "options":"Branch"},
 	]})
+	create_custom_fields({'Patient':[{'fieldname':name,'label':label,'fieldtype':'Data','read_only':1,'hidden':1,**extra} for name,label,extra in [('cc_intake_key','Controlled Intake Key',{'unique':1}),('cc_intake_hash','Controlled Intake Payload Hash',{})]]})
 	# Override the complete Patient permission set, preserving deny-by-default for professionals.
 	permissions = {
 		**{doctype:[("CC Manager",{"read":1}), ("CC Professional",{"read":1}), ("CC Secretariat",{"read":1})] for doctype in ("Practitioner Schedule","Practitioner Availability")},

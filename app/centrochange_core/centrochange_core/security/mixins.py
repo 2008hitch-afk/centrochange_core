@@ -20,6 +20,8 @@ class PatientMixin:
 		previous = self.get_doc_before_save()
 		if self.customer != (previous.customer if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
 			frappe.throw('Patient/Customer mappings require the audited finance bridge',frappe.PermissionError)
+		if not frappe.flags.get('cc_patient_intake_write') and any((self.get(k) or None)!=((previous.get(k) or None) if previous else None) for k in ('cc_intake_key','cc_intake_hash')):
+			frappe.throw('Patient intake identity requires its audited service',frappe.PermissionError)
 		from centrochange_core.scheduling.public_booking import SERVICE_USER
 		public=frappe.flags.get('cc_public_ingress') and frappe.session.user==SERVICE_USER
 		if not public:

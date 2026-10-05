@@ -111,7 +111,9 @@ def run(extra_checks=None):
 		return {'status':'PASS','checks':checks,'cleanup':'rollback'}
 	finally:
 		frappe.set_user('Administrator')
-		frappe.db.rollback(save_point='cc_security_acceptance')
+		# Standalone private DEV suite: clear callbacks as well as rows. A savepoint-only
+		# rollback would enqueue rolled-back fiscal/contact jobs on bench's final commit.
+		frappe.db.rollback()
 		for principal in locals().get('pro1',''), locals().get('pro2',''), locals().get('secretary',''):
 			if principal:
 				frappe.clear_cache(user=principal)
@@ -339,6 +341,7 @@ def recover_http(tag):
 		'centers':frappe.get_all('Branch',filters={'branch':['like',tag+' %']},pluck='name')}
 	if frappe.db.exists('Item',tag+' SESSION'):
 		fixture['catalog']={'Item':[tag+' SESSION'],'Appointment Type':[tag+' SESSION'],'Price List':[tag+' PRICE'],
+			'CC Package Template':frappe.get_all('CC Package Template',filters={'title':tag+' PACKAGE'},pluck='name'),
 			'Item Price':frappe.get_all('Item Price',filters={'item_code':tag+' SESSION'},pluck='name'),
 			'CC Center Service':frappe.get_all('CC Center Service',filters={'appointment_type':tag+' SESSION'},pluck='name'),
 			'Practitioner Schedule':frappe.get_all('Practitioner Schedule',filters={'cc_practitioner':['in',fixture['practitioners']]},pluck='name')}
