@@ -10,7 +10,7 @@ before_install = "centrochange_core.security.install.ensure_roles"
 after_install = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure"]
 before_migrate = "centrochange_core.security.install.ensure_roles"
 after_migrate = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure"]
-before_request = ["centrochange_core.security.api.before_request", "centrochange_core.operations.notes.request_guard"]
+before_request = ["centrochange_core.security.diagnostics.before_request", "centrochange_core.security.api.before_request", "centrochange_core.operations.notes.request_guard"]
 
 permission_query_conditions = {
     "CC Notification": "centrochange_core.operations.permissions.notification_query",
@@ -45,6 +45,7 @@ has_permission = {
     "CC Patient Assignment": "centrochange_core.security.permissions.assignment_permission",
 }
 extend_doctype_class = {
+    "Error Log": ["centrochange_core.security.diagnostics.ErrorLogMixin"],
     "Patient Appointment": ["centrochange_core.scheduling.booking.AppointmentMixin"],
     "Patient": ["centrochange_core.security.mixins.PatientMixin"],
     "Healthcare Practitioner": ["centrochange_core.security.mixins.PractitionerMixin"],
@@ -79,4 +80,4 @@ for method in ("check_payment_reqd", "invoice_appointment", "update_fee_validity
 for method in ("get_appointments", "get_logged_in_patient", "get_departments", "get_practitioners", "get_patients", "get_settings", "get_slots", "make_appointment", "get_fees", "get_print_format", "get_orders", "get_payment_link"):
     override_whitelisted_methods["healthcare.healthcare.api.patient_portal." + method] = "centrochange_core.scheduling.booking.blocked_native"
 
-scheduler_events = {"cron": {"*/5 * * * *": ["centrochange_core.operations.automation.catch_up"]}}
+scheduler_events = {"cron": {"*/5 * * * *": ["centrochange_core.operations.automation.catch_up", "centrochange_core.operations.notifications.dispatch_pending"]}}

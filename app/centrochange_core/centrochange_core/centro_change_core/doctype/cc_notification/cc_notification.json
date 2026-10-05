@@ -65,6 +65,13 @@
    "fieldtype": "Small Text",
    "label": "Last Error",
    "reqd": 0
+  },
+  {
+   "fieldname": "retry_limit",
+   "label": "Retry Limit",
+   "fieldtype": "Int",
+   "default": "5",
+   "read_only": 1
   }
  ],
  "field_order": [
@@ -76,7 +83,8 @@
   "message",
   "state",
   "attempts",
-  "last_error"
+  "last_error",
+  "retry_limit"
  ],
  "permissions": [
   {

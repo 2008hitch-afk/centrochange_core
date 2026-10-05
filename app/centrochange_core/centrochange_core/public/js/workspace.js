@@ -1,0 +1,92 @@
+import {api,operations,scheduling,escapeHtml as esc,requestKey} from './api.js';
+const $=selector=>document.querySelector(selector);
+const state={boot:null,view:'Agenda',appointments:[],selected:null,tab:'Seduta'};
+const icons={Agenda:'M5 3v4M19 3v4M3 10h18M3 5h18v16H3z',Pazienti:'M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 22v-3a8 8 0 0 1 16 0v3z',Disponibilità:'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 7v5l4 3',Report:'M3 21V12h4v9M10 21V5h4v16M17 21V9h4v12',Notifiche:'M4 17h16l-2-4V9a6 6 0 0 0-12 0v4zM9 21h6'};
+function notify(message,error=false){$('#notice').textContent=message;$('#notice').className='notice'+(error?' error':'');$('#notice').hidden=false;}
+function options(rows,label='name',value='name'){return rows.map(row=>typeof row==='string'?`<option value="${esc(row)}">${esc(row)}</option>`:`<option value="${esc(row[value])}">${esc(row[label]||row[value])}</option>`).join('');}
+function label(text,markup){return `<label>${esc(text)}${markup}</label>`;}
+function select(name,rows,textField='name',required=true){return `<select name="${name}" ${required?'required':''}><option value="">Seleziona</option>${options(rows,textField)}</select>`;}
+function input(name,type='text',value='',required=true){return `<input name="${name}" type="${type}" value="${esc(value)}" ${required?'required':''}>`;}
+const reason=()=>label('Motivo (obbligatorio)','<textarea name="reason" required maxlength="2000"></textarea>');
+function modal(title,fields,action){
+  $('#modal-title').textContent=title;$('#modal-fields').innerHTML=fields;$('#modal-error').textContent='';$('#modal-submit').disabled=false;
+  $('#modal-form').onsubmit=async event=>{event.preventDefault();$('#modal-submit').disabled=true;$('#modal-error').textContent='';try{await action(Object.fromEntries(new FormData(event.currentTarget)));$('#modal').close();await refresh();notify('Operazione registrata.');}catch(error){$('#modal-error').textContent=error.message;}finally{$('#modal-submit').disabled=false;}};
+  $('#modal-submit').hidden=false;$('#modal').showModal();
+}
+$('#modal-dismiss').onclick=()=>$('#modal').close();
+$('#navigation').innerHTML=Object.entries(icons).map(([name,path])=>`<button class="nav-button ${name==='Agenda'?'active':''}" data-view="${name}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>${name}</button>`).join('');
+$('#navigation').onclick=event=>{const button=event.target.closest('[data-view]');if(!button)return;state.view=button.dataset.view;state.selected=null;refresh().catch(error=>notify(error.message,true));};
+$('#logout').onclick=async()=>{await api('logout',{},true);location.href='/login?redirect-to=/centrochange';};
+$('#filters').onsubmit=event=>{event.preventDefault();refresh().catch(error=>notify(error.message,true));};
+$('#center').onchange=async()=>{try{state.boot=await operations('workspace.bootstrap',{center:$('#center').value});state.selected=null;await refresh();}catch(error){notify(error.message,true);}};
+function interval(){return {center:$('#center').value,start:$('#start').value,end:$('#end').value};}
+function status(row){const localNow=new Date().toLocaleString('sv-SE',{timeZone:'Europe/Rome'}).replace(' ','T');const future=row.appointment_date+'T'+row.appointment_time>localNow;const pending=row.cc_closure_state==='Pending'&&!future;const translated={'Pending':'Da chiudere','Closed':'Chiusa','Auto Locked':'Bloccata','Reopened':'Riaperta'};return `<span class="status ${pending?'pending':'closed'}">${esc(row.status==='Cancelled'?'Cancellata':row.cc_closure_state==='Pending'&&future?'Prenotata':translated[row.cc_closure_state]||'Prenotata')}</span>`;}
+function table(rows){return `<div class="table-wrap"><table><thead><tr><th>Ora</th><th>Paziente</th><th>Professionista</th><th>Servizio</th><th>Stato</th></tr></thead><tbody>${rows.map(row=>`<tr data-name="${esc(row.name)}" tabindex="0" class="${state.selected?.name===row.name?'selected':''}"><td>${esc(row.appointment_time?.slice(0,5))}<small>${$('#start').value!==$('#end').value?'<br>'+esc(row.appointment_date):''}</small></td><td>${esc(row.patient_name)}</td><td>${esc(row.practitioner_name)}</td><td>${esc(row.cc_service_label)}</td><td>${status(row)}</td></tr>`).join('')}</tbody></table></div>${rows.length?'':'<p class="empty">Nessuna seduta nel periodo selezionato.</p>'}`;}
+async function refresh(){
+  if(!state.boot?.centers.length){$('#main-content').innerHTML='<p class="empty">Nessun centro assegnato. Contatta la segreteria.</p>';return;}
+  $('#page-title').textContent=state.view;$('#new-booking').hidden=state.view!=='Agenda';document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===state.view));
+  $('#detail').hidden=state.view!=='Agenda';$('.workspace').style.gridTemplateColumns=state.view==='Agenda'?'':'1fr';
+  $('#main-content').innerHTML='<p class="loading">Caricamento…</p>';
+  if(state.view==='Agenda'){
+    const result=await operations('workspace.agenda',interval());state.appointments=result.appointments;
+    if(state.selected)state.selected=state.appointments.find(row=>row.name===state.selected.name)||null;
+    $('#main-content').innerHTML=table(state.appointments);if(result.truncated)notify('Sono visibili le prime 200 sedute. Restringi il periodo.');
+    const choose=event=>{const row=event.target.closest('[data-name]');if(!row)return;state.selected=state.appointments.find(item=>item.name===row.dataset.name);state.tab='Seduta';$('#main-content').innerHTML=table(state.appointments);renderDetail().catch(error=>notify(error.message,true));};
+    $('#main-content').onclick=choose;$('#main-content').onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();choose(event);}};await renderDetail();
+  }else if(state.view==='Pazienti'){
+    $('#main-content').innerHTML='<div class="table-wrap"><table><thead><tr><th>Paziente</th><th>Identificativo</th><th>Storico operativo</th></tr></thead><tbody>'+state.boot.patients.map(row=>`<tr><td>${esc(row.patient_name)}</td><td>${esc(row.name)}</td><td><button data-patient="${esc(row.name)}">Apri storico</button></td></tr>`).join('')+'</tbody></table></div>';
+    $('#main-content').onclick=async event=>{const patient=event.target.closest('[data-patient]');if(!patient)return;try{const history=await operations('workspace.patient_history',{patient:patient.dataset.patient,center:$('#center').value});modal('Storico operativo',historyHtml(history),async()=>{});$('#modal-submit').hidden=true;}catch(error){notify(error.message,true);}};
+  }else if(state.view==='Disponibilità'){
+    const schedules=await operations('workspace.schedules',{center:$('#center').value});
+    $('#main-content').innerHTML='<div class="report-list">'+schedules.map(row=>`<section><h2>${esc(state.boot.practitioners.find(prac=>prac.name===row.practitioner)?.practitioner_name||row.practitioner)}</h2><p>${row.time_slots.map(slot=>esc(slot.day+' '+slot.from_time.slice(0,5)+' – '+slot.to_time.slice(0,5))).join('<br>')}</p></section>`).join('')+'</div><div class="split"><button id="edit-schedule">Modifica disponibilità</button><button id="absence">Registra assenza</button></div>';
+    $('#edit-schedule').onclick=()=>scheduleModal();$('#absence').onclick=()=>absenceModal();
+  }else if(state.view==='Report'){
+    const result=await operations('reporting.summary',interval());
+    $('#main-content').innerHTML='<div class="report-list"><h2>Riepilogo operativo</h2>'+Object.entries(result.currencies).map(([currency,row])=>`<section><h2>${esc(currency)}</h2><p>Sedute: ${row.sessions} · Svolte: ${row.performed} · Segnate pagate: ${row.operational_paid}</p><p>Sedute dovute: ${row.due} · Valore storico dovuto: ${esc(row.due_snapshot_amount)}</p></section>`).join('')+(result.truncated?'<p>Totali parziali: restringi il periodo.</p>':'')+'<p>I pagamenti operativi sono distinti dal saldo contabile.</p><button id="export">Esporta CSV</button></div>';
+    $('#export').onclick=()=>{location.href='/api/method/centrochange_core.operations.reporting.export_csv?'+new URLSearchParams(interval());};
+  }else{
+    const notifications=await api('frappe.client.get_list',{doctype:'CC Notification',fields:['name','message','state','creation'],limit_page_length:100,order_by:'creation desc'});
+    $('#main-content').innerHTML=notifications.map(row=>`<article class="history-entry">${esc(row.message)}<small>${esc(row.creation)} · ${esc(row.state)}</small></article>`).join('')||'<p class="empty">Nessuna notifica.</p>';
+  }
+}
+function historyHtml(history){return history.appointments.map(row=>`<article class="history-entry">${esc(row.appointment_date)} · ${esc(row.cc_service_label)}<small>${esc(row.cc_closure_state)} · ${esc(row.cc_economic_state)}</small></article>`).join('')+(history.settlements.length?'<h3>Pagamenti operativi</h3>':'')+history.settlements.map(row=>`<article class="history-entry">${row.paid?'Pagata':'Non pagata'} · ${esc(row.mode_of_payment)}<small>${esc(row.reason)} · ${esc(row.event_time)}</small></article>`).join('');}
+async function renderDetail(){
+  const row=state.selected;if(!row){$('#detail').innerHTML='<p class="empty">Seleziona una seduta per aprire il dettaglio.</p>';return;}
+  const money=new Intl.NumberFormat('it-IT',{style:'currency',currency:row.cc_currency_snapshot||'EUR'}).format(row.cc_price_snapshot);
+  $('#detail').innerHTML=`<h2>${esc(row.patient_name)}</h2><p class="facts">${esc(new Date(row.appointment_date+'T12:00:00').toLocaleDateString('it-IT',{day:'numeric',month:'long',year:'numeric'}))} · ${esc(row.appointment_time?.slice(0,5))}<br>${esc(row.cc_service_label)} · ${esc(row.duration)} min<br>${esc(money)}</p><div class="tabs" role="tablist">${['Seduta','Storico','Note'].map(tab=>`<button role="tab" aria-selected="${state.tab===tab}" class="${state.tab===tab?'active':''}" data-tab="${tab}">${tab}</button>`).join('')}</div><div id="detail-content"></div><p class="detail-footer">Le modifiche restano nello storico.</p>`;
+  $('#detail').onclick=event=>{const tab=event.target.closest('[data-tab]');if(tab){state.tab=tab.dataset.tab;renderDetail().catch(error=>notify(error.message,true));}};
+  if(state.tab==='Seduta'){
+    $('#detail-content').innerHTML=`<div class="actions"><button class="primary" id="close-session">Chiudi seduta</button><div class="split"><button id="move-session">Sposta</button><button id="cancel-session">Cancella</button></div></div><form class="operation-form" id="operation-form"><label class="checkbox"><input type="checkbox" name="paid" ${row.cc_paid?'checked':''}>Pagata</label>${label('Metodo di pagamento',select('mode',state.boot.payment_methods,'name',false))}${reason()}</form>${state.boot.roles.includes('CC Secretariat')||state.boot.roles.includes('CC Manager')||state.boot.roles.includes('Administrator')?'<div class="split"><button id="reopen-session">Riapri</button><button id="waive-session">Rinuncia economica</button></div>':''}<button id="print-session" style="margin-top:20px">Stampa riepilogo</button>`;
+    $('#close-session').onclick=async()=>{const form=$('#operation-form');if(!form.reportValidity())return;const data=new FormData(form);const button=$('#close-session');button.disabled=true;try{await operations('lifecycle.close',{appointment:row.name,paid:data.has('paid')?1:0,mode_of_payment:data.get('mode')||null,reason:data.get('reason')},true);await refresh();notify('Seduta chiusa.');}catch(error){notify(error.message,true);button.disabled=false;}};
+    $('#move-session').onclick=()=>modal('Sposta seduta',label('Data',input('date','date',row.appointment_date))+label('Ora',input('time','time',row.appointment_time?.slice(0,5)))+reason(),data=>scheduling('booking.reschedule',{appointment:row.name,appointment_date:data.date,appointment_time:data.time,reason:data.reason},true));
+    $('#cancel-session').onclick=()=>modal('Cancella seduta',reason(),data=>operations('lifecycle.cancel',{appointment:row.name,reason:data.reason},true));
+    if($('#reopen-session'))$('#reopen-session').onclick=()=>modal('Riapri seduta',reason(),data=>operations('lifecycle.reopen',{appointment:row.name,reason:data.reason},true));
+    if($('#waive-session'))$('#waive-session').onclick=()=>modal('Rinuncia economica',reason(),data=>operations('lifecycle.waive',{appointment:row.name,reason:data.reason},true));
+    $('#print-session').onclick=async()=>{try{const markup=await operations('reporting.print_session',{appointment:row.name});const blob=new Blob([markup],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);window.open(url,'_blank','noopener');setTimeout(()=>URL.revokeObjectURL(url),60000);}catch(error){notify(error.message,true);}};
+  }else{
+    const history=await operations('workspace.patient_history',{patient:row.patient,center:row.cc_center});
+    if(state.tab==='Storico'){$('#detail-content').innerHTML=historyHtml(history);return;}
+    $('#detail-content').innerHTML='<h3>Note organizzative</h3>'+history.organizational_notes.map(note=>noteHtml(note,false)).join('')+'<button id="new-org">Aggiungi nota organizzativa</button>'+(state.boot.roles.includes('CC Professional')?'<h3>Note professionali riservate</h3>'+history.private_notes.map(note=>noteHtml(note,true)).join('')+'<button id="new-private">Aggiungi nota riservata</button>':'');
+    const edit=(privateNote,corrects=null,content='')=>modal(corrects?'Rettifica nota':privateNote?'Nota riservata':'Nota organizzativa',label('Testo','<textarea name="content" required maxlength="100000">'+esc(content)+'</textarea>'),data=>operations('notes.add_note',{patient:row.patient,center:row.cc_center,content:data.content,private:privateNote?1:0,corrects},true));
+    $('#new-org').onclick=()=>edit(false);if($('#new-private'))$('#new-private').onclick=()=>edit(true);
+    $('#detail-content').onclick=event=>{const button=event.target.closest('[data-note]');if(!button)return;const privateNote=button.dataset.private==='1';const note=(privateNote?history.private_notes:history.organizational_notes).find(item=>item.name===button.dataset.note);edit(privateNote,note.name,note.content);};
+  }
+}
+function noteHtml(note,privateNote){return `<article class="note-entry">${esc(note.content)}<small>${esc(note.creation)}${note.corrects?' · Rettifica di '+esc(note.corrects):''}</small><button data-note="${esc(note.name)}" data-private="${privateNote?1:0}">Rettifica</button></article>`;}
+$('#new-booking').onclick=()=>{
+  const key=requestKey();
+  modal('Prenota seduta',label('Paziente',select('patient',state.boot.patients,'patient_name'))+label('Professionista',select('practitioner',state.boot.practitioners,'practitioner_name'))+label('Servizio',select('service',state.boot.services,'cc_service_label'))+label('Data',input('date','date',$('#start').value))+label('Ora',input('time','time','09:00'))+label('Pacchetto (facoltativo)',select('package',[],'label',false))+reason(),async data=>{
+    await scheduling('booking.book',{patient:data.patient,practitioner:data.practitioner,center:$('#center').value,appointment_type:data.service,appointment_date:data.date,appointment_time:data.time,patient_package:data.package||null,request_key:key,reason:data.reason},true);
+    state.boot=await operations('workspace.bootstrap',{center:$('#center').value});
+  });
+  const packageOptions=()=>{const patient=$('#modal [name=patient]').value;const service=$('#modal [name=service]').value;const practitioner=$('#modal [name=practitioner]').value;const item=state.boot.services.find(row=>row.name===service)?.cc_service_item;$('#modal [name=package]').innerHTML='<option value="">Nessun pacchetto</option>'+options((state.boot.packages||[]).filter(row=>row.patient===patient&&row.service_item===item&&(!row.practitioner||row.practitioner===practitioner)&&row.available>0).map(row=>({...row,label:row.label+' · '+row.available+' disponibili'})),'label');};
+  for(const name of ['patient','service','practitioner'])$('#modal [name='+name+']').onchange=packageOptions;
+};
+function scheduleModal(){const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];modal('Disponibilità ricorrente',label('Professionista',select('practitioner',state.boot.practitioners,'practitioner_name'))+label('Giorno',select('day',days))+label('Dalle',input('from','time','09:00'))+label('Alle',input('to','time','12:00'))+'<p>La conferma sostituisce la disponibilità ricorrente del professionista in questo centro.</p>'+reason(),data=>scheduling('availability.set_schedule',{practitioner:data.practitioner,center:$('#center').value,time_slots:[{day:data.day,from_time:data.from,to_time:data.to}],reason:data.reason},true));}
+function absenceModal(){modal('Registra assenza',label('Professionista',select('practitioner',state.boot.practitioners,'practitioner_name'))+label('Dal',input('start_date','date',$('#start').value))+label('Al',input('end_date','date',$('#start').value))+label('Dalle',input('start_time','time','09:00'))+label('Alle',input('end_time','time','12:00'))+reason(),data=>scheduling('availability.create_absence',{...data,practitioner:data.practitioner,center:$('#center').value},true));}
+async function init(){
+  $('#modal').addEventListener('close',()=>{$('#modal-submit').hidden=false;});
+  const today=new Date().toLocaleDateString('en-CA',{timeZone:'Europe/Rome'});$('#start').value=today;$('#end').value=today;
+  state.boot=await operations('workspace.bootstrap');$('#center').innerHTML=options(state.boot.centers,'branch');if(state.boot.center)$('#center').value=state.boot.center;await refresh();
+}
+init().catch(error=>notify(error.message,true));
