@@ -18,6 +18,8 @@ class PatientMixin:
 	def validate(self):
 		super().validate()
 		previous = self.get_doc_before_save()
+		if self.customer != (previous.customer if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
+			frappe.throw('Patient/Customer mappings require the audited finance bridge',frappe.PermissionError)
 		from centrochange_core.scheduling.public_booking import SERVICE_USER
 		public=frappe.flags.get('cc_public_ingress') and frappe.session.user==SERVICE_USER
 		if not public:
@@ -37,6 +39,8 @@ class PractitionerMixin:
 	def validate(self):
 		self.user_id = self.user_id or None
 		previous = self.get_doc_before_save()
+		if self.supplier != (previous.supplier if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
+			frappe.throw('Professional/Supplier mappings require the audited finance bridge',frappe.PermissionError)
 		if not previous:
 			require_manager()
 		elif (previous.user_id != self.user_id or previous.status != self.status) and not frappe.flags.get("cc_permission_write"):
