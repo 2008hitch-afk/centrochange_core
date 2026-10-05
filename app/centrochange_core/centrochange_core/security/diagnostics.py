@@ -9,7 +9,7 @@ def sensitive_request():
         return True
     request=getattr(frappe.local,'request',None)
     path=getattr(request,'path','')
-    if 'centrochange_core.operations.notes.add_note' in path:
+    if 'centrochange_core.operations.notes.add_note' in path or 'centrochange_core.finance.incoming' in path:
         return True
     # API payloads can encode native documents as JSON. Do not retain clinical request bodies.
     return 'CC Private Note' in json.dumps(getattr(frappe.local,'form_dict',{}) or {},default=str) or 'CC%20Private%20Note' in path or 'CC Private Note' in path
@@ -37,7 +37,7 @@ def before_request():
 
 def redact(doc):
     if sensitive_request():
-        doc.error='Confidential clinical operation failed. Request, body and local variables redacted.'
+        doc.error='Confidential operation failed. Request, body and local variables redacted.'
         doc.method='Confidential operation'
         doc.metadata=frappe.as_json({'redacted':True,'fingerprint':doc.fingerprint})
         doc.reference_doctype=None

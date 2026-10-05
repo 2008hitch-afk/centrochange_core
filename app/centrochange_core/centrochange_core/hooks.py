@@ -112,3 +112,13 @@ for dt,query in [('CC Payment Agreement','agreement_query'),('CC Payment Overrid
     permission_query_conditions[dt]='centrochange_core.finance.collections.'+query
     has_permission[dt]='centrochange_core.finance.collections.permission'
 scheduler_events['cron']['*/5 * * * *'].append('centrochange_core.finance.collections.catch_up')
+
+permission_query_conditions['CC Incoming Invoice']='centrochange_core.finance.incoming.query'
+has_permission['CC Incoming Invoice']='centrochange_core.finance.incoming.permission'
+permission_query_conditions['Purchase Invoice']='centrochange_core.finance.permissions.purchase_invoice_query'
+has_permission['Purchase Invoice']='centrochange_core.finance.permissions.transaction_permission'
+doc_events['Purchase Invoice']={event:'centrochange_core.finance.incoming.protected_invoice' for event in ('validate','before_submit','before_cancel','on_trash')}
+
+doc_events["File"]={event:"centrochange_core.finance.files.protected" for event in ("validate","on_trash")}
+
+extend_doctype_class["File"]=["centrochange_core.finance.files.FinancialFileMixin"]
