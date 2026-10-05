@@ -123,5 +123,37 @@ def checks(fixture):
     economics.reevaluate(center,'Synthetic payment reversal replay')
     assert all(frappe.db.count(dt)==n for dt,n in before.items())
     result.append('DECISION-054 native receipt cancellation resuspends deterministically, reopens the same exception and retains original matured/override facts without replay duplicates')
+    # Global pair capacity does not authorize disclosing another center's session IDs.
+    other=fixture['other']
+    from centrochange_core.security.lifecycle import set_membership
+    set_membership(fixture['pro1'],other,1,'Synthetic cross-center capacity fixture')
+    set_assignment(p1,other,prac1,1,'Synthetic cross-center pair')
+    bridge.map_center(other,'Synthetic cross-center accounting mapping')
+    frappe.db.set_value('Branch',other,'cc_price_list',frappe.db.get_value('Branch',center,'cc_price_list'))
+    frappe.get_doc({'doctype':'CC Center Service','center':other,'appointment_type':'CC SYNTHETIC SESSION','enabled':1}).insert()
+    set_schedule(prac1,other,[{'day':'Monday','from_time':'09:00:00','to_time':'12:00:00'}],'Synthetic cross-center availability')
+    collections.agree(p1,other,'Specific Date','Synthetic cross-center explicit due',due_date='2100-01-01')
+    collections.override(p1,center,'Sales Invoice',invoice,'2100-01-01','threshold-cross-center-defer','Synthetic retained native debt deadline')
+    frappe.flags.cc_test_clock=None
+    foreign=book(p1,prac1,other,'CC SYNTHETIC SESSION','2099-06-01','09:00:00','threshold-cross-center-session','Synthetic cross-center session')['name']
+    frappe.flags.cc_test_clock=lifecycle.start_utc(frappe.get_doc('Patient Appointment',foreign))+timedelta(hours=1)
+    lifecycle.close(foreign,0,'Synthetic cross-center performed unpaid')
+    foreign_source=bridge.capture(foreign,'Synthetic cross-center source')['name']
+    foreign_rule=economics.configure_rule(other,prac1,'CC SYNTHETIC SESSION','2020-01-01','Fixed Amount',100,'EUR','threshold-cross-center-rule','Synthetic cross-center rate')['name']
+    foreign_expectation=economics.capture(foreign_source,'Synthetic global pair capacity',foreign_rule)
+    assert foreign_expectation['state']=='SUSPENDED'
+    economics.reevaluate(center,'Synthetic global capacity scoped reevaluation')
+    assert economics.latest_expectations(center)[third_appt].unpaid_count==5
+    frappe.set_user(fixture['secretary'])
+    position=economics.position(center,prac1)
+    from centrochange_core.security.audit import serialize
+    assert foreign not in serialize(position) and foreign_expectation['name'] not in serialize(position)
+    rejected(lambda:frappe.get_doc('CC Professional Expectation',foreign_expectation['name']).check_permission('read'))
+    rejected(lambda:economics.position(other,prac1))
+    assert foreign not in serialize(frappe.get_list('CC Professional Expectation',fields=['name','unpaid_sessions_json','original_facts']))
+    frappe.set_user('Administrator')
+    set_assignment(p1,other,prac1,0,'Synthetic cross-center pair release')
+    set_membership(fixture['pro1'],other,0,'Synthetic cross-center principal release')
+    result.append('DECISION-054 pair count spans centers but scoped expectation/position/query facts exclude foreign session IDs and foreign-center financial read remains denied')
     for patient,prac in pairs:set_assignment(patient,center,prac,0,'Synthetic threshold fixture permission release')
     return result

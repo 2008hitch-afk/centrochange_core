@@ -115,6 +115,8 @@ def _capture(src,reason,rule=None,override=False):
     snapshot={};problem=None;amount=None;paid=patient_paid(src)
     config=threshold(src.practitioner);unpaid=unpaid_pair(src)
     rank=unpaid.index(src.appointment)+1 if src.appointment in unpaid else 0
+    visible=set(current_rows('Patient Appointment',{'cc_center':src.center,'name':['in',unpaid or ['']]},pluck='name'))
+    scoped_unpaid=[name for name in unpaid if name in visible]
     performed=frappe.db.get_value('Patient Appointment',src.appointment,'cc_performed',for_update=True)
     # A manual exception persists for this source session; it never changes unpaid facts.
     override=bool(override or previous and previous.manual_override)
@@ -137,7 +139,7 @@ def _capture(src,reason,rule=None,override=False):
         'problem':problem or ('Unpaid Threshold Exceeded' if suspended else None),'amount_known':int(amount is not None),'amount':amount,'currency':src.currency,
         'threshold_config':config.name if config else None,'threshold_snapshot':config.max_unpaid_sessions_compensated if config else 0,
         'threshold_configured':int(bool(config)),'unpaid_count':len(unpaid),'unpaid_rank':rank,
-        'unpaid_sessions_json':serialize(unpaid),'manual_override':int(override)}
+        'unpaid_sessions_json':serialize(scoped_unpaid),'manual_override':int(override)}
     facts={k:data[k] for k in ('source','patient','practitioner','paid_snapshot','threshold_config','threshold_configured','threshold_snapshot','unpaid_count','unpaid_rank','unpaid_sessions_json','state','rule_snapshot')}
     data['original_facts']=previous.original_facts if previous and previous.original_facts else serialize(facts)
     # Compare only with the latest state. Returning a retained old snapshot would make
