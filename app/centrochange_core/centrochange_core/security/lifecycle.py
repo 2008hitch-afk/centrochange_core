@@ -179,7 +179,7 @@ def protect_share(doc, method=None):
 			frappe.throw('Financial payloads cannot be manually shared',frappe.PermissionError)
 	if doc.share_doctype=='Communication' and frappe.db.get_value('Communication',doc.share_name,'reference_doctype')=='CC Payment Notice':
 		frappe.throw('Financial payment communication cannot be shared outside its parent scope',frappe.PermissionError)
-	if doc.share_doctype in ('CC Economic Source Link','Customer','Supplier','Cost Center','Account','Sales Invoice','Purchase Invoice','Payment Entry','GL Entry','Payment Ledger Entry','Bank Transaction','Bank Account','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Incoming Invoice','CC Compensation Rule','CC Professional Expectation','CC Professional Comparison','CC Admin Exception'):
+	if doc.share_doctype in ('CC Economic Source Link','Customer','Supplier','Cost Center','Account','Sales Invoice','Purchase Invoice','Payment Entry','GL Entry','Payment Ledger Entry','Bank Transaction','Bank Account','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Incoming Invoice','CC Compensation Rule','CC Professional Expectation','CC Professional Comparison','CC Admin Exception','CC Fiscal Transaction','CC Fiscal Attempt'):
 		frappe.throw('Accounting shares cannot override the finance scope',frappe.PermissionError)
 	if doc.share_doctype == "CC Private Note":
 		frappe.throw("Private notes cannot be shared", frappe.PermissionError)

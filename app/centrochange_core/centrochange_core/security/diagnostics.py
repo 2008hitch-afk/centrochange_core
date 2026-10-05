@@ -9,7 +9,7 @@ def sensitive_request():
         return True
     request=getattr(frappe.local,'request',None)
     path=getattr(request,'path','')
-    if 'centrochange_core.operations.notes.add_note' in path or 'centrochange_core.finance.incoming' in path:
+    if 'centrochange_core.operations.notes.add_note' in path or any('centrochange_core.finance.'+name in path for name in ('incoming','sdi','ts','fiscal')):
         return True
     # API payloads can encode native documents as JSON. Do not retain clinical request bodies.
     return 'CC Private Note' in json.dumps(getattr(frappe.local,'form_dict',{}) or {},default=str) or 'CC%20Private%20Note' in path or 'CC Private Note' in path

@@ -1,0 +1,257 @@
+{
+ "doctype": "DocType",
+ "name": "CC Fiscal Transaction",
+ "module": "Centro Change Core",
+ "custom": 0,
+ "autoname": "hash",
+ "track_changes": 0,
+ "field_order": [
+  "center",
+  "domain",
+  "direction",
+  "reference_doctype",
+  "reference_name",
+  "document_version",
+  "payload_file",
+  "payload_hash",
+  "input_snapshot",
+  "configuration_ref",
+  "route",
+  "request_key",
+  "request_hash",
+  "version_key",
+  "external_message_id",
+  "status",
+  "attempt_count",
+  "pending_attempt_key",
+  "pending_outcome",
+  "external_protocol",
+  "retryable",
+  "error_class",
+  "corrects",
+  "recorded_by",
+  "pending_actor"
+ ],
+ "fields": [
+  {
+   "fieldname": "center",
+   "label": "Center",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Branch"
+  },
+  {
+   "fieldname": "domain",
+   "label": "Domain",
+   "fieldtype": "Select",
+   "reqd": 1,
+   "options": "SDI\nTS"
+  },
+  {
+   "fieldname": "direction",
+   "label": "Direction",
+   "fieldtype": "Select",
+   "reqd": 1,
+   "options": "OUTBOUND\nINBOUND"
+  },
+  {
+   "fieldname": "reference_doctype",
+   "label": "Reference Doctype",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "DocType"
+  },
+  {
+   "fieldname": "reference_name",
+   "label": "Reference Name",
+   "fieldtype": "Dynamic Link",
+   "reqd": 1,
+   "options": "reference_doctype"
+  },
+  {
+   "fieldname": "document_version",
+   "label": "Document Version",
+   "fieldtype": "Data",
+   "reqd": 1
+  },
+  {
+   "fieldname": "payload_file",
+   "label": "Payload File",
+   "fieldtype": "Link",
+   "options": "File"
+  },
+  {
+   "fieldname": "payload_hash",
+   "label": "Payload Hash",
+   "fieldtype": "Data",
+   "reqd": 1
+  },
+  {
+   "fieldname": "input_snapshot",
+   "label": "Input Snapshot",
+   "fieldtype": "Long Text"
+  },
+  {
+   "fieldname": "configuration_ref",
+   "label": "Configuration Ref",
+   "fieldtype": "Data",
+   "default": "SYNTHETIC_UNVERIFIED"
+  },
+  {
+   "fieldname": "route",
+   "label": "Route",
+   "fieldtype": "Data",
+   "default": "SIMULATED"
+  },
+  {
+   "fieldname": "request_key",
+   "label": "Request Key",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "request_hash",
+   "label": "Request Hash",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "version_key",
+   "label": "Version Key",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "external_message_id",
+   "label": "External Message Id",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "status",
+   "label": "Status",
+   "fieldtype": "Select",
+   "reqd": 1,
+   "options": "PREPARED\nQUEUED\nSENT\nACCEPTED_OR_DELIVERED\nREJECTED\nFAILED_RETRYABLE\nFAILED_TERMINAL\nELIGIBILITY_PENDING\nREADY\nSUBMITTED\nACCEPTED\nCORRECTION_REQUIRED\nRETRY_REQUIRED"
+  },
+  {
+   "fieldname": "attempt_count",
+   "label": "Attempt Count",
+   "fieldtype": "Int",
+   "default": "0"
+  },
+  {
+   "fieldname": "pending_attempt_key",
+   "label": "Pending Attempt Key",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "pending_outcome",
+   "label": "Pending Outcome",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "external_protocol",
+   "label": "External Protocol",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "retryable",
+   "label": "Retryable",
+   "fieldtype": "Check",
+   "default": "0"
+  },
+  {
+   "fieldname": "error_class",
+   "label": "Error Class",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "corrects",
+   "label": "Corrects",
+   "fieldtype": "Link",
+   "options": "CC Fiscal Transaction"
+  },
+  {
+   "fieldname": "recorded_by",
+   "label": "Recorded By",
+   "fieldtype": "Link",
+   "options": "User"
+  },
+  {
+   "fieldname": "pending_actor",
+   "label": "Pending Origin Actor",
+   "fieldtype": "Link",
+   "options": "User"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Secretariat",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Finance",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Accountant",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  }
+ ],
+ "engine": "InnoDB"
+}

@@ -218,6 +218,7 @@ def amend(name,posting_date,due_date,request_key,reason):
     doc=frappe.copy_doc(original)
     doc.update({'docstatus':0,'amended_from':name,'posting_date':posting_date,'due_date':due_date,
         'cc_request_key':key('amend',request_key),'cc_request_hash':None})
+    reset_amendment_due(doc,due_date)
     for item in original.items:
         source=frappe.get_doc('CC Economic Source Link',item.cc_economic_source)
         if frappe.db.get_value('Patient Appointment',source.appointment,'cc_economic_state',for_update=True)!='Due':
@@ -236,3 +237,12 @@ class InvoiceMixin:
     @frappe.whitelist()
     def set_healthcare_services(self,checked_values):
         frappe.throw('Use reviewed immutable economic sources',frappe.PermissionError)
+
+
+def reset_amendment_due(doc,due_date):
+    # The approved core uses one explicit ordinary deadline, not inferred installments.
+    if len(doc.payment_schedule)>1:
+        frappe.throw('Multi-installment amendment needs an explicit reviewed payment schedule')
+    mode=doc.payment_schedule[0].mode_of_payment if doc.payment_schedule else None
+    doc.payment_terms_template=None
+    doc.set('payment_schedule',[{'due_date':due_date,'invoice_portion':100,'mode_of_payment':mode}])
