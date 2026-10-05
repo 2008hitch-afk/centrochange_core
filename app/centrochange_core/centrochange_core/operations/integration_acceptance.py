@@ -38,6 +38,10 @@ def checks(fixture):
         if actor!=fixture['secretary']:reject(lambda:workspace.create_patient(**{**args,'request_key':actor,'uid':'SYNTHETIC-UNAUTHORIZED'}))
     frappe.set_user('Administrator');context=workspace.management_context(center)
     assert context['memberships'] and all(set(row)<={'name','full_name','enabled'} for row in context['users'])
+    assert fixture['prac1'] in {r.name for r in context['practitioners']}
+    boot=workspace.bootstrap(center)
+    assert center in {r.name for r in boot['centers']} and fixture['prac1'] in {r.name for r in boot['practitioners']}
+    result.append('Management unfiltered center and practitioner discovery remains nonempty on an assigned native fixture')
     result.append('management context excludes credentials and clinical data; professional accountant and secretariat cannot administer center memberships')
     return result
 
