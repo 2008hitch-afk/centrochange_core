@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--source-ref', required=True)
     parser.add_argument('--name', required=True)
     parser.add_argument('--env-file', required=True)
+    parser.add_argument('--existing-site-ui', action='store_true', help='Deploy only app services to an initialized site; skip configurator/migrate')
     args = parser.parse_args()
     if not re.fullmatch(r'goal02-[0-9]{8}-rc[0-9]+', args.name):
         raise ValueError('Explicit GOAL-02 candidate name required')
@@ -45,12 +46,18 @@ def main():
             raise RuntimeError('Candidate build failed; external trace: ' + str(log))
     environment = dict(os.environ, CC_UAT_IMAGE=image)
     command = ['docker', 'compose', '-f', 'infra/compose.yaml', '-f', 'infra/compose.uat.yaml', '--env-file', str(Path(args.env_file).resolve())]
-    result = subprocess.run(command + ['up', '-d', '--no-build'], cwd=root, env=environment, capture_output=True, text=True)
+    startup = ['up', '-d', '--no-build']
+    if args.existing_site_ui:
+        health = subprocess.run(['docker', 'exec', 'centrochange-dev-backend-1', 'bench', '--site', 'centrochange.local', 'list-apps'], capture_output=True, text=True)
+        if health.returncode or 'centrochange_core' not in health.stdout or 'healthcare' not in health.stdout:
+            raise RuntimeError('UI-only deployment requires initialized DEV site')
+        startup += ['--no-deps', 'backend', 'frontend', 'websocket', 'queue-short', 'queue-long', 'scheduler']
+    result = subprocess.run(command + startup, cwd=root, env=environment, capture_output=True, text=True)
     if result.returncode:
         raise RuntimeError('Candidate DEV startup failed; inspect fixed DEV Compose services')
     identity = json.loads(subprocess.check_output(['docker', 'image', 'inspect', image], text=True))[0]
     print(json.dumps({'status': 'PASS', 'candidate': args.name, 'image': image, 'image_id': identity['Id'],
-        'source_commit': source, 'source_export': 'git archive of exact commit', 'production': False,
+        'schema_migration': not args.existing_site_ui, 'source_commit': source, 'source_export': 'git archive of exact commit', 'production': False,
         'note': 'Build/deploy proof only; acceptance remains required'}))
 
 
