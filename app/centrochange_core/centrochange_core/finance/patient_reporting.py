@@ -80,14 +80,13 @@ def _project(center,start,end,group):
     for p in positions:
         for debt in p['debts']:
             d=dict(debt);d['patient']=p['patient']
-            if d['doctype']=='Sales Invoice':d['original_due_date']=frappe.db.get_value('Sales Invoice',d['name'],'due_date')
-            else:d['original_due_date']=d['due_date'] if not d['override'] else None
             debt_map.setdefault((d['doctype'],d['name']),d)
     outstanding=sum(r.outstanding_amount for r in open_rows);overdue_amount=sum(r['outstanding_amount'] for r in overdue)
     blocked=any(p['blocked'] for p in positions);deferred=any(r['deferral'] for r in open_rows) or any(d['override'] for d in debt_map.values())
     due_dates=[frappe.utils.getdate(r['effective_due_date']) for r in open_rows if r['effective_due_date']]
+    due_dates.extend(frappe.utils.getdate(d['due_date']) for d in debt_map.values() if d['due_date'])
     dates=[d for d in due_dates if d>=now.date()] or due_dates
-    state='Blocco prenotazione' if blocked else 'Scaduto' if overdue_amount else 'Differito' if deferred else 'Da incassare' if outstanding else 'Regolare'
+    state='Blocco prenotazione' if blocked else 'Scaduto' if overdue_amount else 'Differito' if deferred else 'Da incassare' if outstanding else 'Debito operativo da verificare' if debt_map else 'Regolare'
     return {**group,'center':center,'start':start,'end':end,'as_of':now.isoformat(),'counts':counts,'sessions':safe_sessions,
         'totals':{'invoiced':sum(r['grand_total'] for r in invoices),'collected':sum(r['collected_amount'] for r in payments),'outstanding':outstanding,'overdue':overdue_amount,'open_invoices':len(open_rows)},
         'invoices':invoices,'payments':payments,'open_invoices':list(map(dict,open_rows)),'overdue_invoices':overdue,'next_due_date':min(dates) if dates else None,'deferred':bool(deferred),'blocked':blocked,'state':state,
