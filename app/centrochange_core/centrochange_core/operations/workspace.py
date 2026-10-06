@@ -112,6 +112,9 @@ def schedules(center):
         doc=frappe.get_doc('Practitioner Schedule',name)
         doc.check_permission('read')
         absences=frappe.get_list('Practitioner Availability',filters={'cc_center':center,'scope_type':'Healthcare Practitioner','scope':doc.cc_practitioner,'type':'Unavailable','docstatus':1},fields=['start_date','end_date','start_time','end_time','repeat'],page_length=100)
+        for absence in absences:
+            absence.start_time=str(get_time(absence.start_time))
+            absence.end_time=str(get_time(absence.end_time))
         result.append({'name':name,'practitioner':doc.cc_practitioner,'absences':absences,'time_slots':[{'day':row.day,'from_time':str(get_time(row.from_time)),'to_time':str(get_time(row.to_time))} for row in doc.time_slots]})
     return result
 
