@@ -50,12 +50,17 @@ def _project(center,start,end,group):
         safe_sessions.append({**dict(row),'patient_label':identities.get(row.patient,'Identità non proiettata'),'category':category,'appointment_time':str(frappe.utils.get_time(row.appointment_time)),'can_open':bool((is_manager() or 'CC Secretariat' in roles()) and doc.has_permission('read'))})
     safe_sessions.sort(key=lambda r:(str(r['appointment_date']),r['appointment_time'],r['name']))
     invoices=[];payments=[];open_rows=[];overdue=[]
+    link_cache={}
+    def invoice_links(name):
+        if name not in link_cache:
+            refs=current_rows('Sales Invoice Item',{'parent':name},pluck='cc_economic_source')
+            composed=current_rows('CC Economic Source Link',{'name':['in',[ref for ref in refs if ref] or ['']],'center':center,'customer':customer},fields=['name','patient','appointment'])
+            link_cache[name]=[{'source':r.name,'appointment':r.appointment,'patient':r.patient if r.patient in patient_ids else None} for r in composed]
+        return link_cache[name]
     if customer:
         for row in data['sales_invoices']:
             native=frappe.db.get_value('Sales Invoice',row.name,['due_date','payment_terms_template','status'],as_dict=True)
-            refs=current_rows('Sales Invoice Item',{'parent':row.name},pluck='cc_economic_source')
-            composed=current_rows('CC Economic Source Link',{'name':['in',[ref for ref in refs if ref] or ['']],'center':center,'customer':customer},fields=['name','patient','appointment'])
-            invoices.append({**dict(row),**dict(native),'session_links':[{'source':r.name,'appointment':r.appointment,'patient':r.patient if r.patient in patient_ids else None} for r in composed]})
+            invoices.append({**dict(row),**dict(native),'session_links':invoice_links(row.name)})
         for row in data['payments']:
             if row.payment_type=='Internal Transfer':continue
             currency=row.paid_to_account_currency if row.payment_type=='Receive' else row.paid_from_account_currency
@@ -63,6 +68,7 @@ def _project(center,start,end,group):
             payments.append({**dict(row),'mode_of_payment':frappe.db.get_value('Payment Entry',row.name,'mode_of_payment'),'collected_amount':row.received_amount if row.payment_type=='Receive' else -row.paid_amount})
         open_rows=_bounded('Sales Invoice',{'cc_center':center,'customer':customer,'docstatus':1,'outstanding_amount':['>',0]},['name','posting_date','customer','currency','grand_total','outstanding_amount','due_date','status','payment_terms_template','is_return'])
         for row in open_rows:
+            row['session_links']=invoice_links(row.name)
             if row.currency!='EUR':frappe.throw('Separate currency reporting required')
             override=collections._deferred('Sales Invoice',row.name)
             row['original_due_date']=row.due_date;row['effective_due_date']=override.due_date if override else row.due_date
