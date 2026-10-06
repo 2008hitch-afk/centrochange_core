@@ -18,3 +18,5 @@
 @media(max-width:600px){.agenda-controls{grid-template-columns:1fr}.week-navigation,.practitioner-picker,.view-picker{grid-column:1/-1}.week-navigation{grid-template-columns:auto auto minmax(0,1fr) auto}.calendar-header,.calendar-row{grid-template-columns:150px repeat(7,minmax(135px,1fr));min-width:1095px}}
 
 .workspace{grid-template-columns:minmax(0,1fr)}.workspace.detail-open{grid-template-columns:minmax(0,1fr) 420px}@media(max-width:900px){.workspace.detail-open{grid-template-columns:minmax(0,1fr)}}
+
+.filters [hidden],#detail[hidden],#agenda-controls[hidden]{display:none!important}.filters.agenda-mode,.agenda-controls{flex-wrap:wrap}
