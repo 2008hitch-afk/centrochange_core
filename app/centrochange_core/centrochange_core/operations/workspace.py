@@ -106,12 +106,13 @@ def bootstrap(center=None):
 def schedules(center):
     require_actor()
     require_center(center)
-    names=frappe.get_list('Practitioner Schedule',filters={'cc_center':center},pluck='name',page_length=100)
+    names=frappe.get_list('Practitioner Schedule',filters={'cc_center':center,'disabled':0},pluck='name',page_length=100)
     result=[]
     for name in names:
         doc=frappe.get_doc('Practitioner Schedule',name)
         doc.check_permission('read')
-        result.append({'name':name,'practitioner':doc.cc_practitioner,'time_slots':[{'day':row.day,'from_time':str(get_time(row.from_time)),'to_time':str(get_time(row.to_time))} for row in doc.time_slots]})
+        absences=frappe.get_list('Practitioner Availability',filters={'cc_center':center,'scope_type':'Healthcare Practitioner','scope':doc.cc_practitioner,'type':'Unavailable','docstatus':1},fields=['start_date','end_date','start_time','end_time','repeat'],page_length=100)
+        result.append({'name':name,'practitioner':doc.cc_practitioner,'absences':absences,'time_slots':[{'day':row.day,'from_time':str(get_time(row.from_time)),'to_time':str(get_time(row.to_time))} for row in doc.time_slots]})
     return result
 
 
