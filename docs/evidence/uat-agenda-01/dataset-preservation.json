@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "reset_or_seed": false,
+  "existing_manifest_ids_unchanged": true,
+  "existing_native_invoice_states_balances_and_modified_timestamps_unchanged": true,
+  "seed_initial_validation": "NOT_APPLICABLE_TO_MODIFIED_UAT",
+  "note": "Beta balance already 0 before validation; historical initial-state assertion expects 60. Previous UAT mutations preserved."
+}
