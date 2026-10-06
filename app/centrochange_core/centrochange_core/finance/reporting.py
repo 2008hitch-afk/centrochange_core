@@ -40,11 +40,11 @@ def summary(center,start,end,customer=None,practitioner=None):
     if practitioner:
         # A fiscal invoice may compose several professionals. No invented allocation of its open balance.
         sales=[]
-    purchases=[] if customer else _bounded('Purchase Invoice',{**base,**({'supplier':supplier or ''} if practitioner else {})},['name','posting_date','supplier','currency','net_total','grand_total','outstanding_amount','is_return','return_against','amended_from','cc_incoming_source'])
+    purchases=[] if customer else _bounded('Purchase Invoice',{**base,**({'supplier':supplier or ''} if practitioner else {})},['name','posting_date','supplier','status','docstatus','currency','net_total','grand_total','outstanding_amount','is_return','return_against','amended_from','cc_incoming_source'])
     payments=_bounded('Payment Entry',{**base,**({'party_type':'Customer','party':customer} if customer else {'party_type':'Supplier','party':supplier or ''} if practitioner else {})},['name','posting_date','party_type','party','payment_type','paid_amount','received_amount','paid_from_account_currency','paid_to_account_currency'])
     session_filters={'cc_center':center,'appointment_date':['between',[start,end]]}
     if practitioner:session_filters['practitioner']=practitioner
-    sessions=_bounded('Patient Appointment',session_filters,['name','appointment_date','patient','practitioner','cc_service_label','cc_closure_state','cc_economic_state','cc_performed','cc_paid','cc_price_snapshot','cc_currency_snapshot'])
+    sessions=_bounded('Patient Appointment',session_filters,['name','appointment_date','appointment_time','status','duration','patient','practitioner','cc_service_label','cc_closure_state','cc_economic_state','cc_performed','cc_paid','cc_price_snapshot','cc_currency_snapshot'])
     if customer:
         patients=set(current_rows('Patient',{'customer':customer},pluck='name'));sessions=[r for r in sessions if r.patient in patients]
     currencies={r.currency for r in sales+purchases}
@@ -123,3 +123,56 @@ def records(center,doctype):
             result.append(row)
         return result
     return _bounded(doctype,{field:center},allowed_types[doctype])
+
+
+@frappe.whitelist(methods=['GET'])
+def professional_view(center,start,end,practitioner):
+    """One bounded period projection; native subject totals are never allocated."""
+    require_finance(center)
+    # Reuse the existing authorized practitioner selector, including active membership.
+    context=bootstrap(center)
+    identity=next((r for r in context['practitioners'] if r.name==practitioner),None)
+    if not identity:frappe.throw('Professional report context denied',frappe.PermissionError)
+    data=summary(center,start,end,practitioner=practitioner)
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from frappe.utils import get_time
+    now=datetime.now(ZoneInfo('Europe/Rome')).replace(tzinfo=None)
+    counts={'sessions':len(data['sessions']),'performed':0,'cancelled':0,'future':0,'pending':0,'closed_not_performed':0,'operational_paid':0,'operational_unpaid':0}
+    values=defaultdict(float);sessions=[]
+    for row in data['sessions']:
+        start_at=datetime.combine(frappe.utils.getdate(row.appointment_date),get_time(row.appointment_time))
+        category=('cancelled' if row.status=='Cancelled' else 'performed' if row.cc_performed else 'future' if start_at>now else 'closed_not_performed' if row.cc_closure_state=='Closed' else 'pending')
+        counts[category]+=1;counts['operational_paid' if row.cc_paid else 'operational_unpaid']+=1
+        values[row.cc_currency_snapshot or 'UNSET']+=float(row.cc_price_snapshot or 0)
+        doc=frappe.get_doc('Patient Appointment',row.name)
+        can_open=bool(doc.has_permission('read') and (is_manager() or 'CC Secretariat' in roles()))
+        source=frappe.db.get_value('CC Economic Source Link',{'appointment':row.name,'center':center},['customer'],as_dict=True)
+        label=doc.patient_name if can_open else (frappe.db.get_value('Customer',source.customer,'customer_name') if source and source.customer else 'Paziente non proiettato')
+        sessions.append({**dict(row),'appointment_time':str(get_time(row.appointment_time)),'category':category,'patient_label':label,'can_open':can_open})
+    sessions.sort(key=lambda r:(str(r['appointment_date']),r['appointment_time'],r['name']))
+    expectations=data['expectations']
+    if any(r.currency!='EUR' for r in expectations):frappe.throw('Separate currency reporting required')
+    unresolved=[r for r in expectations if r.state!='OK']
+    missing=[r['name'] for r in sessions if r['cc_performed'] and r['name'] not in {e.appointment for e in expectations}]
+    comparisons=[]
+    identifiers={r['name'] for r in sessions}
+    for row in _bounded('CC Professional Comparison',{'center':center,'practitioner':practitioner},['name','purchase_invoice','expectations_json','expected_known','expected_amount','received_amount','currency','state','problem','creation']):
+        refs=frappe.parse_json(row.expectations_json or '[]')
+        composed=current_rows('CC Professional Expectation',{'name':['in',refs or ['']]},fields=['name','appointment','center','practitioner','state','amount','amount_known'])
+        # Whole canonical comparison only; never split an invoice/comparison across periods.
+        if not refs or len(composed)!=len(refs) or any(r.center!=center or r.practitioner!=practitioner or r.appointment not in identifiers for r in composed):continue
+        row.pop('expectations_json',None)
+        comparisons.append({**dict(row),'expectations':[dict(r) for r in composed],'difference':float(row.expected_amount)-float(row.received_amount) if row.expected_known else None})
+    return {'center':center,'practitioner':practitioner,'practitioner_name':identity.practitioner_name,'start':data['start'],'end':data['end'],'counts':counts,'snapshot_values':dict(values),'sessions':sessions,
+        'economics':{'currency':'EUR','known_expected':data['totals']['known_expected_compensation'],'expected':data['totals']['expected_compensation'],'suspended':sum(r.state=='SUSPENDED' for r in expectations),'review':sum(r.state not in ('OK','SUSPENDED') for r in expectations)+len(missing),'expectations':[dict(r) for r in expectations],'missing_expectation_sessions':missing,'supplier_invoices':[dict(r) for r in data['purchase_invoices']],'supplier_paid':data['totals']['supplier_paid'],'comparisons':comparisons},
+        'scope_note':'Paid/Unpaid is operational, not patient accounting. Snapshot value includes cancelled/non-due sessions. Expected compensation follows session dates. Received invoice/payment follows posting dates and fiscal supplier; no allocation to individual professionals. Comparisons include only whole canonical snapshots whose sessions lie in this period; no inferred comparison or discrepancy total.'}
+
+
+@frappe.whitelist(methods=['GET'])
+def professional_export(center,start,end,practitioner):
+    data=professional_view(center,start,end,practitioner);output=StringIO(newline='');writer=csv.writer(output)
+    columns=['name','appointment_date','appointment_time','patient_label','cc_service_label','category','cc_price_snapshot','cc_currency_snapshot','cc_economic_state','cc_paid']
+    writer.writerow(columns)
+    for row in data['sessions']:writer.writerow([safe_cell(row.get(field)) for field in columns])
+    frappe.response.update({'type':'download','filename':'centrochange-professional.csv','filecontent':output.getvalue(),'content_type':'text/csv; charset=utf-8'})
