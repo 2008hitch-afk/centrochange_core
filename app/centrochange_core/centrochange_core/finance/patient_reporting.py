@@ -88,7 +88,7 @@ def _project(center,start,end,group):
             d=dict(debt);d['patient']=p['patient']
             debt_map.setdefault((d['doctype'],d['name']),d)
     outstanding=sum(r.outstanding_amount for r in open_rows);overdue_amount=sum(r['outstanding_amount'] for r in overdue)
-    blocked=any(p['blocked'] for p in positions);deferred=any(r['deferral'] for r in open_rows) or any(d['override'] for d in debt_map.values())
+    blocked=any(p['blocked'] for p in positions);deferred=any(r['deferral'] and r.outstanding_amount>0 for r in open_rows) or any(d['override'] for d in debt_map.values())
     due_dates=[frappe.utils.getdate(r['effective_due_date']) for r in open_rows if r['effective_due_date'] and r.outstanding_amount>0]
     due_dates.extend(frappe.utils.getdate(d['due_date']) for d in debt_map.values() if d['due_date'])
     dates=[d for d in due_dates if d>=now.date()] or due_dates
