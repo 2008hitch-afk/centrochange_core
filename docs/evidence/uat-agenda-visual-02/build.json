@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "candidate": "goal02-20261006-rc8",
+  "image": "centrochange-uat:goal02-20261006-rc8",
+  "image_id": "sha256:ea32b7eb9a2f53f97fec6b75c3e974eba320f1af970a82514eed792025014c71",
+  "schema_migration": false,
+  "source_commit": "82d9c16241c914880ab5fb317f3fbeb16d72e10a",
+  "source_export": "git archive of exact commit",
+  "production": false,
+  "note": "Build/deploy proof only; acceptance remains required"
+}
