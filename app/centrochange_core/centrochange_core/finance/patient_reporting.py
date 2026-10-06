@@ -1,7 +1,6 @@
 """Patient identities grouped once by fiscal Customer; no inferred allocation."""
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from collections import defaultdict
 import frappe
 from centrochange_core.finance.guards import require_finance,patient_context
 from centrochange_core.security.guards import current_rows,is_manager,roles
@@ -54,7 +53,9 @@ def _project(center,start,end,group):
     if customer:
         for row in data['sales_invoices']:
             native=frappe.db.get_value('Sales Invoice',row.name,['due_date','payment_terms_template','status'],as_dict=True)
-            invoices.append({**dict(row),**dict(native)})
+            refs=current_rows('Sales Invoice Item',{'parent':row.name},pluck='cc_economic_source')
+            composed=current_rows('CC Economic Source Link',{'name':['in',[ref for ref in refs if ref] or ['']],'center':center,'customer':customer},fields=['name','patient','appointment'])
+            invoices.append({**dict(row),**dict(native),'session_links':[{'source':r.name,'appointment':r.appointment,'patient':r.patient if r.patient in patient_ids else None} for r in composed]})
         for row in data['payments']:
             if row.payment_type=='Internal Transfer':continue
             currency=row.paid_to_account_currency if row.payment_type=='Receive' else row.paid_from_account_currency
@@ -80,7 +81,7 @@ def _project(center,start,end,group):
         for debt in p['debts']:
             d=dict(debt);d['patient']=p['patient']
             if d['doctype']=='Sales Invoice':d['original_due_date']=frappe.db.get_value('Sales Invoice',d['name'],'due_date')
-            else:d['original_due_date']=next((x['due_date'] for x in collections._debts(p['patient'],center) if x['name']==d['name']),None) if not d['override'] else None
+            else:d['original_due_date']=d['due_date'] if not d['override'] else None
             debt_map.setdefault((d['doctype'],d['name']),d)
     outstanding=sum(r.outstanding_amount for r in open_rows);overdue_amount=sum(r['outstanding_amount'] for r in overdue)
     blocked=any(p['blocked'] for p in positions);deferred=any(r['deferral'] for r in open_rows) or any(d['override'] for d in debt_map.values())
