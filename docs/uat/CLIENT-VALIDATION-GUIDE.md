@@ -46,3 +46,13 @@ Usa una riga per scenario e per tentativo. Non confondere il PASS tecnico regist
 | candidate dal manifest | UAT-… | … | … | … | … | NOT_EXECUTED | … |
 
 Una prova non eseguibile a causa di una limitazione nota va registrata BLOCKED con riferimento al [Known Limitations Register](KNOWN-LIMITATIONS.md). Errori tecnici vanno associati allo scenario e riprodotti nel DEV; decisioni business o fiscali restano alle autorità competenti.
+
+## UAT-PROF-REPORT-01 — Professional View
+
+Con Segreteria o Direzione, apri Agenda sul Centro A, settimana 28/09/2026–04/10/2026, e premi nome/avatar di Alfa. Da Report → Professionisti seleziona Alfa e lo stesso periodo: la proiezione deve coincidere. Finance usa il collegamento Professionisti nel Riepilogo di Finanza.
+
+Premi Sedute: devono comparire esattamente 8 record di Alfa, 6 svolti e 2 cancellati, tutti nel periodo; prezzo snapshot complessivo 800 EUR, comprese le cancellate (non equivale a un credito). Apri una seduta con il collegamento operativo dove autorizzato. Prova Oggi, Questa settimana, Questo mese, Mese scorso e Dal/Al; dal 12/10 al 18/10 compare una seduta futura. Il periodo rimane sempre visibile.
+
+Confronta compensi confermati, sospesi e da verificare con Finanza → Professionisti. Gli importi irrisolti restano da verificare, mai zero inventato. Premi i KPI sospesi/da verificare per le posizioni componenti. Le fatture ricevute seguono data contabile e fornitore: la fattura demo del 05/10 non appartiene al periodo iniziale; estendi il periodo per consultarla. Il confronto atteso/ricevuto appare solo per snapshot canonici espliciti interamente composti da sedute nel periodo, senza ripartizioni artificiali.
+
+A/B/C non possono aprire questa proiezione finanziaria, neppure direttamente. Segreteria non vede note private; Finance non acquisisce accesso al dettaglio operativo. Il CSV contiene soltanto le sedute componenti, senza note. Accettazione manuale Owner ancora da raccogliere.

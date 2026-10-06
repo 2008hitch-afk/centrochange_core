@@ -1,4 +1,4 @@
-"""Private synthetic read-only verification against canonical runtime sources."""
+"""Private synthetic verification; comparison writes are rolled back."""
 import frappe
 from centrochange_core.finance.reporting import professional_view
 
@@ -42,5 +42,31 @@ def run():
         data=professional_view(**{**args,'start':'2026-10-12','end':'2026-10-18'})
         assert data['counts']['sessions']==1 and data['counts']['future']==1 and len(data['sessions'])==1
         checks.append('future period deterministic native session projection')
-        return {'status':'PASS','checks':checks,'canonical_sessions':len(raw),'read_only':True}
+        from centrochange_core.finance.professional_economics import compare
+        frappe.set_user(fixture['users']['f']['name'])
+        before=frappe.db.count('CC Professional Comparison')
+        frappe.db.savepoint('professional_acceptance')
+        try:
+            baseline=professional_view(**args)
+            chosen=next(r for r in baseline['economics']['expectations'] if r['state']=='OK')
+            result=compare(demo['incoming']['payable'],[chosen['name']],'Synthetic projection acceptance, rolled back')
+            projected=professional_view(**args)
+            comparison=next(r for r in projected['economics']['comparisons'] if r['name']==result['name'])
+            invoice=frappe.get_doc('Purchase Invoice',demo['incoming']['payable'])
+            assert comparison['received_amount']==invoice.net_total
+            assert comparison['expected_amount']==chosen['amount']
+            assert comparison['difference']==chosen['amount']-invoice.net_total
+            assert [r['name'] for r in comparison['expectations']]==[chosen['name']]
+            outside=professional_view(**{**args,'start':'2026-10-12','end':'2026-10-18'})
+            assert result['name'] not in {r['name'] for r in outside['economics']['comparisons']}
+            checks.append('canonical comparison exact references/expected/native net/difference; excluded outside composing session period')
+            full=professional_view(**{**args,'start':'2026-09-28','end':'2026-10-31'})
+            native=next(r for r in full['economics']['supplier_invoices'] if r['name']==invoice.name)
+            assert native['net_total']==invoice.net_total and native['outstanding_amount']==invoice.outstanding_amount and native['status']==invoice.status
+            checks.append('received invoice net/outstanding/status reconcile native supplier document without allocation')
+        finally:
+            frappe.db.rollback(save_point='professional_acceptance')
+        assert frappe.db.count('CC Professional Comparison')==before
+        checks.append('comparison and audit transaction rolled back; persistent demo preserved')
+        return {'status':'PASS' ,'checks':checks,'canonical_sessions':len(raw),'persistent_changes':False}
     finally:frappe.set_user(original)
