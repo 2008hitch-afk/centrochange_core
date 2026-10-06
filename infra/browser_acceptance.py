@@ -24,6 +24,7 @@ def execute(method,kwargs=None):
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--env-file',required=True)
+    parser.add_argument('--operational-only',action='store_true',help='Isolated operational fixture; retain existing UAT public route')
     parser.add_argument('--output-dir',default='/tmp/centrochange-browser-evidence')
     args=parser.parse_args()
     repository=Path(__file__).resolve().parent.parent
@@ -41,12 +42,12 @@ def main():
     credential=None
     reports=[]
     try:
-        fixture=execute('centrochange_core.security.dev_acceptance.create_http',{'scheduling':True,'operations':True})
+        fixture=execute('centrochange_core.security.dev_acceptance.create_http',{'scheduling':True,'operations':True,'public_route':not args.operational_only})
         descriptor,credential=tempfile.mkstemp(prefix='cc-browser-fixture-',suffix='.json')
         with os.fdopen(descriptor,'w') as stream:
             json.dump(fixture,stream)
         os.chmod(credential,0o600)
-        for script in ('flows','public'):
+        for script in (('flows',) if args.operational_only else ('flows','public')):
             command=['docker','run','--rm','--network','host','--user',str(os.getuid())+':'+str(os.getgid()),
                 '-v',credential+':/qa-fixture.json:ro','-v',str(output)+':/qa-results',
                 '-e','CC_BASE_URL=http://centrochange.local:'+str(port),IMAGE,'node','/qa/'+script+'.cjs']

@@ -120,7 +120,7 @@ def run(extra_checks=None):
 
 
 @synthetic_test
-def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None,finance_users=False,commit=True):
+def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None,finance_users=False,commit=True,public_route=True):
 	"""Create explicitly marked disposable HTTP fixtures; harness destroys them."""
 	if frappe.session.user != 'Administrator' or frappe.conf.get('cc_synthetic_dev') != 1:
 		frappe.throw('Synthetic DEV Administrator required')
@@ -167,9 +167,11 @@ def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None
 			'appointment_type':profile.name,'enabled':1}).insert()
 		schedule=set_schedule(result['practitioners'][0],result['centers'][0],
 			[{'day':'Monday','from_time':'09:00:00','to_time':'12:00:00'}],tag)['name']
-		route=frappe.get_doc({'doctype':'CC Public Booking Route','route':'Marco','center':result['centers'][0],
+		route=None
+		if public_route:
+			route=frappe.get_doc({'doctype':'CC Public Booking Route','route':'Marco','center':result['centers'][0],
 			'practitioner':result['practitioners'][0],'appointment_type':profile.name,'enabled':1}).insert()
-		result['catalog']={'CC Public Booking Route':[route.name],'Item':[item.name],'Price List':[price_list.name],'Appointment Type':[profile.name],
+		result['catalog']={'CC Public Booking Route':[route.name] if route else [],'Item':[item.name],'Price List':[price_list.name],'Appointment Type':[profile.name],
 			'Item Price':[price.name],'CC Center Service':[availability.name],'Practitioner Schedule':[schedule]}
 	if operations:
 		from centrochange_core.operations.notes import add_note
