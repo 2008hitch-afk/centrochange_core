@@ -15,7 +15,7 @@ def reconcile(data):
     assert all(data['start']<=frappe.utils.getdate(r['appointment_date'])<=data['end'] for r in data['sessions'])
     assert 'PRIVATE BODY' not in frappe.as_json(data)
     if data['customer']:
-        native=frappe.get_all('Sales Invoice',filters={'cc_center':data['center'],'customer':data['customer'],'docstatus':1,'outstanding_amount':['>',0]},fields=['name','outstanding_amount'])
+        native=frappe.get_all('Sales Invoice',filters={'cc_center':data['center'],'customer':data['customer'],'docstatus':1,'outstanding_amount':['!=',0]},fields=['name','outstanding_amount'])
         assert t['outstanding']==sum(r.outstanding_amount for r in native)
         assert {r['name'] for r in data['open_invoices']}=={r.name for r in native}
         invoices=frappe.get_all('Sales Invoice',filters={'cc_center':data['center'],'customer':data['customer'],'docstatus':1,'posting_date':['between',[data['start'],data['end']]]},fields=['name','grand_total'])
@@ -87,6 +87,15 @@ def run():
             assert changed['totals']['outstanding']==theta['totals']['outstanding'] and changed['deferred']
             assert row['name'] not in {r['name'] for r in changed['overdue_invoices']}
             checks.append('approved deferral preserves debt/original date and removes deferred native invoice from overdue')
+            # Read projection must preserve signed native outstanding, not drop an
+            # open credit or allocate it to another invoice. Synthetic field probe
+            # stays inside the same rollback; this does not test credit posting.
+            with internal_write('cc_finance_write'):
+                frappe.db.set_value('Sales Invoice',native['name'],'outstanding_amount',-25,update_modified=False)
+            credit_position=patient_view(**args,patient=demo['patients']['Theta'])
+            assert credit_position['totals']['outstanding']==-25 and credit_position['totals']['overdue']==0
+            assert credit_position['state']=='Credito contabile' and len(credit_position['open_invoices'])==1
+            checks.append('signed native open credit retained without allocation; never classified overdue positive debt')
         finally:frappe.db.rollback(save_point='patient_report_acceptance')
         assert frappe.db.get_value('Patient',beta,'customer')==old_customer
         restored=patient_view(**args,patient=demo['patients']['Theta']);assert restored['totals']==theta['totals']

@@ -66,14 +66,14 @@ def _project(center,start,end,group):
             currency=row.paid_to_account_currency if row.payment_type=='Receive' else row.paid_from_account_currency
             if currency!='EUR':frappe.throw('Separate currency reporting required')
             payments.append({**dict(row),'mode_of_payment':frappe.db.get_value('Payment Entry',row.name,'mode_of_payment'),'collected_amount':row.received_amount if row.payment_type=='Receive' else -row.paid_amount})
-        open_rows=_bounded('Sales Invoice',{'cc_center':center,'customer':customer,'docstatus':1,'outstanding_amount':['>',0]},['name','posting_date','customer','currency','grand_total','outstanding_amount','due_date','status','payment_terms_template','is_return'])
+        open_rows=_bounded('Sales Invoice',{'cc_center':center,'customer':customer,'docstatus':1,'outstanding_amount':['!=',0]},['name','posting_date','customer','currency','grand_total','outstanding_amount','due_date','status','payment_terms_template','is_return'])
         for row in open_rows:
             row['session_links']=invoice_links(row.name)
             if row.currency!='EUR':frappe.throw('Separate currency reporting required')
             override=collections._deferred('Sales Invoice',row.name)
             row['original_due_date']=row.due_date;row['effective_due_date']=override.due_date if override else row.due_date
             row['deferral']=override.name if override else None
-            row['overdue']=bool(row['effective_due_date'] and collections._end_date(row['effective_due_date'])<now)
+            row['overdue']=bool(row.outstanding_amount>0 and row['effective_due_date'] and collections._end_date(row['effective_due_date'])<now)
             if row['overdue']:overdue.append(dict(row))
     positions=[]
     for patient in group['patients']:
@@ -89,16 +89,16 @@ def _project(center,start,end,group):
             debt_map.setdefault((d['doctype'],d['name']),d)
     outstanding=sum(r.outstanding_amount for r in open_rows);overdue_amount=sum(r['outstanding_amount'] for r in overdue)
     blocked=any(p['blocked'] for p in positions);deferred=any(r['deferral'] for r in open_rows) or any(d['override'] for d in debt_map.values())
-    due_dates=[frappe.utils.getdate(r['effective_due_date']) for r in open_rows if r['effective_due_date']]
+    due_dates=[frappe.utils.getdate(r['effective_due_date']) for r in open_rows if r['effective_due_date'] and r.outstanding_amount>0]
     due_dates.extend(frappe.utils.getdate(d['due_date']) for d in debt_map.values() if d['due_date'])
     dates=[d for d in due_dates if d>=now.date()] or due_dates
-    state='Blocco prenotazione' if blocked else 'Scaduto' if overdue_amount else 'Differito' if deferred else 'Da incassare' if outstanding else 'Debito operativo da verificare' if debt_map else 'Regolare'
+    state='Blocco prenotazione' if blocked else 'Scaduto' if overdue_amount else 'Differito' if deferred else 'Da incassare' if outstanding>0 else 'Credito contabile' if outstanding<0 else 'Debito operativo da verificare' if debt_map else 'Regolare'
     if not customer:state='Da verificare: soggetto fiscale non collegato'
     return {**group,'accounting_mapping_available':bool(customer),'center':center,'start':start,'end':end,'as_of':now.isoformat(),'counts':counts,'sessions':safe_sessions,
         'totals':{'invoiced':sum(r['grand_total'] for r in invoices) if customer else None,'collected':sum(r['collected_amount'] for r in payments) if customer else None,'outstanding':outstanding if customer else None,'overdue':overdue_amount if customer else None,'open_invoices':len(open_rows)},
         'invoices':invoices,'payments':payments,'open_invoices':list(map(dict,open_rows)),'overdue_invoices':overdue,'next_due_date':min(dates) if dates else None,'deferred':bool(deferred),'blocked':blocked,'state':state,
         'collections':{'debts':list(debt_map.values()),'patients':[{'patient':p['patient'],'blocked':p['blocked'],'agreement':p['agreement']} for p in positions]},
-        'scope_note':'Sedute per data seduta; fatturato lordo firmato e incassi netti Payment Entry per data contabile nel periodo. Incassi includono anticipi/rimborsi, non allocazioni alle fatture. Residuo/scaduto sono la posizione nativa corrente di tutte le fatture aperte del Customer nel centro, anche fuori periodo; non un saldo storico. Debiti operativi e blocco collections restano separati. Soggetto fiscale condiviso: nessuna allocazione a singolo Patient.'}
+        'scope_note':'Sedute per data seduta; fatturato lordo firmato e incassi netti Payment Entry per data contabile nel periodo. Incassi includono anticipi/rimborsi, non allocazioni alle fatture. Residuo firmato (inclusi crediti aperti, senza allocazione) e scaduto dei debiti positivi sono la posizione nativa corrente di tutte le fatture aperte del Customer nel centro, anche fuori periodo; non un saldo storico. Debiti operativi e blocco collections restano separati. Soggetto fiscale condiviso: nessuna allocazione a singolo Patient.'}
 
 
 @frappe.whitelist(methods=['GET'])
