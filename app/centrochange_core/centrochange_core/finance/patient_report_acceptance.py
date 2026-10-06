@@ -70,9 +70,15 @@ def run():
                 frappe.db.set_value('Patient',beta,'customer',customer,update_modified=False)
             shared=patient_view(**args,key=customer);reconcile(shared)
             assert shared['shared'] and {beta,demo['patients']['Gamma']}<={p['name'] for p in shared['patients']}
+            assert all(link['patient'] is None or link['patient'] in {p['name'] for p in shared['patients']} for invoice in shared['invoices']+shared['open_invoices'] for link in invoice['session_links'])
             listing=patient_view(**args);assert sum(r['key']==customer for r in listing['rows'])==1
             assert next(r for r in listing['rows'] if r['key']==customer)['totals']==shared['totals']
             checks.append('shared Customer appears once, two Patient identities, native fiscal totals unallocated')
+            frappe.db.set_value('Patient',beta,'customer',None,update_modified=False)
+            unmapped=patient_view(**args,patient=beta)
+            assert unmapped['customer'] is None and unmapped['totals']['outstanding'] is None and unmapped['totals']['invoiced'] is None
+            assert not unmapped['invoices'] and not unmapped['payments']
+            checks.append('unmapped Patient has unknown accounting position, never invented zero or center totals')
             native=theta['open_invoices'][0];date=frappe.utils.add_days(frappe.utils.today(),40)
             collections.override(demo['patients']['Theta'],center,'Sales Invoice',native['name'],date,'patient-report-savepoint','Synthetic deferred reporting acceptance')
             changed=patient_view(**args,patient=demo['patients']['Theta']);reconcile(changed)

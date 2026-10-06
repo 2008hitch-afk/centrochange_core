@@ -93,8 +93,9 @@ def _project(center,start,end,group):
     due_dates.extend(frappe.utils.getdate(d['due_date']) for d in debt_map.values() if d['due_date'])
     dates=[d for d in due_dates if d>=now.date()] or due_dates
     state='Blocco prenotazione' if blocked else 'Scaduto' if overdue_amount else 'Differito' if deferred else 'Da incassare' if outstanding else 'Debito operativo da verificare' if debt_map else 'Regolare'
-    return {**group,'center':center,'start':start,'end':end,'as_of':now.isoformat(),'counts':counts,'sessions':safe_sessions,
-        'totals':{'invoiced':sum(r['grand_total'] for r in invoices),'collected':sum(r['collected_amount'] for r in payments),'outstanding':outstanding,'overdue':overdue_amount,'open_invoices':len(open_rows)},
+    if not customer:state='Da verificare: soggetto fiscale non collegato'
+    return {**group,'accounting_mapping_available':bool(customer),'center':center,'start':start,'end':end,'as_of':now.isoformat(),'counts':counts,'sessions':safe_sessions,
+        'totals':{'invoiced':sum(r['grand_total'] for r in invoices) if customer else None,'collected':sum(r['collected_amount'] for r in payments) if customer else None,'outstanding':outstanding if customer else None,'overdue':overdue_amount if customer else None,'open_invoices':len(open_rows)},
         'invoices':invoices,'payments':payments,'open_invoices':list(map(dict,open_rows)),'overdue_invoices':overdue,'next_due_date':min(dates) if dates else None,'deferred':bool(deferred),'blocked':blocked,'state':state,
         'collections':{'debts':list(debt_map.values()),'patients':[{'patient':p['patient'],'blocked':p['blocked'],'agreement':p['agreement']} for p in positions]},
         'scope_note':'Sedute per data seduta; fatturato lordo firmato e incassi netti Payment Entry per data contabile nel periodo. Incassi includono anticipi/rimborsi, non allocazioni alle fatture. Residuo/scaduto sono la posizione nativa corrente di tutte le fatture aperte del Customer nel centro, anche fuori periodo; non un saldo storico. Debiti operativi e blocco collections restano separati. Soggetto fiscale condiviso: nessuna allocazione a singolo Patient.'}
