@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "checks": [
+    "management REST cannot disable DEV simulation gate with a string check value",
+    "finance HTTP native immutable movement dedupe and ambiguous candidates",
+    "secretariat HTTP import and unmatched movement projection",
+    "finance HTTP native receipt bank allocation and cross-actor idempotent replay",
+    "m positive scoped bank REST and overdue projection",
+    "s positive scoped bank REST and overdue projection",
+    "f positive scoped bank REST and overdue projection",
+    "t positive scoped bank REST and overdue projection",
+    "a professional/readonly accountant bank action override and financial leakage negatives",
+    "b professional/readonly accountant bank action override and financial leakage negatives",
+    "t professional/readonly accountant bank action override and financial leakage negatives",
+    "native local email trace internal block notice dedupe and professional denial",
+    "professional direct booking blocked then authorized reasoned deadline overrides allow next session",
+    "secretariat native bank/payment reversal restores original accounting balance and replays once",
+    "generic REST bank source and override rewrite denied",
+    "finance center revocation denies native bank direct API and list"
+  ],
+  "cleanup": "PASS"
+}

@@ -1,0 +1,58 @@
+{
+  "status": "PASS",
+  "checks": [
+    "s authorized list/detail native invoice/payment/outstanding/overdue reconciliation",
+    "f authorized list/detail native invoice/payment/outstanding/overdue reconciliation",
+    "m authorized list/detail native invoice/payment/outstanding/overdue reconciliation",
+    "t authorized list/detail native invoice/payment/outstanding/overdue reconciliation",
+    "current regular/open/Theta cases; original/effective due date and block match canonical collections",
+    "A/B/C and foreign center/Patient/Customer denied",
+    "shared Customer appears once, two Patient identities, native fiscal totals unallocated",
+    "unmapped Patient has unknown accounting position, never invented zero or center totals",
+    "approved deferral preserves debt/original date and removes deferred native invoice from overdue",
+    "signed native open credit retained without allocation; never classified overdue positive debt",
+    "mapping/deferral/audit rolled back; demo preserved"
+  ],
+  "cases": {
+    "Beta": {
+      "totals": {
+        "invoiced": 100.0,
+        "collected": 100.0,
+        "outstanding": 0,
+        "overdue": 0,
+        "open_invoices": 0
+      },
+      "state": "Regolare",
+      "next_due_date": null,
+      "deferred": false,
+      "blocked": false
+    },
+    "Gamma": {
+      "totals": {
+        "invoiced": 100.0,
+        "collected": 100.0,
+        "outstanding": 0,
+        "overdue": 0,
+        "open_invoices": 0
+      },
+      "state": "Regolare",
+      "next_due_date": null,
+      "deferred": false,
+      "blocked": false
+    },
+    "Theta": {
+      "totals": {
+        "invoiced": 100.0,
+        "collected": 0,
+        "outstanding": 100.0,
+        "overdue": 100.0,
+        "open_invoices": 1
+      },
+      "state": "Blocco prenotazione",
+      "next_due_date": "2026-09-30",
+      "deferred": false,
+      "blocked": true
+    }
+  },
+  "persistent_changes": false
+}

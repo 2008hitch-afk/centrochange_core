@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "checks": [
+    "finance HTTP reviewed draft and replay one native invoice",
+    "m positive native invoice REST and projection",
+    "s positive native invoice REST and projection",
+    "f positive native invoice REST and projection",
+    "t positive native invoice REST and projection",
+    "accountant HTTP submission denied",
+    "finance HTTP actual native invoice posting",
+    "finance HTTP partial receipt native open balance and replay",
+    "finance HTTP full receipt and native credit correction posted",
+    "secretariat HTTP native draft submit cancel amend reissue",
+    "native document billing method and v1/v2 financial helper bypass denied",
+    "a professional native invoice receipt GL query and export denied",
+    "b professional native invoice receipt GL query and export denied",
+    "accountant positive scoped native GL query",
+    "direct REST native invoice mutation denied",
+    "unscoped native SQL report and e-invoice export routes denied",
+    "revoked finance center invoice direct list and GL deny after membership change"
+  ],
+  "cleanup": "PASS"
+}
