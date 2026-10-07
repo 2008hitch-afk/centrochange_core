@@ -1,5 +1,7 @@
 # GOAL-02 — UAT Evidence Package
 
+Current October7 supplemental backlog: [unified technical evidence](../evidence/GOAL-02-BACKLOG-2026-10-07.md), [final Owner walkthrough](FINAL-OWNER-WALKTHROUGH.md), [permission matrix](FINAL-PERMISSION-MATRIX.md), [Direction profile](APPLICATION-DIRECTION-PROFILE.md) and [identity proposal awaiting decision](UI-IDENTITY-PROPOSAL.md). Use current UAT-CANDIDATE.json; preserve existing Owner data, no reset to replay historical initial balances. Technical PASS does not confer Owner acceptance.
+
 **Result: PASS / UAT READY**, 2026-10-05. Named candidate: **goal02-20261005-rc1**. Client UAT: **NOT_EXECUTED**; Owner acceptance: **PENDING**.
 
 The [candidate manifest](UAT-CANDIDATE.json) identifies immutable application code, local image ID and semantic dataset hash. Later documentation commits do not alter that application image. This is a DEV candidate, not a published registry release.

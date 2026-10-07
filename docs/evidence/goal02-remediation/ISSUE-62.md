@@ -1,5 +1,13 @@
 # #62 — Reconciled bank document trace
 
+## Final technical checkpoint — 2026-10-07
+
+TECHNICAL PASS for the tested implementation. Overall acceptance: PARTIAL / Owner review pending; issue remains OPEN and PR draft.
+
+4 backend checks and browser trace PASS: existing native Bank Transaction allocation of 60 EUR remains mapped to its Payment Entry, invoice and fiscal subject; no duplicate reconciliation.
+
+See [unified final evidence](../GOAL-02-BACKLOG-2026-10-07.md) for the exact tested candidates, commands, limitations and remaining gates. Earlier pending checkpoints below are historical and superseded by this section.
+
 Status: PARTIAL — static PASS; combined Wave B runtime/browser checks pending.
 Branch `issue-62/bank-reconciliation-trace`, base `issue-81/readable-expectations`.
 

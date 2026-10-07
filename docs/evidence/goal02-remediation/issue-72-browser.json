@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "checks": [
+    "reviewed Beta inputs and previous version visible with simulated/no-real-submission warning"
+  ],
+  "errors": []
+}

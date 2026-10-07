@@ -1,5 +1,7 @@
 # Client Validation Guide — GOAL-02
 
+Current October7 supplemental backlog: [unified technical evidence](../evidence/GOAL-02-BACKLOG-2026-10-07.md), [final Owner walkthrough](FINAL-OWNER-WALKTHROUGH.md), [permission matrix](FINAL-PERMISSION-MATRIX.md), [Direction profile](APPLICATION-DIRECTION-PROFILE.md) and [identity proposal awaiting decision](UI-IDENTITY-PROPOSAL.md). Use current UAT-CANDIDATE.json; preserve existing Owner data, no reset to replay historical initial balances. Technical PASS does not confer Owner acceptance.
+
 Ambiente DEV con dati inventati, dataset `goal02-demo-v1`. Entrata: `/validazione`, con login personale del ruolo demo. Le password vengono consegnate separatamente dall’operatore; non sono presenti in questo documento o nel repository. Nessun invio reale, produzione o dato cliente/paziente reale è autorizzato.
 
 La guida presente nell’app propone le prove pertinenti al ruolo e i collegamenti ad Agenda e Finanza. Non occorrono terminale, API, nomi di moduli o istruzioni tecniche per eseguire le prove operative. Le verifiche tecniche di accesso diretto sono nel pacchetto evidenze.

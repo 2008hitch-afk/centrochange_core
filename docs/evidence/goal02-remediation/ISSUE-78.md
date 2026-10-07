@@ -1,5 +1,13 @@
 # #78 — Reopened appointment governed reschedule
 
+## Final technical checkpoint — 2026-10-07
+
+TECHNICAL PASS for the tested implementation. Overall acceptance: PARTIAL / Owner review pending; issue remains OPEN and PR draft.
+
+9 rollback correction checks PASS; accepted Agenda regression 12 browser checks PASS. Ordinary Closed remains denied; explicit Reopened can move while snapshot and audit history remain intact.
+
+See [unified final evidence](../GOAL-02-BACKLOG-2026-10-07.md) for the exact tested candidates, commands, limitations and remaining gates. Earlier pending checkpoints below are historical and superseded by this section.
+
 Status: backend/runtime PASS; browser regression and Owner UAT-11 recheck pending.
 Stack base: `issue-71/audit-register`. Candidate `goal02-20261007-rc20`; same pinned Frappe 16.31.0, ERPNext 16.32.0, Marley 16.5.2, Builder 1.33.0; no migration/reset. All app source bytes checked against branch; test harness follow-up executed through stdin with rollback, never copied/patched into a container.
 

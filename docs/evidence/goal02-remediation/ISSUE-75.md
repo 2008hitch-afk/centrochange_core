@@ -1,5 +1,13 @@
 # #75 — Final cross-application UI/UX pass
 
+## Final technical checkpoint — 2026-10-07
+
+TECHNICAL PASS for the tested implementation. Overall acceptance: PARTIAL / Owner review pending; issue remains OPEN and PR draft.
+
+Final main-surface desktop/mobile walkthrough, Italian visible dates and states, readable source labels, native login/print/debranding and public stale-route protection tested. Final candidate and screenshot evidence in unified report; no new identity applied.
+
+See [unified final evidence](../GOAL-02-BACKLOG-2026-10-07.md) for the exact tested candidates, commands, limitations and remaining gates. Earlier pending checkpoints below are historical and superseded by this section.
+
 PARTIAL: targeted readability changes implemented; final browser/runtime walkthrough pending. No new transversal identity before #76 Owner decision. Existing accepted Agenda preserved. Italian dates/states/days/accounts, readable demo account labels and explicit empty search states; no canonical ID or economic rewrite. Plain-language simulation warnings retained. Public first-meeting route/date response generation prevents stale slot selection. Versioned walkthrough: docs/uat/FINAL-OWNER-WALKTHROUGH.md.
 
 Owner visual walkthrough and #76 identity decision required; do not equate technical PASS with Owner acceptance.
