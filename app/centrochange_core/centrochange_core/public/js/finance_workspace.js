@@ -121,5 +121,5 @@ $('#finance-action').onclick=async()=>{try{
   modal('Registra atteso professionista',label('Fonte seduta',select('source',sources))+label('Regola esplicita (facoltativa)',select('rule',rules,'name',false))+reason(),d=>finance('professional_economics.capture',{source:d.source,rule:d.rule||null,reason:d.reason},true));
  }
  }catch(e){notice(e.message,true);}};
-async function init(){const today=new Date().toISOString().slice(0,10);$('#start').value=today.slice(0,4)+'-01-01';$('#end').value=today;state.boot=await finance('reporting.bootstrap');$('#center').innerHTML=options(state.boot.centers,'name','branch');if(state.boot.center)$('#center').value=state.boot.center;await refresh();}
+async function init(){const today=new Date().toISOString().slice(0,10);$('#start').value=today.slice(0,4)+'-01-01';$('#end').value=today;state.boot=await finance('reporting.bootstrap');if(state.boot.is_manager)$('#navigation').insertAdjacentHTML('beforeend','<a class="nav-button" href="/registro_modifiche">Registro modifiche</a>');$('#center').innerHTML=options(state.boot.centers,'name','branch');if(state.boot.center)$('#center').value=state.boot.center;await refresh();}
 init().catch(e=>notice(e.message,true));
