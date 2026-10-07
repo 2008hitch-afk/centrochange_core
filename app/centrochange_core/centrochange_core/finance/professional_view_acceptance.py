@@ -49,10 +49,13 @@ def run():
         try:
             baseline=professional_view(**args)
             chosen=next(r for r in baseline['economics']['expectations'] if r['state']=='OK')
-            result=compare(demo['incoming']['payable'],[chosen['name']],'Synthetic projection acceptance, rolled back')
+            supplier=frappe.db.get_value('Healthcare Practitioner',practitioner,'supplier')
+            current_invoice=frappe.db.get_value('Purchase Invoice',{'cc_center':center,'supplier':supplier,'docstatus':1,'is_return':0},'name')
+            assert current_invoice
+            result=compare(current_invoice,[chosen['name']],'Synthetic projection acceptance, rolled back')
             projected=professional_view(**args)
             comparison=next(r for r in projected['economics']['comparisons'] if r['name']==result['name'])
-            invoice=frappe.get_doc('Purchase Invoice',demo['incoming']['payable'])
+            invoice=frappe.get_doc('Purchase Invoice',current_invoice)
             assert comparison['received_amount']==invoice.net_total
             assert comparison['expected_amount']==chosen['amount']
             assert comparison['difference']==chosen['amount']-invoice.net_total
