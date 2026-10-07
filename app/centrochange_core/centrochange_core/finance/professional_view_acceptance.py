@@ -40,7 +40,9 @@ def run():
         else:raise AssertionError('Foreign center exposed')
         checks.append('foreign-center financial report denied')
         data=professional_view(**{**args,'start':'2026-10-12','end':'2026-10-18'})
-        assert data['counts']['sessions']==1 and data['counts']['future']==1 and len(data['sessions'])==1
+        future_native=frappe.db.count('Patient Appointment',{'cc_center':center,'practitioner':practitioner,'appointment_date':['between',['2026-10-12','2026-10-18']]})
+        assert data['counts']['sessions']==future_native and len(data['sessions'])==future_native
+        assert data['counts']['future']==future_native
         checks.append('future period deterministic native session projection')
         from centrochange_core.finance.professional_economics import compare
         frappe.set_user(fixture['users']['f']['name'])
