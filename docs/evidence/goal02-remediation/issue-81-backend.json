@@ -1,0 +1,11 @@
+{
+ "checks": [
+  "readable canonical projection",
+  "exact selected snapshot reference",
+  "explicit Amount Difference",
+  "idempotent comparison",
+  "no native debt/ledger created",
+  "A/B/C denied"
+ ],
+ "status": "PASS"
+}
