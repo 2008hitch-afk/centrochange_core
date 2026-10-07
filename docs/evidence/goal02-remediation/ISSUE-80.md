@@ -1,0 +1,3 @@
+# #80 — Italian accounting presentation
+
+Static mapping tests PASS; runtime/browser verification pending Wave B candidate. Branch `issue-80/italian-accounting-ui`, base #79. Presentation-only controlled translations for known native standard account labels and accounting states. Account identifiers remain unchanged in option values and API requests; unknown customized accounts retain their precise native name rather than guessing accounting meaning. Italian dates outside technical date inputs. Cancelled invoice detail distinguishes historical native outstanding from a currently payable balance. No accounting/schema change. Owner Finance walkthrough remains required.
