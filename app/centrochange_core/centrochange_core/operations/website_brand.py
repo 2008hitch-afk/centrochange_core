@@ -57,3 +57,7 @@ def localize_print_labels(body):
         if node.string and node.string.strip() in labels:
             node.string.replace_with(labels[node.string.strip()])
     return str(soup)
+def login_language():
+    # Retained existing #75 hook; no auth/session/user-language mutation.
+    if getattr(getattr(frappe.local,'request',None),'path',None)=='/login':
+        frappe.local.lang='it'
