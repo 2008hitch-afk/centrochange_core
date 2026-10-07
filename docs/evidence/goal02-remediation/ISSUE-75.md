@@ -5,3 +5,5 @@ PARTIAL: targeted readability changes implemented; final browser/runtime walkthr
 Owner visual walkthrough and #76 identity decision required; do not equate technical PASS with Owner acceptance.
 
 Critical-suite harness correction: old operations/master-bridge tests asserted globally empty accounting tables. This is invalid on persistent accepted Owner data. They now assert the document counts are unchanged during their operations (no automatic posting), preserving the original discriminating assertion without destroying data. Professional comparison regression selects the current submitted supplier invoice rather than the Owner-cancelled original. Product accounting/permission logic unchanged.
+
+Visual inspection found Chromium displaying native date inputs in US format even with it-IT locale. Added a visible Italian date label over the retained native date input/picker, preserving canonical ISO values, keyboard focus and test selectors; labels refresh after programmatic presets and API refresh. No schema/booking date logic changed. Actual screenshots and input/date-change browser regressions required.

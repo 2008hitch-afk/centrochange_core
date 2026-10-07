@@ -1,4 +1,5 @@
 import {notificationState,notificationMessage,italianMoment} from './ui_labels.js';
+import {enhanceDates} from './date_controls.js';
 import {clean,readable,userLabel} from './report_ui.js';
 import {api,operations,scheduling,escapeHtml as esc,requestKey} from './api.js';
 import {enhanceSelectors,normalized} from './search_select.js';
@@ -14,7 +15,7 @@ const reason=()=>label('Motivo (obbligatorio)','<textarea name="reason" required
 function modal(title,fields,action){
   $('#modal-title').textContent=title;$('#modal-fields').innerHTML=fields;$('#modal-error').textContent='';$('#modal-submit').disabled=false;
   $('#modal-form').onsubmit=async event=>{event.preventDefault();$('#modal-submit').disabled=true;$('#modal-error').textContent='';try{await action(Object.fromEntries(new FormData(event.currentTarget)));$('#modal').close();await refresh();notify('Operazione registrata.');}catch(error){$('#modal-error').textContent=error.message;}finally{$('#modal-submit').disabled=false;}};
-  enhanceSelectors($('#modal-fields'),query=>operations('workspace.patient_search',{center:$('#center').value,query}));$('#modal-submit').hidden=false;$('#modal').showModal();
+  enhanceDates($('#modal-fields'));enhanceSelectors($('#modal-fields'),query=>operations('workspace.patient_search',{center:$('#center').value,query}));$('#modal-submit').hidden=false;$('#modal').showModal();
 }
 $('#modal-dismiss').onclick=()=>$('#modal').close();
 $('#navigation').innerHTML=Object.entries(icons).map(([name,path])=>`<button class="nav-button ${name==='Agenda'?'active':''}" data-view="${name}"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>${name}</button>`).join('');
