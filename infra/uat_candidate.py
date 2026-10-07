@@ -12,6 +12,7 @@ import re
 import subprocess
 import tarfile
 import tempfile
+import time
 
 
 def main():
@@ -55,9 +56,17 @@ def main():
     result = subprocess.run(command + startup, cwd=root, env=environment, capture_output=True, text=True)
     if result.returncode:
         raise RuntimeError('Candidate DEV startup failed; inspect fixed DEV Compose services')
+    # Redis persists across images: invalidate app hooks/website cache after controlled restart.
+    for attempt in range(60):
+        cleared = subprocess.run(['docker','exec','centrochange-dev-backend-1','bench','--site','centrochange.local','clear-cache'], capture_output=True, text=True)
+        if cleared.returncode == 0:
+            break
+        time.sleep(1)
+    else:
+        raise RuntimeError('Candidate app cache invalidation failed')
     identity = json.loads(subprocess.check_output(['docker', 'image', 'inspect', image], text=True))[0]
     print(json.dumps({'status': 'PASS', 'candidate': args.name, 'image': image, 'image_id': identity['Id'],
-        'schema_migration': not args.existing_site_ui, 'source_commit': source, 'source_export': 'git archive of exact commit', 'production': False,
+        'schema_migration': not args.existing_site_ui, 'app_cache_invalidated': True, 'source_commit': source, 'source_export': 'git archive of exact commit', 'production': False,
         'note': 'Build/deploy proof only; acceptance remains required'}))
 
 
