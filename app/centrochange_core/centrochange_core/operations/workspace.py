@@ -181,7 +181,10 @@ def patient_search(center, query=''):
         from centrochange_core.security.guards import patient_contexts
         filters['name']=['in',[p for p,c in patient_contexts() if c==center] or ['']]
     text='%'+query.replace('\\','\\\\').replace('%','\\%').replace('_','\\_')+'%'
-    rows=frappe.get_list('Patient',filters=filters,
+    # Non-manager roles use document-scoped Patient permissions, not generic list rights.
+    # The narrow internal query is confined to exact current authorized patient/center pairs.
+    lookup=frappe.get_list if is_manager() else frappe.get_all
+    rows=lookup('Patient',filters=filters,
         or_filters={k:['like',text] for k in ['patient_name','first_name','last_name','name','uid']},
         fields=['name','patient_name','uid'],order_by='patient_name,name',page_length=51)
     return {'patients':rows[:50],'truncated':len(rows)>50}
