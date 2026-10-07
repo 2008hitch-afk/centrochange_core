@@ -1,0 +1,4 @@
+/* Authorized neutral debranding; no new palette or identity system. */
+body[data-path="login"] .app-logo{display:none}
+body[data-path="login"] .page-card-head::before{content:"Centro Change";font-weight:600;font-size:1.25rem;display:block;margin-bottom:1rem}
+body[data-path="login"] .page-card-head{display:block}

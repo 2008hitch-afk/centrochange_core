@@ -1,0 +1,2 @@
+{% extends "templates/web.html" %}
+{% block page_content %}<h1>Centro Change</h1><h2>{% if http_status_code == 403 %}Accesso non consentito{% elif http_status_code == 404 %}Pagina non trovata{% else %}Operazione non disponibile{% endif %}</h2><p>Verifica il percorso e le autorizzazioni. Se il problema continua, contatta il referente del centro.</p><a href="/centrochange">Torna all’agenda</a>{% endblock %}

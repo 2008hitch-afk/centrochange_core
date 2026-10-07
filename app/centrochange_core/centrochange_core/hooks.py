@@ -144,3 +144,7 @@ has_permission["CC Unpaid Threshold"]="centrochange_core.finance.professional_ec
 for dt in ("Payment Entry", "Sales Invoice"):
     for event in ("on_submit", "on_cancel"):
         doc_events[dt][event]="centrochange_core.finance.professional_economics.payment_changed"
+
+# Supported website hooks, presentation only; native login/auth remains pinned upstream.
+update_website_context = ["centrochange_core.operations.website_brand.context"]
+web_include_css = ["/assets/centrochange_core/css/client_brand.css"]
