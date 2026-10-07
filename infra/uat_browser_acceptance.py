@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Browser validation against persistent demo; credentials never enter Git/stdout."""
 import argparse
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -45,4 +46,8 @@ def main():
 
 if __name__ == '__main__':
     os.umask(0o077)
-    main()
+    # Demo principals have two native simultaneous sessions; concurrent suites
+    # must not evict each other's authentication or require a policy change.
+    with open('/tmp/cc-uat-browser-acceptance.lock','a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        main()
