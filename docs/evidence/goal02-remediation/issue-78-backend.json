@@ -1,0 +1,14 @@
+{
+ "checks": [
+  "closed deny",
+  "direct bypass deny",
+  "authorized reopen",
+  "governed move",
+  "move replay",
+  "historical snapshots retained",
+  "future close deny",
+  "reclose after session end",
+  "audit before/after"
+ ],
+ "status": "PASS"
+}
