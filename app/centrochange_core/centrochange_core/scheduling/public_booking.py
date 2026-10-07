@@ -44,7 +44,8 @@ def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointm
 		if name:
 			if frappe.db.get_value('Patient Appointment',name,'cc_public_payload_hash',for_update=True)!=fingerprint:
 				frappe.throw('Request key has a different first-meeting payload')
-			return {'name':name,'replay':True}
+			from centrochange_core.operations.booking_confirmation import confirm
+			return {'name':name,'replay':True,'confirmation':confirm(name,route,payload['email'])}
 		configuration=frappe.get_doc('CC Public Booking Route',route,for_update=True)
 		if not configuration.enabled or not frappe.db.get_value('Appointment Type',configuration.appointment_type,'cc_first_meeting',for_update=True):
 			frappe.throw('First-meeting route unavailable',frappe.PermissionError)
@@ -72,7 +73,8 @@ def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointm
 				result=book(patient.name,configuration.practitioner,configuration.center,configuration.appointment_type,
 					appointment_date,appointment_time,'public-'+request_key,'First-meeting ingress')
 				frappe.db.set_value('Patient Appointment',result['name'],'cc_public_payload_hash',fingerprint)
-				return result
+				from centrochange_core.operations.booking_confirmation import confirm
+				return {**result,'confirmation':confirm(result['name'],route,payload['email'])}
 			finally:
 				frappe.flags.cc_public_booking_context=previous
 	finally:

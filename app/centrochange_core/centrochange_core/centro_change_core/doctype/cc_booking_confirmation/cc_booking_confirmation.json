@@ -1,0 +1,85 @@
+{
+ "doctype": "DocType",
+ "name": "CC Booking Confirmation",
+ "module": "Centro Change Core",
+ "custom": 0,
+ "autoname": "hash",
+ "field_order": [
+  "appointment",
+  "center",
+  "recipient",
+  "message",
+  "state",
+  "attempts",
+  "communication",
+  "last_error"
+ ],
+ "fields": [
+  {
+   "fieldname": "appointment",
+   "label": "Appointment",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "Patient Appointment",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "center",
+   "label": "Center",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "Branch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recipient",
+   "label": "Recipient",
+   "fieldtype": "Data",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "message",
+   "label": "Message",
+   "fieldtype": "Long Text",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "state",
+   "label": "State",
+   "fieldtype": "Select",
+   "read_only": 1,
+   "options": "Pending\nSimulated Sent\nFailed",
+   "reqd": 1,
+   "default": "Pending"
+  },
+  {
+   "fieldname": "attempts",
+   "label": "Attempts",
+   "fieldtype": "Int",
+   "read_only": 1
+  },
+  {
+   "fieldname": "communication",
+   "label": "Communication",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "Communication"
+  },
+  {
+   "fieldname": "last_error",
+   "label": "Last Error",
+   "fieldtype": "Small Text",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1
+  }
+ ],
+ "engine": "InnoDB"
+}
