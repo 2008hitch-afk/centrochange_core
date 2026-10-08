@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "checks": [
+    "a authorized patient name search and empty state",
+    "b authorized patient name search and empty state",
+    "c authorized patient name search and empty state",
+    "s authorized patient name search and empty state",
+    "authorized UID search resolves the same canonical Patient",
+    "late prior-query response cannot replace current patient search",
+    "assignment professional searchable with canonical option values",
+    "booking patient uses authorized bounded server search, original canonical Patient and no-result feedback; practitioner search",
+    "agenda practitioner search controls authorized checkboxes",
+    "professional report searchable canonical selection and projection",
+    "Finance searches only existing fiscal projection; mobile no overflow"
+  ],
+  "errors": [],
+  "mutations": "NONE",
+  "execution_provenance": {
+    "executed_candidate": "goal02-20261008-rc20",
+    "executed_source_commit": "2cae1ceab534e3c45bfaef2abbb36c9ed5cd89be",
+    "reused_for": "goal02-20261008-rc21",
+    "reuse_reason": "Only app delta is existing authorized session-print presentation. All other UI assets/templates/domain/report/guard source bytes unchanged, Owner complete-row fingerprint unchanged. Print and final server permission/backend gates rerun on rc21."
+  }
+}

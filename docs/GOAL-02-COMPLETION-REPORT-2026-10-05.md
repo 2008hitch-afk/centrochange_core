@@ -1,5 +1,25 @@
 # GOAL-02 COMPLETION REPORT — MVP Ready for Client UAT
 
+## Agenda Owner-gap corrective checkpoint — 2026-10-08
+
+**TECHNICAL PASS / READY_FOR_OWNER_RETEST.** RC22 corrects the verified Tabler header-flex/row-grid collision using one shared scoped grid template. Runtime coordinate drift now 0px across five viewports and horizontal scroll. 12 Agenda browser checks and 189 rollback backend checks PASS; Owner dataset unchanged. #75 remains OPEN, PR #94 draft/unmerged, #92/#93 unchanged. Previous general visual PASS did not prove coordinate alignment and is superseded for this specific gap. Owner visual retest required.
+
+Evidence: `docs/evidence/ui-design-system-v1/AGENDA-GRID-ALIGNMENT-2026-10-08.md`. Candidate source `f06acca4f6c2ac757dbd3e187709f94b18554b65`; no business/permission/schema delta. GOAL-03 not authorized.
+
+
+## Current UI / permissions checkpoint — 2026-10-08
+
+**READY_FOR_OWNER_UAT**, candidate **goal02-20261008-rc21**, source **c51a9e7a1f887b87c0b06872a8d3e94f2e7249f5**. Owner-approved Design System v1 is applied transversally using local pinned Tabler Core1.6.1/Icons3.35.0 and shared shell/components. [True conformity matrix, runtime tests and screenshots](evidence/ui-design-system-v1/CONFORMANCE.md); [candidate manifest](uat/UAT-CANDIDATE.json); [Owner walkthrough](uat/FINAL-OWNER-WALKTHROUGH.md).
+
+#76 implementation, #77 server-side permission-neutral final-candidate gate and #75 technical conformity are PASS; **Owner visual acceptance remains PENDING**, issues OPEN and PRs92→93→94 draft/unmerged. Full262-check backend regression, fourteen browser suites plus Agenda (unchanged rc20 UI evidence explicitly reused; print/#77/backend rerun on rc21), actual isolated workflow reused, print/debrand/permission/search/keyboard/mobile/stale and runtime/source parity verified. No permission/role/business/accounting/schema delta. Owner dataset complete-row equality preserved; five isolated-fixture append-only audit events retained transparently. No reset/seed.
+
+This supersedes historical identity-pending/candidate/initial-dataset statements below. It does not declare final Owner GOAL-02 acceptance, initiate GOAL-03, merge the stack or promote learning. No new learning extraction/promotion is performed as part of this UI gate; whole-goal extraction remains a separate requirement before proposing final GOAL-02 Done.
+
+
+## Current checkpoint — 2026-10-07
+
+The October5 report below is historical. GOAL02 final Owner acceptance is still PENDING after subsequent UAT gaps. All thirteen authorized backlog implementations are in dedicated draft PRs and technically tested; #64 profile review, #76 identity decision, #77 final matrix review, #75 final visual walkthrough and supplementary knowledge-repository access remain pending. Client UAT is IN_PROGRESS. No current final Done claim, automatic merge or GOAL03 authorization. See [consolidated evidence](evidence/GOAL-02-BACKLOG-2026-10-07.md) and current [candidate manifest](uat/UAT-CANDIDATE.json).
+
 **Technical result: PASS / UAT READY — 2026-10-05.** The roadmap Done Gate is met: a named reproducible DEV candidate exists, critical regression is green, representative scenarios and client guide are ready, and no known critical integrity/security blocker remains in the tested scope. Client UAT has **NOT_EXECUTED** status. Owner acceptance is **PENDING**; this report does not confer either acceptance or GOAL-03 authorization.
 
 ## Authority and baseline

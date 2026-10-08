@@ -1,5 +1,13 @@
 # #72 — TS reviewed input detail
 
+## Final technical checkpoint — 2026-10-07
+
+TECHNICAL PASS for the tested implementation. Overall acceptance: PARTIAL / Owner review pending; issue remains OPEN and PR draft.
+
+TS browser reviewed snapshot/correction chain PASS. Existing payload/review projection retained; only presentation changed. No real submission.
+
+See [unified final evidence](../GOAL-02-BACKLOG-2026-10-07.md) for the exact tested candidates, commands, limitations and remaining gates. Earlier pending checkpoints below are historical and superseded by this section.
+
 Status: static PASS; runtime/browser acceptance pending.
 Branch `issue-72/ts-reviewed-detail`, base `issue-62/bank-reconciliation-trace`.
 Candidate `goal02-20261007-rc23`, no schema migration or dataset reset; upstream pins unchanged.

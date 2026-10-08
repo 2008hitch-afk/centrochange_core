@@ -9,6 +9,7 @@ from centrochange_core.scheduling.booking import book,reschedule
 
 
 def checks(fixture):
+	accounting_before={dt:frappe.db.count(dt) for dt in ('Sales Invoice', 'Payment Entry', 'GL Entry', 'Payment Ledger Entry')}
 	result=scheduling.checks(fixture)
 	patient,center,prac1,prac2,pro1,pro2,secretary=(fixture[key] for key in ('patient','center','prac1','prac2','pro1','pro2','secretary'))
 	frappe.set_user('Administrator')
@@ -137,7 +138,7 @@ def checks(fixture):
 		result.append('invalid package adjustment rolls back without erasing history')
 	else:
 		raise AssertionError('Negative package balance accepted')
-	assert all(frappe.db.count(dt)==0 for dt in ('Sales Invoice','Payment Entry','GL Entry','Payment Ledger Entry'))
+	assert accounting_before=={dt:frappe.db.count(dt) for dt in accounting_before}
 	result.append('operations do not auto-create ERP accounting postings')
 	frappe.flags.cc_test_clock=None
 	fourth=book(**{**payload,'appointment_date':'2099-02-16','request_key':'cc-synthetic-auto-lock','patient_package':None})['name']

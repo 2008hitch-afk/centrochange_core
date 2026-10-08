@@ -2,7 +2,7 @@
 
 **Status:** OWNER APPROVED — design direction  
 **Owner decision date:** 2026-10-08  
-**Implementation status:** NOT YET APPLIED TRANSVERSELY  
+**Implementation status:** TRANSVERSELY APPLIED — TECHNICAL PASS / READY_FOR_OWNER_UAT (2026-10-08); OWNER VISUAL ACCEPTANCE PENDING
 **Issue:** #76  
 **Final visual gate:** #75  
 **Permission gate:** #77

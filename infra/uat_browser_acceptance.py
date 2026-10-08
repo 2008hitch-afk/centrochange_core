@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Browser validation against persistent demo; credentials never enter Git/stdout."""
 import argparse
+import fcntl
 import json
 import os
 from pathlib import Path
@@ -12,7 +13,7 @@ from uat_demo import execute, outside
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output-dir', required=True)
-    parser.add_argument('--script', choices=('uat','professional','patient','audit','expectations','bank_trace','ts_detail','confirmation','search','accounting','permissions'), default='uat')
+    parser.add_argument('--script', choices=('uat','professional','patient','audit','expectations','bank_trace','ts_detail','confirmation','search','accounting','permissions','walkthrough','ui_v1','print','states','agenda_geometry'), default='uat')
     parser.add_argument('--agenda-only', action='store_true', help='Read-only agenda/role validation preserving current UAT financial mutations')
     parser.add_argument('--exercise', action='store_true', help='Mutate only owned synthetic overdue demo; reset afterwards')
     args = parser.parse_args()
@@ -45,4 +46,8 @@ def main():
 
 if __name__ == '__main__':
     os.umask(0o077)
-    main()
+    # Demo principals have two native simultaneous sessions; concurrent suites
+    # must not evict each other's authentication or require a policy change.
+    with open('/tmp/cc-uat-browser-acceptance.lock','a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        main()

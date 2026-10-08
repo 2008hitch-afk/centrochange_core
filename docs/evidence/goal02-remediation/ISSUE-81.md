@@ -1,5 +1,13 @@
 # #81 — Recognizable professional expectation selection
 
+## Final technical checkpoint — 2026-10-07
+
+TECHNICAL PASS for the tested implementation. Overall acceptance: PARTIAL / Owner review pending; issue remains OPEN and PR draft.
+
+6 backend checks and 4 browser checks PASS: readable historical source selection, current submitted invoice comparison, discrepancy/idempotency/no automatic debt, A/B/C denied.
+
+See [unified final evidence](../GOAL-02-BACKLOG-2026-10-07.md) for the exact tested candidates, commands, limitations and remaining gates. Earlier pending checkpoints below are historical and superseded by this section.
+
 Status: TECHNICAL PASS / READY_FOR_OWNER_UAT; Owner UAT-15 pending.
 Branch `issue-81/readable-expectations`, base `issue-78/governed-reschedule`; candidate `goal02-20261007-rc22`, pinned dependencies unchanged, no migration/reset.
 

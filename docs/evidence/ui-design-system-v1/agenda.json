@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "checks": [
+    "UAT professional A weekly planner and foreign B Patient/session API denied",
+    "Epsilon package consumption and scoped remaining/reserved/available balance visible in history",
+    "operational delayed prior-view response cannot overwrite current Patients view",
+    "professional B sees Zeta only and exact foreign patient API denied",
+    "unlinked professional has no patient/session data and direct session API denied",
+    "weekly planner renders both practitioners and supports client-side practitioner filtering",
+    "Monday-Sunday columns, recurring availability, unavailable days and all/none filters; desktop no overflow",
+    "visual iteration: shared Tabler sidebar, tall planner, cleaned synthetic labels, Italian visible period",
+    "next previous Today and arbitrary-date Monday normalization use live API",
+    "secretariat organizational notes, no private body and private-note direct API denied",
+    "operational mobile viewport no document overflow",
+    "no application JavaScript exceptions"
+  ],
+  "errors": [],
+  "viewports": [
+    "1536x1024",
+    "390x844"
+  ],
+  "browser_plugin": "unavailable",
+  "fallback": "Playwright 1.58.2 pinned Docker image",
+  "dataset": "goal02-demo-v1",
+  "execution_provenance": {
+    "executed_candidate": "goal02-20261008-rc20",
+    "executed_source_commit": "2cae1ceab534e3c45bfaef2abbb36c9ed5cd89be",
+    "reused_for": "goal02-20261008-rc21",
+    "reuse_reason": "Only app delta is existing authorized session-print presentation. All other UI assets/templates/domain/report/guard source bytes unchanged, Owner complete-row fingerprint unchanged. Print and final server permission/backend gates rerun on rc21."
+  }
+}

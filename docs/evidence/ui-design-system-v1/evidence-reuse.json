@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "from_commit": "2cae1ceab534e3c45bfaef2abbb36c9ed5cd89be",
+  "to_candidate_commit": "c51a9e7a1f887b87c0b06872a8d3e94f2e7249f5",
+  "changed_app_files": [
+    "app/centrochange_core/centrochange_core/operations/reporting.py"
+  ],
+  "unchanged_ui_assets_templates": true,
+  "owner_dataset_same_before_resume": true,
+  "reused_suites": [
+    "ui_v1",
+    "states",
+    "walkthrough",
+    "professional",
+    "patient",
+    "audit",
+    "expectations",
+    "bank_trace",
+    "ts_detail",
+    "confirmation",
+    "search",
+    "accounting",
+    "agenda"
+  ],
+  "rerun_on_final_candidate": [
+    "print",
+    "permissions",
+    "full_backend_11_modules",
+    "image_parity",
+    "runtime_health",
+    "owner_row_fingerprint"
+  ],
+  "permission_or_business_delta": "NONE"
+}

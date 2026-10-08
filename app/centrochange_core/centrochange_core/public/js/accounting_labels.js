@@ -3,3 +3,5 @@ export const accountLabels={'Tax Expense':'Spese fiscali','Impairment':'Svalutaz
 export function accountLabel(name){const text=String(name||'');const base=text.replace(/ - [^-]+$/,'');return accountLabels[base]||text;}
 export const documentState=value=>['Bozza','Contabilizzata','Annullata'][Number(value)]||'Da verificare';
 export const italianDate=value=>/^\d{4}-\d{2}-\d{2}$/.test(String(value))?String(value).split('-').reverse().join('/'):value;
+// Remaining official standard chart labels observed read-only in the pinned UAT chart.
+Object.assign(accountLabels,{'Expenses Included In Asset Valuation':'Costi inclusi nel valore dei cespiti','Administrative Expenses':'Spese amministrative','Commission on Sales':'Provvigioni sulle vendite','Entertainment Expenses':'Spese di rappresentanza','Freight and Forwarding Charges':'Spese di trasporto e spedizione','Marketing Expenses':'Spese di marketing','Office Rent':'Affitto uffici','Postal Expenses':'Spese postali','Print and Stationery':'Stampa e cancelleria','Round Off':'Arrotondamenti','Sales Expenses':'Spese di vendita','Gain/Loss on Asset Disposal':'Plusvalenze e minusvalenze su cespiti'});

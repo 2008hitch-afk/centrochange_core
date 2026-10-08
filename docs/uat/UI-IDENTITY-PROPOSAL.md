@@ -1,3 +1,5 @@
+> Historical proposal, superseded on 2026-10-08 by Owner-approved [Design System v1](../ui/CENTROCHANGE-UI-DESIGN-SYSTEM-v1.md). Transversal implementation and conformity: [current evidence](../evidence/ui-design-system-v1/CONFORMANCE.md). No new identity decision is pending; visual Owner UAT remains required.
+
 # #76 — UI identity proposal — decision recorded
 
 Status: **SUPERSEDED BY OWNER-APPROVED DESIGN DIRECTION** on 2026-10-08.

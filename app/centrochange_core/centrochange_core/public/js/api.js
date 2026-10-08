@@ -1,4 +1,7 @@
+import {enhanceDates} from './date_controls.js';
+enhanceDates();
 export async function api(method,args={},post=false){
+  enhanceDates();
   const url='/api/method/'+method;
   const options={credentials:'same-origin',headers:{Accept:'application/json'}};
   if(post){options.method='POST';options.headers['Content-Type']='application/json';options.headers['X-Frappe-CSRF-Token']=document.querySelector('meta[name=csrf-token]').content;options.body=JSON.stringify(args);}

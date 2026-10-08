@@ -151,3 +151,4 @@ web_include_css = ["/assets/centrochange_core/vendor/tabler-core-1.6.1/tabler.mi
 before_request = ["centrochange_core.operations.website_brand.client_language"]
 get_print_format_template = "centrochange_core.operations.website_brand.print_template_locale"
 after_request = ["centrochange_core.security.response_cache.protect"]
+before_request.append("centrochange_core.operations.website_brand.login_language")

@@ -7,6 +7,7 @@ from centrochange_core.finance import bridge
 
 
 def checks(fixture):
+    accounting_before={dt:frappe.db.count(dt) for dt in ('Sales Invoice', 'Purchase Invoice', 'Payment Entry', 'GL Entry')}
     result=surfaces_acceptance.checks(fixture)
     patient,center,other,prac1,prac2,pro1,secretary=(fixture[key] for key in ('patient','center','other','prac1','prac2','pro1','secretary'))
     frappe.set_user('Administrator')
@@ -113,7 +114,7 @@ def checks(fixture):
         result.append('manual finance share cannot override professional denial')
     else:
         raise AssertionError('Financial manual share accepted')
-    assert all(frappe.db.count(dt)==0 for dt in ('Sales Invoice','Purchase Invoice','Payment Entry','GL Entry'))
+    assert accounting_before=={dt:frappe.db.count(dt) for dt in accounting_before}
     result.append('finance master bridge does not auto-post native accounting documents')
     settings=frappe.get_doc('CC Finance Settings')
     settings.simulation_only=0

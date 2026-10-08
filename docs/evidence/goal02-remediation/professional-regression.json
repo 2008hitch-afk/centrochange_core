@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Agenda practitioner click opens canonical Alfa period projection",
+    "exact current Owner records compose Sedute; categories and dates reconcile",
+    "native snapshot/Paid facts and known-vs-unknown compensation reconcile without note bodies",
+    "suspended KPI opens exactly its composing expectation records",
+    "drill-down reuses authorized native operational Seduta/Storico/Note detail",
+    "Report Professionisti and Agenda entry return identical projection",
+    "Today/week/month/previous-month presets visibly reconcile their API intervals/counts",
+    "custom future period updates one booked session deterministically",
+    "delayed old period cannot overwrite latest selected projection",
+    "CSV has eight composing records and no private notes",
+    "mobile no document overflow",
+    "f authorized economics identical; center/detail privileges respected",
+    "m authorized economics identical; center/detail privileges respected",
+    "a direct page/API/report/export/native query financial denial",
+    "b direct page/API/report/export/native query financial denial",
+    "c direct page/API/report/export/native query financial denial",
+    "Secretariat private-note direct read denied",
+    "no application JavaScript exceptions"
+  ],
+  "errors": [],
+  "scenario": "UAT-PROF-REPORT-01",
+  "sessions": 8,
+  "viewports": [
+    "1536x1024",
+    "390x844"
+  ],
+  "browser_plugin": "unavailable",
+  "fallback": "Playwright 1.58.2 pinned image"
+}

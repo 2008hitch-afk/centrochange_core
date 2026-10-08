@@ -1,5 +1,13 @@
 # #71 — Management change register
 
+## Final technical checkpoint — 2026-10-07
+
+TECHNICAL PASS for the tested implementation. Overall acceptance: PARTIAL / Owner review pending; issue remains OPEN and PR draft.
+
+Audit backend and 8 browser checks PASS: Manager positive, other six roles negative, direct access, before/after filters and mobile.
+
+See [unified final evidence](../GOAL-02-BACKLOG-2026-10-07.md) for the exact tested candidates, commands, limitations and remaining gates. Earlier pending checkpoints below are historical and superseded by this section.
+
 Status: TECHNICAL PASS — Owner UAT pending; issue remains OPEN.
 Base: accepted Patient/Customer View stack, `issue-68/patient-customer-view`.
 Application: `64b70c1`; responsive/QA update `bae5a4c`.

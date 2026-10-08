@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Report Pazienti opens one-row-per-fiscal-subject list with prominent current outstanding",
+    "Beta list/detail count, invoice/payment/residual/overdue drill-down exact reconciliation",
+    "Gamma list/detail count, invoice/payment/residual/overdue drill-down exact reconciliation",
+    "Theta list/detail count, invoice/payment/residual/overdue drill-down exact reconciliation",
+    "Theta outstanding/original due/effective override and booking block reconcile native invoice/collections",
+    "four period presets reconcile selected interval and detail",
+    "custom period keeps current receivable independent from posting-period totals",
+    "delayed old response cannot overwrite latest selected period",
+    "CSV exactly composes authorized detail records and no private notes",
+    "mobile list/detail internally scroll, no document overflow",
+    "operational patient quick economic entry reuses same scoped fiscal detail",
+    "f authorized financial projection, preserved operational-detail privilege",
+    "m authorized financial projection, preserved operational-detail privilege",
+    "t authorized financial projection, preserved operational-detail privilege",
+    "Finance Riepilogo to Report Pazienti uses the same list projection",
+    "Finance foreign center/Patient/Customer API and export denied",
+    "a direct page/API/report/export/native accounting query denied",
+    "b direct page/API/report/export/native accounting query denied",
+    "c direct page/API/report/export/native accounting query denied",
+    "secretariat private note denied and no application JavaScript exceptions"
+  ],
+  "errors": [],
+  "scenario": "UAT-PATIENT-REPORT-01",
+  "cases": [
+    "Beta",
+    "Gamma",
+    "Theta"
+  ],
+  "viewports": [
+    "1536x1024",
+    "390x844"
+  ],
+  "browser_plugin": "unavailable",
+  "fallback": "Playwright 1.58.2 pinned image",
+  "execution_provenance": {
+    "executed_candidate": "goal02-20261008-rc20",
+    "executed_source_commit": "2cae1ceab534e3c45bfaef2abbb36c9ed5cd89be",
+    "reused_for": "goal02-20261008-rc21",
+    "reuse_reason": "Only app delta is existing authorized session-print presentation. All other UI assets/templates/domain/report/guard source bytes unchanged, Owner complete-row fingerprint unchanged. Print and final server permission/backend gates rerun on rc21."
+  }
+}

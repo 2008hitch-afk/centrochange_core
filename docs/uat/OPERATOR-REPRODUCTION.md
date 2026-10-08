@@ -1,5 +1,23 @@
 # Riproduzione operatore — GOAL-02
 
+## Current existing-site UI candidate — 2026-10-08
+
+For the approved Design System v1 on the **existing Owner UAT dataset**, use the current [manifest](UAT-CANDIDATE.json) / [evidence](../evidence/ui-design-system-v1/CONFORMANCE.md). **Do not apply the historical reset/seed/empty-site recipe below to this runtime.** The current UI change requires no migration or dataset preparation.
+
+```sh
+python3 infra/uat_candidate.py --source-ref c51a9e7a1f887b87c0b06872a8d3e94f2e7249f5 --name NUOVO_NOME_CANDIDATE --env-file /percorso/esterno/runtime.env --existing-site-ui
+python3 infra/image_acceptance.py --source-ref c51a9e7a1f887b87c0b06872a8d3e94f2e7249f5
+python3 infra/remediation_acceptance.py
+python3 infra/uat_browser_acceptance.py --script ui_v1 --output-dir /tmp/cc-ui-check
+python3 infra/uat_browser_acceptance.py --script permissions --output-dir /tmp/cc-permission-check
+python3 infra/uat_runtime_health.py
+```
+
+Run browser suites serially; rollback backend suite preserves complete canonical rows. Private credentials/env stay outside Git and output. Build uses an exact archive, recreates app services only, clears app cache, preserves database/Redis volumes and Owner changes. A documentation-only review HEAD after the candidate commit does not change its app bytes. No stack merge or GOAL-03.
+
+## Historical initial GOAL-02 preparation (not current Owner dataset)
+
+
 Solo DEV `centrochange-dev` / `centrochange.local`, input sintetici; recipe Docker, pin e setup nativi del GOAL-01 accettato vengono riusati. Il [manifest](UAT-CANDIDATE.json) distingue commit sorgente, image ID, versione demo e hash semantico. Non implica merge dello stack.
 
 ## Build immutabile
