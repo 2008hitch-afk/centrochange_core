@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "reports": [
+    {
+      "status": "PASS",
+      "checks": [
+        "native login reaches authenticated workspace",
+        "visible booking creates canonical row",
+        "future closure rejected visibly server-side",
+        "reschedule updates canonical agenda",
+        "own private note visible through real guarded API",
+        "scoped CSV downloads without private body",
+        "timely cancellation visible in retained history",
+        "submitted native absence trims live calendar availability without changing booking policy",
+        "mobile layout has no document horizontal overflow",
+        "secretariat patient notes excludes clinical controls and private bodies",
+        "secretariat creates native synthetic patient with explicit assignment through authenticated HTTP",
+        "explicit operational package issuance through primary patient workspace",
+        "exact UID discovery and explicit second professional assignment through primary workspace",
+        "Management membership revocation through guarded lifecycle UI",
+        "Management practitioner disable and restore through guarded lifecycle UI",
+        "no application JavaScript exceptions"
+      ],
+      "errors": [],
+      "viewports": [
+        "1536x1024",
+        "390x844"
+      ]
+    },
+    {
+      "status": "PASS",
+      "checks": [
+        "actual short worker delivers one native Notification Log"
+      ]
+    }
+  ],
+  "browser_plugin": "unavailable",
+  "fallback": "pinned Playwright container",
+  "cleanup": "PASS"
+}

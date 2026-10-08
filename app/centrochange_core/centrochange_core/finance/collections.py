@@ -64,25 +64,25 @@ def _debts(patient,center):
                 override=_deferred('Sales Invoice',invoice.name)
                 deadline=_end_date(override.due_date if override else invoice.due_date)
                 debts.append({'doctype':'Sales Invoice','name':invoice.name,'amount':invoice.outstanding_amount,
-                    'currency':invoice.currency,'due_date':deadline.date(),'deadline':deadline,'override':override.name if override else None})
+                    'currency':invoice.currency,'original_due_date':invoice.due_date,'due_date':deadline.date(),'deadline':deadline,'override':override.name if override else None})
             # After posting, accounting balance is authoritative, including paid/credited originals.
             continue
         if row.cc_price_snapshot<=0 or row.cc_paid or row.cc_closure_state not in ('Closed','Auto Locked'):
             continue
         override=_deferred('Patient Appointment',row.name)
-        if override:
-            deadline=_end_date(override.due_date)
-        elif row.cc_payment_terms_mode=='Month End':
+        if row.cc_payment_terms_mode=='Month End':
             date=frappe.utils.getdate(row.appointment_date)
             deadline=_end_date(date.replace(day=monthrange(date.year,date.month)[1]))
         elif row.cc_payment_terms_mode=='Specific Date':
-            if not row.cc_payment_agreed_date:
+            if not row.cc_payment_agreed_date and not override:
                 frappe.throw('Specific payment terms require their immutable agreed date')
-            deadline=_end_date(row.cc_payment_agreed_date)
+            deadline=_end_date(row.cc_payment_agreed_date) if row.cc_payment_agreed_date else None
         else:
             deadline=(start_utc(frappe._dict(row))+timedelta(minutes=frappe.utils.flt(row.duration))).astimezone(ROME)
+        original_due_date=deadline.date() if deadline else None
+        if override:deadline=_end_date(override.due_date)
         debts.append({'doctype':'Patient Appointment','name':row.name,'amount':row.cc_price_snapshot,
-            'currency':row.cc_currency_snapshot,'due_date':deadline.date(),'deadline':deadline,'override':override.name if override else None})
+            'currency':row.cc_currency_snapshot,'original_due_date':original_due_date,'due_date':deadline.date(),'deadline':deadline,'override':override.name if override else None})
     return debts
 
 

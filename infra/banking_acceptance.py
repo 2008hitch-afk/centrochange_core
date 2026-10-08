@@ -33,7 +33,7 @@ def main():
         assert status==expected,(path,status,expected,value.get('exc_type'),value.get('_server_messages'))
         return value
     try:
-        fixture=execute('centrochange_core.security.dev_acceptance.create_http',{'scheduling':True,'operations':True,'finance':True})
+        fixture=execute('centrochange_core.security.dev_acceptance.create_http',{'scheduling':True,'operations':True,'finance':True,'public_route':False})
         for label,row in fixture['users'].items():
             clients[label]=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
             call(label,'/api/method/login',{'usr':row['name'],'pwd':row['password']})
