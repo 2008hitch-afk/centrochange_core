@@ -18,17 +18,19 @@ def configure():
         {'fieldname':'cc_center','label':'Centro Change Center','fieldtype':'Link','options':'Branch','read_only':1},
         {'fieldname':'cc_request_key','label':'Idempotency Key','fieldtype':'Data','read_only':1,'unique':1},
         {'fieldname':'cc_request_hash','label':'Request Fingerprint','fieldtype':'Data','read_only':1}]
-        for dt in ('Sales Invoice','Payment Entry')}
+        for dt in ('Sales Invoice','Payment Entry','Purchase Invoice')}
     fields['Patient Appointment']=[{'fieldname':'cc_payment_terms_mode','label':'Payment Terms Snapshot','fieldtype':'Select','options':'Immediate\nMonth End\nSpecific Date','default':'Immediate','read_only':1},
         {'fieldname':'cc_payment_agreed_date','label':'Agreed Payment Date Snapshot','fieldtype':'Date','read_only':1}]
     fields['Bank Account']=[{'fieldname':'cc_center','label':'Centro Change Center','fieldtype':'Link','options':'Branch','read_only':1}]
     fields['Bank Transaction']=[{'fieldname':'cc_center','label':'Centro Change Center','fieldtype':'Link','options':'Branch','read_only':1},
         {'fieldname':'cc_source_key','label':'Movement Source Key','fieldtype':'Data','read_only':1,'unique':1},
         {'fieldname':'cc_source_hash','label':'Immutable Source Hash','fieldtype':'Data','read_only':1}]
+    fields['Purchase Invoice'].extend([{'fieldname':'cc_incoming_source','label':'Immutable Incoming Source','fieldtype':'Link','options':'CC Incoming Invoice','read_only':1},
+        {'fieldname':'cc_fiscal_profile','label':'DEV Fiscal Profile','fieldtype':'Data','read_only':1}])
     fields['Sales Invoice'].append({'fieldname':'cc_fiscal_profile','label':'DEV Fiscal Profile','fieldtype':'Data','read_only':1})
     fields['Sales Invoice Item']=[{'fieldname':'cc_economic_source','label':'Economic Source','fieldtype':'Link','options':'CC Economic Source Link','read_only':1}]
     create_custom_fields(fields)
-    for dt in ('Sales Invoice','Payment Entry','GL Entry','Payment Ledger Entry','Bank Transaction','Bank Account'):
+    for dt in ('Sales Invoice','Purchase Invoice','Payment Entry','GL Entry','Payment Ledger Entry','Bank Transaction','Bank Account'):
         frappe.db.delete('Custom DocPerm',{'parent':dt})
         for role in ('CC Manager','CC Finance','CC Secretariat','CC Accountant'):
             rights={key:0 for key in ('read','write','create','delete','submit','cancel','amend','report','export','import','share','print','email','select')}

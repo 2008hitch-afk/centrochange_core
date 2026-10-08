@@ -16,6 +16,7 @@ def master_names(doctype,user=None):
         users=current_rows('CC Center Membership',{'center':['in',scopes]},pluck='user')
         names=current_rows('Healthcare Practitioner',{'user_id':['in',users or ['']]},pluck='supplier')
         names+=current_rows('CC Economic Source Link',{'center':['in',scopes]},pluck='supplier')
+        names+=current_rows('CC Incoming Invoice',{'center':['in',scopes]},pluck='supplier')
     elif doctype=='Account':
         companies=current_rows('Branch',{'name':['in',scopes]},pluck='cc_company')
         names=current_rows('Account',{'company':['in',[c for c in companies if c] or ['']]},pluck='name')
@@ -52,6 +53,7 @@ def transaction_names(doctype,user=None):
         return current_rows(doctype,{'cc_center':['in',scopes]},pluck='name')
     dimensions=master_names('Cost Center',user)
     invoices=current_rows('Sales Invoice',{'cc_center':['in',scopes]},pluck='name')
+    invoices+=current_rows('Purchase Invoice',{'cc_center':['in',scopes]},pluck='name')
     payments=current_rows('Payment Entry',{'cc_center':['in',scopes]},pluck='name')
     return current_rows(doctype,{'voucher_no':['in',invoices+payments or ['']]},pluck='name')
 
@@ -86,3 +88,7 @@ def bank_transaction_query(user=None):
 
 def bank_account_query(user=None):
     return '' if is_manager(user) else names_condition('Bank Account',transaction_names('Bank Account',user))
+
+
+def purchase_invoice_query(user=None):
+    return '' if is_manager(user) else names_condition('Purchase Invoice',transaction_names('Purchase Invoice',user))

@@ -221,7 +221,7 @@ def destroy_http(fixture):
 	groups['CC Patient Package']=frappe.get_all('CC Patient Package',filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['CC Package Ledger']=frappe.get_all('CC Package Ledger',filters={'package':['in',groups['CC Patient Package'] or ['']]},pluck='name')
 	groups['CC Economic Source Link']=frappe.get_all('CC Economic Source Link',filters={'appointment':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
-	for transaction in ('Sales Invoice','Payment Entry','Bank Transaction'):
+	for transaction in ('Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction'):
 		groups[transaction]=frappe.get_all(transaction,filters={'cc_center':['in',fixture['centers']]},pluck='name')
 	groups['Bank Account']=frappe.get_all('Bank Account',filters={'cc_center':['in',fixture['centers']]},pluck='name')
 	groups['Account']=[frappe.db.get_value('Bank Account',name,'account') for name in groups['Bank Account']]
@@ -230,15 +230,25 @@ def destroy_http(fixture):
 		groups[protected]=frappe.get_all(protected,filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['Communication']=frappe.get_all('Communication',filters={'reference_doctype':'CC Payment Notice',
 		'reference_name':['in',groups['CC Payment Notice'] or ['']]},pluck='name')
-	vouchers=groups['Sales Invoice']+groups['Payment Entry']
+	vouchers=groups['Sales Invoice']+groups['Purchase Invoice']+groups['Payment Entry']
 	for ledger in ('GL Entry','Payment Ledger Entry'):
 		groups[ledger]=frappe.get_all(ledger,filters={'voucher_no':['in',vouchers or ['']]},pluck='name')
-	for transaction in ('Sales Invoice','Payment Entry','Bank Transaction'):
+	for transaction in ('Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction'):
 		for name in groups[transaction]:
 			for file in frappe.get_all('File',filters={'attached_to_doctype':transaction,'attached_to_name':name},pluck='name'):
-				frappe.delete_doc('File',file,ignore_permissions=True)
+				from centrochange_core.security.audit import internal_write
+				with internal_write('cc_fixture_file_cleanup'):
+					frappe.delete_doc('File',file,ignore_permissions=True)
 		groups['CC Audit Event']=groups.get('CC Audit Event',[])+frappe.get_all('CC Audit Event',filters={
 			'reference_doctype':transaction,'reference_name':['in',groups[transaction] or ['']]},pluck='name')
+	groups['CC Incoming Invoice']=frappe.get_all('CC Incoming Invoice',filters={'center':['in',fixture['centers']]},pluck='name')
+	for source in groups['CC Incoming Invoice']:
+		payload=frappe.db.get_value('CC Incoming Invoice',source,'payload_file')
+		if payload:
+			from centrochange_core.security.audit import internal_write
+			with internal_write('cc_fixture_file_cleanup'):
+				frappe.db.set_value('CC Incoming Invoice',source,'payload_file',None)
+				frappe.delete_doc('File',payload,ignore_permissions=True)
 	groups['Supplier']=[name for name in (frappe.db.get_value('Healthcare Practitioner',prac,'supplier') for prac in fixture['practitioners']) if name]
 	groups['Cost Center']=[name for name in (frappe.db.get_value('Branch',center,'cc_cost_center') for center in fixture['centers']) if name]
 	groups['CC Settlement']=frappe.get_all('CC Settlement',filters={'appointment':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
@@ -249,7 +259,7 @@ def destroy_http(fixture):
 	if fixture.get('catalog'):
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'Patient Appointment',
 			'reference_name':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
-		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package','CC Economic Source Link','CC Payment Agreement','CC Payment Override','CC Payment Notice'):
+		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package','CC Economic Source Link','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Incoming Invoice'):
 			groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':protected,'reference_name':['in',groups[protected] or ['']]},pluck='name')
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'CC Patient Assignment',
 			'reference_name':['in',groups.get('CC Patient Assignment') or ['']]},pluck='name')

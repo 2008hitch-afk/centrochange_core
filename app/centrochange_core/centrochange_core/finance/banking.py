@@ -67,7 +67,7 @@ def import_movements(center,movements,reason):
         frappe.throw('Configure the center native bank account first')
     rows=[]
     for movement in movements:
-        if not isinstance(movement,dict) or set(movement)-{'external_id','date','deposit','withdrawal','description','reference','customer'}:
+        if not isinstance(movement,dict) or set(movement)-{'external_id','date','deposit','withdrawal','description','reference','customer','supplier'}:
             frappe.throw('Unsupported bank movement input')
         external=movement.get('external_id')
         if not isinstance(external,str) or not external.strip() or len(external)>160:
@@ -79,13 +79,17 @@ def import_movements(center,movements,reason):
             frappe.throw('Bank description/reference must be bounded text')
         if not movement.get('date'):
             frappe.throw('An explicit bank movement date is required')
-        customer=movement.get('customer')
+        customer=movement.get('customer');supplier=movement.get('supplier')
+        if customer and (supplier or withdrawal) or supplier and deposit:
+            frappe.throw('Bank party must match the movement direction')
         if customer:
             frappe.get_doc('Customer',customer).check_permission('read')
+        if supplier:
+            frappe.get_doc('Supplier',supplier).check_permission('read')
         snapshot={'bank_account':bank,'company':company,'cc_center':center,'currency':frappe.db.get_value('Account',frappe.db.get_value('Bank Account',bank,'account'),'account_currency'),
             'date':str(frappe.utils.getdate(movement['date'])),'deposit':deposit,'withdrawal':withdrawal,
             'description':str(movement.get('description') or '')[:500],'reference_number':str(movement.get('reference') or '')[:160],
-            'transaction_id':external,'party_type':'Customer' if customer else None,'party':customer}
+            'transaction_id':external,'party_type':'Supplier' if supplier else 'Customer' if customer else None,'party':supplier or customer}
         source=sha256(serialize([bank,external]).encode()).hexdigest()
         fingerprint=sha256(serialize(snapshot).encode()).hexdigest()
         existing=frappe.db.get_value('Bank Transaction',{'cc_source_key':source},for_update=True)
@@ -105,36 +109,40 @@ def import_movements(center,movements,reason):
 @frappe.whitelist(methods=['GET'])
 def candidates(name):
     doc=bank_doc(name)
-    if doc.docstatus!=1 or doc.withdrawal or doc.unallocated_amount<=0:
+    if doc.docstatus!=1 or doc.unallocated_amount<=0:
         return {'state':'Reconciled' if doc.docstatus==1 and doc.unallocated_amount<=0 else 'Not Eligible','invoices':[]}
     filters={'cc_center':doc.cc_center,'company':doc.company,'currency':doc.currency,'docstatus':1,'is_return':0,
         'outstanding_amount':['>=',doc.unallocated_amount]}
-    if doc.party_type=='Customer' and doc.party:
-        filters['customer']=doc.party
+    document_type='Purchase Invoice' if doc.withdrawal else 'Sales Invoice'
+    if doc.party and doc.party_type==('Supplier' if doc.withdrawal else 'Customer'):
+        filters['supplier' if doc.withdrawal else 'customer']=doc.party
     from centrochange_core.security.guards import current_rows
-    rows=current_rows('Sales Invoice',filters=filters,fields=['name','customer','outstanding_amount','due_date','posting_date'])
+    rows=current_rows(document_type,filters=filters,fields=['name','supplier' if doc.withdrawal else 'customer','outstanding_amount','due_date','posting_date'])
     rows.sort(key=lambda row:(row.posting_date,row.name))
     if len(rows)>100:
         frappe.throw('Narrow the bank movement customer/reference before matching')
     exact=[row for row in rows if row.name==doc.reference_number]
     if exact:
         rows=exact
-    return {'state':'Unmatched' if not rows else 'Candidate' if len(rows)==1 else 'Ambiguous','invoices':rows}
+    return {'state':'Unmatched' if not rows else 'Candidate' if len(rows)==1 else 'Ambiguous','document_type':document_type,'invoices':rows}
 
 
 @frappe.whitelist(methods=['POST'])
 @atomic
 def reconcile(name,invoice,reason):
     lock(); require_synthetic(); doc=bank_doc(name,True)
+    document_type='Purchase Invoice' if doc.withdrawal else 'Sales Invoice'
     if doc.docstatus==1 and doc.unallocated_amount==0:
         payments=[p.payment_entry for p in doc.payment_entries if p.payment_document=='Payment Entry']
-        if len(payments)!=1 or not frappe.db.exists('Payment Entry Reference',{'parent':payments[0],'reference_doctype':'Sales Invoice','reference_name':invoice}):
+        if len(payments)!=1 or not frappe.db.exists('Payment Entry Reference',{'parent':payments[0],'reference_doctype':document_type,'reference_name':invoice}):
             frappe.throw('A reconciled movement cannot be replayed against a different invoice')
         return {'movement':projection(doc,True),'payment':payments[0]}
     if invoice not in [r.name for r in candidates(name)['invoices']]:
         frappe.throw('Choose a current eligible own-center invoice for reconciliation')
     bank_account=frappe.db.get_value('Bank Account',doc.bank_account,'account')
-    payment=receivables.pay(invoice,doc.unallocated_amount,doc.date,'bank:'+doc.cc_source_key,reason,
+    from centrochange_core.finance.incoming import pay as pay_supplier
+    pay=pay_supplier if doc.withdrawal else receivables.pay
+    payment=pay(invoice,doc.unallocated_amount,doc.date,'bank:'+doc.cc_source_key,reason,
         reference=doc.transaction_id,bank_account=bank_account)['payment']
     with internal_write('cc_accounting_write'):
         doc.flags.ignore_permissions=True
