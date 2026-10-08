@@ -27,3 +27,5 @@ Disco libero dopo archivio interrotto circa41.46GiB: consumo rispetto all'osserv
 ## Azione successiva
 
 Nessun riavvio automatico: sessione operativa terminata BLOCKED. Proposta per review Owner: serializzare archiviazione immagini e bootstrap, mantenendo tutte le soglie e i limiti, monitorare l'overhead host non incluso nei cgroup; nuova esecuzione solo con capacità/finestra sufficienti e autorizzazione coerente. Non allentare PSI autonomamente. Il rollback non è applicabile come restore verificato in questa esecuzione: CURRENT non completato, nessun checkpoint e nessuna migrazione TARGET avviata.
+
+Verifica di stabilizzazione post-stop per60secondi: tutte le risposte RC22 HTTP200, PSI avg10 finale some/full0.00%, MemAvailable finale5.57GiB.
