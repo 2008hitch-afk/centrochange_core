@@ -23,7 +23,7 @@ def _conditions(center):
     def add(kind,dt,name,value):
         key=sha256(serialize([center,kind,dt,name]).encode()).hexdigest()
         out[key]={'center':center,'exception_type':kind,'reference_doctype':dt,'reference_name':name,
-            'condition_key':key,'condition_hash':sha256(serialize(value).encode()).hexdigest()}
+            'condition_key':key,'condition_hash':sha256(serialize(value).encode()).hexdigest(),'condition_details':serialize(value)}
     for row in current_rows('CC Incoming Invoice',{'center':center},fields=['name','state','problem']):
         if row.state not in ('Submitted','Cancelled'):add('Incoming Invoice Review','CC Incoming Invoice',row.name,[row.state,row.problem])
     for row in current_rows('Bank Transaction',{'cc_center':center,'docstatus':1},fields=['name','unallocated_amount']):
@@ -33,11 +33,11 @@ def _conditions(center):
     for patient in set(patients):
         for row in _debts(patient,center):
             if row['deadline']<now_utc():add('Overdue Payment',row['doctype'],row['name'],[row['amount'],row['due_date'],row['override']])
-    latest={}
-    for row in sorted(current_rows('CC Professional Expectation',{'center':center},fields=['name','appointment','state','problem','creation']),key=lambda r:(r.creation,r.name)):
-        latest[row.appointment]=row
-    for appointment,row in latest.items():
-        if row.state=='REVIEW':add('Professional Expectation Review','Patient Appointment',appointment,[row.name,row.problem])
+    from centrochange_core.finance.professional_economics import latest_expectations
+    for appointment,row in latest_expectations(center).items():
+        if row.state in ('REVIEW','SUSPENDED'):
+            add('Professional Expectation Review','Patient Appointment',appointment,
+                {k:row.get(k) for k in ('name','patient','practitioner','appointment','state','problem','threshold_configured','threshold_snapshot','unpaid_count','unpaid_rank','unpaid_sessions_json','manual_override')})
     latest={}
     for row in sorted(current_rows('CC Professional Comparison',{'center':center},fields=['name','purchase_invoice','state','problem','creation']),key=lambda r:(r.creation,r.name)):
         latest[row.purchase_invoice]=row
@@ -63,6 +63,8 @@ def _conditions(center):
 @atomic
 def refresh(center,reason):
     lock();require_synthetic();require_finance(center,True)
+    from centrochange_core.finance.professional_economics import _reevaluate
+    _reevaluate(center,reason)
     return _refresh(center,reason)
 
 
@@ -80,7 +82,7 @@ def _refresh(center,reason):
                 before={'state':doc.state,'condition_hash':doc.condition_hash}
                 if doc.state=='Closed' or doc.state=='Deferred' and (not doc.defer_until or doc.defer_until<=at):
                     doc.state='Assigned' if doc.assignee else 'Open';doc.defer_until=None;doc.resolved_at=None;doc.resolution_reason=None
-                doc.condition_hash=data['condition_hash']
+                doc.condition_hash=data['condition_hash'];doc.condition_details=data['condition_details']
                 if before!={'state':doc.state,'condition_hash':doc.condition_hash}:
                     doc.save(ignore_permissions=True);append('ADMIN_EXCEPTION_REFRESHED',doc.doctype,doc.name,before,{'state':doc.state,'condition_hash':doc.condition_hash},reason);changed.append(doc.name)
         for key,doc in existing.items():
@@ -124,7 +126,7 @@ def list_items(center,include_closed=0):
     require_finance(center)
     filters={'center':center}
     if not frappe.utils.cint(include_closed):filters['state']=['!=','Closed']
-    return current_rows('CC Admin Exception',filters,fields=['name','exception_type','reference_doctype','reference_name','state','priority','assignee','detected_at','due_at','defer_until','resolved_at'])
+    return current_rows('CC Admin Exception',filters,fields=['name','exception_type','reference_doctype','reference_name','state','priority','assignee','detected_at','due_at','defer_until','resolved_at','condition_details'])
 
 
 def catch_up():
@@ -133,5 +135,7 @@ def catch_up():
         from centrochange_core.operations.install import AUTOMATION_USER
         require_synthetic();frappe.set_user(AUTOMATION_USER);lock()
         for center in current_rows('Branch',{'cc_company':['is','set']},pluck='name'):
+            from centrochange_core.finance.professional_economics import _reevaluate
+            _reevaluate(center,'Scheduled professional unpaid threshold reconciliation')
             _refresh(center,'Scheduled administrative condition reconciliation')
     finally:frappe.set_user(previous)

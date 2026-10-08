@@ -115,8 +115,22 @@ def main():
         unresolved=call('f',ep+'capture',{'source':sources[0]['name'],'rule':rule,'reason':tag})['message']
         assert unresolved['state']=='REVIEW' and unresolved['amount'] is None
         read=call('t','/api/resource/CC%20Professional%20Expectation/'+unresolved['name'])['data']
-        assert read['amount_known']==0 and read['problem']=='Unpaid Compensation Policy Unset'
+        assert read['amount_known']==0 and read['problem']=='Professional Unpaid Threshold Missing'
         checks.append('management explicit compensation configuration and native REST unknown unpaid expectation without inferred zero')
+        threshold_args={'center':center,'practitioner':sources[0]['practitioner'],'max_unpaid_sessions_compensated':0,'request_key':tag+'-threshold','reason':tag}
+        call('s',ep+'configure_threshold',threshold_args,expected=403)
+        threshold=call('m',ep+'configure_threshold',threshold_args)['message']['name']
+        assert call('m',ep+'configure_threshold',threshold_args)['message']['replay']
+        current=call('t',ep+'position?'+urllib.parse.urlencode({'center':center,'practitioner':sources[0]['practitioner']}))['message']['sessions']
+        suspended=next(r for r in current if r['appointment']==sources[0]['appointment'])
+        assert suspended['state']=='SUSPENDED' and not suspended['amount_known'] and suspended['unpaid_count']==2
+        override_args={'expectation':suspended['name'],'reason':tag}
+        for actor in ('a','b','s','f','t'):call(actor,ep+'override',override_args,expected=403)
+        override=call('m',ep+'override',override_args)['message']
+        assert override['state']=='OK' and override['amount']==100 and call('m',ep+'override',override_args)['message']['replay']
+        preserved=call('t','/api/resource/CC%20Professional%20Expectation/'+suspended['name'])['data']
+        assert preserved['state']=='SUSPENDED' and preserved['paid_snapshot']==0
+        checks.append('DECISION-054 scoped threshold N0 suspension, immutable unpaid facts, Management audited override once and unauthorized override/configuration denied')
         query=urllib.parse.urlencode({'doctype':'Sales Invoice','fields':json.dumps(['name','outstanding_amount']),'filters':json.dumps({'cc_center':center,'docstatus':1})})
         invoices=call('f','/api/method/frappe.client.get_list?'+query)['message']
         for idx,row in enumerate(invoices):
@@ -141,7 +155,7 @@ def main():
         call('t',qp+'manage',work_args,expected=403)
         call('s',qp+'manage',{**work_args,'assignee':fixture['users']['a']['name']},expected=403)
         checks.append('center queue condition dedupe and audited assignment priority due deferral with read-only and unauthorized-assignee denial')
-        ids=[('CC Compensation Rule',rule),('CC Professional Expectation',expected['name']),('CC Professional Comparison',comparison['name']),('CC Admin Exception',work['name'])]
+        ids=[('CC Unpaid Threshold',threshold),('CC Compensation Rule',rule),('CC Professional Expectation',expected['name']),('CC Professional Comparison',comparison['name']),('CC Admin Exception',work['name'])]
         for dt,ident in ids:
             path='/api/resource/'+urllib.parse.quote(dt,safe='')+'/'+urllib.parse.quote(ident,safe='')
             for label in ('m','s','f','t'):call(label,path)
@@ -164,7 +178,7 @@ def main():
             assert report['totals']['payable_outstanding']==sum(i['outstanding_amount'] for i in report['purchase_invoices'])
             assert report['totals']['indicative_margin'] is None
             boot=call(actor,rp+'bootstrap?'+urllib.parse.urlencode({'center':center}))['message']
-            assert boot['can_write']==(actor!='t') and boot['unpaid_policy']=='UNSET'
+            assert boot['can_write']==(actor!='t') and boot['unpaid_policy']=='HC-0005 DECISION-054'
         checks.append('all financial roles report native document totals reconcile and Accountant bootstrap is readonly')
         csv_bytes=download('t',rp+'export_csv?'+urllib.parse.urlencode(report_args),200)
         assert b'PRIVATE' not in csv_bytes and amended.encode() in csv_bytes

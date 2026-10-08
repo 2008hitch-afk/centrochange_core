@@ -26,7 +26,7 @@ def checks(fixture):
     result.append('session-date and posting-date periods explicit; missing expectations unknown; shared fiscal subjects are not silently allocated')
     reject(lambda:reporting.summary(center,'2026-01-01','2028-01-01'))
     reject(lambda:reporting.records(center,'CC Private Note'))
-    boot=reporting.bootstrap(center);assert boot['can_write'] and boot['unpaid_policy']=='UNSET' and boot['simulation_only']
+    boot=reporting.bootstrap(center);assert boot['can_write'] and boot['unpaid_policy']=='HC-0005 DECISION-054' and boot['simulation_only']
     for actor in (fixture['pro1'],fixture['pro2'],'accountant.cc-regression@example.invalid',fixture['secretary']):
         frappe.set_user(actor)
         if actor in (fixture['pro1'],fixture['pro2']):

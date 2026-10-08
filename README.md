@@ -17,7 +17,7 @@ L'implementazione HC-0005 è autorizzata. La guida canonica per il build è:
 - `docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml`
 - macro-goal corrente: GOAL-01 / issue #22
 - implementation epic #20
-- WP-00 e wave operative/Finance completate sullo stack draft #27–#52; verifica integrata WP-09 #53 / PR #54
+- WP-00 e wave operative/Finance sullo stack draft #27–#52; verifica integrata WP-09 #53 / PR #54 e delta correttivo DECISION-054 #55
 
 Le evidenze delle 40 capability già validate vengono riusate come vincoli architetturali e regression basis; Finance/Admin / SdI / TS sono tracciati nelle nuove capability di delivery `CC-CAP-041..050`.
 
@@ -75,11 +75,11 @@ Il bootstrap versionato è in `infra/compose.yaml`; `infra/compose.dev.yaml` è 
 
 ```sh
 python3 infra/runtime_acceptance.py --env-file /percorso/esterno/runtime.env --snapshot /tmp/cc-runtime.json
-python3 infra/image_acceptance.py --source-ref 43d24bb
+python3 infra/image_acceptance.py --source-ref ba45816
 python3 infra/integrated_acceptance.py --env-file /percorso/esterno/runtime.env --output-dir /tmp/cc-integrated
 python3 infra/dev_backup.py --destination /tmp/cc-dev-backups
 ```
 
 Eseguire con accesso Docker e in sequenza sul solo ambiente DEV sintetico. Le fixture HTTP committano esclusivamente dati sintetici e li eliminano verificando la proprietà esatta; le prove dirette usano rollback. Gli output temporanei e le credenziali browser restano fuori Git.
 
-[Report GOAL-01](docs/MVP-GOAL-COMPLETION-REPORT-2026-10-05.md) e [prova WP-09](docs/evidence/WP-09-2026-10-05.md) riportano lo stato finale e i limiti. Compenso per seduta svolta ma non pagata: OPEN/UNSET; tariffa alla data di prenotazione con snapshot immutabile; esattamente 48h è puntuale. Nessun provider o traffico SdI/TS reale. UAT e produzione richiedono i gate della roadmap.
+[Report GOAL-01](docs/MVP-GOAL-COMPLETION-REPORT-2026-10-05.md) e [prova WP-09](docs/evidence/WP-09-2026-10-05.md) riportano lo stato finale e i limiti. Compenso per seduta svolta ma non incassata: DECISION-054, soglia esplicita per professionista e conteggio per paziente/professionista; tariffa alla data di prenotazione con snapshot immutabile; esattamente 48h è puntuale. Nessun provider o traffico SdI/TS reale. UAT e produzione richiedono i gate della roadmap.

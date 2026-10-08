@@ -21,7 +21,18 @@
   "currency",
   "snapshot_hash",
   "recorded_by",
-  "amount_known"
+  "amount_known",
+  "patient",
+  "threshold_config",
+  "threshold_snapshot",
+  "threshold_configured",
+  "unpaid_count",
+  "unpaid_rank",
+  "unpaid_sessions_json",
+  "original_facts",
+  "sequence",
+  "previous_expectation",
+  "manual_override"
  ],
  "fields": [
   {
@@ -84,7 +95,7 @@
    "label": "State",
    "fieldtype": "Select",
    "reqd": 1,
-   "options": "OK\nREVIEW"
+   "options": "OK\nSUSPENDED\nREVIEW"
   },
   {
    "fieldname": "problem",
@@ -118,6 +129,75 @@
    "label": "Amount Known",
    "fieldtype": "Check",
    "default": "0"
+  },
+  {
+   "fieldname": "patient",
+   "label": "Patient",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "Patient"
+  },
+  {
+   "fieldname": "threshold_config",
+   "label": "Threshold Config",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "CC Unpaid Threshold"
+  },
+  {
+   "fieldname": "threshold_snapshot",
+   "label": "Threshold Snapshot",
+   "fieldtype": "Int",
+   "read_only": 1
+  },
+  {
+   "fieldname": "threshold_configured",
+   "label": "Threshold Configured",
+   "fieldtype": "Check",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unpaid_count",
+   "label": "Unpaid Count",
+   "fieldtype": "Int",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unpaid_rank",
+   "label": "Unpaid Rank",
+   "fieldtype": "Int",
+   "read_only": 1
+  },
+  {
+   "fieldname": "unpaid_sessions_json",
+   "label": "Unpaid Sessions Json",
+   "fieldtype": "Long Text",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_facts",
+   "label": "Original Facts",
+   "fieldtype": "Long Text",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sequence",
+   "label": "Sequence",
+   "fieldtype": "Int",
+   "read_only": 1
+  },
+  {
+   "fieldname": "previous_expectation",
+   "label": "Previous Expectation",
+   "fieldtype": "Link",
+   "read_only": 1,
+   "options": "CC Professional Expectation"
+  },
+  {
+   "fieldname": "manual_override",
+   "label": "Manual Override",
+   "fieldtype": "Check",
+   "read_only": 1
   }
  ],
  "permissions": [

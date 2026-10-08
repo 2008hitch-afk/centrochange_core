@@ -12,21 +12,26 @@ def checks(fixture):
     sources=frappe.get_all('CC Economic Source Link',filters={'center':center,'performed':1,'economic_state':'Due'},fields=['name','appointment','operational_paid'])
     paid=next(s for s in sources if economics.patient_paid(frappe.get_doc('CC Economic Source Link',s.name)))
     unpaid=next(s for s in sources if not economics.patient_paid(frappe.get_doc('CC Economic Source Link',s.name)))
-    assert frappe.db.get_single_value('CC Finance Settings','unpaid_compensation_policy')=='UNSET'
+    assert frappe.db.get_single_value('CC Finance Settings','unpaid_compensation_policy')==economics.POLICY
     args=dict(center=center,practitioner=prac,service_item='CC SYNTHETIC SESSION',valid_from='2099-01-01',basis='Fixed Amount',value=100,currency='EUR',request_key='synthetic-compensation-100',reason='Synthetic explicitly configured test rate')
     rule=economics.configure_rule(**args)['name']
     assert economics.configure_rule(**args)['replay']
     reject(lambda:economics.configure_rule(**{**args,'value':101}))
+    unresolved=economics.capture(unpaid.name,'Synthetic missing threshold compensation',rule)
+    assert unresolved['state']=='REVIEW' and unresolved['amount'] is None
+    assert frappe.db.get_value('CC Professional Expectation',unresolved['name'],'problem')=='Professional Unpaid Threshold Missing'
+    paid_missing=economics.capture(paid.name,'Synthetic paid source still requires explicit threshold',rule)
+    assert paid_missing['state']=='REVIEW' and paid_missing['amount'] is None
+    economics.configure_threshold(center,prac,0,'synthetic-explicit-unpaid-threshold-zero','Synthetic explicit professional threshold')
     expected=economics.capture(paid.name,'Synthetic paid compensation snapshot',rule)
     assert expected['state']=='OK' and expected['amount']==100
     assert economics.capture(paid.name,'Synthetic expected replay',rule)['replay']
-    unresolved=economics.capture(unpaid.name,'Synthetic unpaid unresolved compensation',rule)
-    assert unresolved['state']=='REVIEW' and unresolved['amount'] is None
-    assert frappe.db.get_value('CC Professional Expectation',unresolved['name'],'problem')=='Unpaid Compensation Policy Unset'
+    suspended=economics.capture(unpaid.name,'Synthetic unpaid excess compensation',rule)
+    assert suspended['state']=='SUSPENDED' and suspended['amount'] is None
     missing=economics.capture(paid.name,'Synthetic missing rule')
     assert missing['state']=='REVIEW' and missing['amount'] is None
     economics.capture(paid.name,'Synthetic restore explicit snapshot',rule)
-    result.append('explicit immutable compensation rule replay and paid source calculation; unpaid policy UNSET stays REVIEW with unknown amount')
+    result.append('explicit immutable compensation rule replay and paid source calculation; missing professional threshold stays REVIEW with unknown amount')
     doc=frappe.get_doc('CC Compensation Rule',rule);doc.value=999;reject(lambda:doc.save(ignore_permissions=True))
     reject(lambda:frappe.delete_doc('CC Professional Expectation',expected['name'],ignore_permissions=True))
     result.append('rule and historical professional expectation cannot be rewritten or deleted through generic APIs')
@@ -70,7 +75,10 @@ def checks(fixture):
             for dt,n in [('CC Compensation Rule',rule),('CC Professional Expectation',expected['name']),('CC Professional Comparison',comparison['name']),('CC Admin Exception',items[0].name)]:
                 reject(lambda:frappe.get_doc(dt,n).check_permission('read'))
         result.append('professional and read-only accountant professional economics and admin work mutation boundaries')
-    frappe.set_user('Administrator');return result
+    frappe.set_user('Administrator')
+    from centrochange_core.finance.threshold_acceptance import checks as threshold_checks
+    result.extend(threshold_checks(fixture))
+    return result
 
 
 def run():

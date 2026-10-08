@@ -138,3 +138,9 @@ scheduler_events['cron']['*/5 * * * *'].append('centrochange_core.finance.sdi.ca
 permission_query_conditions['CC TS Input Review']='centrochange_core.finance.ts.review_query'
 has_permission['CC TS Input Review']='centrochange_core.finance.fiscal.permission'
 scheduler_events['cron']['*/5 * * * *'].append('centrochange_core.finance.ts.catch_up')
+
+permission_query_conditions["CC Unpaid Threshold"]="centrochange_core.finance.professional_economics.threshold_query"
+has_permission["CC Unpaid Threshold"]="centrochange_core.finance.professional_economics.permission"
+for dt in ("Payment Entry", "Sales Invoice"):
+    for event in ("on_submit", "on_cancel"):
+        doc_events[dt][event]="centrochange_core.finance.professional_economics.payment_changed"

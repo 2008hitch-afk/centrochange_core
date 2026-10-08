@@ -351,5 +351,7 @@
     "http_groups": 158,
     "browser_checks": 35,
     "actual_notification_worker_checks": 1
-  }
+  },
+  "evidence_class": "historical immutable foundation before DECISION-054",
+  "superseded_application_policy_evidence": "../DECISION-054-2026-10-05.md"
 }

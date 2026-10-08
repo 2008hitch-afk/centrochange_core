@@ -426,4 +426,17 @@ Data: 2026-10-04. Fonte: risposta esplicita dell'utente alla policy lasciata sep
 
 Decisione: usare **la data della prenotazione**, nel timezone Europe/Rome, per selezionare Item Price effective-dated. Catturare e congelare lo snapshot prezzo/valuta/provenance alla prenotazione. La data prevista della seduta non seleziona la tariffa. Una modifica successiva del catalogo o uno spostamento non ricalcola lo snapshot storico della stessa seduta.
 
-WP-05: la regola di compenso sulle sedute svolte ma non incassate resta OPEN; mantenere la logica parametrica e non inferire una scelta. Le altre wave proseguono.
+WP-05: il precedente gate di compenso sulle sedute svolte ma non incassate è superato da HC-0005 DECISION-054 (vedere TD-032). La direttiva iniziale di non inferire la policy rimane evidenza storica, non stato corrente.
+
+
+## TD-032 — recepimento HC-0005 DECISION-054, soglia sedute svolte non incassate
+
+**Stato: AUTORITÀ BUSINESS APPROVATA — delta #55.**
+
+Fonte autorevole: [HC-0005 DECISION-054](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-054-professional-unpaid-session-threshold-policy.md), approvata HITCH_OWNER il 2026-10-05; SHA fonte `db44ee844af0cb42583035af92126e6bed6d6b1a`. Sostituisce il precedente gate WP-05.
+
+N è un intero non negativo configurato esplicitamente per professionista, senza default. L'unità di conteggio è paziente + professionista. Le prime N sedute svolte non incassate maturano il compenso; le successive sono sospese, senza zero definitivo, con condizione amministrativa deterministica. Incassi e riconciliazione periodica rivalutano le posizioni; Management può riconoscere esplicitamente una sospesa con audit attore/tempo/motivo/stato prima-dopo/seduta.
+
+Implementazione: riuso dei DocType nativi e degli snapshot append-only WP-05; configurazioni e aspettative versionate, original facts immutabili, proiezione corrente tramite sequenza per seduta. Ordinamento ricostruibile per data/ora della seduta e identificativo canonico; pagamenti nativi governano outstanding, altrimenti settlement operativo corrente. L'override non cancella né il fatto non-incassato né il conteggio della seduta. Configurazione mancante è REVIEW, oltre soglia è SUSPENDED; entrambi conservano amount_known=false. I tassi economici restano configurati separatamente, mai inferiti.
+
+Non autorizza fiscalità reale, provider, produzione o GOAL-02. Evidenza del delta: [WP-05 / DECISION-054](evidence/DECISION-054-2026-10-05.md).

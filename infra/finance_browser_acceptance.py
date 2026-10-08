@@ -25,6 +25,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--env-file',required=True)
     parser.add_argument('--output-dir',default='/tmp/centrochange-browser-evidence')
+    parser.add_argument('--script',choices=('finance','threshold'),default='finance')
     args=parser.parse_args()
     repository=Path(__file__).resolve().parent.parent
     output=Path(args.output_dir).resolve()
@@ -47,7 +48,7 @@ def main():
         with os.fdopen(descriptor,'w') as stream:
             json.dump(fixture,stream)
         os.chmod(credential,0o600)
-        for script in ('finance',):
+        for script in (args.script,):
             command=['docker','run','--rm','--network','host','--user',str(os.getuid())+':'+str(os.getgid()),
                 '-v',credential+':/qa-fixture.json:ro','-v',str(output)+':/qa-results',
                 '-e','CC_BASE_URL=http://centrochange.local:'+str(port),IMAGE,'node','/qa/'+script+'.cjs']
