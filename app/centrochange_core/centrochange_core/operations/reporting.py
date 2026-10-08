@@ -57,8 +57,17 @@ def print_session(appointment):
     require_actor()
     doc=frappe.get_doc('Patient Appointment',appointment)
     doc.check_permission('read')
-    rows=[('Paziente',doc.patient_name),('Data',doc.appointment_date),('Ora',doc.appointment_time),
-        ('Professionista',doc.practitioner_name),('Servizio',doc.cc_service_label),('Durata',doc.duration),
-        ('Stato',doc.cc_closure_state),('Economia operativa',doc.cc_economic_state)]
+    # Presentation only; native read guard/document facts above remain canonical.
+    import re
+    def display_name(value, professional=False):
+        match=re.match(r'^CC-HTTP-[A-Za-z0-9]+\s+(.+)$',value or '')
+        if not match:return value
+        suffix=match.group(1)
+        return {'a':'Alfa','b':'Beta','c':'Gamma'}.get(suffix,suffix) if professional else suffix
+    closure={'Pending':'Da chiudere','Closed':'Chiusa','Auto Locked':'Bloccata','Reopened':'Riaperta'}
+    economy={'Due':'Dovuta','Non Due':'Non dovuta','Package Covered':'Coperta da pacchetto','Waived':'Rinuncia economica'}
+    rows=[('Paziente',display_name(doc.patient_name)),('Data',frappe.utils.formatdate(doc.appointment_date,'dd/MM/yyyy')),('Ora',doc.appointment_time),
+        ('Professionista',display_name(doc.practitioner_name,True)),('Servizio',display_name(doc.cc_service_label)),('Durata (minuti)',doc.duration),
+        ('Stato',closure.get(doc.cc_closure_state,doc.cc_closure_state)),('Economia operativa',economy.get(doc.cc_economic_state,doc.cc_economic_state))]
     body=''.join('<tr><th>'+escape(label)+'</th><td>'+escape(str(value or ''))+'</td></tr>' for label,value in rows)
     return '<!doctype html><html lang="it"><meta charset="utf-8"><title>Riepilogo seduta</title><link rel="stylesheet" href="/assets/centrochange_core/vendor/tabler-core-1.6.1/tabler.min.css"><link rel="stylesheet" href="/assets/centrochange_core/css/ui_v1.css"><h1>Centro Change — Riepilogo seduta</h1><table class="table table-vcenter">'+body+'</table></html>'
