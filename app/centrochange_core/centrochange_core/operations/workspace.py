@@ -168,3 +168,23 @@ def management_context(center):
     return {'users':current_rows('User',{'name':['in',users or ['']]},fields=['name','full_name','enabled']),
         'memberships':current_rows('CC Center Membership',{'center':center},fields=['name','user','active']),
         'practitioners':current_rows('Healthcare Practitioner',fields=['name','practitioner_name','user_id','status'])}
+
+
+@frappe.whitelist(methods=['GET'])
+def patient_search(center, query=''):
+    """Permission-aware bounded operational identity search; never clinical content."""
+    require_actor(); require_center(center)
+    query=str(query or '').strip()
+    if len(query)>140:frappe.throw('Search text is too long')
+    filters={}
+    if not is_manager():
+        from centrochange_core.security.guards import patient_contexts
+        filters['name']=['in',[p for p,c in patient_contexts() if c==center] or ['']]
+    text='%'+query.replace('\\','\\\\').replace('%','\\%').replace('_','\\_')+'%'
+    # Non-manager roles use document-scoped Patient permissions, not generic list rights.
+    # The narrow internal query is confined to exact current authorized patient/center pairs.
+    lookup=frappe.get_list if is_manager() else frappe.get_all
+    rows=lookup('Patient',filters=filters,
+        or_filters={k:['like',text] for k in ['patient_name','first_name','last_name','name','uid']},
+        fields=['name','patient_name','uid'],order_by='patient_name,name',page_length=51)
+    return {'patients':rows[:50],'truncated':len(rows)>50}
