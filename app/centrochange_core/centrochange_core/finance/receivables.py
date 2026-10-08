@@ -57,6 +57,8 @@ def draft(sources,posting_date,due_date,request_key,reason):
             where s.appointment=%s and p.docstatus<2 and p.is_return=0 limit 1 for update''',(row.appointment,)):
             frappe.throw('Session already has an active native invoice')
     accounts=frappe.get_doc('Company',company)
+    if rows[0].currency!=accounts.default_currency:
+        frappe.throw('The DEV fiscal profile supports the native company currency only; no exchange rate is inferred')
     settings=frappe.get_doc('CC Finance Settings')
     income=settings.income_account or accounts.default_income_account
     if not settings.sales_tax_template or not settings.receipt_mode:
@@ -93,21 +95,28 @@ def submit(name,reason):
 
 @frappe.whitelist(methods=['POST'])
 @atomic
-def pay(name,amount,posting_date,request_key,reason,reference=None):
+def pay(name,amount,posting_date,request_key,reason,reference=None,bank_account=None):
     lock(); require_synthetic(); doc=invoice(name,True)
-    fingerprint=sha256(serialize([name,str(amount),str(posting_date),reference]).encode()).hexdigest()
+    fingerprint=sha256(serialize([name,str(amount),str(posting_date),reference,bank_account]).encode()).hexdigest()
     existing=frappe.db.get_value('Payment Entry',{'cc_request_key':key('receipt',request_key)},for_update=True)
     if existing:
         payment=frappe.get_doc('Payment Entry',existing)
         if payment.cc_request_hash!=fingerprint:
             frappe.throw('Idempotency key payload differs')
         return {'payment':existing,'invoice':result(doc,True)}
+    from math import isfinite
     amount=frappe.utils.flt(amount,2)
+    if not isfinite(amount):
+        frappe.throw('A finite receipt amount is required')
     if doc.docstatus!=1 or doc.is_return or amount<=0 or amount>doc.outstanding_amount:
         frappe.throw('Receipt must allocate a positive amount within the open native balance')
     company=frappe.get_doc('Company',doc.company)
     settings=frappe.get_doc('CC Finance Settings')
-    bank=settings.bank_account or company.default_cash_account
+    bank=bank_account or settings.bank_account or company.default_cash_account
+    if bank_account:
+        configured=frappe.db.get_value('Branch',doc.cc_center,'cc_bank_account',for_update=True)
+        if not configured or frappe.db.get_value('Bank Account',configured,'account')!=bank_account:
+            frappe.throw('Receipt bank must match the configured center account',frappe.PermissionError)
     from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
     payment=get_payment_entry('Sales Invoice',name,party_amount=amount,bank_account=bank,bank_amount=amount)
     payment.update({'posting_date':posting_date,'reference_no':reference or request_key,'reference_date':posting_date,

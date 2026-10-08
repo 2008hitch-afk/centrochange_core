@@ -48,7 +48,7 @@ def transaction_names(doctype,user=None):
     if not allowed(user):
         return []
     scopes=centers(user) or ['']
-    if doctype in ('Sales Invoice','Payment Entry','Purchase Invoice','Bank Transaction'):
+    if doctype in ('Sales Invoice','Payment Entry','Purchase Invoice','Bank Transaction','Bank Account'):
         return current_rows(doctype,{'cc_center':['in',scopes]},pluck='name')
     dimensions=master_names('Cost Center',user)
     invoices=current_rows('Sales Invoice',{'cc_center':['in',scopes]},pluck='name')
@@ -78,3 +78,11 @@ def payment_ledger_query(user=None):
 
 def account_query(user=None):
     return master_query("Account",user)
+
+
+def bank_transaction_query(user=None):
+    return '' if is_manager(user) else names_condition('Bank Transaction',transaction_names('Bank Transaction',user))
+
+
+def bank_account_query(user=None):
+    return '' if is_manager(user) else names_condition('Bank Account',transaction_names('Bank Account',user))

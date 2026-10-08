@@ -102,3 +102,13 @@ extend_doctype_class["Sales Invoice"]=["centrochange_core.finance.receivables.In
 
 permission_query_conditions["Account"]="centrochange_core.finance.permissions.account_query"
 has_permission["Account"]="centrochange_core.finance.permissions.master_permission"
+
+for dt,query in [('Bank Transaction','bank_transaction_query'),('Bank Account','bank_account_query')]:
+    permission_query_conditions[dt]='centrochange_core.finance.permissions.'+query
+    has_permission[dt]='centrochange_core.finance.permissions.transaction_permission'
+    doc_events[dt]={event:'centrochange_core.finance.banking.protected' for event in ('validate','before_submit','before_update_after_submit','before_cancel','on_trash')}
+
+for dt,query in [('CC Payment Agreement','agreement_query'),('CC Payment Override','override_query'),('CC Payment Notice','notice_query')]:
+    permission_query_conditions[dt]='centrochange_core.finance.collections.'+query
+    has_permission[dt]='centrochange_core.finance.collections.permission'
+scheduler_events['cron']['*/5 * * * *'].append('centrochange_core.finance.collections.catch_up')

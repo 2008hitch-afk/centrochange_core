@@ -116,6 +116,7 @@ def capture(appointment,reason):
     snapshot={'appointment':doc.name,'patient':doc.patient,'customer':customer,'practitioner':doc.practitioner,'supplier':supplier,
         'center':doc.cc_center,'company':doc.company,'cost_center':center.cc_cost_center,'service_item':doc.cc_service_item,
         'service_label':doc.cc_service_label,'duration':doc.duration,'price':doc.cc_price_snapshot,'currency':doc.cc_currency_snapshot,
+        'payment_terms_mode':doc.cc_payment_terms_mode or 'Immediate','payment_agreed_date':doc.cc_payment_agreed_date,
         'booking_date':doc.cc_booking_date,'session_date':doc.appointment_date,'economic_state':doc.cc_economic_state,
         'performed':doc.cc_performed,'operational_paid':doc.cc_paid,'revision':doc.cc_revision,
         'settlement_revision':doc.cc_settlement_revision,'package':doc.cc_package}
@@ -132,5 +133,5 @@ def capture(appointment,reason):
 
 def protected_center(doc,method=None):
     previous=doc.get_doc_before_save()
-    if not frappe.flags.get('cc_finance_mapping_write') and any(doc.get(field)!=(previous.get(field) if previous else None) for field in ('cc_company','cc_cost_center')):
+    if not frappe.flags.get('cc_finance_mapping_write') and any(doc.get(field)!=(previous.get(field) if previous else None) for field in ('cc_company','cc_cost_center','cc_bank_account')):
         frappe.throw('Accounting center mappings require the audited bridge',frappe.PermissionError)
