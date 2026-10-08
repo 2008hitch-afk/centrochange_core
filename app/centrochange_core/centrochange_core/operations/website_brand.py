@@ -18,3 +18,6 @@ def client_language():
     # Request-local presentation only, native authentication/printing unchanged.
     if getattr(getattr(frappe.local,'request',None),'path',None) in ('/login','/printview'):
         frappe.local.lang='it'
+        # Native safe Jinja globals capture lang when created during auth.
+        frappe.local.jenv_restricted=None
+        frappe.local.jenv_unrestricted=None
