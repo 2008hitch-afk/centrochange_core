@@ -198,6 +198,8 @@ def destroy_http(fixture):
 		groups.update(fixture['catalog'])
 		groups['Patient Appointment']=frappe.get_all('Patient Appointment',filters={'patient':['in',fixture['patients']]},pluck='name')
 		assert all((frappe.db.get_value('Patient Appointment',name,'cc_service_label') or '').startswith(tag+' ') for name in groups['Patient Appointment'])
+	groups['Practitioner Availability']=frappe.get_all('Practitioner Availability',filters={'scope_type':'Healthcare Practitioner','scope':['in',fixture['practitioners']]},pluck='name')
+	groups['CC Public Booking Route']=frappe.get_all('CC Public Booking Route',filters={'center':['in',fixture['centers']]},pluck='name')
 	groups['CC Private Note']=frappe.get_all('CC Private Note',filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['CC Organizational Note']=frappe.get_all('CC Organizational Note',filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['CC Patient Package']=frappe.get_all('CC Patient Package',filters={'patient':['in',fixture['patients']]},pluck='name')
@@ -280,3 +282,23 @@ def recover_http(tag):
 			'CC Center Service':frappe.get_all('CC Center Service',filters={'appointment_type':tag+' SESSION'},pluck='name'),
 			'Practitioner Schedule':frappe.get_all('Practitioner Schedule',filters={'cc_practitioner':['in',fixture['practitioners']]},pluck='name')}
 	return destroy_http(fixture)
+
+
+def queue_notice_fixture(tag,user):
+	if frappe.session.user!='Administrator' or frappe.conf.get('cc_synthetic_dev')!=1:
+		frappe.throw('Synthetic DEV Administrator required')
+	assert tag.startswith('CC-HTTP-') and user.startswith(tag.lower()+'-') and user.endswith('@example.invalid')
+	from centrochange_core.operations.automation import enqueue_notice
+	from centrochange_core.operations.notifications import deliver
+	name=enqueue_notice('queue-proof:'+tag,user,'SYNTHETIC_QUEUE',None,None,'Synthetic internal queue proof')
+	frappe.enqueue(deliver,queue='short',name=name,enqueue_after_commit=True,job_id='cc-notice-'+name,deduplicate=True)
+	frappe.db.commit()
+	return {'name':name}
+
+
+def notice_fixture_status(name):
+	if frappe.session.user!='Administrator' or frappe.conf.get('cc_synthetic_dev')!=1:
+		frappe.throw('Synthetic DEV Administrator required')
+	assert (frappe.db.get_value('CC Notification',name,'event_key') or '').startswith('queue-proof:CC-HTTP-')
+	return {'state':frappe.db.get_value('CC Notification',name,'state'),
+		'logs':frappe.db.count('Notification Log',{'cc_notification':name})}

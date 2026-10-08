@@ -62,6 +62,14 @@ def snapshot(appointment_type,center):
 def validate_slot(doc):
 	start=datetime.combine(getdate(doc.appointment_date),get_time(doc.appointment_time))
 	end=start+timedelta(minutes=flt(doc.duration))
+	# Native local-time collision arithmetic cannot safely represent DST folds/gaps.
+	# Refuse these intervals rather than create an appointment that cannot be closed.
+	from centrochange_core.operations.lifecycle import start_utc
+	from types import SimpleNamespace
+	start_instant=start_utc(doc)
+	end_instant=start_utc(SimpleNamespace(appointment_date=end.date(),appointment_time=end.time()))
+	if end_instant-start_instant!=timedelta(minutes=flt(doc.duration)):
+		frappe.throw('Session interval crosses a daylight-saving offset; choose an unambiguous interval')
 	if start<=datetime.now(ZoneInfo('Europe/Rome')).replace(tzinfo=None) or end.date()!=start.date():
 		frappe.throw('Appointment requires a future same-day interval')
 	schedules=current_rows('Practitioner Schedule',{'cc_practitioner':doc.practitioner,'cc_center':doc.cc_center,'disabled':0},pluck='name')

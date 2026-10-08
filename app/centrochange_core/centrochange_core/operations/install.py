@@ -16,6 +16,8 @@ def configure():
 		('cc_revision','Economic Revision','Int',{'default':'0'}),('cc_settlement_revision','Settlement Revision','Int',{'default':'0','hidden':1}),('cc_locked_at','Lock Time UTC','Datetime',{})]
 	create_custom_fields({'Patient Appointment':[{'fieldname':name,'label':label,'fieldtype':kind,
 		'read_only':1,**extra} for name,label,kind,extra in fields]})
+	create_custom_fields({'Notification Log':[{'fieldname':'cc_notification','label':'Centro Change Notification','fieldtype':'Link','options':'CC Notification','read_only':1,'hidden':1}]})
+	frappe.db.add_unique('Notification Log',['cc_notification'],constraint_name='cc_notification_delivery')
 	frappe.db.add_unique('CC Settlement',['appointment','sequence'],constraint_name='cc_settlement_sequence')
 	frappe.db.add_unique('CC Notification',['event_key'],constraint_name='cc_notification_event_key')
 	if not frappe.db.exists('Role','CC Automation Service'):

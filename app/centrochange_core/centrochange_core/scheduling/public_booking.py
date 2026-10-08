@@ -77,3 +77,48 @@ def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointm
 				frappe.flags.cc_public_booking_context=previous
 	finally:
 		frappe.set_user(caller)
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=30,seconds=60)
+def available_slots(route,start_date):
+	"""Public seven-day projection exposes slots only, never patient or practitioner IDs."""
+	from datetime import datetime,timedelta
+	from zoneinfo import ZoneInfo
+	from types import SimpleNamespace
+	from centrochange_core.security.guards import current_rows,centers
+	from centrochange_core.scheduling.booking import snapshot,validate_slot
+	if route not in ('Marco','Francesca'):
+		frappe.throw('Unsupported first-meeting route')
+	date=getdate(start_date)
+	today=datetime.now(ZoneInfo('Europe/Rome')).date()
+	if date<today or date>today+timedelta(days=120):
+		frappe.throw('Choose a date within the next 120 days')
+	configuration=frappe.get_doc('CC Public Booking Route',route)
+	if not configuration.enabled or not frappe.db.get_value('Appointment Type',configuration.appointment_type,'cc_first_meeting'):
+		frappe.throw('First-meeting route unavailable',frappe.PermissionError)
+	practitioner=frappe.get_doc('Healthcare Practitioner',configuration.practitioner)
+	if not enabled(SERVICE_USER) or practitioner.status!='Active' or configuration.center not in centers(practitioner.user_id):
+		frappe.throw('First-meeting route unavailable',frappe.PermissionError)
+	profile=snapshot(configuration.appointment_type,configuration.center)
+	duration=float(profile['duration'])
+	schedules=current_rows('Practitioner Schedule',{'cc_practitioner':configuration.practitioner,'cc_center':configuration.center,'disabled':0},pluck='name')
+	rows=current_rows('Healthcare Schedule Time Slot',{'parent':['in',schedules or ['']],'parenttype':'Practitioner Schedule'},fields=['day','from_time','to_time'])
+	slots=[]
+	for offset in range(7):
+		day=date+timedelta(days=offset)
+		for row in rows:
+			if row.day!=day.strftime('%A'):
+				continue
+			at=datetime.combine(day,get_time(row.from_time));end=datetime.combine(day,get_time(row.to_time))
+			while at+timedelta(minutes=duration)<=end and len(slots)<100:
+				candidate=SimpleNamespace(appointment_date=day,appointment_time=at.time(),duration=duration,
+					practitioner=configuration.practitioner,cc_center=configuration.center,patient=None,name=None)
+				try:
+					validate_slot(candidate)
+					slots.append({'date':str(day),'time':str(at.time())})
+				except frappe.ValidationError:
+					pass
+				at+=timedelta(minutes=duration)
+	return {'route':route,'service':profile['cc_service_label'],'duration':duration,'price':profile['cc_price_snapshot'],
+		'currency':profile['cc_currency_snapshot'],'slots':slots}

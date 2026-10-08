@@ -30,8 +30,13 @@ def atomic(function):
 		frappe.db.savepoint(point)
 		try:
 			return function(*args, **kwargs)
-		except Exception:
-			frappe.db.rollback(save_point=point)
+		except Exception as error:
+			if frappe.db.is_deadlocked(error):
+				# MariaDB already aborted the transaction and discarded every savepoint.
+				# Reset callbacks and preserve the actual retryable cause, not a 1305 mask.
+				frappe.db.rollback()
+			else:
+				frappe.db.rollback(save_point=point)
 			raise
 	return wrapped
 
