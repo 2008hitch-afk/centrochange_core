@@ -106,11 +106,31 @@ def import_movements(center,movements,reason):
     return {'movements':rows}
 
 
+def reconciled_documents(doc):
+    """Native allocation trace, independent of remaining invoice outstanding."""
+    rows=[]
+    if doc.docstatus!=1:return rows
+    for allocation in doc.payment_entries:
+        if allocation.payment_document!='Payment Entry':continue
+        payment=frappe.get_doc('Payment Entry',allocation.payment_entry)
+        if payment.cc_center!=doc.cc_center or payment.docstatus!=1:
+            frappe.throw('Bank allocation context requires review')
+        for ref in payment.references:
+            if ref.reference_doctype not in ('Sales Invoice','Purchase Invoice'):continue
+            invoice=frappe.get_doc(ref.reference_doctype,ref.reference_name)
+            if invoice.cc_center!=doc.cc_center:
+                frappe.throw('Bank invoice context requires review')
+            subject=invoice.get('customer') or invoice.get('supplier')
+            rows.append({'name':invoice.name,'document_type':ref.reference_doctype,'subject':subject,
+                'allocated_amount':ref.allocated_amount,'payment':payment.name})
+    return rows
+
+
 @frappe.whitelist(methods=['GET'])
 def candidates(name):
     doc=bank_doc(name)
     if doc.docstatus!=1 or doc.unallocated_amount<=0:
-        return {'state':'Reconciled' if doc.docstatus==1 and doc.unallocated_amount<=0 else 'Not Eligible','invoices':[]}
+        return {'state':'Reconciled' if doc.docstatus==1 and doc.unallocated_amount<=0 else 'Not Eligible','invoices':[],'reconciled_documents':reconciled_documents(doc)}
     filters={'cc_center':doc.cc_center,'company':doc.company,'currency':doc.currency,'docstatus':1,'is_return':0,
         'outstanding_amount':['>=',doc.unallocated_amount]}
     document_type='Purchase Invoice' if doc.withdrawal else 'Sales Invoice'
