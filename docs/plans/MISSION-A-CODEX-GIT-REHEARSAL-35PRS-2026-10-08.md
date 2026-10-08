@@ -1,0 +1,53 @@
+# Centro Change — Mandato Codex, simulazione Git delle 35 PR
+
+**Data autorizzazione Owner:** 2026-10-08 (chat Centro Change: «AUTORIZZO» alla domanda «Autorizzi Codex a eseguire questa simulazione Git isolata, senza effettuare merge reali?»).  
+**Stato:** `OWNER_AUTHORIZED_FOR_GIT_REHEARSAL_ONLY` — mandato pronto; non indica che Codex abbia gia' eseguito la missione.  
+**Issue coordinatrice:** [#95](https://github.com/2008hitch-afk/centrochange_core/issues/95).  
+**Piano e manifest delle 35 PR:** [MISSION-A-35-PR-CONSOLIDATION-REHEARSAL-PLAN-2026-10-08.md](MISSION-A-35-PR-CONSOLIDATION-REHEARSAL-PLAN-2026-10-08.md).  
+**Repo:** `2008hitch-afk/centrochange_core`.  
+**Durata/ambito:** una sola simulazione isolata di integrazione codice Git, senza pubblicazione dei merge, senza scritture ai rami GitHub e senza toccare server applicativo, container, immagini UAT o DB.
+
+## Obiettivo (GOAL A, rehearsal — non merge)
+
+Dimostrare, tramite 35 merge **solo locali su un clone temporaneo**, che la catena stacked `#27 -> ... -> #94 -> #98` puo' essere integrata partendo da `main` senza perdere i sei commit di governance aggiuntivi, la storia PR e la correzione dei guard di sicurezza #98. Qualora sorgano conflitti non banali o incongruenze di codice, arrestarsi con evidenza esatta; non improvvisare.
+
+## Preflight obbligatorio (senza scritture sul repository di lavoro o GitHub)
+
+1. Leggere `AGENTS.md`, i documenti di architettura e sicurezza e l'issue #95; consultare la roadmap sopra e la review PR #98. La missione **non riapre il design Desk** e non introduce nuove feature.
+2. Nel clone/checkout preesistente eseguire **solo letture** di `git branch --show-current`, `git status --short`, `git log -n 5 --oneline`, `git remote -v`. Non alterare branch o file non committati; se lo stato locale e' sporco, lasciarlo intatto.
+3. Creare un clone indipendente in directory nuova temporanea a nome identificabile (`mission-a-git-rehearsal`), con oggetti e working tree propri, evitando worktree che usino/rifacciano checkout del runtime condiviso. Non usare `/mnt/data` per segreti, non scrivere dump o credenziali nel repo.
+4. Rileggere dal remoto tutte le PR, confrontare `head SHA`, `base branch`, stato `DRAFT` e `main` con il manifest congelato nel piano. **Fermarsi** se un commit non coincide; richiedere riconciliazione, non scegliere automaticamente il nuovo HEAD.
+
+### Baseline congelata alla registrazione (2026-10-08)
+
+- `main` `a3c34a7dd52d4e0df8c5faf99d596cd76f4b383b`.
+- `#94` `84e9df1ebf80aab9905cdfc08df598a07bef0f3a` (RC22 Owner UAT).
+- `#98` `9d12f5e06df92ed35de843b882f3a40e82c02b19` (guard fix).
+- Sei commit propri di `main` da preservare: `1f951b7`, `12f010b`, `912a64a`, `176a690`, `c83431c`, `a3c34a7`. Non ignorare `AGENTS.md` e `docs/MVP-GOAL-ROADMAP-v0.1.md`.
+- 35 PR di prodotto; PR #96 solo documentale e **esclusa dalla simulazione del codice**.
+- Documento di riferimento contiene numeri, ordine e SHA completi di tutte le 35 PR (non ricostruire l'elenco a memoria).
+
+## Simulazione locale (nessun push/merge GitHub)
+
+1. Nel clone **separato**, creare un solo branch locale `rehearsal/mission-a-35-prs` dall'esatto `main` SHA, senza pubblicarlo.
+2. Per ciascuna PR in ordine bottom-up #27 -> #98, usare il relativo **commit SHA del manifest**, preferibilmente `git merge --no-ff --no-edit <sha>`, e registrare: PR, head SHA usato, tipo/risultato merge, conflict, tree SHA risultante e controllo di ancestry. I merge locali sono previsti/autorizzati; i merge GitHub no.
+3. In caso di conflitti non banali, documentare file/blocco/conflitto e alternative, eseguire `git merge --abort` **solo sul clone temporaneo** e terminare `PARTIAL — DECISIONE RICHIESTA`. Non usare `-X ours`, `-X theirs`, `git reset --hard` su checkout originali, squash/rebase/force push, eliminazione branch UAT o editing dei container.
+4. Dopo ciascuna PR confermare che nessun commit originario e' perso: `git merge-base --is-ancestor` sui relativi head; registrare le differenze e lo stato.
+5. Dopo tutti i 35 merge simulati: verificare ancestry dei sei commit `main`, ricostruire un tree/diff leggibile, comparare il **tree dell'app** a `#98` e, soprattutto, il file `hooks.py` con la correzione #97. Verificare che `AGENTS.md` e roadmap GOAL-02 mantengano le modifiche correnti di `main` e nessuna regola sovrascritta da vecchi branch.
+6. Controlli di sola filesystem Git (compilazione/test statici se eseguibili nel clone **senza avviare servizi/installazioni sul runtime condiviso**), `git diff --check`, assenza di conflitti residui, assenza di secret/dump accidentalmente aggiunti.
+7. **Niente build Docker, migrazione, database, servizi, backup, reboot, porta o UAT** durante questa rehearsal. La CI e il runtime saranno verificati a parte prima dell'effettiva integrazione.
+8. Produrre un report sintetico con `PASS`, `PARTIAL` o `FAIL`, numero merge completati, SHAs, file conflittuali se presenti, diff tree app, conservazione dei sei commit `main`, eventuali divergenze semantiche, elenco dei passi necessari prima del merge remoto.
+9. Consegnare il report e la proposta di procedura **senza eseguire alcun push**. Aggiornare la issue GitHub #95 con un **commento riepilogativo di soli risultati/scrittura documentale**, se possibile, senza pubblicare rami di simulazione. Non chiudere issue, non approvare PR, non cambiare stati.
+10. Riportare `READY_FOR_OWNER_MERGE_DECISION` solo se la prova Git 35/35 e i controlli di integrita' sono PASS; altrimenti `DECISIONE RICHIESTA` con problemi concreti.
+
+## Limiti di autorita' / stop conditions
+
+- **AUTORIZZATO:** Git read/search/fetch, clone temporaneo indipendente, commit di merge **solo locali** in tale clone, controlli statici, report e commento di stato in #95.
+- **VIETATO:** `git push` verso qualunque branch, retarget PR, merge remoto, cancellazione branch/commit, modifiche `main`, editing di codice sul branch prodotto, runtime/app/server/DB, UAT RC22, upgrade v16.50, Unified Desk, GOAL-03, gestione di dati reali o segreti.
+- Stop su cambio delle 35 HEAD SHA / `main`, conflitto non banale, alterazione del tree finale, governance persa, necessità di intervenire sul prodotto per sbloccare la prova, o richieste di accesso al runtime per test supplementari.
+- Il retest visuale Agenda #75 da parte dell'Owner resta **PENDING** e non e' condizione per eseguire **solo la prova Git**, ma e' requisito prima di promuovere la nuova baseline UAT.
+- **I merge reali saranno una decisione Owner separata** a valle della relazione; l'autorizzazione attuale non permette neppure un primo merge in `main`.
+
+## Deliverable atteso
+
+Un solo report conclusivo (non una sequenza di microrichieste): branch/clone isolato, 35 merge Git con esito per PR, verifica dei sei commit, diff/identita' del prodotto finale, limiti e proposta di esecuzione futura. Se `PASS`, attendere nuova approvazione dell'Owner prima di qualsiasi modifica al repository remoto.
