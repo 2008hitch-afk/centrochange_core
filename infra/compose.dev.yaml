@@ -1,0 +1,23 @@
+# Versioned local development overlay. Source stays in Git; no container patches.
+services:
+  configurator:
+    volumes:
+      - ../app/centrochange_core:/home/frappe/frappe-bench/apps/centrochange_core:ro
+  backend:
+    volumes:
+      - ../app/centrochange_core:/home/frappe/frappe-bench/apps/centrochange_core:ro
+  queue-short:
+    volumes:
+      - ../app/centrochange_core:/home/frappe/frappe-bench/apps/centrochange_core:ro
+  queue-long:
+    volumes:
+      - ../app/centrochange_core:/home/frappe/frappe-bench/apps/centrochange_core:ro
+  scheduler:
+    volumes:
+      - ../app/centrochange_core:/home/frappe/frappe-bench/apps/centrochange_core:ro
+  websocket:
+    volumes:
+      - ../app/centrochange_core:/home/frappe/frappe-bench/apps/centrochange_core:ro
+  frontend:
+    volumes:
+      - ../app/centrochange_core:/home/frappe/frappe-bench/apps/centrochange_core:ro

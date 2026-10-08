@@ -5,6 +5,52 @@ app_description = "Custom Frappe application for Centro Change."
 app_email = "dev@centrochange.local"
 app_license = "agpl-3.0"
 
+required_apps = ["erpnext", "healthcare"]
+before_install = "centrochange_core.security.install.ensure_roles"
+after_install = "centrochange_core.security.install.configure"
+before_migrate = "centrochange_core.security.install.ensure_roles"
+after_migrate = "centrochange_core.security.install.configure"
+before_request = ["centrochange_core.security.api.before_request"]
+
+permission_query_conditions = {
+    "Patient": "centrochange_core.security.permissions.patient_query",
+    "Healthcare Practitioner": "centrochange_core.security.permissions.practitioner_query",
+    "Branch": "centrochange_core.security.permissions.branch_query",
+    "CC Center Membership": "centrochange_core.security.permissions.membership_query",
+    "CC Patient Assignment": "centrochange_core.security.permissions.assignment_query",
+}
+has_permission = {
+    "Patient": "centrochange_core.security.permissions.patient_permission",
+    "Healthcare Practitioner": "centrochange_core.security.permissions.practitioner_permission",
+    "Branch": "centrochange_core.security.permissions.branch_permission",
+    "CC Center Membership": "centrochange_core.security.permissions.membership_permission",
+    "CC Patient Assignment": "centrochange_core.security.permissions.assignment_permission",
+}
+extend_doctype_class = {
+    "Patient": ["centrochange_core.security.mixins.PatientMixin"],
+    "Healthcare Practitioner": ["centrochange_core.security.mixins.PractitionerMixin"],
+    "DocShare": ["centrochange_core.security.mixins.ManagedShareMixin"],
+    "User": ["centrochange_core.security.mixins.UserMixin"],
+}
+doc_events = {
+    "CC Audit Event": {event: "centrochange_core.security.audit.immutable"
+                       for event in ("validate", "on_trash")},
+    "CC Center Membership": {event: "centrochange_core.security.lifecycle.protected_relationship"
+                             for event in ("validate", "on_trash")},
+    "CC Patient Assignment": {event: "centrochange_core.security.lifecycle.protected_relationship"
+                              for event in ("validate", "on_trash")},
+    "DocShare": {event: "centrochange_core.security.lifecycle.protect_share" for event in ("validate", "on_trash")},
+    "User Permission": {event: "centrochange_core.security.lifecycle.protect_user_permission" for event in ("validate", "on_trash")},
+    "Healthcare Practitioner": {"on_update": "centrochange_core.security.lifecycle.practitioner_updated"},
+    "User": {"on_update": "centrochange_core.security.lifecycle.user_updated",
+             "validate": "centrochange_core.security.lifecycle.protect_user_lifecycle"},
+}
+override_whitelisted_methods = {
+    "healthcare.healthcare.doctype.patient.patient.get_patient_detail": "centrochange_core.security.api.get_patient_detail",
+    "healthcare.healthcare.doctype.healthcare_practitioner.healthcare_practitioner.get_practitioner_list": "centrochange_core.security.api.get_practitioner_list",
+    "healthcare.healthcare.doctype.healthcare_practitioner.healthcare_practitioner.get_supplier_and_user": "centrochange_core.security.api.get_supplier_and_user",
+}
+
 # Apps
 # ------------------
 
@@ -255,4 +301,3 @@ app_license = "agpl-3.0"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-
