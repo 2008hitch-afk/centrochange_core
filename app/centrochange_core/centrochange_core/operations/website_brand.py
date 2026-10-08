@@ -21,3 +21,15 @@ def client_language():
         # Native safe Jinja globals capture lang when created during auth.
         frappe.local.jenv_restricted=None
         frappe.local.jenv_unrestricted=None
+
+
+def print_template_locale(jenv, print_format):
+    """Supported rendering hook, after native print permission validation.
+
+    Explicit language avoids incidental request-language changes during guards.
+    Keep the native format, fields, values, totals and print permission path.
+    """
+    if getattr(getattr(frappe.local, 'request', None), 'path', None) == '/printview':
+        from functools import partial
+        jenv.globals['_'] = partial(frappe._, lang='it')
+    return None
