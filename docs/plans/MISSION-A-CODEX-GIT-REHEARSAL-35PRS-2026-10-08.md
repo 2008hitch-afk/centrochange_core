@@ -83,32 +83,32 @@ The conflict arises between:
 
 ## ADDENDUM #2 — OWNER AUTHORIZED LOCAL PR #61 CONFLICT RESOLUTION (2026-10-08)
 
-**Decisione Owner nel progetto Centro Change:** "autorizzo", in risposta alla proposta esplicita di **risoluzione additiva locale del conflitto #61** in \`AGENTS.md\` e \`docs/MVP-GOAL-ROADMAP-v0.1.md\`, conservando tutte le istruzioni vigenti in \`main\` e i riferimenti tecnici non contraddittori. Autorizzata la **sola continuazione della rehearsal Git isolata** fino a #98; non sono autorizzati merge remoti, modifiche ad altri branch, runtime, DB, UAT, upgrade o produzione. Interrompersi su ulteriori conflitti materiali.
+**Decisione Owner nel progetto Centro Change:** "autorizzo", in risposta alla proposta esplicita di **risoluzione additiva locale del conflitto #61** in `AGENTS.md` e `docs/MVP-GOAL-ROADMAP-v0.1.md`, conservando tutte le istruzioni vigenti in `main` e i riferimenti tecnici non contraddittori. Autorizzata la **sola continuazione della rehearsal Git isolata** fino a #98; non sono autorizzati merge remoti, modifiche ad altri branch, runtime, DB, UAT, upgrade o produzione. Interrompersi su ulteriori conflitti materiali.
 
 ### Checkpoint verificabile sul vero host Codex
 
-- Clone dichiarato: \`/tmp/mission-a-git-rehearsal-2qp6b5l1/clone\`.
-- Branch solo locale: \`rehearsal/mission-a-35-prs\`.
-- Ultimo HEAD pulito dopo 17 PR: \`d0913e743af401de35d454b4349b4131ffb7042b\`; tree atteso \`ddd261622e58706c41cc6de66a77be6f235c77c7\`.
+- Clone dichiarato: `/tmp/mission-a-git-rehearsal-2qp6b5l1/clone`.
+- Branch solo locale: `rehearsal/mission-a-35-prs`.
+- Ultimo HEAD pulito dopo 17 PR: `d0913e743af401de35d454b4349b4131ffb7042b`; tree atteso `ddd261622e58706c41cc6de66a77be6f235c77c7`.
 - Le PR simulate e preservate come antenati: #27, #30, #32, #34, #36, #38, #40, #42, #44, #47, #48, #50, #52, #54, #56, #57, #60.
-- PR successiva #61, SHA \`1678406d803264068972786fdb8a5b189395b50a\`.
-- \`main\` remoto congelato \`a3c34a7dd52d4e0df8c5faf99d596cd76f4b383b\`; ultimo HEAD #98 \`9d12f5e06df92ed35de843b882f3a40e82c02b19\`.
+- PR successiva #61, SHA `1678406d803264068972786fdb8a5b189395b50a`.
+- `main` remoto congelato `a3c34a7dd52d4e0df8c5faf99d596cd76f4b383b`; ultimo HEAD #98 `9d12f5e06df92ed35de843b882f3a40e82c02b19`.
 - Fonte evidenza: [issue #95, report Codex](https://github.com/2008hitch-afk/centrochange_core/issues/95#issuecomment-6065022441); [riesame host](https://github.com/2008hitch-afk/centrochange_core/issues/95#issuecomment-6065175424); [review HITCH](https://github.com/2008hitch-afk/centrochange_core/issues/95#issuecomment-6065288565).
 
-**Prima di procedere:** ricontrollare esistenza clone, \`git status\` clean, HEAD e tree attesi, integrità checkpoint e corrispondenza 35 SHA/base, sei commit main antenati. Se manca/invalido, fermarsi e non fingere una ripresa: solo ricostruzione isolata nei limiti del mandato originale, con rapporto esplicito.
+**Prima di procedere:** ricontrollare esistenza clone, `git status` clean, HEAD e tree attesi, integrità checkpoint e corrispondenza 35 SHA/base, sei commit main antenati. Se manca/invalido, fermarsi e non fingere una ripresa: solo ricostruzione isolata nei limiti del mandato originale, con rapporto esplicito.
 
 ### Risoluzione additiva di PR #61 AUTORIZZATA nel solo clone
 
-1. \`AGENTS.md\`: conservare integralmente gli obblighi correnti di \`main\`, incluso workflow macro-goal, Goal Learning Extraction cross-client, consultazione solo generalized learnings APPROVATO, documentazione e sorgente ufficiale upstream pinned, dataset sintetico, limiti GOAL-03/provider/prod e senza stack merge automatico. Aggiungere dal ramo storico soltanto formulazioni compatibili sul GOAL-01 formalmente accepted via DECISION-055 e GOAL-02 authorized via DECISION-056, senza togliere né rilassare alcun requisito.
-2. \`docs/MVP-GOAL-ROADMAP-v0.1.md\`, tabella: mantenere come *status formale* GOAL-01 \`OWNER ACCEPTED / DEV PASS\` (DECISION-055) e GOAL-02 \`ACTIVE / AUTHORIZED\` (DECISION-056), non sostituirli con status tecnico. Incorporare come *evidenza tecnica distinta* GOAL-01 Completion Report, GOAL-02 Completion Report e \`TECHNICAL DONE / UAT READY\` con esplicita nota \`Owner visual UAT / final acceptance pending\`. Nessun GOAL-03 o merge implicito.
-3. Sezione \`Current command for Codex\`: comporre testo unico che conserva per intero i requisiti di \`main\` (APPROVATO, official upstream, pinned source/runtime, guardrails, autonomia solo nel GOAL autorizzato) e aggiunge soltanto gli output tecnici compatibili (named candidate, client validation, completion report, extraction). Non riscrivere la decisione HITCH o dichiarare GOAL-02 formalmente accepted.
-4. Risolvere i **soli conflitti identificati** in questi file, senza \`--ours\`/\`--theirs\` sull'intero file. Documentare il diff e motivare ogni scelta. Se emergono conflitti ulteriori o la risoluzione richiede una scelta di authority, **STOP**.
-5. Completare #61 come *merge commit locale a due genitori*, verificare tutti gli antenati e proseguire nell'ordine previsto fino a #98. Ripetere controlli source tree, hook #97, sei commit main, governance, \`git diff --check\`, stato clean e rapportare eventuali limitazioni. Nuovi conflitti sostanziali non sono autorizzati: \`PARTIAL — DECISIONE RICHIESTA\`.
+1. `AGENTS.md`: conservare integralmente gli obblighi correnti di `main`, incluso workflow macro-goal, Goal Learning Extraction cross-client, consultazione solo generalized learnings APPROVATO, documentazione e sorgente ufficiale upstream pinned, dataset sintetico, limiti GOAL-03/provider/prod e senza stack merge automatico. Aggiungere dal ramo storico soltanto formulazioni compatibili sul GOAL-01 formalmente accepted via DECISION-055 e GOAL-02 authorized via DECISION-056, senza togliere né rilassare alcun requisito.
+2. `docs/MVP-GOAL-ROADMAP-v0.1.md`, tabella: mantenere come *status formale* GOAL-01 `OWNER ACCEPTED / DEV PASS` (DECISION-055) e GOAL-02 `ACTIVE / AUTHORIZED` (DECISION-056), non sostituirli con status tecnico. Incorporare come *evidenza tecnica distinta* GOAL-01 Completion Report, GOAL-02 Completion Report e `TECHNICAL DONE / UAT READY` con esplicita nota `Owner visual UAT / final acceptance pending`. Nessun GOAL-03 o merge implicito.
+3. Sezione `Current command for Codex`: comporre testo unico che conserva per intero i requisiti di `main` (APPROVATO, official upstream, pinned source/runtime, guardrails, autonomia solo nel GOAL autorizzato) e aggiunge soltanto gli output tecnici compatibili (named candidate, client validation, completion report, extraction). Non riscrivere la decisione HITCH o dichiarare GOAL-02 formalmente accepted.
+4. Risolvere i **soli conflitti identificati** in questi file, senza `--ours`/`--theirs` sull'intero file. Documentare il diff e motivare ogni scelta. Se emergono conflitti ulteriori o la risoluzione richiede una scelta di authority, **STOP**.
+5. Completare #61 come *merge commit locale a due genitori*, verificare tutti gli antenati e proseguire nell'ordine previsto fino a #98. Ripetere controlli source tree, hook #97, sei commit main, governance, `git diff --check`, stato clean e rapportare eventuali limitazioni. Nuovi conflitti sostanziali non sono autorizzati: `PARTIAL — DECISIONE RICHIESTA`.
 
 ### Perimetro immutato
 
 Consentiti: simulazione in clone Git indipendente, risoluzione locale additiva del conflitto PR #61, report ed eventuale commento su issue #95.  
-Vietati: \`git push\`, merge reali, retarget PR, update di \`main\` o branch condivisi, interventi al server, Docker, UAT RC22, dati, upgrade Frappe/ERPNext, Desk/cutover.  
+Vietati: `git push`, merge reali, retarget PR, update di `main` o branch condivisi, interventi al server, Docker, UAT RC22, dati, upgrade Frappe/ERPNext, Desk/cutover.  
 L'autorizzazione non equivale alla verifica di avvenuta esecuzione; Codex deve riportare dati effettivamente controllati. Il gate visivo Owner Agenda #75 resta distinto e aperto.
 
-**Output:** solo a simulazione completa e verificata 35/35: \`READY_FOR_OWNER_MERGE_DECISION\`; in ogni altro caso \`PARTIAL / FAIL — DECISIONE RICHIESTA\`.
+**Output:** solo a simulazione completa e verificata 35/35: `READY_FOR_OWNER_MERGE_DECISION`; in ogni altro caso `PARTIAL / FAIL — DECISIONE RICHIESTA`.
