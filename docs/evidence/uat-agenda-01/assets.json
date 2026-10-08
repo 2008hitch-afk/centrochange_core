@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "asset": "js/workspace.js",
+      "sha256": "ad283757218ed16febd629ca1ba5a4c40d38d6f8e565668f30946f0bb2a7544c",
+      "status": "PASS"
+    },
+    {
+      "asset": "css/workspace.css",
+      "sha256": "be5d4277571063ec800d8ee9cce1d5ce6dcbda50ae1fab15743c801cff98ac56",
+      "status": "PASS"
+    }
+  ]
+}
