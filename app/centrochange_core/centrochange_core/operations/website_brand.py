@@ -10,7 +10,10 @@ def context(values):
         values.csrf_token = get_csrf_token()
     # Native NotPermittedPage uses www/message.html, not www/error.html.
     # Supported context template override changes presentation; HTTP 403 stays native.
-    if values.get('template') == 'www/message.html' and str(values.get('primary_action') or '').startswith('/login'):
+    native_message = frappe.local.response.get('context') or {}
+    # Pinned renderer merges response.context only AFTER update_website_context.
+    action = values.get('primary_action') or native_message.get('primary_action')
+    if values.get('template') == 'www/message.html' and str(action or '').startswith('/login'):
         values.update(template='templates/cc_error_page.html', title='Centro Change — Accesso non consentito',
                       cc_error_title='Accesso non consentito', cc_error_action='Accedi',
                       cc_error_message='Il tuo account non è autorizzato ad aprire questa pagina. Accedi con il profilo corretto o contatta il referente del centro.')
