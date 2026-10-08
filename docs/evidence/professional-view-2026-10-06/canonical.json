@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "checks": [
+    "s count/drill-down/classification/snapshot/expected/null/privacy reconciliation",
+    "f count/drill-down/classification/snapshot/expected/null/privacy reconciliation",
+    "m count/drill-down/classification/snapshot/expected/null/privacy reconciliation",
+    "t count/drill-down/classification/snapshot/expected/null/privacy reconciliation",
+    "authorized roles reconcile identical economic projection; operational detail privilege remains distinct",
+    "A/B/C reporting denied before privileged queries",
+    "foreign-center financial report denied",
+    "future period deterministic native session projection",
+    "canonical comparison exact references/expected/native net/difference; excluded outside composing session period",
+    "received invoice net/outstanding/status reconcile native supplier document without allocation",
+    "comparison and audit transaction rolled back; persistent demo preserved"
+  ],
+  "canonical_sessions": 8,
+  "persistent_changes": false
+}

@@ -12,6 +12,7 @@ from uat_demo import execute, outside
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--output-dir', required=True)
+    parser.add_argument('--script', choices=('uat','professional'), default='uat')
     parser.add_argument('--agenda-only', action='store_true', help='Read-only agenda/role validation preserving current UAT financial mutations')
     parser.add_argument('--exercise', action='store_true', help='Mutate only owned synthetic overdue demo; reset afterwards')
     args = parser.parse_args()
@@ -31,7 +32,7 @@ def main():
             raise RuntimeError('Pinned browser build failed')
         result = subprocess.run(['docker', 'run', '--rm', '--network', 'host', '--user', str(os.getuid()) + ':' + str(os.getgid()),
             '-v', credential + ':/qa-fixture.json:ro', '-v', str(output) + ':/qa-results',
-            '-e', 'CC_BASE_URL=http://centrochange.local:8082', '-e', 'CC_UAT_AGENDA_ONLY=' + ('1' if args.agenda_only else '0'), '-e', 'CC_UAT_EXERCISE=' + ('1' if args.exercise else '0'), 'centrochange-browser-qa:1.58.2', 'node', '/qa/uat.cjs'], capture_output=True, text=True)
+            '-e', 'CC_BASE_URL=http://centrochange.local:8082', '-e', 'CC_UAT_AGENDA_ONLY=' + ('1' if args.agenda_only else '0'), '-e', 'CC_UAT_EXERCISE=' + ('1' if args.exercise else '0'), 'centrochange-browser-qa:1.58.2', 'node', '/qa/' + args.script + '.cjs'], capture_output=True, text=True)
         (output / 'uat.log').write_text(result.stdout + result.stderr)
         if result.returncode:
             raise RuntimeError('UAT browser failed; inspect external ' + str(output / 'uat.log'))
