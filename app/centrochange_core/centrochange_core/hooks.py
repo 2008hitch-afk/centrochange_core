@@ -129,3 +129,8 @@ for dt,query in [('CC Compensation Rule','rule_query'),('CC Professional Expecta
 permission_query_conditions['CC Admin Exception']='centrochange_core.finance.admin_queue.query'
 has_permission['CC Admin Exception']='centrochange_core.finance.admin_queue.permission'
 scheduler_events['cron']['*/5 * * * *'].append('centrochange_core.finance.admin_queue.catch_up')
+
+for dt,query in [('CC Fiscal Transaction','transaction_query'),('CC Fiscal Attempt','attempt_query')]:
+    permission_query_conditions[dt]='centrochange_core.finance.fiscal.'+query
+    has_permission[dt]='centrochange_core.finance.fiscal.permission'
+scheduler_events['cron']['*/5 * * * *'].append('centrochange_core.finance.sdi.catch_up')

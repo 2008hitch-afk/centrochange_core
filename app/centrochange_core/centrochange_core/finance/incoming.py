@@ -349,6 +349,8 @@ def amend(name,expense_account,posting_date,due_date,request_key,reason):
     native=frappe.copy_doc(original)
     native.update({'docstatus':0,'amended_from':name,'posting_date':posting_date,'due_date':due_date,
         'cc_request_key':key('payable-amend',request_key),'cc_request_hash':fingerprint})
+    from centrochange_core.finance.receivables import reset_amendment_due
+    reset_amendment_due(native,due_date)
     for item in native.items:
         item.expense_account=expense_account
     with internal_write('cc_accounting_write'):

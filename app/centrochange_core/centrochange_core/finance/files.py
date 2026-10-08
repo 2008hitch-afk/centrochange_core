@@ -3,7 +3,7 @@ import frappe
 
 
 def managed(doc):
-    return doc.attached_to_doctype=='CC Incoming Invoice' or doc.attached_to_doctype in ('Sales Invoice','Purchase Invoice') and bool(frappe.db.get_value(doc.attached_to_doctype,doc.attached_to_name,'cc_center'))
+    return doc.attached_to_doctype in ('CC Incoming Invoice','CC Fiscal Transaction') or doc.attached_to_doctype in ('Sales Invoice','Purchase Invoice') and bool(frappe.db.get_value(doc.attached_to_doctype,doc.attached_to_name,'cc_center'))
 
 
 def protected(doc,method=None):
@@ -11,7 +11,7 @@ def protected(doc,method=None):
     if not (managed(doc) or old and managed(old)):
         return
     if method=='on_trash':
-        if frappe.flags.get('cc_fixture_file_cleanup') or doc.attached_to_doctype!='CC Incoming Invoice' and frappe.flags.get('cc_accounting_write'):
+        if frappe.flags.get('cc_fixture_file_cleanup') or doc.attached_to_doctype in ('Sales Invoice','Purchase Invoice') and frappe.flags.get('cc_accounting_write'):
             return
         frappe.throw('Retained financial payloads cannot be deleted manually',frappe.PermissionError)
     if not frappe.utils.cint(doc.is_private):
@@ -20,7 +20,7 @@ def protected(doc,method=None):
         frappe.throw('Financial payload bytes cannot be replaced',frappe.PermissionError)
     if old and any(doc.get(field)!=old.get(field) for field in ('attached_to_doctype','attached_to_name','file_url','file_name','content_hash')):
         frappe.throw('Financial payload identity/reference cannot be changed',frappe.PermissionError)
-    if doc.is_new() and not (frappe.flags.get('cc_incoming_write') or frappe.flags.get('cc_accounting_write')):
+    if doc.is_new() and not (frappe.flags.get('cc_incoming_write') or frappe.flags.get('cc_accounting_write') or frappe.flags.get('cc_fiscal_write')):
         frappe.throw('Financial payloads require the source-controlled service',frappe.PermissionError)
 
 
