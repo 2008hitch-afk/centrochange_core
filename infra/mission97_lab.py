@@ -55,7 +55,7 @@ def isolation():
 
 def main():
     os.umask(0o077)
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['up','build','isolation','read-hooks','seed']);p.add_argument('--image',default='centrochange-uat:goal02-20261008-rc22');p.add_argument('--source-ref');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['up','redeploy','build','isolation','read-hooks','seed']);p.add_argument('--image',default='centrochange-uat:goal02-20261008-rc22');p.add_argument('--source-ref');a=p.parse_args()
     if a.action=='build':
         sha=subprocess.check_output(['git','rev-parse',a.source_ref+'^{commit}'],cwd=ROOT,text=True).strip()
         assert a.image.startswith('centrochange-m97:')
@@ -64,7 +64,11 @@ def main():
         with tarfile.open(fileobj=io.BytesIO(archive)) as stream:stream.extractall(source,filter='data')
         with (PRIVATE/'build.log').open('w') as log:run(['docker','build','--label','org.opencontainers.image.revision='+sha,'-t',a.image,'-f','infra/Dockerfile','.'],cwd=source,stdout=log,stderr=subprocess.STDOUT)
         print(json.dumps({'source_commit':sha,'image':a.image,'git_archive':True}));return
-    if a.action=='up':
+    if a.action=='redeploy':
+        isolation()
+        run(compose(a.image)+['up','-d','--no-build','--no-deps','backend','frontend','websocket','queue-short','queue-long','scheduler'],capture_output=True,text=True)
+        run(['docker','exec',PROJECT+'-backend-1','bench','--site',SITE,'clear-cache'],capture_output=True,text=True)
+    elif a.action=='up':
         command=compose(a.image)
         # Explicit labels and unique names checked before creation, no shared volumes.
         run(command+['up','-d','--no-build'],capture_output=True,text=True)

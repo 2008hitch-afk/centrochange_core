@@ -22,11 +22,37 @@ expected=EXPECTED
 app=frappe.get_hooks('before_request',app_name='centrochange_core')
 effective=frappe.get_hooks('before_request')
 called=[]
+confidential_flags=[]
 functions={name:frappe.get_attr(name) for name in expected}
+# Isolated rollback-only negative checks against actual current principal reads.
+from centrochange_core.security.api import before_request as api_guard
+from centrochange_core.scheduling.public_booking import SERVICE_USER
+from centrochange_core.operations.install import AUTOMATION_USER
+from centrochange_core.uat.demo import credentials
+fixture=credentials()
+principal_denials=[]
+for user in (SERVICE_USER,AUTOMATION_USER):
+ frappe.set_user(user)
+ try:api_guard()
+ except frappe.PermissionError:principal_denials.append('interactive service principal denied')
+ else:raise AssertionError('Service principal was allowed')
+frappe.set_user('Administrator')
+disabled=fixture['users']['c']['name']
+frappe.db.savepoint('m97_disabled')
+try:
+ frappe.db.set_value('User',disabled,'enabled',0,update_modified=False)
+ frappe.set_user(disabled)
+ try:api_guard()
+ except frappe.PermissionError:principal_denials.append('disabled principal denied')
+ else:raise AssertionError('Disabled principal was allowed')
+finally:
+ frappe.db.rollback(save_point='m97_disabled');frappe.set_user('Administrator')
 def wrapper(name,fn):
  def call(*args,**kwargs):
   called.append(name)
-  return fn(*args,**kwargs)
+  result=fn(*args,**kwargs)
+  if name.endswith('diagnostics.before_request'):confidential_flags.append(bool(frappe.flags.cc_confidential_request))
+  return result
  return call
 frappe.db.rollback();frappe.destroy()
 import os
@@ -39,7 +65,14 @@ with ExitStack() as stack:
  response=client.get('/api/method/ping',base_url='http://mission97.local')
  assert response.status_code==200
  assert response.json.get('message')=='pong'
-report={'app_hooks':app,'effective_hooks':effective,'http_ping_status':response.status_code,'invoked':called,'expected':expected,'status':'PASS' if app==expected and called==expected else 'CONFIRMED_RUNTIME_GAP','instrumentation':'process-local unittest.mock wrappers around original functions; real pinned WSGI initialization; no app/server patch'}
+ ping_called=list(called)
+ if app==expected:
+  called.clear()
+  response_private=client.get('/api/method/ping?doctype=CC%20Private%20Note',base_url='http://mission97.local')
+  assert response_private.status_code==403
+  assert called==expected[:4]
+  assert confidential_flags[-1] is True
+report={'principal_guard_negative_checks':principal_denials,'confidential_request_redacted_before_private_note_denial':app==expected,'app_hooks':app,'effective_hooks':effective,'http_ping_status':response.status_code,'invoked':ping_called,'expected':expected,'status':'PASS' if app==expected and ping_called==expected else 'CONFIRMED_RUNTIME_GAP','instrumentation':'process-local unittest.mock wrappers around original functions; real pinned WSGI initialization; no app/server patch'}
 print('CC_M97_JSON='+json.dumps(report))
 '''.replace('EXPECTED',repr(EXPECTED))
  result=execute(code)

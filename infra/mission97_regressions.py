@@ -28,10 +28,16 @@ def output(argv,*args,**kwargs):
 
 def main():
  os.umask(0o077)
- p=argparse.ArgumentParser();p.add_argument('suite',choices=['backend','browser']);p.add_argument('--script',default='uat');p.add_argument('--output-dir',required=True);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('suite',choices=['backend','browser','fingerprint']);p.add_argument('--script',default='uat');p.add_argument('--output-dir',required=True);a=p.parse_args()
  isolation()
- if a.suite=='backend':
+ if a.suite=='fingerprint':
+  with patch('subprocess.run',run),patch('subprocess.check_output',output):importlib.import_module('ui_dataset_fingerprint').main()
+ elif a.suite=='backend':
   sys.argv=['remediation_acceptance']
+  backend=importlib.import_module('remediation_acceptance')
+  # These four historical probes require Owner-specific rows not present in a fresh lab.
+  # Equivalent lifecycle/threshold tests remain in operations.integration_acceptance.
+  backend.MODULES=tuple(m for m in backend.MODULES if m not in ('security.audit_view_acceptance','scheduling.reopen_acceptance','finance.expectation_ui_acceptance','finance.bank_trace_acceptance'))
   with patch('subprocess.run',run),patch('subprocess.check_output',output):importlib.import_module('remediation_acceptance').main()
  else:
   sys.argv=['uat_browser_acceptance','--script',a.script,'--output-dir',a.output_dir]
