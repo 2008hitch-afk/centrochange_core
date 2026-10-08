@@ -1,2 +1,3 @@
-{% extends "templates/web.html" %}
-{% block page_content %}<h1>Centro Change</h1><h2>{% if http_status_code == 403 %}Accesso non consentito{% elif http_status_code == 404 %}Pagina non trovata{% else %}Operazione non disponibile{% endif %}</h2><p>Verifica il percorso e le autorizzazioni. Se il problema continua, contatta il referente del centro.</p><a href="/centrochange">Torna all’agenda</a>{% endblock %}
+{% extends "templates/cc_error_page.html" %}
+{% set cc_error_title = "Accesso non consentito" if http_status_code == 403 else "Pagina non trovata" if http_status_code == 404 else "Operazione non disponibile" %}
+{% set cc_error_message = "Verifica il percorso e le autorizzazioni. Se il problema continua, contatta il referente del centro." %}

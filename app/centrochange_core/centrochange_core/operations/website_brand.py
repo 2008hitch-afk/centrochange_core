@@ -8,6 +8,12 @@ def context(values):
     if frappe.session.user != 'Guest':
         from frappe.sessions import get_csrf_token
         values.csrf_token = get_csrf_token()
+    # Native NotPermittedPage uses www/message.html, not www/error.html.
+    # Supported context template override changes presentation; HTTP 403 stays native.
+    if values.get('template') == 'www/message.html' and str(values.get('primary_action') or '').startswith('/login'):
+        values.update(template='templates/cc_error_page.html', title='Centro Change — Accesso non consentito',
+                      cc_error_title='Accesso non consentito', cc_error_action='Accedi',
+                      cc_error_message='Il tuo account non è autorizzato ad aprire questa pagina. Accedi con il profilo corretto o contatta il referente del centro.')
     if getattr(frappe.local,'path',None)=='printview' and values.get('body'):
         values.body=localize_print_labels(values.body)
     if getattr(frappe.local,'path',None)=='login':
