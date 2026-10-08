@@ -1,4 +1,4 @@
-import {notificationState,notificationMessage} from './ui_labels.js';
+import {notificationState,notificationMessage,italianMoment} from './ui_labels.js';
 import {api,operations,scheduling,escapeHtml as esc,requestKey} from './api.js';
 import {enhanceSelectors,normalized} from './search_select.js';
 const $=selector=>document.querySelector(selector);
@@ -86,7 +86,7 @@ async function refresh(){
     $('#patient-report-entry').onclick=()=>{if(state.boot.roles.some(r=>['CC Manager','CC Secretariat'].includes(r)))location.href='/pazienti_report?'+new URLSearchParams(interval());else{state.view='Pazienti';refresh().catch(e=>notify(e.message,true));}};$('#export').onclick=()=>{location.href='/api/method/centrochange_core.operations.reporting.export_csv?'+new URLSearchParams(interval());};
   }else{
     const notifications=await api('frappe.client.get_list',{doctype:'CC Notification',fields:['name','message','state','creation'],limit_page_length:100,order_by:'creation desc'});if(!current())return;
-    $('#main-content').innerHTML=notifications.map(row=>`<article class="history-entry">${esc(notificationMessage(row.message))}<small>${esc(row.creation)} · ${esc(notificationState(row.state))}</small></article>`).join('')||'<p class="empty">Nessuna notifica.</p>';
+    $('#main-content').innerHTML=notifications.map(row=>`<article class="history-entry">${esc(notificationMessage(row.message))}<small>${esc(italianMoment(row.creation))} · ${esc(notificationState(row.state))}</small></article>`).join('')||'<p class="empty">Nessuna notifica.</p>';
     if(state.boot.roles.includes('CC Manager')){const confirmations=await operations('booking_confirmation.records',{center:$('#center').value});if(!current())return;$('#main-content').insertAdjacentHTML('beforeend','<h2>Conferme primo incontro</h2>'+confirmations.map(r=>'<article class="history-entry">'+esc(r.recipient)+' · '+esc(r.state==='Simulated Sent'?'Conferma registrata in simulazione':r.state==='Failed'?'Invio da ritentare':'In attesa')+'<p>'+esc(r.last_error||'')+'</p>'+(r.state==='Failed'?'<button data-confirmation-retry="'+esc(r.name)+'">Ritenta conferma</button>':'')+'</article>').join(''));$('#main-content').onclick=e=>{const name=e.target.closest('[data-confirmation-retry]')?.dataset.confirmationRetry;if(name)modal('Ritenta conferma',reason(),d=>operations('booking_confirmation.retry',{name,reason:d.reason},true));};}
   }
 }
