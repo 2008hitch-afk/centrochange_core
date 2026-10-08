@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "OWNER_AUTHORIZED_ACTIVE",
+  "status": "OWNER_AUTHORIZED_RUN_STOPPED_BLOCKED",
   "issue": "https://github.com/2008hitch-afk/centrochange_core/issues/99",
   "authorization": [
     "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6068177100",
@@ -10,7 +10,7 @@
   "prepared_at": "2026-10-08T20:18:17.161865+00:00",
   "source_commit": "e85fce588de6012a47da302710b9f9c615211279",
   "risk": "HIGH_SHARED_HOST",
-  "execution_allowed_now": true,
+  "execution_allowed_now": false,
   "time_boundary": {
     "valid_from": "2026-10-08T22:14:24+02:00",
     "authorization_expires_at": "2026-10-09T06:14:24+02:00",
@@ -251,5 +251,12 @@
     "build_parallelism": 1,
     "CAP037_snapshot_commit": "df8adf3551a234bb7edb23a9f8e546ee71b1e19f",
     "protected_labs_state": "STOPPED_PRESERVED_OWNER_AUTHORIZED"
+  },
+  "execution_result": {
+    "status": "BLOCKED",
+    "reason": "PSI_MEMORY_SAFETY_STOP",
+    "report": "docs/evidence/mission-b99/REPORT.md",
+    "resume_allowed_now": false,
+    "activation_commit": "db9e630cfc99729c9264be1ee2939686b866cf84"
   }
 }
