@@ -1,0 +1,1 @@
+{"status": "PASS", "checks": ["m audit API/direct boundary", "navigation/filter/before-after/mobile", "s audit API/direct boundary", "f audit API/direct boundary", "t audit API/direct boundary", "a audit API/direct boundary", "b audit API/direct boundary", "c audit API/direct boundary"], "errors": [], "browser_plugin": "unavailable", "fallback": "pinned Playwright"}
