@@ -24,7 +24,7 @@ export function enhanceSelect(select,search=null){
  input.onfocus=()=>load(select.value?'':input.value);
  input.oninput=()=>{select.value='';input.setCustomValidity(input.value?'Seleziona un risultato autorizzato.':'');++select._searchGeneration;clearTimeout(timer);timer=setTimeout(()=>load(input.value),180);};
  input.onkeydown=e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(list.hidden){load(input.value);return;}highlight(Math.max(0,Math.min(matches.length-1,active+(e.key==='ArrowDown'?1:-1))));}else if(e.key==='Enter'&&!list.hidden){e.preventDefault();const row=matches[active<0?0:active];if(row)choose(row);}else if(e.key==='Escape'){e.preventDefault();close();}};
- input.onblur=()=>setTimeout(close,150);
+ input.onblur=()=>setTimeout(()=>{if(document.activeElement!==input){++select._searchGeneration;close();input.removeAttribute('aria-busy');}},150);
  select._combobox={input,configure(items,value,callback){++select._searchGeneration;clearTimeout(timer);original=items;remote=callback;input.value=items.find(r=>r.name===value)?.label||'';input.setCustomValidity('');status.textContent='';close();}};
  select._searchInput=input;select._searchStatus=status;select._combobox.configure(rows,selected,search);
 }
