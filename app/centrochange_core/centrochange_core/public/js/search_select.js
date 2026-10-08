@@ -9,7 +9,7 @@ export function enhanceSelect(select,search=null){
  select._searchGeneration=(select._searchGeneration||0)+1;
  if(select._combobox){select._combobox.configure(rows,selected,search);return;}
  const box=document.createElement('div');box.className='cc-combobox';
- const input=document.createElement('input');input.type='text';input.className='form-control';input.autocomplete='off';
+ const input=document.createElement('input');input.type='text';input.className='form-control';input.autocomplete='off';input.maxLength=140;
  const title='Cerca '+(professional?'professionista':'paziente');input.placeholder=title;input.setAttribute('aria-label',title);input.setAttribute('role','combobox');input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-expanded','false');
  const list=document.createElement('div');list.className='dropdown-menu cc-options';list.id='cc-options-'+(++sequence);list.setAttribute('role','listbox');input.setAttribute('aria-controls',list.id);list.hidden=true;
  const status=document.createElement('small');status.className='form-hint';status.setAttribute('role','status');

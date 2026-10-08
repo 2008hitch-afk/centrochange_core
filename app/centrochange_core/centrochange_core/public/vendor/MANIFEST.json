@@ -31,6 +31,14 @@
       "sha256": "baefc2c6ef9042fc85551567bb72ca875a59c1259e902005f58caf37396e9d4e"
     },
     {
+      "file": "tabler-icons-3.35.0/book.svg",
+      "sha256": "73ab02c7b3b227458691b2fd71e6fee2521a6699071314b1e3fbd7b63c5ae1bc"
+    },
+    {
+      "file": "tabler-icons-3.35.0/building-bank.svg",
+      "sha256": "8d9d7a163a32840b23031749ed11c3ac9698c870e70ccb423a6b9bf950c1316b"
+    },
+    {
       "file": "tabler-icons-3.35.0/calendar-week.svg",
       "sha256": "30542827bca3952d86542c615037a30e3e745af2db3799592bac1936d7a9bc53"
     },
@@ -43,8 +51,20 @@
       "sha256": "eaa12052f6cdc839b8b27f23558f202866c8751dd04a1481fd30430acc2e6526"
     },
     {
+      "file": "tabler-icons-3.35.0/file-code.svg",
+      "sha256": "c3884b03c5dd004fd87c2955a55ac1a265c31325a9249800b040341651355ee7"
+    },
+    {
+      "file": "tabler-icons-3.35.0/file-invoice.svg",
+      "sha256": "d2c9828ffc40d0837572ebd211c9affb76e2a6559237ac4a512acc848e4ce37c"
+    },
+    {
       "file": "tabler-icons-3.35.0/history.svg",
       "sha256": "83ac1cda8ed8fa2339dca1db56e67982304b0853d9be7bae2ec6ce28e030324b"
+    },
+    {
+      "file": "tabler-icons-3.35.0/list-check.svg",
+      "sha256": "d4601970b901f7c8d92375e72da511ef34353d6c3e5a4c15b0dbeedd68f9eef8"
     },
     {
       "file": "tabler-icons-3.35.0/logout.svg",
@@ -57,6 +77,22 @@
     {
       "file": "tabler-icons-3.35.0/package.json",
       "sha256": "52f4858abe9081d17c7fecbd14d0d307f706a673ce545187c3b02ec96eadda6f"
+    },
+    {
+      "file": "tabler-icons-3.35.0/receipt.svg",
+      "sha256": "662e432343b0bf6cb74d57c0a74eaf30f141bb45ad73e1daf7c78e6d070f3e9e"
+    },
+    {
+      "file": "tabler-icons-3.35.0/send.svg",
+      "sha256": "d4570a285547d409ba645fce7604c30758899e8ace7a8408428eae754945ffe2"
+    },
+    {
+      "file": "tabler-icons-3.35.0/settings.svg",
+      "sha256": "3e1f110886f6c39b462fc8bca41af4a84b803add39751bb57825983c9660bd0f"
+    },
+    {
+      "file": "tabler-icons-3.35.0/shield-check.svg",
+      "sha256": "75d414f414fbf1418ca0160ff59a5217b464f7a666852d9f587dcb27bda1d322"
     },
     {
       "file": "tabler-icons-3.35.0/users.svg",
