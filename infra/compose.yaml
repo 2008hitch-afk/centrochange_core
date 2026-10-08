@@ -34,8 +34,12 @@ services:
         bench set-config -g redis_socketio redis://redis-queue:6379
         bench set-config -gp socketio_port 9000
         if [ ! -f "sites/$${SITE_NAME}/site_config.json" ]; then
-          bench new-site "$${SITE_NAME}" --db-host db --mariadb-user-host-login-scope '%' --mariadb-root-password "$${DB_PASSWORD}" --admin-password "$${ADMIN_PASSWORD}" --install-app erpnext --install-app builder --install-app centrochange_core --set-default
+          bench new-site "$${SITE_NAME}" --db-host db --mariadb-user-host-login-scope '%' --mariadb-root-password "$${DB_PASSWORD}" --admin-password "$${ADMIN_PASSWORD}" --install-app erpnext --install-app builder --set-default
+          bench --site "$${SITE_NAME}" set-config cc_synthetic_dev 1
         fi
+        bench --site "$${SITE_NAME}" execute "__import__('centrochange_core.dev_bootstrap', fromlist=['setup']).setup()"
+        bench --site "$${SITE_NAME}" install-app healthcare
+        bench --site "$${SITE_NAME}" install-app centrochange_core
         bench --site "$${SITE_NAME}" migrate
         bench --site "$${SITE_NAME}" enable-scheduler
     volumes:
