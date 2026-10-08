@@ -1,0 +1,166 @@
+{
+ "doctype": "DocType",
+ "name": "CC Professional Comparison",
+ "module": "Centro Change Core",
+ "custom": 0,
+ "autoname": "hash",
+ "track_changes": 0,
+ "field_order": [
+  "center",
+  "practitioner",
+  "purchase_invoice",
+  "expectations_json",
+  "expected_amount",
+  "received_amount",
+  "currency",
+  "state",
+  "problem",
+  "snapshot_hash",
+  "recorded_by",
+  "expected_known"
+ ],
+ "fields": [
+  {
+   "fieldname": "center",
+   "label": "Center",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Branch"
+  },
+  {
+   "fieldname": "practitioner",
+   "label": "Practitioner",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fieldname": "purchase_invoice",
+   "label": "Purchase Invoice",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Purchase Invoice"
+  },
+  {
+   "fieldname": "expectations_json",
+   "label": "Expectations Json",
+   "fieldtype": "Long Text"
+  },
+  {
+   "fieldname": "expected_amount",
+   "label": "Expected Amount",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "received_amount",
+   "label": "Received Amount",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "currency",
+   "label": "Currency",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "state",
+   "label": "State",
+   "fieldtype": "Select",
+   "reqd": 1,
+   "options": "OK\nREVIEW"
+  },
+  {
+   "fieldname": "problem",
+   "label": "Problem",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "snapshot_hash",
+   "label": "Snapshot Hash",
+   "fieldtype": "Data",
+   "unique": 1
+  },
+  {
+   "fieldname": "recorded_by",
+   "label": "Recorded By",
+   "fieldtype": "Link",
+   "options": "User"
+  },
+  {
+   "fieldname": "expected_known",
+   "label": "Expected Known",
+   "fieldtype": "Check",
+   "default": "0"
+  }
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Secretariat",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Finance",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Accountant",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  }
+ ],
+ "engine": "InnoDB"
+}
