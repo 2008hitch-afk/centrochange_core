@@ -1,0 +1,91 @@
+[
+  {
+    "suite": "fresh-runtime",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/fresh-runtime.log"
+  },
+  {
+    "suite": "direct-integration",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/direct-integration.log"
+  },
+  {
+    "suite": "official-upstream-byte-parity",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/official-upstream-byte-parity.log"
+  },
+  {
+    "suite": "security",
+    "status": "FAIL",
+    "exit_code": 1,
+    "log": "<G2D_EVIDENCE>/security.log"
+  },
+  {
+    "suite": "finance",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/finance.log"
+  },
+  {
+    "suite": "receivables",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/receivables.log"
+  },
+  {
+    "suite": "banking",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/banking.log"
+  },
+  {
+    "suite": "incoming",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/incoming.log"
+  },
+  {
+    "suite": "professional",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/professional.log"
+  },
+  {
+    "suite": "reporting",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/reporting.log"
+  },
+  {
+    "suite": "sdi",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/sdi.log"
+  },
+  {
+    "suite": "ts",
+    "status": "PASS",
+    "exit_code": 0,
+    "log": "<G2D_EVIDENCE>/ts.log"
+  },
+  {
+    "suite": "browser",
+    "status": "FAIL",
+    "exit_code": 1,
+    "log": "<G2D_EVIDENCE>/browser.log"
+  },
+  {
+    "suite": "finance_browser",
+    "status": "FAIL",
+    "exit_code": 1,
+    "log": "<G2D_EVIDENCE>/finance_browser.log"
+  },
+  {
+    "suite": "threshold-browser",
+    "status": "FAIL",
+    "exit_code": 1,
+    "log": "<G2D_EVIDENCE>/threshold-browser.log"
+  }
+]
