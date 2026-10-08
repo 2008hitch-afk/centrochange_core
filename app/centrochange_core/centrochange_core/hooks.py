@@ -10,7 +10,7 @@ before_install = ["centrochange_core.security.install.ensure_roles", "centrochan
 after_install = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure", "centrochange_core.finance.install.configure"]
 before_migrate = ["centrochange_core.security.install.ensure_roles", "centrochange_core.finance.install.ensure_roles"]
 after_migrate = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure", "centrochange_core.finance.install.configure"]
-before_request = ["centrochange_core.security.diagnostics.before_request", "centrochange_core.security.api.before_request", "centrochange_core.operations.notes.request_guard"]
+before_request = ["centrochange_core.finance.request_guard.before_request", "centrochange_core.security.diagnostics.before_request", "centrochange_core.security.api.before_request", "centrochange_core.operations.notes.request_guard"]
 
 permission_query_conditions = {
     "Customer": "centrochange_core.finance.permissions.customer_query",
@@ -88,3 +88,17 @@ for method in ("get_appointments", "get_logged_in_patient", "get_departments", "
     override_whitelisted_methods["healthcare.healthcare.api.patient_portal." + method] = "centrochange_core.scheduling.booking.blocked_native"
 
 scheduler_events = {"cron": {"*/5 * * * *": ["centrochange_core.operations.automation.catch_up", "centrochange_core.operations.notifications.dispatch_pending"]}}
+
+for dt, query in [('Sales Invoice','sales_invoice_query'),('Payment Entry','payment_entry_query'),('GL Entry','gl_entry_query'),('Payment Ledger Entry','payment_ledger_query')]:
+    permission_query_conditions[dt]='centrochange_core.finance.permissions.'+query
+    has_permission[dt]='centrochange_core.finance.permissions.transaction_permission'
+for dt in ('Sales Invoice','Payment Entry'):
+    doc_events[dt]={event:'centrochange_core.finance.receivables.protected' for event in ('validate','before_submit','before_cancel','on_trash')}
+
+for method in ('export_invoices','generate_single_invoice'):
+    override_whitelisted_methods['erpnext.regional.italy.utils.'+method]='centrochange_core.scheduling.booking.blocked_native'
+
+extend_doctype_class["Sales Invoice"]=["centrochange_core.finance.receivables.InvoiceMixin"]
+
+permission_query_conditions["Account"]="centrochange_core.finance.permissions.account_query"
+has_permission["Account"]="centrochange_core.finance.permissions.master_permission"
