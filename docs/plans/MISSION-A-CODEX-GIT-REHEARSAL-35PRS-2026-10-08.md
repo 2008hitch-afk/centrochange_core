@@ -51,3 +51,31 @@ Dimostrare, tramite 35 merge **solo locali su un clone temporaneo**, che la cate
 ## Deliverable atteso
 
 Un solo report conclusivo (non una sequenza di microrichieste): branch/clone isolato, 35 merge Git con esito per PR, verifica dei sei commit, diff/identita' del prodotto finale, limiti e proposta di esecuzione futura. Se `PASS`, attendere nuova approvazione dell'Owner prima di qualsiasi modifica al repository remoto.
+
+
+## ADDENDUM — OWNER AUTHORIZED RESUMPTION AFTER PR #54 CONFLICT (2026-10-08)
+
+**Explicit new approval:** Owner has confirmed the bounded proposal to resolve the PR #54 roadmap conflict **only on the temporary local rehearsal clone**, preserving `main`'s formally authorized GOAL status, then resume the 35-PR rehearsal. This approval extends the earlier rehearsal authorization **only for the specific local conflict and its safe continuation**. It does NOT authorize any remote merge, branch mutation/push, production activity, server or database operation.
+
+### Results already recorded by Codex (not yet final)
+- GitHub #95 [Codex partial report](https://github.com/2008hitch-afk/centrochange_core/issues/95#issuecomment-6064657947): manifest 35/35 SHA/base verified; 13 local no-ff merges PASS #27→#52.
+- Step14 / PR #54: merge stopped in `docs/MVP-GOAL-ROADMAP-v0.1.md`, and safely aborted on clone only.
+- Isolated clone recorded: `/tmp/mission-a-git-rehearsal-2qp6b5l1/clone`, local branch `rehearsal/mission-a-35-prs`; checkpoint trial HEAD `1095447fb6aba93133b001d8cce0ac4bb84d0e9c`, tree `5490ca59a0c3524cc78aec9f42099966aa4feb02`. Verify these exist and are unmodified on disk. If no longer available, reconstruct ONLY in a new isolated clone from pinned manifest; do not pretend to resume an absent checkpoint.
+- All six of `main`'s private commits are present at this checkpoint. No remote changes, no app runtime or DB touched. Final 35/35 tree parity has NOT been established.
+
+### Specific resolution to use at PR #54
+The conflict arises between:
+- `main` status: `GOAL-01 — OWNER ACCEPTED / DEV PASS — DECISION-055`; `GOAL-02 — ACTIVE / AUTHORIZED — DECISION-056`.
+- Historical #54 status: `GOAL-01 — DONE / DEV PASS`; `GOAL-02 — QUEUED`, which is obsolete and would roll back Owner authorization.
+
+**Resolve only the two conflicting status rows** to preserve the authority of `main` for GOAL-01 acceptance and GOAL-02 authorization. Keep DECISION-055/056 links and do NOT demote GOAL-02 to QUEUED. If the incoming branch also contributes independent, noncontradictory technical-evidence links, retain those links or explain any omission. Do NOT overwrite the rest of the roadmap with `--ours` / `--theirs`. The authorized official status remains ACTIVE/AUTHORIZED even if a separate technical report says the UAT candidate is READY; Owner acceptance remains pending.
+
+### Resume procedure
+1. Recheck `git status`, HEAD `1095447...`, tree, remote SHA lock, and that the original checkout is unchanged; no force-reset. If diverged, **STOP** and report.
+2. In the clone only, repeat/continue local merge of PR #54 from its pinned SHA, resolve the specific document conflict as above, stage exactly the resolved file, complete the local merge commit with both parents. Ensure no conflict markers remain.
+3. Resume the rest of the 35 PRs through #98 using the already-approved local rehearsal procedure and pinned manifest. Document per-step tree SHA and all ancestry checks.
+4. **Stop on any new substantive conflict**, especially governance, security, app code, migrations or loss of approved decisions. Only mechanical/nonmaterial edits (e.g. whitespace) may be handled locally with full recorded proof; never choose between opposing business/security authorities without Owner decision.
+5. After step35, independently verify six commits `main` remain ancestors, product app tree equals #98 (including six restored before_request hooks), `AGENTS.md`/goal roadmap preserve `main` authorities, no dropped product commits or unexpected changes, no uncommitted files; finish `PASS / READY_FOR_OWNER_MERGE_DECISION` only on full 35/35 checks.
+6. Update issue #95 with a new comment linking the former partial result, specifying the approved resolution and final PASS or PARTIAL with detailed discrepancies. Any report/file creation must stay local; no GitHub pushes or changed branch/PR metadata.
+
+**Absolute boundaries unchanged:** no `git push`, no actual PR merge/retarget, no `main` changes, no Docker/runtime/UAT RC22/DB/upgrade/Desk, no old checkout changes. Owner Agenda visual UAT #75 is a separate pending approval gate. This addendum does not authorize actual merges.
