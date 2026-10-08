@@ -166,3 +166,11 @@ Consegnare: PR list merged/reconciled, commit finale, eventuale tag, UAT status,
 **Codex:** nessun merge finché Owner non avra' dato il via libera specifico.
 
 Questo documento e la issue #95 sono tracciamento e proposta; non sostituiscono il registro decisionale HITCH `clients/HC-0005/`.
+
+## Aggiornamento audit 2026-10-08 — HOLD merge della catena
+
+**Nuovo gate da audit di codice:** [#97](https://github.com/2008hitch-afk/centrochange_core/issues/97) — nel `hooks.py` esatto RC22 un secondo assegnamento a `before_request` rimuove dall'elenco dichiarato quattro request guard originari. Impatto HTTP **da verificare in clone/runtime isolato**; nessuna prova di data leak dichiarata. **NON proporre merge della catena #27→#94 né la promozione a baseline stabile** finché l'anomalia non e' verificata e, se confermata, corretta con test e PR separata autorizzata.
+
+**Altri controlli conclusi:** main contiene 6 commit di governance/GOAL-02 non presenti nella catena UAT; il piano merge deve preservarli. L'HEAD #94 e' 2 commit oltre il source RC22, con solo 18 file docs e 1 infra cambiati e nessun file app. Le 34 PR non hanno review submission formalmente registrate tramite GitHub; i test runtime restano separatamente documentati. Il modulo `finance.install.configure` riscrive `Custom DocPerm` durante `after_migrate`: fare rehearsal d'idempotenza/permessi su clone prima di upgrade e non assumere harmless.
+
+**Priorita' immediata:** completare la review del potenziale blocco #97 con una **missione tecnica limitata Codex da autorizzare separatamente** (lettura effettivi hook/HTTP negative su clone, eventuale fix minimo in PR, regressioni). Il retest visivo Owner dell'Agenda #75 resta distinto e pendente. Sono esclusi merge e interventi diretti al runtime condiviso.
