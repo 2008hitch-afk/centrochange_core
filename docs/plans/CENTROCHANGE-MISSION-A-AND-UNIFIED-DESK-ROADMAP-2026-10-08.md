@@ -174,3 +174,9 @@ Questo documento e la issue #95 sono tracciamento e proposta; non sostituiscono 
 **Altri controlli conclusi:** main contiene 6 commit di governance/GOAL-02 non presenti nella catena UAT; il piano merge deve preservarli. L'HEAD #94 e' 2 commit oltre il source RC22, con solo 18 file docs e 1 infra cambiati e nessun file app. Le 34 PR non hanno review submission formalmente registrate tramite GitHub; i test runtime restano separatamente documentati. Il modulo `finance.install.configure` riscrive `Custom DocPerm` durante `after_migrate`: fare rehearsal d'idempotenza/permessi su clone prima di upgrade e non assumere harmless.
 
 **Priorita' immediata:** completare la review del potenziale blocco #97 con una **missione tecnica limitata Codex da autorizzare separatamente** (lettura effettivi hook/HTTP negative su clone, eventuale fix minimo in PR, regressioni). Il retest visivo Owner dell'Agenda #75 resta distinto e pendente. Sono esclusi merge e interventi diretti al runtime condiviso.
+
+## Missione Codex #97 autorizzata dall'Owner — 2026-10-08
+
+L'Owner ha esplicitamente autorizzato **solo** la verifica della sovrascrittura `before_request` sul **clone isolato**, con eventuale fix minimo, regressione, PR DRAFT e report. Documento esecutivo: [MISSIONE-CODEX-097-BEFORE-REQUEST-GUARDS-2026-10-08.md](MISSIONE-CODEX-097-BEFORE-REQUEST-GUARDS-2026-10-08.md); [issue #97](https://github.com/2008hitch-afk/centrochange_core/issues/97).
+
+**Non autorizzati:** runtime UAT RC22 condiviso, dati originali, merge di qualunque PR, `main`, upgrade Frappe/ERPNext, cambi schema/permessi o produzione. Il risultato atteso e' `READY_FOR_OWNER_REVIEW` oppure `DECISIONE RICHIESTA`, non un merge. L'autorizzazione e la consegna del mandato **non attestano l'avvio di Codex**; l'operatore avvia Codex con la issue e il documento specifici.
