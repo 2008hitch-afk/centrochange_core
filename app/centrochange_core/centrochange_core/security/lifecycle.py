@@ -6,7 +6,7 @@ from frappe.permissions import add_user_permission, remove_user_permission
 
 from centrochange_core.security.audit import append, atomic, internal_write
 from centrochange_core.security.guards import (
-	centers, enabled, is_manager, patient_names, require_center, require_manager, require_operations,
+	centers, enabled, is_manager, patient_names, require_center, require_manager, require_operations, current_rows, roles,
 )
 
 
@@ -14,6 +14,7 @@ def lock():
 	# This product-owned Role row serializes permission mutations until transaction commit.
 	# No named lock released before commit, no implicit commit inside a service.
 	frappe.db.sql("SELECT name FROM tabRole WHERE name='CC Manager' FOR UPDATE")
+	frappe.flags.cc_permission_current_read = True
 	# Current read after acquiring the serialization row, including waiting requests.
 	if frappe.session.user == "Guest" or not frappe.db.get_value("User", frappe.session.user, "enabled", for_update=True):
 		frappe.throw("Disabled or anonymous principal cannot mutate permissions", frappe.PermissionError)
@@ -23,32 +24,32 @@ def reconcile_user(user):
 	"""Rebuild only managed Patient shares and Practitioner permissions for one principal."""
 	lock()
 	with internal_write("cc_permission_write"):
-		for name in frappe.get_all("DocShare", filters={"share_doctype": "Patient", "user": user}, pluck="name"):
+		for name in current_rows("DocShare", filters={"share_doctype": "Patient", "user": user}, pluck="name"):
 			frappe.delete_doc("DocShare", name, ignore_permissions=True,
 				flags={"ignore_share_permission": True})
 		if enabled(user):
 			for patient in set(patient_names(user)):
-				write = int("CC Secretariat" in frappe.get_roles(user) and "CC Professional" not in frappe.get_roles(user))
+				write = int("CC Secretariat" in roles(user) and "CC Professional" not in roles(user))
 				frappe.share.add_docshare("Patient", patient, user=user, read=1, write=write,
 					flags={"ignore_share_permission": True})
-		for permission in frappe.get_all("User Permission", filters={"user": user, "allow": "Healthcare Practitioner"},
+		for permission in current_rows("User Permission", filters={"user": user, "allow": "Healthcare Practitioner"},
 			fields=["for_value"]):
 			remove_user_permission("Healthcare Practitioner", permission.for_value, user, ignore_permissions=True)
 		if enabled(user):
-			for name in frappe.get_all("Healthcare Practitioner", filters={"user_id": user, "status": "Active"}, pluck="name"):
+			for name in current_rows("Healthcare Practitioner", filters={"user_id": user, "status": "Active"}, pluck="name"):
 				add_user_permission("Healthcare Practitioner", name, user, ignore_permissions=True)
 	frappe.clear_cache(user=user)
 	frappe.db.after_commit.add(lambda: frappe.clear_cache(user=user))
 
 
 def reconcile_patient(patient):
-	users = set(frappe.get_all("DocShare", filters={"share_doctype": "Patient", "share_name": patient}, pluck="user"))
-	assignments = frappe.get_all("CC Patient Assignment", filters={"patient": patient, "active": 1},
+	users = set(current_rows("DocShare", filters={"share_doctype": "Patient", "share_name": patient}, pluck="user"))
+	assignments = current_rows("CC Patient Assignment", filters={"patient": patient, "active": 1},
 		fields=["practitioner", "center"])
 	for assignment in assignments:
 		if assignment.practitioner:
 			users.add(frappe.db.get_value("Healthcare Practitioner", assignment.practitioner, "user_id"))
-		users.update(frappe.get_all("CC Center Membership", filters={"center": assignment.center, "active": 1}, pluck="user"))
+		users.update(current_rows("CC Center Membership", filters={"center": assignment.center, "active": 1}, pluck="user"))
 	for user in sorted(user for user in users if user):
 		reconcile_user(user)
 
@@ -62,7 +63,7 @@ def set_membership(user, center, active, reason):
 	if active not in (0, 1) or user in ("Guest", "Administrator"):
 		frappe.throw("Invalid operational center membership")
 	name = frappe.db.get_value("CC Center Membership", {"user": user, "center": center}, for_update=True)
-	doc = frappe.get_doc("CC Center Membership", name) if name else frappe.get_doc({
+	doc = frappe.get_doc("CC Center Membership", name, for_update=True) if name else frappe.get_doc({
 		"doctype": "CC Center Membership", "user": user, "center": center,
 	})
 	before = {"active": doc.active} if name else None
@@ -85,12 +86,12 @@ def set_assignment(patient, center, practitioner=None, active=1, reason=None):
 	if active not in (0, 1):
 		frappe.throw("Invalid assignment state")
 	if practitioner and active:
-		identity = frappe.get_doc("Healthcare Practitioner", practitioner)
+		identity = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 		if identity.status != "Active" or not identity.user_id or not enabled(identity.user_id) or center not in centers(identity.user_id):
 			frappe.throw("Practitioner must be active and assigned to this center")
 	filters = {"patient": patient, "center": center, "practitioner": practitioner or ["is", "not set"]}
 	name = frappe.db.get_value("CC Patient Assignment", filters, for_update=True)
-	doc = frappe.get_doc("CC Patient Assignment", name) if name else frappe.get_doc({
+	doc = frappe.get_doc("CC Patient Assignment", name, for_update=True) if name else frappe.get_doc({
 		"doctype": "CC Patient Assignment", "patient": patient, "center": center, "practitioner": practitioner,
 	})
 	before = {"active": doc.active} if name else None
@@ -121,12 +122,12 @@ def reassign(patient, center, old_practitioner, new_practitioner, reason):
 def set_practitioner_state(practitioner, active, reason):
 	lock()
 	require_manager()
-	doc = frappe.get_doc("Healthcare Practitioner", practitioner)
+	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 	active = int(frappe.utils.cint(active))
 	if active not in (0, 1) or doc.user_id in (None, "", "Guest", "Administrator"):
 		frappe.throw("A valid linked operational principal is required")
-	user = frappe.get_doc("User", doc.user_id)
-	if "CC Professional" not in frappe.get_roles(user.name):
+	user = frappe.get_doc("User", doc.user_id, for_update=True)
+	if "CC Professional" not in roles(user.name):
 		frappe.throw("Principal is not a Centro Change professional")
 	before = {"status": doc.status, "enabled": user.enabled}
 	after = {"status": "Active" if active else "Disabled", "enabled": active}
@@ -147,8 +148,8 @@ def set_practitioner_state(practitioner, active, reason):
 def replace_principal(practitioner, new_user, reason):
 	lock()
 	require_manager()
-	doc = frappe.get_doc("Healthcare Practitioner", practitioner)
-	if new_user in ("Administrator", "Guest") or not enabled(new_user) or "CC Professional" not in frappe.get_roles(new_user):
+	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
+	if new_user in ("Administrator", "Guest") or not enabled(new_user) or "CC Professional" not in roles(new_user):
 		frappe.throw("Replacement must be an enabled Centro Change professional")
 	old_user = doc.user_id
 	if old_user == new_user:

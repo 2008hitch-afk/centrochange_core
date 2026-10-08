@@ -1,0 +1,73 @@
+{
+ "doctype": "DocType",
+ "name": "CC Public Booking Route",
+ "module": "Centro Change Core",
+ "autoname": "field:route",
+ "engine": "InnoDB",
+ "track_changes": 1,
+ "fields": [
+  {
+   "fieldname": "route",
+   "fieldtype": "Select",
+   "options": "Marco\nFrancesca",
+   "reqd": 1,
+   "label": "Route"
+  },
+  {
+   "fieldname": "center",
+   "fieldtype": "Link",
+   "options": "Branch",
+   "reqd": 1,
+   "label": "Center"
+  },
+  {
+   "fieldname": "practitioner",
+   "fieldtype": "Link",
+   "options": "Healthcare Practitioner",
+   "reqd": 1,
+   "label": "Practitioner"
+  },
+  {
+   "fieldname": "appointment_type",
+   "fieldtype": "Link",
+   "options": "Appointment Type",
+   "reqd": 1,
+   "label": "Appointment Type"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "default": "0",
+   "label": "Enabled"
+  }
+ ],
+ "field_order": [
+  "route",
+  "center",
+  "practitioner",
+  "appointment_type",
+  "enabled"
+ ],
+ "permissions": [
+  {
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0,
+   "role": "CC Manager"
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": []
+}

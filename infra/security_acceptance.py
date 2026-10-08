@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import http.cookiejar
 import json
 import subprocess
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -13,13 +14,17 @@ from pathlib import Path
 def execute(method, kwargs=None):
     command=['docker','exec','centrochange-dev-backend-1','bench','--site','centrochange.local','execute',method]
     if kwargs:
-        command += ['--kwargs',json.dumps(kwargs)]
-    return json.loads(subprocess.check_output(command,text=True))
+        command += ['--kwargs',repr(kwargs)]
+    result=subprocess.run(command,text=True,capture_output=True)
+    if result.returncode:
+        raise RuntimeError(result.stdout + result.stderr)
+    return json.loads(result.stdout)
 
 
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--env-file',required=True)
+    parser.add_argument('--with-booking',action='store_true')
     args=parser.parse_args()
     config=dict(line.split('=',1) for line in Path(args.env_file).read_text().splitlines() if line and not line.startswith('#'))
     assert config['SITE_NAME']=='centrochange.local'
@@ -42,15 +47,16 @@ def main():
                     value={"binary_response":True}
         except urllib.error.HTTPError as error:
             status=error.code
-            value={}
-        assert status==expected,(path,status,expected)
+            value=json.loads(error.read())
+        assert status in (expected if isinstance(expected,tuple) else (expected,)),(path,status,expected,value.get("exc_type"),value.get("exception"))
+        value['http_status']=status
         return value
     def denied(label,opener,path,data=None):
         call(opener,path,data,403)
         checks.append(label)
     try:
-        fixture=execute('centrochange_core.security.dev_acceptance.create_http')
-        admin=session('Administrator',config['ADMIN_PASSWORD'])
+        fixture=execute('centrochange_core.security.dev_acceptance.create_http',{'scheduling':args.with_booking})
+        admin=session(fixture['users']['m']['name'],fixture['users']['m']['password'])
         a=session(**{'user':fixture['users']['a']['name'],'password':fixture['users']['a']['password']})
         b=session(**{'user':fixture['users']['b']['name'],'password':fixture['users']['b']['password']})
         c=session(fixture['users']['c']['name'],fixture['users']['c']['password'])
@@ -73,13 +79,53 @@ def main():
         denied('unwhitelisted DEV fixture denied',a,'/api/method/centrochange_core.security.dev_acceptance.create_http')
         denied('generic relationship mutation denied',a,'/api/resource/CC%20Center%20Membership',{'data':json.dumps({'user':fixture['users']['a']['name'],'center':fixture['centers'][1],'active':1})})
         with ThreadPoolExecutor(max_workers=2) as pool:
-            futures=[pool.submit(call,session('Administrator',config['ADMIN_PASSWORD']),
+            futures=[pool.submit(call,session(fixture['users']['m']['name'],fixture['users']['m']['password']),
                 '/api/method/centrochange_core.security.lifecycle.set_membership',
                 {'user':fixture['users']['c']['name'],'center':fixture['centers'][1],'active':1,'reason':fixture['tag']}) for _ in range(2)]
             values=[future.result()['message']['name'] for future in futures]
             assert values[0]==values[1]
         checks.append('concurrent membership retry single relationship')
-        call(admin,'/api/method/centrochange_core.security.lifecycle.reassign',{'patient':own,'center':fixture['centers'][0],
+        if args.with_booking:
+            payload={'patient':own,'practitioner':fixture['practitioners'][0],'center':fixture['centers'][0],
+                'appointment_type':fixture['catalog']['Appointment Type'][0], 'appointment_date':'2099-01-12',
+                'appointment_time':'09:00:00','reason':fixture['tag']}
+            method='/api/method/centrochange_core.scheduling.booking.book'
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                futures=[pool.submit(call,session(fixture['users']['m']['name'],fixture['users']['m']['password']),method,
+                    {**payload,'request_key':'race-'+str(index)},(200,417)) for index in range(2)]
+                values=[future.result() for future in futures]
+                assert sorted(value['http_status'] for value in values)==[200,417],values
+            checks.append('concurrent same-slot booking one committed winner')
+            winner=next(value['message']['name'] for value in values if value['http_status']==200)
+            assert call(a,'/api/resource/Patient%20Appointment/'+urllib.parse.quote(winner,safe=''))['data']['name']==winner
+            denied('unassigned appointment cross REST denied',b,'/api/resource/Patient%20Appointment/'+urllib.parse.quote(winner,safe=''))
+            for endpoint in ('update_status','check_in_appointment'):
+                denied('native '+endpoint+' bypass denied',admin,
+                    '/api/method/healthcare.healthcare.doctype.patient_appointment.patient_appointment.'+endpoint,
+                    {'appointment_id':winner,'status':'Closed'})
+            denied('native portal arbitrary booking denied',a,
+                '/api/method/healthcare.healthcare.api.patient_portal.make_appointment',
+                {'practitioner':fixture['practitioners'][0],'patient':own,'date':'2099-01-12','slot':'10:00:00'})
+            guest=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+            public='/api/method/centrochange_core.scheduling.public_booking.first_meeting'
+            public_payload={'route':'Marco','first_name':fixture['tag']+' SYNTHETIC','last_name':'Guest',
+                'email':fixture['tag'].lower()+'-guest@example.invalid','sex':'Female',
+                'appointment_date':'2099-01-12','appointment_time':'10:00:00','request_key':fixture['tag']+'-public'}
+            public_result=call(guest,public,public_payload)['message']
+            public_doc=call(admin,'/api/resource/Patient%20Appointment/'+urllib.parse.quote(public_result['name'],safe=''))['data']
+            fixture['patients'].append(public_doc['patient'])
+            assert public_doc['practitioner']==fixture['practitioners'][0] and public_doc['appointment_type']==fixture['catalog']['Appointment Type'][0]
+            assert call(guest,public,public_payload)['message']=={'name':public_result['name'],'replay':True}
+            checks.append('Guest first meeting fixed route and idempotent replay')
+            denied('Guest cannot read created appointment',guest,'/api/resource/Patient%20Appointment/'+urllib.parse.quote(public_result['name'],safe=''))
+            call(guest,public,{**public_payload,'route':'Arbitrary','request_key':fixture['tag']+'-bad-route'},expected=417)
+            checks.append('unapproved public route denied')
+            call(admin,'/api/method/frappe.client.set_value',{'doctype':'CC Public Booking Route','name':'Marco','fieldname':'enabled','value':0})
+            denied('disabled public route denied',guest,public,{**public_payload,'email':fixture['tag'].lower()+'-other@example.invalid','request_key':fixture['tag']+'-disabled'})
+            call(admin,'/api/method/frappe.client.set_value',{'doctype':'CC Public Booking Route','name':'Marco','fieldname':'enabled','value':1})
+            call(admin,'/api/method/frappe.client.set_value',{'doctype':'Appointment Type','name':fixture['catalog']['Appointment Type'][0],'fieldname':'cc_first_meeting','value':0})
+            denied('public subsequent-session profile denied',guest,public,{**public_payload,'email':fixture['tag'].lower()+'-other@example.invalid','request_key':fixture['tag']+'-subsequent'})
+        call(admin,'/api/method/centrochange_core.security.lifecycle.reassign'  ,{'patient':own,'center':fixture['centers'][0],
              'old_practitioner':fixture['practitioners'][0],'new_practitioner':fixture['practitioners'][1],'reason':fixture['tag']})
         denied('former session revoked after commit',a,resource(own))
         assert call(b,resource(own))['data']['name']==own
@@ -96,6 +142,12 @@ def main():
         print(json.dumps({'status':'PASS','checks':checks}))
     finally:
         if fixture:
+            for attempt in range(30):
+                if execute('centrochange_core.security.dev_acceptance.pending_contacts',{'users':[row['name'] for row in fixture['users'].values()]})['pending']==0:
+                    break
+                time.sleep(1)
+            else:
+                raise AssertionError('Native fixture contact jobs did not finish')
             for row in fixture['users'].values():
                 row.pop('password',None)
             cleanup=execute('centrochange_core.security.dev_acceptance.destroy_http',{'fixture':fixture})

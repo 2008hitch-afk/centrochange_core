@@ -1,10 +1,25 @@
 """Synthetic security regression via bench, never a whitelisted API."""
 import frappe
+from functools import wraps
+
+
+def synthetic_test(function):
+	@wraps(function)
+	def wrapped(*args, **kwargs):
+		previous=frappe.in_test
+		frappe.in_test=True
+		try:
+			return function(*args,**kwargs)
+		finally:
+			frappe.in_test=previous
+	return wrapped
+
 from centrochange_core.security import lifecycle as service
 from centrochange_core.security.api import discover_patient, get_patient_detail
 
 
-def run():
+@synthetic_test
+def run(extra_checks=None):
 	if frappe.session.user != 'Administrator' or frappe.conf.get('cc_synthetic_dev') != 1:
 		frappe.throw('Synthetic DEV Administrator required')
 	frappe.db.savepoint('cc_security_acceptance')
@@ -35,6 +50,8 @@ def run():
 			for label, principal in [('CC SYNTHETIC A',pro1),('CC SYNTHETIC B',pro2)]]
 		patient, cross = [frappe.get_doc({'doctype':'Patient', 'first_name':label, 'sex':'Female',
 			'uid':uid}).insert().name for label,uid in [('CC SYNTHETIC OWN','CC-SYNTH-OWN'),('CC SYNTHETIC CROSS','CC-SYNTH-CROSS')]]
+		if extra_checks:
+			checks.extend(extra_checks(locals()))
 		frappe.set_user(pro1)
 		denied('zero assignment list denied', lambda:frappe.get_list('Patient', pluck='name'))
 		denied('zero assignment direct denied', lambda:frappe.get_doc('Patient',patient).check_permission())
@@ -100,14 +117,15 @@ def run():
 				frappe.clear_cache(user=principal)
 
 
-def create_http():
+@synthetic_test
+def create_http(scheduling=False):
 	"""Create explicitly marked disposable HTTP fixtures; harness destroys them."""
 	if frappe.session.user != 'Administrator' or frappe.conf.get('cc_synthetic_dev') != 1:
 		frappe.throw('Synthetic DEV Administrator required')
 	from frappe.utils.password import update_password
 	tag = 'CC-HTTP-' + frappe.generate_hash(length=10)
 	result = {'tag':tag, 'users':{}, 'patients':[], 'practitioners':[], 'centers':[]}
-	for label, role in [('a','CC Professional'), ('b','CC Professional'), ('c','CC Professional'), ('s','CC Secretariat')]:
+	for label, role in [('a','CC Professional'), ('b','CC Professional'), ('c','CC Professional'), ('s','CC Secretariat'), ('m','CC Manager')]:
 		name = tag.lower() + '-' + label + '@example.invalid'
 		frappe.get_doc({'doctype':'User','email':name,'first_name':tag+' '+label,
 			'enabled':1,'send_welcome_email':0,'roles':[{'role':role}]}).insert(ignore_permissions=True)
@@ -126,6 +144,24 @@ def create_http():
 			'sex':'Female','uid':tag+'-'+label}).insert().name)
 	service.set_assignment(result['patients'][0],result['centers'][0],result['practitioners'][0],1,tag)
 	service.set_assignment(result['patients'][1],result['centers'][1],None,1,tag)
+	if scheduling:
+		from centrochange_core.scheduling.availability import set_schedule
+		item=frappe.get_doc({'doctype':'Item','item_code':tag+' SESSION','item_name':tag+' Session',
+			'item_group':'Services','stock_uom':'Nos','is_stock_item':0,'is_sales_item':1}).insert()
+		price_list=frappe.get_doc({'doctype':'Price List','price_list_name':tag+' PRICE','enabled':1,'selling':1,'currency':'EUR'}).insert()
+		profile=frappe.get_doc({'doctype':'Appointment Type','appointment_type':tag+' SESSION',
+			'allow_booking_for':'Practitioner','default_duration':60,'cc_service_item':item.name,'cc_first_meeting':1}).insert()
+		price=frappe.get_doc({'doctype':'Item Price','item_code':item.name,'price_list':price_list.name,
+			'price_list_rate':100,'currency':'EUR','valid_from':'2020-01-01'}).insert()
+		frappe.db.set_value('Branch',result['centers'][0],'cc_price_list',price_list.name)
+		availability=frappe.get_doc({'doctype':'CC Center Service','center':result['centers'][0],
+			'appointment_type':profile.name,'enabled':1}).insert()
+		schedule=set_schedule(result['practitioners'][0],result['centers'][0],
+			[{'day':'Monday','from_time':'09:00:00','to_time':'12:00:00'}],tag)['name']
+		route=frappe.get_doc({'doctype':'CC Public Booking Route','route':'Marco','center':result['centers'][0],
+			'practitioner':result['practitioners'][0],'appointment_type':profile.name,'enabled':1}).insert()
+		result['catalog']={'CC Public Booking Route':[route.name],'Item':[item.name],'Price List':[price_list.name],'Appointment Type':[profile.name],
+			'Item Price':[price.name],'CC Center Service':[availability.name],'Practitioner Schedule':[schedule]}
 	frappe.db.commit()
 	return result
 
@@ -146,9 +182,19 @@ def destroy_http(fixture):
 		assert all((frappe.db.get_value(doctype,name,field) or '').startswith(tag+' ') for name in names)
 	groups={'Patient':fixture['patients'],'Healthcare Practitioner':fixture['practitioners'],
 		'Branch':fixture['centers'],'User':users}
+	if fixture.get('catalog'):
+		assert all((frappe.db.get_value('Item',name,'item_name') or '').startswith(tag+' ') for name in fixture['catalog']['Item'])
+		groups.update(fixture['catalog'])
+		groups['Patient Appointment']=frappe.get_all('Patient Appointment',filters={'patient':['in',fixture['patients']]},pluck='name')
+		assert all((frappe.db.get_value('Patient Appointment',name,'cc_service_label') or '').startswith(tag+' ') for name in groups['Patient Appointment'])
 	groups['CC Patient Assignment']=frappe.get_all('CC Patient Assignment',filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['CC Center Membership']=frappe.get_all('CC Center Membership',filters={'user':['in',users]},pluck='name')
 	groups['CC Audit Event']=frappe.get_all('CC Audit Event',filters={'reason':tag},pluck='name')
+	if fixture.get('catalog'):
+		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'Patient Appointment',
+			'reference_name':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
+		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'CC Patient Assignment',
+			'reference_name':['in',groups.get('CC Patient Assignment') or ['']]},pluck='name')
 	# Native Patient creates contacts/customers; discover only links to these exact fixtures.
 	groups['Contact']=frappe.get_all('Contact',filters={'user':['in',users]},pluck='name')
 	groups['Contact']+=frappe.get_all('Dynamic Link',filters={'parenttype':'Contact','link_doctype':'Patient',
@@ -176,3 +222,42 @@ def destroy_http(fixture):
 		frappe.clear_cache(user=user)
 	assert not any(frappe.db.exists(doctype,{'name':['in',names]}) for doctype,names in groups.items() if names)
 	return {'cleanup':'PASS'}
+
+
+def pending_contacts(users):
+	if frappe.session.user!='Administrator' or frappe.conf.get('cc_synthetic_dev')!=1:
+		frappe.throw('Synthetic DEV Administrator required')
+	assert all(user.startswith('cc-http-') and user.endswith('@example.invalid') for user in users)
+	from frappe.utils.background_jobs import get_queue
+	from rq.registry import StartedJobRegistry
+	pending=0
+	for queue_name in ('short','default','long'):
+		queue=get_queue(queue_name)
+		ids=set(queue.get_job_ids()) | set(StartedJobRegistry(queue=queue).get_job_ids())
+		for job_id in ids:
+			job=queue.fetch_job(job_id)
+			if not job or job.kwargs.get('method')!='frappe.core.doctype.user.user.create_contact':
+				continue
+			principal=job.kwargs.get('kwargs',{}).get('user')
+			name=principal.get('name') if isinstance(principal,dict) else getattr(principal,'name',None)
+			if name in users:
+				pending+=1
+	return {'pending':pending}
+
+
+def recover_http(tag):
+	"""Recover exact fixture IDs after an interrupted harness, without recovering credentials."""
+	if frappe.session.user!='Administrator' or frappe.conf.get('cc_synthetic_dev')!=1:
+		frappe.throw('Synthetic DEV Administrator required')
+	assert tag.startswith('CC-HTTP-') and len(tag)==18
+	users=frappe.get_all('User',filters={'email':['like',tag.lower()+'-%@example.invalid']},pluck='name')
+	fixture={'tag':tag,'users':{name.split('@')[0].rsplit('-',1)[1]:{'name':name} for name in users},
+		'patients':frappe.get_all('Patient',filters={'first_name':['like',tag+' %']},pluck='name'),
+		'practitioners':frappe.get_all('Healthcare Practitioner',filters={'user_id':['in',users]},pluck='name'),
+		'centers':frappe.get_all('Branch',filters={'branch':['like',tag+' %']},pluck='name')}
+	if frappe.db.exists('Item',tag+' SESSION'):
+		fixture['catalog']={'Item':[tag+' SESSION'],'Appointment Type':[tag+' SESSION'],'Price List':[tag+' PRICE'],
+			'Item Price':frappe.get_all('Item Price',filters={'item_code':tag+' SESSION'},pluck='name'),
+			'CC Center Service':frappe.get_all('CC Center Service',filters={'appointment_type':tag+' SESSION'},pluck='name'),
+			'Practitioner Schedule':frappe.get_all('Practitioner Schedule',filters={'cc_practitioner':['in',fixture['practitioners']]},pluck='name')}
+	return destroy_http(fixture)

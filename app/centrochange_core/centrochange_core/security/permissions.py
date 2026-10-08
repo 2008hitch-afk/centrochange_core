@@ -9,18 +9,18 @@ def patient_query(user=None):
 	return "" if is_manager(user) else names_condition("Patient", patient_names(user))
 
 
-def patient_permission(doc, user=None, permission_type=None):
+def patient_permission(doc, user=None, ptype=None):
 	if is_manager(user):
-		return None
+		return True
 	user = user or frappe.session.user
-	if doc.is_new() and permission_type == "create":
+	if doc.is_new() and ptype == "create":
 		roles = frappe.get_roles(user)
-		return None if enabled(user) and centers(user) and "CC Secretariat" in roles and "CC Professional" not in roles else False
+		return True if enabled(user) and centers(user) and "CC Secretariat" in roles and "CC Professional" not in roles else False
 	if not enabled(user) or doc.name not in patient_names(user):
 		return False
-	if permission_type in ("delete", "share", "export", "import", "create"):
+	if ptype in ("delete", "share", "export", "import", "create"):
 		return False
-	return None
+	return True
 
 
 def practitioner_query(user=None):
@@ -29,12 +29,12 @@ def practitioner_query(user=None):
 	return names_condition("Healthcare Practitioner", [practitioner_for(user)] if practitioner_for(user) else [])
 
 
-def practitioner_permission(doc, user=None, permission_type=None):
+def practitioner_permission(doc, user=None, ptype=None):
 	if is_manager(user):
-		return None
-	if doc.name != practitioner_for(user) or permission_type not in ("read", "select"):
+		return True
+	if doc.name != practitioner_for(user) or ptype not in ("read", "select"):
 		return False
-	return None
+	return True
 
 
 def membership_query(user=None):
@@ -56,25 +56,25 @@ def branch_query(user=None):
 	return "" if is_manager(user) else names_condition("Branch", centers(user))
 
 
-def membership_permission(doc, user=None, permission_type=None):
+def membership_permission(doc, user=None, ptype=None):
 	if is_manager(user):
-		return None
-	if not enabled(user) or doc.user != (user or frappe.session.user) or permission_type not in ("read", "select"):
+		return True
+	if not enabled(user) or doc.user != (user or frappe.session.user) or ptype not in ("read", "select"):
 		return False
-	return None
+	return True
 
 
-def assignment_permission(doc, user=None, permission_type=None):
+def assignment_permission(doc, user=None, ptype=None):
 	if is_manager(user):
-		return None
-	if permission_type not in ("read", "select") or not enabled(user) or not doc.active or doc.center not in centers(user) or doc.patient not in patient_names(user):
+		return True
+	if ptype not in ("read", "select") or not enabled(user) or not doc.active or doc.center not in centers(user) or doc.patient not in patient_names(user):
 		return False
 	if "CC Professional" in frappe.get_roles(user or frappe.session.user) and doc.practitioner != practitioner_for(user):
 		return False
-	return None
+	return True
 
 
-def branch_permission(doc, user=None, permission_type=None):
+def branch_permission(doc, user=None, ptype=None):
 	if is_manager(user):
-		return None
-	return None if doc.name in centers(user) and permission_type in ("read", "select") else False
+		return True
+	return True if doc.name in centers(user) and ptype in ("read", "select") else False
