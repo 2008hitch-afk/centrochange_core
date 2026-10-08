@@ -76,3 +76,34 @@ Una sola missione **`integrate-stacked-prs-safely`**, con lista PR/SHA fissa, re
 Sono state lette le review PR tramite l'API GitHub per **17 PR campionate**: #27, #30, #32, #34, #38, #40, #42, #44, #47, #50, #54, #56, #61, #65, #92, #93, #94. La risposta per ognuna riporta **zero review submission registrate**. Questo non elimina le evidenze dei test, le discussioni PR o l'accettazione Owner di GOAL-01, ma conferma che **non si puo' assumere che il processo di code review GitHub sia gia' completato**. Non estrapolare a tutte le 34 PR: il controllo non e' esaustivo.
 
 **Decisione tecnica ancora da preparare:** approvazione per una prima review aggregata del prodotto da HEAD #94 verso main o merge sequenziale delle 34 PR preservando tracciabilita'. Va simulato su clone e analizzata la parita' dei commit/finali prima di scegliere. La scelta non e' automatica e non va delegata implicitamente a Codex.
+
+## CRITICAL REVIEW GATE — Hook `before_request` potentially overwritten (#97)
+
+**Blocco audit con codice verificato; impatto runtime ancora NON dimostrato.** [Issue tecnica #97](https://github.com/2008hitch-afk/centrochange_core/issues/97).
+
+Nel file `app/centrochange_core/centrochange_core/hooks.py` del candidato **RC22 source `f06acca...`**:
+- linea 13: `before_request` e' definito con quattro guard originari (finance, diagnostics, security API, note);
+- linea 151: `before_request = ["centrochange_core.operations.website_brand.client_language"]` **sovrascrive la lista** invece di estenderla;
+- linea 154: un `.append(login_language)` estende solo la nuova lista.
+
+Il primo overwrite compare nella PR **#92** (non presente nell'head #91) e rimane nei successivi #93/#94. **Questo fatto e' staticamente certo per la semantica di Python**, ma il grado di protezione effettivo di ciascuna route HTTP richiede un test reale Frappe, con `frappe.get_hooks('before_request')` e prove negative di accesso. Non affermiamo che esista un exploit reale senza prova.
+
+**Disposizione di audit: HOLD qualsiasi merge/promotion della catena di prodotto** fino al controllo mirato e, se confermato, correzione in PR con regressione #77 e controllo backend/API/print/report. **Questa Missione A non autorizza il fix, l'accesso al runtime o un deploy**; per questi serve mandato tecnico distinto.
+
+### Divergenza del ramo principale rispetto a RC22
+
+Il compare GitHub `main` vs HEAD #94 ha dato: **155 commit avanti sul ramo prodotto, ma 6 commit di main assenti dal ramo UAT**; merge-base `a648323d645517154cf2e8f7a21e5387e412f47e`. I sei commit aggiungono aggiornamenti di governance e GOAL-02: `1f951b7`, `12f010b`, `912a64a`, `176a690`, `c83431c`, `a3c34a7`. Sono modifiche da **conservare e conciliare**, non da sovrascrivere con un reset o force push. Almeno `AGENTS.md` e `docs/MVP-GOAL-ROADMAP-v0.1.md` risultano tra i file modificati da main rispetto al branch prodotto.
+
+**Strategia candidata, non autorizzata al merge:** provare localmente la sequenza bottom-up **merge commits** #27→#94, con `main` come base finale e retarget controllato di ciascuna PR dopo il predecessore; **evitare squash/rebase/force-push indiscriminati** che perdano comparabilita' del diff stacked. Dopo trial confrontare tree di prodotto con RC22 e `AGENTS.md`/roadmap con la governance main. La strategia deve essere verificata prima di ogni merge e potra' essere rivista in base all'esito.
+
+### Tracciabilita' versione fonte / review HEAD
+
+Compare `f06acca4...` → `84e9df1e...`: **solo 2 commit, 19 file**: 18 sotto `docs/`, 1 sotto `infra/`, **nessun file `app/` modificato**. Quindi il problema hook e' presente anche nell'esatto archivio applicativo di RC22, non soltanto nel branch review.
+
+### Review complete (metadata)
+
+API GitHub `list_pull_request_reviews` interrogata per **tutte e 34 le PR prodotto**: **zero review submissions registrate per 34/34**. Le evidenze/test runtime sono separate e restano da correlare; questa osservazione non e' da sola un verdetto sulla qualita' del prodotto. La review dei **diff e dei guard** e' ancora parziale e NON deve essere dichiarata completa.
+
+### Rischio migrazioni future — ciclo `after_migrate`
+
+La funzione `centrochange_core.finance.install.configure` e' configurata in `hooks.py` anche come `after_migrate` e cancella/ricrea `Custom DocPerm` su docTypes finanziari e master contabili. Non e' un difetto provato, ma crea un **gate di verifica su aggiornamento e ripetibilita' migrazioni**: verificare che refresh dei permessi resti intenzionale/idempotente e non espanda grants durante upgrade verso versione nuova, sempre su clone isolato. Non correggere in Missione A.
