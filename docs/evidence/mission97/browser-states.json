@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "checks": [
+    "/centrochange controlled network failure: readable Italian error, no diagnostics/upstream disclosure, mobile containment",
+    "/finanza controlled network failure: readable Italian error, no diagnostics/upstream disclosure, mobile containment",
+    "/professionista controlled network failure: readable Italian error, no diagnostics/upstream disclosure, mobile containment",
+    "/pazienti_report controlled network failure: readable Italian error, no diagnostics/upstream disclosure, mobile containment",
+    "/registro_modifiche controlled network failure: readable Italian error, no diagnostics/upstream disclosure, mobile containment",
+    "native future posting period gives genuine empty authorized invoice lists in center summary"
+  ],
+  "mutations": "NONE",
+  "failure_injection": "browser route only; runtime/backend untouched"
+}
