@@ -53,6 +53,30 @@ Per ogni requisito valutare nell'ordine:
 
 Se il nativo introduce semantica errata, rischio di sicurezza, UX significativamente peggiore o forte upgrade risk, preferire custom pulito.
 
+
+## Documentazione upstream e verifica della versione pinned
+
+Questa regola vale per **tutti i macro-goal** del progetto, inclusi GOAL-01, GOAL-02, GOAL-03, GOAL-04 e GOAL-05.
+
+Per ogni funzione o integrazione che dipende da Frappe, ERPNext, Healthcare/Marley, Builder o altre dipendenze upstream, Codex deve:
+
+1. consultare la documentazione ufficiale pertinente prima di introdurre comportamento custom o assumere semantica nativa;
+2. verificare che la documentazione sia compatibile con la **versione effettivamente pinned** nel progetto;
+3. quando la documentazione non è sufficiente o può riferirsi a una versione diversa, verificare anche il codice sorgente ufficiale della versione/tag/commit pinned;
+4. confermare sul runtime pinned i comportamenti critici che non sono dimostrabili in modo affidabile dalla sola documentazione o dal solo sorgente;
+5. preferire API, hook, DocType, workflow e punti di estensione ufficialmente supportati rispetto a patch, monkey-patch o dipendenze da dettagli interni non garantiti;
+6. documentare in issue/PR/evidenza ogni divergenza significativa tra documentazione ufficiale, sorgente pinned e comportamento runtime osservato.
+
+Ordine di autorità:
+
+- le decisioni business e di delivery approvate per HC-0005 definiscono **cosa** il sistema deve fare;
+- la documentazione ufficiale e il sorgente upstream pinned definiscono il comportamento tecnico supportato e i meccanismi disponibili;
+- l'evidenza runtime della versione pinned verifica **come** quel comportamento opera realmente nel nostro ambiente;
+- una fonte upstream non può sovrascrivere una decisione business approvata;
+- se documentazione, sorgente pinned e runtime sono in conflitto materiale, Codex deve fermarsi, produrre evidenza e richiedere una decisione invece di inferire silenziosamente.
+
+Non usare automaticamente la documentazione della versione più recente come prova valida per una versione pinned precedente.
+
 ## Git workflow
 
 - una issue per unità di lavoro;
@@ -96,7 +120,45 @@ Le capability Finance/Admin `CC-CAP-041..050` derivano dal delivery design appro
 
 ## Macro-goal execution
 
-Current macro-goal: **GOAL-02 — MVP Ready for Client UAT (#23)**, authorized by HC-0005 DECISION-056.
-GOAL-01 is OWNER_ACCEPTED / DEV PASS under DECISION-055; reuse its accepted baseline. No automatic stack merge or GOAL-03 authorization.
+Current macro-goal: **GOAL-02 — MVP Ready for Client UAT (#23)**.
+GOAL-01 is OWNER_ACCEPTED / DEV PASS under DECISION-055; reuse its accepted baseline. GOAL-02 is authorized by HC-0005 DECISION-056. No automatic stack merge or GOAL-03 authorization.
 
-Codex should work autonomously within the active goal and should not stop after each child issue. Stop only for a material blocker as defined in `docs/MVP-GOAL-ROADMAP-v0.1.md`.
+Codex should work autonomously within the active goal and should not stop after each child issue. Stop only for a material blocker as defined in `docs/MVP-GOAL-ROADMAP-v0.1.md`. GOAL-03 is not authorized.
+
+
+## Cross-client Goal Learning Extraction
+
+Per la policy HITCH approvata, questo progetto partecipa alla knowledge base tecnica:
+
+`2008hitch-afk/erpnext-frappe-delivery-knowledge`
+
+Alla fine di ogni macro-goal ERPNext/Frappe, Codex deve eseguire una **Goal Learning Extraction**.
+
+Deve:
+
+1. rileggere issue, PR, test, failure, fix e fonti upstream usate nel goal;
+2. estrarre soltanto conoscenza tecnica generalizzabile;
+3. eliminare nomi, client_id, regole business, URL del progetto cliente, dati personali, secret e dettagli identificativi;
+4. creare/aggiornare esclusivamente learning con `status: CANDIDATE` sotto `learnings/candidates/` del repository comune;
+5. usare il template e la governance del repository comune;
+6. dichiarare `NO_GENERALIZABLE_LEARNING` nel completion report se non emerge nulla di riutilizzabile;
+7. non promuovere mai autonomamente un learning a `APPROVATO`.
+
+Nei nuovi lavori è consentito consultare come generalized learning soltanto elementi `APPROVATO`; essi restano consultivi e devono essere verificati rispetto a documentazione ufficiale, sorgente pinned e runtime corrente.
+
+
+## GOAL-02 startup overlay
+
+GOAL-02 is authorized by HC-0005 DECISION-056.
+
+At GOAL-02 startup Codex must:
+
+1. treat GOAL-01 as the accepted DEV baseline;
+2. inspect `2008hitch-afk/erpnext-frappe-delivery-knowledge/learnings/approved/`;
+3. load only generalized learnings explicitly approved there and pertinent to the current UAT-readiness work;
+4. keep generalized learnings advisory and reverify version-sensitive behavior against official upstream documentation, pinned source and runtime;
+5. use synthetic deterministic demo/UAT data only;
+6. produce a named reproducible UAT candidate, client validation guide, known-limitations register, evidence package and GOAL-02 Completion Report;
+7. perform Goal Learning Extraction before proposing GOAL-02 Done.
+
+No production, real data, provider credentials, real SdI/TS traffic, GOAL-03 execution or automatic stack merge is authorized by DECISION-056.

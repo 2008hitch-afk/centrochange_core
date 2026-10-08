@@ -39,11 +39,13 @@ A goal does not automatically authorize the next goal where a separate HITCH gat
 
 | Goal | GitHub issue | Status | Current authority |
 |---|---:|---|---|
-| GOAL-01 — MVP DEV End-to-End | #22 | **OWNER_ACCEPTED / DEV PASS** | HC-0005 DECISION-055; [Completion report](MVP-GOAL-COMPLETION-REPORT-2026-10-05.md); no automatic stack merge |
-| GOAL-02 — MVP Ready for Client UAT | #23 | **TECHNICAL DONE / UAT READY** | HC-0005 DECISION-056; [Completion report](GOAL-02-COMPLETION-REPORT-2026-10-05.md); client UAT / Owner acceptance pending |
+| GOAL-01 — MVP DEV End-to-End | #22 | **OWNER ACCEPTED / DEV PASS** | Accepted by HC-0005 DECISION-055; [Completion report](MVP-GOAL-COMPLETION-REPORT-2026-10-05.md); draft stack awaits review |
+| GOAL-02 — MVP Ready for Client UAT | #23 | **ACTIVE / AUTHORIZED** | Authorized by HC-0005 DECISION-056 |
 | GOAL-03 — Production Readiness | #24 | QUEUED | Requires GOAL-02/UAT basis |
 | GOAL-04 — Go-Live & Stabilization | #25 | QUEUED | Requires explicit production/go-live authorization |
 | GOAL-05 — Delivery Closure & Continuity | #26 | QUEUED | Requires stabilized live delivery |
+
+Technical evidence (distinct from formal authority): GOAL-01 [Completion report](MVP-GOAL-COMPLETION-REPORT-2026-10-05.md); GOAL-02 **TECHNICAL DONE / UAT READY**, [Completion report](GOAL-02-COMPLETION-REPORT-2026-10-05.md). Owner visual UAT / final acceptance pending; no automatic stack merge.
 
 ## 4. GOAL-01 — MVP DEV End-to-End
 
@@ -208,9 +210,21 @@ GOAL-01 uses synthetic data only. Real client/patient data requires a separate a
 ### Production boundary
 No roadmap artifact itself authorizes production, provider credentials or real SdI/TS traffic.
 
+
+### Cross-client technical learning
+At the end of every macro-goal, Codex performs Goal Learning Extraction according to `AGENTS.md` and the governance in `2008hitch-afk/erpnext-frappe-delivery-knowledge`.
+
+Only sanitized `CANDIDATE` learning artifacts may be created autonomously. Promotion to `APPROVATO` requires HITCH review and explicit Owner approval.
+
+The completion report must record the candidate learning artifacts produced or `NO_GENERALIZABLE_LEARNING`. This housekeeping requirement does not alter the technical PASS/PARTIAL/FAIL result of the client goal.
+
 ## 10. Current command for Codex
 
-For the current phase:
+GOAL-01 is formally accepted by HC-0005 DECISION-055.
 
-> Execute **GOAL-02 (#23)** autonomously under HC-0005 DECISION-056, reusing the GOAL-01 baseline accepted by DECISION-055. Follow `AGENTS.md`, the Implementation Baseline and the material-blocker rule; produce the named synthetic UAT candidate, validation package, whole-goal learning extraction and Completion Report. No automatic stack merge, real data/provider traffic, production or GOAL-03 authorization.
+GOAL-02 (#23) is formally authorized by HC-0005 DECISION-056.
+
+> Execute **GOAL-02 — MVP Ready for Client UAT (#23)** autonomously according to this roadmap and `AGENTS.md`. Reuse the accepted GOAL-01 DEV candidate, load only relevant `APPROVATO` generalized learnings, verify upstream behavior against official documentation/pinned source/runtime, and continue through the technical child work required to reach GOAL-02 Done. Stop only for a material blocker. Keep all production, real-data, real-provider and GOAL-03 gates closed.
+
+Required technical deliverables: named synthetic UAT candidate, client validation package, whole-goal learning extraction and GOAL-02 Completion Report. No automatic stack merge or real provider traffic.
 
