@@ -1,0 +1,18 @@
+Sales Invoice,Fattura di vendita
+Customer Name,Cliente
+Bill to,Intestatario
+Invoice Number,Numero fattura
+Invoice Date,Data fattura
+Payment Due Date,Scadenza pagamento
+Posting Date,Data contabile
+Outstanding Amount,Residuo
+No,N.
+Item,Servizio / articolo
+Quantity,Quantità
+Rate,Prezzo unitario
+Amount,Importo
+Sub Total,Subtotale
+Grand Total,Totale
+Discount,Sconto
+In Words,Importo in lettere (dato originale)
+Total,Totale
