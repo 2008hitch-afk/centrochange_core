@@ -31,3 +31,11 @@ Generic `.btn` flex geometry initially flattened event cards: explicit block ada
 Several old QA assertions assumed eight September sessions and one wholly future October session. Owner had already moved one performed session to October; regression now reconciles native records/categories instead of resetting data to old expectations. These are QA changes, not reporting or lifecycle changes.
 
 Full results, matrix and screenshots: `CONFORMANCE.md` and sibling normalized JSON/PNG evidence. No production, real data, real providers, real fiscal traffic, upstream edits or permission-model change. Owner visual acceptance remains required.
+
+## Final runtime corrections
+
+Text+semantic Tabler badges also cover dynamic table states. History/notes/notifications use shared `card-body` spacing; public/error primary actions explicitly retain the teal token against native CSS. Existing generated notification labels and collection amounts receive Italian presentation, with original records untouched. Finance practitioner/supplier aliases use only the existing authorized boot context.
+
+The actual native403 path is `NotPermittedPage` → `www/message.html`. The supported context hook reads the existing response action before native late context merge and selects `cc_error_page.html`; native status/grant/action remain unchanged. Shared error card uses the base template's `content` block. Real403,404 and generic error layout are tested; earlier blank-template/late-context attempts were rejected, not marked PASS.
+
+The final session-print adaptation keeps the same existing API, native read guard and fields; only Italian state/date and synthetic name presentation changes. Actual canonical `Reopened` is displayed `Riaperta`, reconciled in the browser instead of assuming Closed. Real authorized HTML is rendered in a browser setContent on the existing authenticated origin (no added server route) and print-media screenshot. Final runtime/source/parity/permissions are rc21; unchanged rc20 surface evidence is explicitly reused with source-diff provenance.

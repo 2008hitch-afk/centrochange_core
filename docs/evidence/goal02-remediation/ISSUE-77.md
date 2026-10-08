@@ -1,5 +1,14 @@
 # #77 — Final permissions
 
+## Superseding checkpoint — 2026-10-08
+
+**TECHNICAL PASS / READY_FOR_OWNER_UAT. OWNER VISUAL ACCEPTANCE PENDING.** Final-candidate server-side positive/negative permission-neutral matrix; seven roles + Guest, direct/API/query/export/native-print/cache-switch and rollback revocation.
+
+Candidate `goal02-20261008-rc21`, source `c51a9e7a1f887b87c0b06872a8d3e94f2e7249f5`; PRs #92 → #93 → #94 are draft/unmerged and all issues remain OPEN. No permission/business/schema delta or dataset reset.
+
+See [complete conformity and runtime evidence](../ui-design-system-v1/CONFORMANCE.md). Earlier checkpoints below are historical; identity-pending claims are superseded by Owner-approved Design System v1, not by a new branding inference. No GOAL-03.
+
+
 ## Final technical checkpoint — 2026-10-07
 
 TECHNICAL PASS for the tested implementation. Overall acceptance: PARTIAL / Owner review pending; issue remains OPEN and PR draft.

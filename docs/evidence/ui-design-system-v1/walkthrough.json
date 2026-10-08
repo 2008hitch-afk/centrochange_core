@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "checks": [
+    "native login retains authentication, neutral Centro Change identity, no upstream logo/footer",
+    "accepted Agenda retained; readable detail, history/notes and no private-note managerial bypass",
+    "Direction operational Patients/availability/report/notifications/access management; active state and readable account selection",
+    "all nine Finance surfaces, no technical branding or Desk navigation",
+    "reports/audit/missing page desktop/mobile no document overflow or upstream branding",
+    "authorized native invoice print Italian/neutral, no Desk links; print media screenshot; no new print permission",
+    "public booking stale route reply cannot enable old slots; readable mobile form",
+    "logout returns neutral native login"
+  ],
+  "errors": [],
+  "owner_visual_acceptance": "REQUIRED",
+  "identity_approval": "OWNER_APPROVED_2026-10-08",
+  "mutations": "NONE",
+  "execution_provenance": {
+    "executed_candidate": "goal02-20261008-rc20",
+    "executed_source_commit": "2cae1ceab534e3c45bfaef2abbb36c9ed5cd89be",
+    "reused_for": "goal02-20261008-rc21",
+    "reuse_reason": "Only app delta is existing authorized session-print presentation. All other UI assets/templates/domain/report/guard source bytes unchanged, Owner complete-row fingerprint unchanged. Print and final server permission/backend gates rerun on rc21."
+  }
+}

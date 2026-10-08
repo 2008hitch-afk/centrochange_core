@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "source_commit": "7f46c59d6667333f9ab8c28cf9bea7bd9a8a2005",
+  "tracked_app_files": 239,
+  "app_manifest_sha256": "ebc7025792c79603da97d298f4f4a7403c25a8383da4ebe81e9e5087f72d8ae2",
+  "runtime_image": "sha256:3859ce61f8030b234ffb010d2f5ac6125b3a2d09e291e7911482829639fe433a",
+  "source_overlays": false,
+  "app_services": 6
+}

@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "python_ast_files": 166,
+  "javascript_modules": 13,
+  "browser_scripts": 19,
+  "vendor_versions": {
+    "@tabler/core": "1.6.1",
+    "@tabler/icons": "3.35.0"
+  },
+  "vendor_hashed_files": 24,
+  "runtime_cdn_dependencies": false
+}
