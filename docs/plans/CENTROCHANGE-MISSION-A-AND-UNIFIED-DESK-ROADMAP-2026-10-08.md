@@ -180,3 +180,11 @@ Questo documento e la issue #95 sono tracciamento e proposta; non sostituiscono 
 L'Owner ha esplicitamente autorizzato **solo** la verifica della sovrascrittura `before_request` sul **clone isolato**, con eventuale fix minimo, regressione, PR DRAFT e report. Documento esecutivo: [MISSIONE-CODEX-097-BEFORE-REQUEST-GUARDS-2026-10-08.md](MISSIONE-CODEX-097-BEFORE-REQUEST-GUARDS-2026-10-08.md); [issue #97](https://github.com/2008hitch-afk/centrochange_core/issues/97).
 
 **Non autorizzati:** runtime UAT RC22 condiviso, dati originali, merge di qualunque PR, `main`, upgrade Frappe/ERPNext, cambi schema/permessi o produzione. Il risultato atteso e' `READY_FOR_OWNER_REVIEW` oppure `DECISIONE RICHIESTA`, non un merge. L'autorizzazione e la consegna del mandato **non attestano l'avvio di Codex**; l'operatore avvia Codex con la issue e il documento specifici.
+
+## Snapshot 2026-10-08 — Next gate 35 PR, rehearsal Git proposta
+
+Dopo la review tecnica della correzione #97 [PR #98](https://github.com/2008hitch-afk/centrochange_core/pull/98), la catena stacked ora comprende **35 PR prodotto** #27→#98, mentre la PR #96 del piano rimane distinta. Il diff applicativo #98 e' minimo e tecnicamente rivisto, ma non merged. **Documento operativo congelato con le 35 SHA e un'unica procedura:** [MISSION-A-35-PR-CONSOLIDATION-REHEARSAL-PLAN-2026-10-08.md](MISSION-A-35-PR-CONSOLIDATION-REHEARSAL-PLAN-2026-10-08.md).
+
+**Controllo GitHub**: main SHA `a3c34a7`, branch prodotto #98 SHA `9d12f5e`; storia divergente 159 commit prodotto/6 commit main, tutti da conservare. Nessun workflow GitHub Actions nel tree di main o #98; eventuali automazioni esterne restano da verificare prima di **merge remoto**. Proposta: prova `git merge --no-ff` 35/35 su branch locale temporaneo, senza push, solo dopo autorizzazione Owner alla rehearsal; poi piano di merge remoto separato e successiva approvazione.
+
+**Owner Agenda retest #75 ancora PENDING nel repo.** L'autorizzazione a proseguire nella preparazione non e' un'approvazione visiva, non e' autorizzazione a merge o a Codex rehearsal, e non chiude il goal.
