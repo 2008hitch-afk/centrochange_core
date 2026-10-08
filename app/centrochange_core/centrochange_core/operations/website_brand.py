@@ -8,6 +8,8 @@ def context(values):
     if frappe.session.user != 'Guest':
         from frappe.sessions import get_csrf_token
         values.csrf_token = get_csrf_token()
+    if getattr(frappe.local,'path',None)=='printview' and values.get('body'):
+        values.body=localize_print_labels(values.body)
     if getattr(frappe.local,'path',None)=='login':
         values.title='Centro Change — Accesso'
         # Native login macro retains structure/logic; remove the upstream logo source too.
@@ -33,3 +35,16 @@ def print_template_locale(jenv, print_format):
         from functools import partial
         jenv.globals['_'] = partial(frappe._, lang='it')
     return None
+
+
+def localize_print_labels(body):
+    """Translate only pinned native template label nodes, never invoice values."""
+    from bs4 import BeautifulSoup
+    soup=BeautifulSoup(body, 'html.parser')
+    labels={'Sales Invoice':'Fattura di vendita','Customer Name:':'Cliente:',
+            'Bill to:':'Intestatario:', 'Invoice Number:':'Numero fattura:',
+            'Invoice Date:':'Data fattura:', 'Payment Due Date:':'Scadenza pagamento:'}
+    for node in soup.select('.invoice-title, .title .info-text'):
+        if node.string and node.string.strip() in labels:
+            node.string.replace_with(labels[node.string.strip()])
+    return str(soup)
