@@ -1,0 +1,1 @@
+{"status": "PASS", "source_commit": "f06acca4f6c2ac757dbd3e187709f94b18554b65", "tracked_app_files": 239, "app_manifest_sha256": "e113cdf211b2ffdb73e8391f514cb1a1c1b853f954e205d2300163baf3595164", "runtime_image": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c", "source_overlays": false, "app_services": 6}

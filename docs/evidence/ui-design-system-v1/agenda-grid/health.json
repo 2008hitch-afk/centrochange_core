@@ -1,0 +1,1 @@
+{"status": "PASS", "http_assets": true, "websocket_upgrade": true, "workers_online": 2, "fresh_short_long_jobs_finished": true, "scheduler_enabled": true, "running_services": 9, "business_data_mutations": false, "periodic_job_execution_claim": "not inferred from scheduler timestamp"}

@@ -1,5 +1,12 @@
 # GOAL-02 COMPLETION REPORT — MVP Ready for Client UAT
 
+## Agenda Owner-gap corrective checkpoint — 2026-10-08
+
+**TECHNICAL PASS / READY_FOR_OWNER_RETEST.** RC22 corrects the verified Tabler header-flex/row-grid collision using one shared scoped grid template. Runtime coordinate drift now 0px across five viewports and horizontal scroll. 12 Agenda browser checks and 189 rollback backend checks PASS; Owner dataset unchanged. #75 remains OPEN, PR #94 draft/unmerged, #92/#93 unchanged. Previous general visual PASS did not prove coordinate alignment and is superseded for this specific gap. Owner visual retest required.
+
+Evidence: `docs/evidence/ui-design-system-v1/AGENDA-GRID-ALIGNMENT-2026-10-08.md`. Candidate source `f06acca4f6c2ac757dbd3e187709f94b18554b65`; no business/permission/schema delta. GOAL-03 not authorized.
+
+
 ## Current UI / permissions checkpoint — 2026-10-08
 
 **READY_FOR_OWNER_UAT**, candidate **goal02-20261008-rc21**, source **c51a9e7a1f887b87c0b06872a8d3e94f2e7249f5**. Owner-approved Design System v1 is applied transversally using local pinned Tabler Core1.6.1/Icons3.35.0 and shared shell/components. [True conformity matrix, runtime tests and screenshots](evidence/ui-design-system-v1/CONFORMANCE.md); [candidate manifest](uat/UAT-CANDIDATE.json); [Owner walkthrough](uat/FINAL-OWNER-WALKTHROUGH.md).

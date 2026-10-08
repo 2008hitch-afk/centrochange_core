@@ -14,3 +14,7 @@
 10. Role validation with existing approved role matrix: Manager, Secretariat, Finance, Accountant, A/B/C and Guest. Server evidence is in #77; hiding buttons is not proof. A/B/C cannot gain another professional/patient/fiscal/private-note scope. No role-model delta.
 
 Record per-surface Owner PASS/FAIL and screenshot/reference. If a visual request requires new API/grant/visibility, pause for an explicit Owner decision; do not infer it. No identity decision remains pending; final visual acceptance, #77 review and final GOAL-02 acceptance are still Owner decisions. No production, real data, providers, real SdI/TS, stack merge or GOAL-03.
+
+## #75 Agenda alignment retest — RC22
+
+Verify 5–11 October and 28 September–4 October with sessions visible: each day header must coincide with its day column; repeat after resize and internal horizontal scroll. Professional column stays distinct. Technical evidence does not replace Owner visual acceptance.

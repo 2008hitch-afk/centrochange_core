@@ -1,13 +1,13 @@
 {
-  "candidate": "goal02-20261008-rc21",
-  "status": "TECHNICAL PASS / READY_FOR_OWNER_UAT; Owner visual acceptance PENDING",
+  "candidate": "goal02-20261008-rc22",
+  "status": "TECHNICAL PASS / READY_FOR_OWNER_RETEST; Agenda Owner visual retest PENDING",
   "environment": "DEV synthetic only",
-  "source_commit": "c51a9e7a1f887b87c0b06872a8d3e94f2e7249f5",
-  "image": "centrochange-uat:goal02-20261008-rc21",
-  "local_image_id": "sha256:3859ce61f8030b234ffb010d2f5ac6125b3a2d09e291e7911482829639fe433a",
+  "source_commit": "f06acca4f6c2ac757dbd3e187709f94b18554b65",
+  "image": "centrochange-uat:goal02-20261008-rc22",
+  "local_image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
   "image_id_is_registry_digest": false,
   "source_overlay": false,
-  "app_manifest_sha256": "ebc7025792c79603da97d298f4f4a7403c25a8383da4ebe81e9e5087f72d8ae2",
+  "app_manifest_sha256": "e113cdf211b2ffdb73e8391f514cb1a1c1b853f954e205d2300163baf3595164",
   "tracked_app_files": 239,
   "dataset": "existing goal02-demo-v1 plus preserved Owner UAT changes",
   "dataset_reset": false,
@@ -23,5 +23,5 @@
   "ui_design_system": "docs/ui/CENTROCHANGE-UI-DESIGN-SYSTEM-v1.md",
   "tabler_core": "1.6.1",
   "tabler_icons": "3.35.0",
-  "evidence": "docs/evidence/ui-design-system-v1/CONFORMANCE.md"
+  "evidence": "docs/evidence/ui-design-system-v1/AGENDA-GRID-ALIGNMENT-2026-10-08.md"
 }

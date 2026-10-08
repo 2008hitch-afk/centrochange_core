@@ -1,5 +1,12 @@
 # Design System v1 — transversal conformance / #76 → #77 → #75
 
+## Agenda Owner-gap corrective checkpoint — 2026-10-08
+
+**TECHNICAL PASS / READY_FOR_OWNER_RETEST.** RC22 corrects the verified Tabler header-flex/row-grid collision using one shared scoped grid template. Runtime coordinate drift now 0px across five viewports and horizontal scroll. 12 Agenda browser checks and 189 rollback backend checks PASS; Owner dataset unchanged. #75 remains OPEN, PR #94 draft/unmerged, #92/#93 unchanged. Previous general visual PASS did not prove coordinate alignment and is superseded for this specific gap. Owner visual retest required.
+
+Evidence: `docs/evidence/ui-design-system-v1/AGENDA-GRID-ALIGNMENT-2026-10-08.md`. Candidate source `f06acca4f6c2ac757dbd3e187709f94b18554b65`; no business/permission/schema delta. GOAL-03 not authorized.
+
+
 Date: **2026-10-08**. Result: **TECHNICAL PASS / READY_FOR_OWNER_UAT**. **OWNER VISUAL UAT REQUIRED**. Issues #76/#77/#75 remain OPEN; PRs #92/#93/#94 remain draft and unmerged. This report supersedes the 7 October identity-pending checkpoints; it does not declare Owner acceptance or GOAL-02 Done.
 
 Authority: [approved v1](../../ui/CENTROCHANGE-UI-DESIGN-SYSTEM-v1.md), #76 authorization. [Implementation and official sources](IMPLEMENTATION.md). No permission, role, center scope, accounting, price, lifecycle or provider delta. No GOAL-03.

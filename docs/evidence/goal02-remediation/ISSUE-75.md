@@ -1,5 +1,12 @@
 # #75 — Final cross-application UI/UX pass
 
+## Agenda Owner-gap corrective checkpoint — 2026-10-08
+
+**TECHNICAL PASS / READY_FOR_OWNER_RETEST.** RC22 corrects the verified Tabler header-flex/row-grid collision using one shared scoped grid template. Runtime coordinate drift now 0px across five viewports and horizontal scroll. 12 Agenda browser checks and 189 rollback backend checks PASS; Owner dataset unchanged. #75 remains OPEN, PR #94 draft/unmerged, #92/#93 unchanged. Previous general visual PASS did not prove coordinate alignment and is superseded for this specific gap. Owner visual retest required.
+
+Evidence: `docs/evidence/ui-design-system-v1/AGENDA-GRID-ALIGNMENT-2026-10-08.md`. Candidate source `f06acca4f6c2ac757dbd3e187709f94b18554b65`; no business/permission/schema delta. GOAL-03 not authorized.
+
+
 ## Superseding checkpoint — 2026-10-08
 
 **TECHNICAL PASS / READY_FOR_OWNER_UAT. OWNER VISUAL ACCEPTANCE PENDING.** True twelve-dimension surface conformance matrix, desktop/mobile/keyboard/search/states/debranding/print; Owner visual acceptance remains required.
