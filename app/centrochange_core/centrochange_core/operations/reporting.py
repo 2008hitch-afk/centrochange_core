@@ -61,4 +61,4 @@ def print_session(appointment):
         ('Professionista',doc.practitioner_name),('Servizio',doc.cc_service_label),('Durata',doc.duration),
         ('Stato',doc.cc_closure_state),('Economia operativa',doc.cc_economic_state)]
     body=''.join('<tr><th>'+escape(label)+'</th><td>'+escape(str(value or ''))+'</td></tr>' for label,value in rows)
-    return '<!doctype html><html lang="it"><meta charset="utf-8"><title>Riepilogo seduta</title><h1>Centro Change — Riepilogo seduta</h1><table>'+body+'</table></html>'
+    return '<!doctype html><html lang="it"><meta charset="utf-8"><title>Riepilogo seduta</title><link rel="stylesheet" href="/assets/centrochange_core/vendor/tabler-core-1.6.1/tabler.min.css"><link rel="stylesheet" href="/assets/centrochange_core/css/ui_v1.css"><h1>Centro Change — Riepilogo seduta</h1><table class="table table-vcenter">'+body+'</table></html>'
