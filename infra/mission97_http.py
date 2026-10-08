@@ -37,6 +37,13 @@ def main():
     else:assert status in (404,417)
     assert not value.get('message') and not value.get('data')
     checks.append({'role':role,'surface':prefix,'status':status,'result':'PASS'})
+   if role!='m':
+    status,value,_=call(opener,'/api/method/erpnext.accounts.utils.get_balance_on',{'account':'M97-NONEXISTENT-ACCOUNT'})
+    assert status==403 and not value.get('message') and not value.get('data')
+    checks.append({'role':role,'surface':'known native accounting helper denied before query','status':status,'result':'PASS'})
+    status,value,_=call(opener,'/api/method',{'cmd':'frappe.desk.query_report.get_script','report_name':'M97-NONEXISTENT-REPORT'})
+    assert status==403 and not value.get('message') and not value.get('data')
+    checks.append({'role':role,'surface':'cmd form native report guard','status':status,'result':'PASS'})
    # Both REST and generic native document path; only clinical author may read.
    status,value,_=call(opener,'/api/method/frappe.client.get',{'doctype':'CC Private Note','name':fixture['private_note']})
    if role=='a':assert status==200

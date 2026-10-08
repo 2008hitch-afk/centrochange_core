@@ -14,6 +14,7 @@ def run(argv, **kwargs):
     return subprocess.run(argv, check=True, **kwargs)
 
 def compose(image):
+    assert image=='centrochange-uat:goal02-20261008-rc22' or image.startswith('centrochange-m97:'), 'Only RC22 source image or isolated lab image allowed'
     config=yaml.safe_load((ROOT/'infra/compose.yaml').read_text())
     config['name']=PROJECT
     config.pop('x-app-image');config.pop('x-configured-app')
@@ -26,6 +27,9 @@ def compose(image):
     env=PRIVATE/'runtime.env'
     if not env.exists():
         env.write_text(f'SITE_NAME={SITE}\nHTTP_PORT={PORT}\nDB_PASSWORD={secrets.token_hex(24)}\nADMIN_PASSWORD={secrets.token_hex(24)}\n');env.chmod(0o600)
+    values=dict(line.split('=',1) for line in env.read_text().splitlines() if '=' in line)
+    assert values['SITE_NAME']==SITE and values['HTTP_PORT']==str(PORT), 'Isolated site/port immutable'
+    env.chmod(0o600)
     path=PRIVATE/'compose.yaml';path.write_text(yaml.safe_dump(config));path.chmod(0o600)
     return ['docker','compose','--project-name',PROJECT,'--env-file',str(env),'-f',str(path)]
 
@@ -75,6 +79,8 @@ def main():
     elif a.action=='read-hooks':
         print(execute("print(json.dumps({'effective':frappe.get_hooks('before_request'),'app':frappe.get_hooks('before_request',app_name='centrochange_core')},default=str));frappe.db.rollback();frappe.destroy()"));return
     elif a.action=='seed':
+        isolation()
+        run(['docker','exec',PROJECT+'-backend-1','bench','--site',SITE,'set-config','cc_uat_demo','1'],capture_output=True,text=True)
         print(execute("assert frappe.conf.cc_synthetic_dev==1\nfrappe.conf.cc_uat_demo=1\nfrom centrochange_core.uat import demo\nprint(json.dumps(demo.seed(),default=str));frappe.destroy()"));return
     print(json.dumps(isolation()))
 

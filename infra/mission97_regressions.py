@@ -28,9 +28,13 @@ def output(argv,*args,**kwargs):
 
 def main():
  os.umask(0o077)
- p=argparse.ArgumentParser();p.add_argument('suite',choices=['backend','browser','fingerprint']);p.add_argument('--script',default='uat');p.add_argument('--output-dir',required=True);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('suite',choices=['backend','browser','fingerprint','health']);p.add_argument('--script',default='uat');p.add_argument('--output-dir',required=True);a=p.parse_args()
  isolation()
- if a.suite=='fingerprint':
+ if a.suite=='health':
+  # The existing health probe is executed with isolated constants in this host process.
+  code=(Path(__file__).parent/'uat_runtime_health.py').read_text().replace('centrochange-dev',PROJECT).replace('centrochange.local',SITE).replace('8082',str(PORT))
+  with patch('subprocess.run',run),patch('subprocess.check_output',output):exec(compile(code,'isolated_uat_runtime_health','exec'),{'__name__':'__main__'})
+ elif a.suite=='fingerprint':
   with patch('subprocess.run',run),patch('subprocess.check_output',output):importlib.import_module('ui_dataset_fingerprint').main()
  elif a.suite=='backend':
   sys.argv=['remediation_acceptance']
