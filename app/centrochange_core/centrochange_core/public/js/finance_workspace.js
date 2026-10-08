@@ -1,6 +1,6 @@
 import {api,escapeHtml as esc,requestKey} from './api.js';
 const $=s=>document.querySelector(s),finance=(method,args={},post=false)=>api('centrochange_core.finance.'+method,args,post);
-const state={boot:null,view:'Riepilogo',rows:[],selected:null};
+const state={boot:null,view:'Riepilogo',rows:[],selected:null,renderGeneration:0};
 const views=['Riepilogo','Fatture pazienti','XML ricevuti','Fatture fornitori','Banca','Professionisti','Coda amministrativa','SdI','TS'];
 const money=v=>v===null||v===undefined?'Da definire':new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(v);
 function notice(message,error=false){$('#notice').textContent=message;$('#notice').className='notice'+(error?' error':'');$('#notice').hidden=false;}
@@ -16,29 +16,31 @@ $('#logout').onclick=async()=>{await api('logout',{},true);location.href='/login
 $('#navigation').innerHTML='<a class="nav-button" href="/centrochange">Agenda</a>'+views.map(v=>`<button class="nav-button" data-view="${esc(v)}">${esc(v)}</button>`).join('');
 $('#navigation').onclick=e=>{const b=e.target.closest('[data-view]');if(!b)return;state.view=b.dataset.view;refresh().catch(e=>notice(e.message,true));};
 $('#filters').onsubmit=e=>{e.preventDefault();refresh().catch(e=>notice(e.message,true));};
-$('#center').onchange=async()=>{try{state.boot=await finance('reporting.bootstrap',{center:$('#center').value});await refresh();}catch(e){notice(e.message,true);}};
+$('#center').onchange=async()=>{const center=$('#center').value;try{const boot=await finance('reporting.bootstrap',{center});if(center!==$('#center').value)return;state.boot=boot;await refresh();}catch(e){if(center===$('#center').value)notice(e.message,true);}};
 function table(rows,columns){return `<div class="table-wrap"><table><thead><tr>${columns.map(([k,n])=>`<th>${esc(n)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr data-name="${esc(r.name)}" tabindex="0">${columns.map(([k])=>`<td>${esc(k==='amount'&&!r.amount_known?'Da definire':r[k]??'—')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${rows.length?'':'<p class="empty">Nessun documento.</p>'}`;}
 function showRows(rows,columns,choose){state.rows=rows;$('#finance-content').innerHTML=table(rows,columns);$('#finance-content').onclick=e=>{const row=e.target.closest('[data-name]');if(row)choose(rows.find(r=>r.name===row.dataset.name)).catch(e=>notice(e.message,true));};$('#finance-content').onkeydown=e=>{if(e.key==='Enter'){const row=e.target.closest('[data-name]');if(row)choose(rows.find(r=>r.name===row.dataset.name)).catch(e=>notice(e.message,true));}};}
 async function refresh(){
+ const generation=++state.renderGeneration,view=state.view,center=$('#center').value;
+ const current=()=>generation===state.renderGeneration&&view===state.view&&center===$('#center').value;
  $('#page-title').textContent=state.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));$('#detail').hidden=true;$('.workspace').style.gridTemplateColumns='1fr';$('#finance-content').onclick=null;
  $('#finance-action').hidden=!state.boot?.can_write||!['Fatture pazienti','XML ricevuti','Banca','Professionisti','Coda amministrativa','SdI','TS'].includes(state.view);
  $('#finance-action').textContent=({'Fatture pazienti':'Crea fattura','XML ricevuti':'Importa XML','Banca':'Importa movimenti','Professionisti':'Registra atteso','Coda amministrativa':'Rileva condizioni','SdI':'Prepara SdI simulato','TS':'Prepara TS simulato'})[state.view]||'Nuova operazione';
  if(!state.boot?.center){$('#finance-content').innerHTML='<p class="empty">Nessun centro assegnato.</p>';return;}
  $('#finance-content').innerHTML='<p class="loading">Caricamento…</p>';
  if(state.view==='Riepilogo'){
-  const data=await finance('reporting.summary',interval()),t=data.totals;
+  const data=await finance('reporting.summary',interval()),t=data.totals;if(!current())return;
   $('#finance-content').innerHTML='<h2>Contabilità del centro</h2><div class="metrics">'+[['Ricavi netti',t.revenue_net],['Incassato nel periodo',t.collected],['Credito residuo delle fatture nel periodo',t.receivable_outstanding],['Costi fatture fornitori netti',t.purchase_net],['Debito residuo',t.payable_outstanding],['Compensi attesi',t.expected_compensation]].map(([name,val])=>`<article class="metric"><span>${esc(name)}</span><strong>${money(val)}</strong></article>`).join('')+'</div><p>'+t.sessions+' sedute · '+t.unresolved_expectations+' attesi da verificare · '+data.exceptions.length+' condizioni amministrative aperte</p><button id="finance-export">Esporta CSV</button><h3>Fatture pazienti</h3>'+table(data.sales_invoices,[['name','Documento'],['customer','Cliente'],['net_total','Netto'],['outstanding_amount','Residuo']])+'<h3>Fatture fornitori</h3>'+table(data.purchase_invoices,[['name','Documento'],['supplier','Fornitore'],['net_total','Netto'],['outstanding_amount','Residuo']])+'<p>Contabilità per data di registrazione; sedute per data prevista. I totali del cliente e del fornitore seguono il soggetto fiscale condiviso. Margine da definire. Profilo fiscale DEV non verificato.</p>';
   $('#finance-export').onclick=()=>{location.href='/api/method/centrochange_core.finance.reporting.export_csv?'+new URLSearchParams(interval());};
   $('#finance-content').onclick=e=>{const r=e.target.closest('[data-name]');if(!r)return;const sale=data.sales_invoices.find(x=>x.name===r.dataset.name);const row=sale||data.purchase_invoices.find(x=>x.name===r.dataset.name);if(row)invoiceDetail(row,sale?'Sales Invoice':'Purchase Invoice').catch(e=>notice(e.message,true));};
  }else if(state.view==='TS'){
-  const rows=await finance('fiscal.records',{center:$('#center').value,domain:'TS'});showRows(rows,[['reference_name','Fonte spesa'],['status','Stato'],['attempt_count','Tentativi'],['error_class','Da verificare']],fiscalDetail);
+  const rows=await finance('fiscal.records',{center:$('#center').value,domain:'TS'});if(!current())return;showRows(rows,[['reference_name','Fonte spesa'],['status','Stato'],['attempt_count','Tentativi'],['error_class','Da verificare']],fiscalDetail);
  }else if(state.view==='SdI'){
-  const rows=await finance('fiscal.records',{center:$('#center').value,domain:'SDI'});showRows(rows,[['reference_name','Documento'],['direction','Direzione'],['status','Stato'],['attempt_count','Tentativi'],['error_class','Esito']],fiscalDetail);
+  const rows=await finance('fiscal.records',{center:$('#center').value,domain:'SDI'});if(!current())return;showRows(rows,[['reference_name','Documento'],['direction','Direzione'],['status','Stato'],['attempt_count','Tentativi'],['error_class','Esito']],fiscalDetail);
   if(state.boot.can_write){$('#finance-content').insertAdjacentHTML('beforeend','<button id="simulated-inbound">Ricevi XML simulato</button>');$('#simulated-inbound').onclick=()=>modal('Ricevi XML simulato',label('Identificativo messaggio sintetico',input('external_message_id','text','SYNTHETIC-'))+label('File XML','<input name="file" type="file" accept=".xml" required>')+reason(),async d=>finance('sdi.intake',{center:$('#center').value,external_message_id:d.external_message_id,xml:await $('#modal [name=file]').files[0].text(),reason:d.reason},true));}
  }else if(state.view==='Coda amministrativa'){
-  const rows=await finance('admin_queue.list_items',{center:$('#center').value});showRows(rows,[['exception_type','Condizione'],['reference_name','Fonte'],['state','Stato'],['priority','Priorità'],['assignee','Responsabile'],['due_at','Scadenza'],['defer_until','Rinvio']],queueDetail);
+  const rows=await finance('admin_queue.list_items',{center:$('#center').value});if(!current())return;showRows(rows,[['exception_type','Condizione'],['reference_name','Fonte'],['state','Stato'],['priority','Priorità'],['assignee','Responsabile'],['due_at','Scadenza'],['defer_until','Rinvio']],queueDetail);
  }else if(state.view==='Professionisti'){
-  const rows=await finance('reporting.records',{center:$('#center').value,doctype:'CC Professional Expectation'});showRows(rows,[['appointment','Seduta'],['practitioner','Professionista'],['state','Esito'],['amount','Atteso'],['problem','Da verificare']],async row=>{
+  const rows=await finance('reporting.records',{center:$('#center').value,doctype:'CC Professional Expectation'});if(!current())return;showRows(rows,[['appointment','Seduta'],['practitioner','Professionista'],['state','Esito'],['amount','Atteso'],['problem','Da verificare']],async row=>{
    const data=await finance('professional_economics.position',{center:$('#center').value,practitioner:row.practitioner});
    modal('Posizione professionista','<p>Atteso: '+money(data.expected_amount)+' · '+data.unresolved_count+' sedute da verificare</p>'+table(data.sessions,[['appointment','Seduta'],['source','Fonte'],['state','Esito'],['amount','Atteso']])+table(data.comparisons,[['purchase_invoice','Fattura ricevuta'],['state','Confronto'],['received_amount','Netto ricevuto'],['problem','Da verificare']]),null);
   });
@@ -47,7 +49,7 @@ async function refresh(){
   if($('#compare-compensation'))$('#compare-compensation').onclick=async()=>{try{const invoices=await finance('reporting.records',{center:$('#center').value,doctype:'Purchase Invoice'});modal('Confronta atteso e ricevuto',label('Fattura ricevuta',select('purchase_invoice',invoices.filter(r=>r.docstatus===1)))+label('Snapshot di sedute distinti',`<select name="expectations" multiple required>${options(rows)}</select>`)+reason(),d=>finance('professional_economics.compare',{purchase_invoice:d.purchase_invoice,expectations:Array.from($('#modal [name=expectations]').selectedOptions).map(o=>o.value),reason:d.reason},true));}catch(e){notice(e.message,true);}};
  }else{
   const dt=({'Fatture pazienti':'Sales Invoice','XML ricevuti':'CC Incoming Invoice','Fatture fornitori':'Purchase Invoice','Banca':'Bank Transaction'})[state.view];
-  const rows=await finance('reporting.records',{center:$('#center').value,doctype:dt});
+  const rows=await finance('reporting.records',{center:$('#center').value,doctype:dt});if(!current())return;
   const cols=dt==='CC Incoming Invoice'?[['invoice_number','Documento'],['state','Stato'],['supplier','Fornitore'],['total','Importo'],['problem','Da verificare']]:dt==='Bank Transaction'?[['name','Movimento'],['date','Data'],['deposit','Entrata'],['withdrawal','Uscita'],['unallocated_amount','Da riconciliare']]:[['name','Documento'],['docstatus','Stato'],[dt==='Sales Invoice'?'customer':'supplier','Soggetto'],['grand_total','Importo'],['outstanding_amount','Residuo']];
   showRows(rows,cols,row=>dt==='CC Incoming Invoice'?incomingDetail(row):dt==='Bank Transaction'?bankDetail(row):invoiceDetail(row,dt));
  }

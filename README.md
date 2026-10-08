@@ -4,7 +4,7 @@ Repository tecnico della soluzione **Centro Change** costruita su Frappe Framewo
 
 ## Stato
 
-**IMPLEMENTATION AUTHORIZED / WP-00 CLEAN RUNTIME**
+**MVP DEV IMPLEMENTED — GOAL-01 DONE / DEV PASS**
 
 Non è ancora una baseline definitiva di produzione. Le decisioni che dipendono dal runtime devono essere validate tramite spike e riportate con evidenze.
 
@@ -17,7 +17,7 @@ L'implementazione HC-0005 è autorizzata. La guida canonica per il build è:
 - `docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml`
 - macro-goal corrente: GOAL-01 / issue #22
 - implementation epic #20
-- primo task eseguibile: WP-00 / issue #21
+- WP-00 e wave operative/Finance completate sullo stack draft #27–#52; verifica integrata WP-09 #53 / PR #54
 
 Le evidenze delle 40 capability già validate vengono riusate come vincoli architetturali e regression basis; Finance/Admin / SdI / TS sono tracciati nelle nuove capability di delivery `CC-CAP-041..050`.
 
@@ -30,17 +30,17 @@ Le evidenze delle 40 capability già validate vengono riusate come vincoli archi
 5. Le regole specifiche Centro Change devono essere versionate nel repository.
 6. Dev/test usano dataset sintetici. Nessun dato cliente reale o secret in Git.
 
-## Architettura candidata
+## Architettura implementata in DEV
 
 ```text
 Frappe Framework
 │
 ├── ERPNext
 │   ├── anagrafiche/economia/reporting nativi dove semanticamente corretti
-│   └── future capability: fatture, pagamenti reali, accounting, CRM/integrations
+│   └── Sales Invoice, Purchase Invoice, Payment Entry, Bank Transaction, GL e Payment Ledger
 │
 ├── Frappe Builder / Website
-│   └── sito pubblico branded + prenotazione iniziale
+│   └── Website autenticato + primo incontro sintetico; sito branded differito
 │
 └── centrochange_core
     ├── DocTypes specifici
@@ -64,27 +64,22 @@ ChatGPT → issue/spec/acceptance criteria → GitHub → Codex → runtime/code
 
 ChatGPT non deve dichiarare `PASS` su comportamento runtime senza evidenza prodotta da Codex.
 
-## Prima attività
+## Uso e verifica DEV
 
-La priorità iniziale è lo **Spike 01 — Reuse & Isolation Runtime**: verificare la foundation Frappe/ERPNext già presente sul workstation Windows/WSL2 e creare un ambiente `centrochange-dev` isolato, senza interferire con altri stack locali.
+Il bootstrap versionato è in `infra/compose.yaml`; `infra/compose.dev.yaml` è un overlay di sviluppo. Il candidato riproducibile usa l’immagine costruita da Git, senza overlay. Configurazione e credenziali locali restano fuori Git; vedere `infra/README.md`.
 
-Vedi `docs/spikes/SPIKE-01-REUSE-ISOLATION.md` e le issue del repository.
+- `/centrochange`: agenda, prenotazione/spostamento/cancellazione, chiusura, note, storico paziente, pacchetti, disponibilità e report; segreteria/Management creano identità sintetiche e assegnazioni esplicite.
+- `/finanza`: documenti contabili nativi, XML passivi, riconciliazione, compensi parametrici, coda amministrativa, report e adapter SdI/TS simulati. Accountant in sola lettura.
+- `/primo_incontro`: ingresso pubblico limitato ai professionisti configurati Marco/Francesca.
+- Desk nativo e API protette completano le azioni amministrative; le autorizzazioni sono server-side.
 
-## Struttura prevista
-
-```text
-centrochange_core/
-├── README.md
-├── AGENTS.md
-├── ARCHITECTURE.md
-├── SECURITY.md
-├── CONTRIBUTING.md
-├── docs/
-│   ├── DECISIONS.md
-│   ├── RUNTIME-BASELINE.md
-│   └── spikes/
-└── .github/
-    └── PULL_REQUEST_TEMPLATE.md
+```sh
+python3 infra/runtime_acceptance.py --env-file /percorso/esterno/runtime.env --snapshot /tmp/cc-runtime.json
+python3 infra/image_acceptance.py --source-ref 43d24bb
+python3 infra/integrated_acceptance.py --env-file /percorso/esterno/runtime.env --output-dir /tmp/cc-integrated
+python3 infra/dev_backup.py --destination /tmp/cc-dev-backups
 ```
 
-Lo scaffold Frappe applicativo vero e proprio verrà generato/validato da Codex sul runtime compatibile durante lo Spike 01, invece di inventare a priori metadati non testati.
+Eseguire con accesso Docker e in sequenza sul solo ambiente DEV sintetico. Le fixture HTTP committano esclusivamente dati sintetici e li eliminano verificando la proprietà esatta; le prove dirette usano rollback. Gli output temporanei e le credenziali browser restano fuori Git.
+
+[Report GOAL-01](docs/MVP-GOAL-COMPLETION-REPORT-2026-10-05.md) e [prova WP-09](docs/evidence/WP-09-2026-10-05.md) riportano lo stato finale e i limiti. Compenso per seduta svolta ma non pagata: OPEN/UNSET; tariffa alla data di prenotazione con snapshot immutabile; esattamente 48h è puntuale. Nessun provider o traffico SdI/TS reale. UAT e produzione richiedono i gate della roadmap.

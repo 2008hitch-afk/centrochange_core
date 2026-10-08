@@ -106,3 +106,54 @@ def schedules(center):
         doc.check_permission('read')
         result.append({'name':name,'practitioner':doc.cc_practitioner,'time_slots':[{'day':row.day,'from_time':str(get_time(row.from_time)),'to_time':str(get_time(row.to_time))} for row in doc.time_slots]})
     return result
+
+
+@frappe.whitelist(methods=['POST'])
+def create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name=None,email=None):
+    # Reuse the central native Patient and assignment services; no clinical master is added.
+    from centrochange_core.security.audit import atomic
+    return atomic(_create_patient)(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email)
+
+
+def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email):
+    from hashlib import sha256
+    from centrochange_core.security.audit import append,internal_write,serialize
+    from centrochange_core.security.lifecycle import lock,set_assignment
+    from centrochange_core.security.guards import require_operations
+    from centrochange_core.finance.guards import require_synthetic
+    lock();require_operations(center);require_synthetic()
+    first_name=str(first_name or '').strip();last_name=str(last_name or '').strip();uid=str(uid or '').strip();email=str(email or '').strip().lower() or None
+    if not first_name.startswith(('SYNTHETIC','CC-HTTP-')) or not uid.startswith(('SYNTHETIC-','CC-HTTP-')):
+        frappe.throw('This DEV intake accepts explicitly synthetic identity inputs only')
+    if len(first_name)>140 or len(last_name)>140 or len(uid)>140 or not frappe.db.exists('Gender',sex):
+        frappe.throw('Bounded identity fields and an existing native gender are required')
+    if email and (not email.endswith('@example.invalid') or len(email)>140 or not frappe.utils.validate_email_address(email)):
+        frappe.throw('Only a valid fictional example.invalid email is permitted')
+    if not request_key or len(request_key)>160:frappe.throw('A bounded patient intake key is required')
+    key=sha256(serialize([frappe.session.user,center,request_key]).encode()).hexdigest()
+    payload={'center':center,'first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,'email':email,'practitioner':practitioner}
+    digest=sha256(serialize(payload).encode()).hexdigest()
+    old=frappe.db.get_value('Patient',{'cc_intake_key':key},['name','cc_intake_hash'],as_dict=True,for_update=True)
+    if old:
+        if old.cc_intake_hash!=digest:frappe.throw('Patient intake retry differs from the recorded request')
+        from centrochange_core.security.guards import require_patient
+        require_patient(old.name)
+        return {'name':old.name,'replay':True}
+    if frappe.db.exists('Patient',{'uid':uid}):
+        frappe.throw('Identity already exists; use exact UID discovery and an explicit assignment')
+    with internal_write('cc_patient_intake_write'):
+        doc=frappe.get_doc({'doctype':'Patient','first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,'email':email,
+            'invite_user':0,'cc_intake_key':key,'cc_intake_hash':digest}).insert(ignore_permissions=True)
+    set_assignment(doc.name,center,practitioner,1,reason)
+    append('PATIENT_INTAKE_CREATED','Patient',doc.name,None,{'center':center,'payload_hash':digest},reason)
+    return {'name':doc.name,'replay':False}
+
+
+@frappe.whitelist(methods=['GET'])
+def management_context(center):
+    from centrochange_core.security.guards import require_manager,current_rows
+    require_manager()
+    users=current_rows('Has Role',{'role':['in',['CC Professional','CC Secretariat','CC Finance','CC Accountant','CC Manager']]},pluck='parent')
+    return {'users':current_rows('User',{'name':['in',users or ['']]},fields=['name','full_name','enabled']),
+        'memberships':current_rows('CC Center Membership',{'center':center},fields=['name','user','active']),
+        'practitioners':current_rows('Healthcare Practitioner',fields=['name','practitioner_name','user_id','status'])}

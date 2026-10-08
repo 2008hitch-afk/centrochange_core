@@ -77,7 +77,7 @@ def names_condition(doctype, names):
 
 def current_rows(doctype, filters=None, fields=None, pluck=None):
 	"""Permission transactions need current reads after waiting under REPEATABLE READ."""
-	return frappe.db.get_values(doctype, filters=filters, fieldname=pluck or fields or "name",
+	return frappe.db.get_values(doctype, filters={} if filters is None else filters, fieldname=pluck or fields or "name",
 		as_dict=not bool(pluck), pluck=bool(pluck),
 		for_update=bool(frappe.flags.get("cc_permission_current_read")))
 

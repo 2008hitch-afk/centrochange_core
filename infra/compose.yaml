@@ -111,7 +111,8 @@ services:
       MARIADB_AUTO_UPGRADE: "1"
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      start_period: 5s
+      # Empty-volume initialization can exceed one minute under local image I/O.
+      start_period: 120s
       interval: 5s
       timeout: 5s
       retries: 10
