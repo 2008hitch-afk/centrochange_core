@@ -120,15 +120,19 @@ def run(extra_checks=None):
 
 
 @synthetic_test
-def create_http(scheduling=False,operations=False,finance=False):
+def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None,finance_users=False,commit=True):
 	"""Create explicitly marked disposable HTTP fixtures; harness destroys them."""
 	if frappe.session.user != 'Administrator' or frappe.conf.get('cc_synthetic_dev') != 1:
 		frappe.throw('Synthetic DEV Administrator required')
 	from frappe.utils.password import update_password
-	tag = 'CC-HTTP-' + frappe.generate_hash(length=10)
+	if fixture_tag is not None and (fixture_tag != 'CC-HTTP-UAT0000001' or frappe.conf.get('cc_uat_demo') != 1):
+		frappe.throw('Explicit synthetic UAT configuration required')
+	if not commit and fixture_tag != 'CC-HTTP-UAT0000001':
+		frappe.throw('Deferred fixture commit is reserved for synthetic UAT')
+	tag = fixture_tag or 'CC-HTTP-' + frappe.generate_hash(length=10)
 	result = {'tag':tag, 'users':{}, 'patients':[], 'practitioners':[], 'centers':[]}
 	identities=[('a','CC Professional'),('b','CC Professional'),('c','CC Professional'),('s','CC Secretariat'),('m','CC Manager')]
-	if finance:
+	if finance or finance_users:
 		identities += [('f','CC Finance'),('t','CC Accountant')]
 	for label, role in identities:
 		name = tag.lower() + '-' + label + '@example.invalid'
@@ -144,7 +148,7 @@ def create_http(scheduling=False,operations=False,finance=False):
 	for label in ('a','b'):
 		result['practitioners'].append(frappe.get_doc({'doctype':'Healthcare Practitioner',
 			'first_name':tag+' '+label,'status':'Active','user_id':result['users'][label]['name']}).insert().name)
-	for label in ('OWN','CROSS'):
+	for label in (('Alfa','Altro centro') if fixture_tag else ('OWN','CROSS')):
 		result['patients'].append(frappe.get_doc({'doctype':'Patient','first_name':tag+' '+label,
 			'sex':'Female','uid':tag+'-'+label}).insert().name)
 	service.set_assignment(result['patients'][0],result['centers'][0],result['practitioners'][0],1,tag)
@@ -191,7 +195,8 @@ def create_http(scheduling=False,operations=False,finance=False):
 			'2099-01-12','09:00:00',tag+'-finance-book',tag)['name']
 		result['finance']['source']=bridge.capture(appointment,tag)['name']
 		result['finance']['appointment']=appointment
-	frappe.db.commit()
+	if commit:
+		frappe.db.commit()
 	return result
 
 

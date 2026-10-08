@@ -1,0 +1,3929 @@
+{
+  "apps": [
+    "frappe",
+    "erpnext",
+    "builder",
+    "healthcare",
+    "centrochange_core"
+  ],
+  "company": {
+    "country": "Italy",
+    "default_currency": "EUR"
+  },
+  "schema": [
+    {
+      "module": "Healthcare",
+      "name": "ABDM Request"
+    },
+    {
+      "module": "Healthcare",
+      "name": "ABDM Settings"
+    },
+    {
+      "module": "Website",
+      "name": "About Us Settings"
+    },
+    {
+      "module": "Website",
+      "name": "About Us Team Member"
+    },
+    {
+      "module": "Core",
+      "name": "Access Log"
+    },
+    {
+      "module": "Accounts",
+      "name": "Account"
+    },
+    {
+      "module": "Accounts",
+      "name": "Account Category"
+    },
+    {
+      "module": "Accounts",
+      "name": "Account Closing Balance"
+    },
+    {
+      "module": "Accounts",
+      "name": "Accounting Dimension"
+    },
+    {
+      "module": "Accounts",
+      "name": "Accounting Dimension Detail"
+    },
+    {
+      "module": "Accounts",
+      "name": "Accounting Dimension Filter"
+    },
+    {
+      "module": "Accounts",
+      "name": "Accounting Period"
+    },
+    {
+      "module": "Accounts",
+      "name": "Accounts Settings"
+    },
+    {
+      "module": "Projects",
+      "name": "Activity Cost"
+    },
+    {
+      "module": "Core",
+      "name": "Activity Log"
+    },
+    {
+      "module": "Projects",
+      "name": "Activity Type"
+    },
+    {
+      "module": "Contacts",
+      "name": "Address"
+    },
+    {
+      "module": "Contacts",
+      "name": "Address Template"
+    },
+    {
+      "module": "Accounts",
+      "name": "Advance Payment Ledger Entry"
+    },
+    {
+      "module": "Accounts",
+      "name": "Advance Taxes and Charges"
+    },
+    {
+      "module": "Accounts",
+      "name": "Allowed Dimension"
+    },
+    {
+      "module": "Accounts",
+      "name": "Allowed To Transact With"
+    },
+    {
+      "module": "Core",
+      "name": "Amended Document Naming Settings"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Antibiotic"
+    },
+    {
+      "module": "Core",
+      "name": "API Request Log"
+    },
+    {
+      "module": "Accounts",
+      "name": "Applicable On Account"
+    },
+    {
+      "module": "CRM",
+      "name": "Appointment"
+    },
+    {
+      "module": "CRM",
+      "name": "Appointment Booking Settings"
+    },
+    {
+      "module": "CRM",
+      "name": "Appointment Booking Slots"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Appointment Type"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Appointment Type Service Item"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Activity"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Capitalization"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Capitalization Asset Item"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Capitalization Service Item"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Capitalization Stock Item"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Category"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Category Account"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Depreciation Schedule"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Finance Book"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Maintenance"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Maintenance Log"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Maintenance Task"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Maintenance Team"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Movement"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Movement Item"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Repair"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Repair Consumed Item"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Repair Purchase Invoice"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Shift Allocation"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Shift Factor"
+    },
+    {
+      "module": "Assets",
+      "name": "Asset Value Adjustment"
+    },
+    {
+      "module": "Automation",
+      "name": "Assignment Rule"
+    },
+    {
+      "module": "Automation",
+      "name": "Assignment Rule Day"
+    },
+    {
+      "module": "Automation",
+      "name": "Assignment Rule User"
+    },
+    {
+      "module": "Core",
+      "name": "Audit Trail"
+    },
+    {
+      "module": "Setup",
+      "name": "Authorization Control"
+    },
+    {
+      "module": "Setup",
+      "name": "Authorization Rule"
+    },
+    {
+      "module": "Email",
+      "name": "Auto Email Report"
+    },
+    {
+      "module": "Automation",
+      "name": "Auto Repeat"
+    },
+    {
+      "module": "Automation",
+      "name": "Auto Repeat Day"
+    },
+    {
+      "module": "Automation",
+      "name": "Auto Repeat User"
+    },
+    {
+      "module": "CRM",
+      "name": "Availability Of Slots"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Account"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Account Balance"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Account Subtype"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Account Type"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Clearance"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Clearance Detail"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Guarantee"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Reconciliation Tool"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Statement Import"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Statement Import Log"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Statement Import Log Column Map"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Transaction"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Transaction Mapping"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Transaction Payments"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Transaction Rule"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Transaction Rule Accounts"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bank Transaction Rule Description Conditions"
+    },
+    {
+      "module": "Stock",
+      "name": "Batch"
+    },
+    {
+      "module": "Stock",
+      "name": "Bin"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bisect Accounting Statements"
+    },
+    {
+      "module": "Accounts",
+      "name": "Bisect Nodes"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Blanket Order"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Blanket Order Item"
+    },
+    {
+      "module": "Core",
+      "name": "Block Module"
+    },
+    {
+      "module": "Builder",
+      "name": "Block Template"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Body Part"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Body Part Link"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Creator"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Creator Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Explosion Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Operation"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Secondary Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Update Batch"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Update Log"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Update Tool"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Website Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "BOM Website Operation"
+    },
+    {
+      "module": "Setup",
+      "name": "Branch"
+    },
+    {
+      "module": "Setup",
+      "name": "Brand"
+    },
+    {
+      "module": "Accounts",
+      "name": "Budget"
+    },
+    {
+      "module": "Accounts",
+      "name": "Budget Account"
+    },
+    {
+      "module": "Accounts",
+      "name": "Budget Distribution"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder AI Memory"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder AI Message"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder AI Model"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder AI Provider"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder AI Session"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder Client Script"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder Component"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder Page"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder Page Click"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder Page Client Script"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder Project Folder"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder Settings"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder Snapshot"
+    },
+    {
+      "module": "Builder",
+      "name": "Builder Token"
+    },
+    {
+      "module": "Bulk Transaction",
+      "name": "Bulk Transaction Log"
+    },
+    {
+      "module": "Bulk Transaction",
+      "name": "Bulk Transaction Log Detail"
+    },
+    {
+      "module": "Desk",
+      "name": "Bulk Update"
+    },
+    {
+      "module": "Buying",
+      "name": "Buying Settings"
+    },
+    {
+      "module": "Desk",
+      "name": "Calendar View"
+    },
+    {
+      "module": "Telephony",
+      "name": "Call Log"
+    },
+    {
+      "module": "CRM",
+      "name": "Campaign"
+    },
+    {
+      "module": "CRM",
+      "name": "Campaign Email Schedule"
+    },
+    {
+      "module": "Accounts",
+      "name": "Campaign Item"
+    },
+    {
+      "module": "Accounts",
+      "name": "Cashier Closing"
+    },
+    {
+      "module": "Accounts",
+      "name": "Cashier Closing Payments"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Admin Exception"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Audit Event"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Center Membership"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Center Service"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Compensation Rule"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Economic Source Link"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Finance Settings"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Fiscal Attempt"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Fiscal Transaction"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Incoming Invoice"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Notification"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Organizational Note"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Package Center"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Package Ledger"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Package Template"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Patient Assignment"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Patient Package"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Payment Agreement"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Payment Notice"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Payment Override"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Private Note"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Professional Comparison"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Professional Expectation"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Public Booking Route"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Settlement"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC TS Input Review"
+    },
+    {
+      "module": "Centro Change Core",
+      "name": "CC Unpaid Threshold"
+    },
+    {
+      "module": "Desk",
+      "name": "Changelog Feed"
+    },
+    {
+      "module": "Accounts",
+      "name": "Chart of Accounts Importer"
+    },
+    {
+      "module": "Accounts",
+      "name": "Cheque Print Template"
+    },
+    {
+      "module": "Custom",
+      "name": "Client Script"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Clinical Note"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Clinical Note Type"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Clinical Procedure"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Clinical Procedure Item"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Clinical Procedure Template"
+    },
+    {
+      "module": "Accounts",
+      "name": "Closed Document"
+    },
+    {
+      "module": "EDI",
+      "name": "Code List"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Code System"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Code Value"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Code Value Set"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Codification Table"
+    },
+    {
+      "module": "Website",
+      "name": "Color"
+    },
+    {
+      "module": "Core",
+      "name": "Comment"
+    },
+    {
+      "module": "EDI",
+      "name": "Common Code"
+    },
+    {
+      "module": "Core",
+      "name": "Communication"
+    },
+    {
+      "module": "Core",
+      "name": "Communication Link"
+    },
+    {
+      "module": "Communication",
+      "name": "Communication Medium"
+    },
+    {
+      "module": "Communication",
+      "name": "Communication Medium Timeslot"
+    },
+    {
+      "module": "Setup",
+      "name": "Company"
+    },
+    {
+      "module": "Website",
+      "name": "Company History"
+    },
+    {
+      "module": "CRM",
+      "name": "Competitor"
+    },
+    {
+      "module": "CRM",
+      "name": "Competitor Detail"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Complaint"
+    },
+    {
+      "module": "Integrations",
+      "name": "Connected App"
+    },
+    {
+      "module": "Desk",
+      "name": "Console Log"
+    },
+    {
+      "module": "Contacts",
+      "name": "Contact"
+    },
+    {
+      "module": "Contacts",
+      "name": "Contact Email"
+    },
+    {
+      "module": "Contacts",
+      "name": "Contact Phone"
+    },
+    {
+      "module": "Website",
+      "name": "Contact Us Settings"
+    },
+    {
+      "module": "CRM",
+      "name": "Contract"
+    },
+    {
+      "module": "CRM",
+      "name": "Contract Fulfilment Checklist"
+    },
+    {
+      "module": "CRM",
+      "name": "Contract Template"
+    },
+    {
+      "module": "CRM",
+      "name": "Contract Template Fulfilment Terms"
+    },
+    {
+      "module": "Accounts",
+      "name": "Cost Center"
+    },
+    {
+      "module": "Accounts",
+      "name": "Cost Center Allocation"
+    },
+    {
+      "module": "Accounts",
+      "name": "Cost Center Allocation Percentage"
+    },
+    {
+      "module": "Geo",
+      "name": "Country"
+    },
+    {
+      "module": "Accounts",
+      "name": "Coupon Code"
+    },
+    {
+      "module": "CRM",
+      "name": "CRM Note"
+    },
+    {
+      "module": "CRM",
+      "name": "CRM Settings"
+    },
+    {
+      "module": "Geo",
+      "name": "Currency"
+    },
+    {
+      "module": "Setup",
+      "name": "Currency Exchange"
+    },
+    {
+      "module": "Accounts",
+      "name": "Currency Exchange Settings"
+    },
+    {
+      "module": "Accounts",
+      "name": "Currency Exchange Settings Details"
+    },
+    {
+      "module": "Accounts",
+      "name": "Currency Exchange Settings Result"
+    },
+    {
+      "module": "Core",
+      "name": "Custom DocPerm"
+    },
+    {
+      "module": "Custom",
+      "name": "Custom Field"
+    },
+    {
+      "module": "Desk",
+      "name": "Custom HTML Block"
+    },
+    {
+      "module": "Core",
+      "name": "Custom Role"
+    },
+    {
+      "module": "Selling",
+      "name": "Customer"
+    },
+    {
+      "module": "Selling",
+      "name": "Customer Credit Limit"
+    },
+    {
+      "module": "Setup",
+      "name": "Customer Group"
+    },
+    {
+      "module": "Accounts",
+      "name": "Customer Group Item"
+    },
+    {
+      "module": "Accounts",
+      "name": "Customer Item"
+    },
+    {
+      "module": "Buying",
+      "name": "Customer Number At Supplier"
+    },
+    {
+      "module": "Custom",
+      "name": "Customize Form"
+    },
+    {
+      "module": "Custom",
+      "name": "Customize Form Field"
+    },
+    {
+      "module": "Stock",
+      "name": "Customs Tariff Number"
+    },
+    {
+      "module": "Desk",
+      "name": "Dashboard"
+    },
+    {
+      "module": "Desk",
+      "name": "Dashboard Chart"
+    },
+    {
+      "module": "Desk",
+      "name": "Dashboard Chart Field"
+    },
+    {
+      "module": "Desk",
+      "name": "Dashboard Chart Link"
+    },
+    {
+      "module": "Desk",
+      "name": "Dashboard Chart Source"
+    },
+    {
+      "module": "Desk",
+      "name": "Dashboard Settings"
+    },
+    {
+      "module": "Core",
+      "name": "Data Export"
+    },
+    {
+      "module": "Core",
+      "name": "Data Import"
+    },
+    {
+      "module": "Core",
+      "name": "Data Import Log"
+    },
+    {
+      "module": "Core",
+      "name": "DefaultValue"
+    },
+    {
+      "module": "Core",
+      "name": "Deleted Document"
+    },
+    {
+      "module": "Stock",
+      "name": "Delivery Note"
+    },
+    {
+      "module": "Stock",
+      "name": "Delivery Note Item"
+    },
+    {
+      "module": "Selling",
+      "name": "Delivery Schedule Item"
+    },
+    {
+      "module": "Stock",
+      "name": "Delivery Settings"
+    },
+    {
+      "module": "Stock",
+      "name": "Delivery Stop"
+    },
+    {
+      "module": "Stock",
+      "name": "Delivery Trip"
+    },
+    {
+      "module": "Setup",
+      "name": "Department"
+    },
+    {
+      "module": "Projects",
+      "name": "Dependent Task"
+    },
+    {
+      "module": "Assets",
+      "name": "Depreciation Schedule"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Descriptive Test Result"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Descriptive Test Template"
+    },
+    {
+      "module": "Setup",
+      "name": "Designation"
+    },
+    {
+      "module": "Desk",
+      "name": "Desktop Icon"
+    },
+    {
+      "module": "Desk",
+      "name": "Desktop Layout"
+    },
+    {
+      "module": "Desk",
+      "name": "Desktop Settings"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Diagnosis"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Diagnostic Report"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Discharge Summary"
+    },
+    {
+      "module": "Accounts",
+      "name": "Discounted Invoice"
+    },
+    {
+      "module": "Website",
+      "name": "Discussion Reply"
+    },
+    {
+      "module": "Website",
+      "name": "Discussion Topic"
+    },
+    {
+      "module": "Core",
+      "name": "DocField"
+    },
+    {
+      "module": "Core",
+      "name": "DocPerm"
+    },
+    {
+      "module": "Core",
+      "name": "DocShare"
+    },
+    {
+      "module": "Core",
+      "name": "DocType"
+    },
+    {
+      "module": "Core",
+      "name": "DocType Action"
+    },
+    {
+      "module": "Custom",
+      "name": "DocType Layout"
+    },
+    {
+      "module": "Custom",
+      "name": "DocType Layout Field"
+    },
+    {
+      "module": "Core",
+      "name": "DocType Link"
+    },
+    {
+      "module": "Core",
+      "name": "DocType State"
+    },
+    {
+      "module": "Core",
+      "name": "Doctype To Sync"
+    },
+    {
+      "module": "Email",
+      "name": "Document Follow"
+    },
+    {
+      "module": "Core",
+      "name": "Document Naming Rule"
+    },
+    {
+      "module": "Core",
+      "name": "Document Naming Rule Condition"
+    },
+    {
+      "module": "Core",
+      "name": "Document Naming Settings"
+    },
+    {
+      "module": "Core",
+      "name": "Document Share Key"
+    },
+    {
+      "module": "Core",
+      "name": "Domain"
+    },
+    {
+      "module": "Core",
+      "name": "Domain Settings"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Dosage Form"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Dosage Strength"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Downtime Entry"
+    },
+    {
+      "module": "Setup",
+      "name": "Driver"
+    },
+    {
+      "module": "Setup",
+      "name": "Driving License Category"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Drug Prescription"
+    },
+    {
+      "module": "Core",
+      "name": "DuckDB Sync"
+    },
+    {
+      "module": "Core",
+      "name": "DuckDB Sync Item"
+    },
+    {
+      "module": "Accounts",
+      "name": "Dunning"
+    },
+    {
+      "module": "Accounts",
+      "name": "Dunning Letter Text"
+    },
+    {
+      "module": "Accounts",
+      "name": "Dunning Type"
+    },
+    {
+      "module": "Core",
+      "name": "Dynamic Link"
+    },
+    {
+      "module": "Email",
+      "name": "Email Account"
+    },
+    {
+      "module": "CRM",
+      "name": "Email Campaign"
+    },
+    {
+      "module": "Setup",
+      "name": "Email Digest"
+    },
+    {
+      "module": "Setup",
+      "name": "Email Digest Recipient"
+    },
+    {
+      "module": "Email",
+      "name": "Email Domain"
+    },
+    {
+      "module": "Email",
+      "name": "Email Flag Queue"
+    },
+    {
+      "module": "Email",
+      "name": "Email Group"
+    },
+    {
+      "module": "Email",
+      "name": "Email Group Member"
+    },
+    {
+      "module": "Email",
+      "name": "Email Queue"
+    },
+    {
+      "module": "Email",
+      "name": "Email Queue Recipient"
+    },
+    {
+      "module": "Email",
+      "name": "Email Rule"
+    },
+    {
+      "module": "Email",
+      "name": "Email Template"
+    },
+    {
+      "module": "Email",
+      "name": "Email Unsubscribe"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Emergency Occupancy"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Emergency Record"
+    },
+    {
+      "module": "Setup",
+      "name": "Employee"
+    },
+    {
+      "module": "Setup",
+      "name": "Employee Education"
+    },
+    {
+      "module": "Setup",
+      "name": "Employee External Work History"
+    },
+    {
+      "module": "Setup",
+      "name": "Employee Group"
+    },
+    {
+      "module": "Setup",
+      "name": "Employee Group Table"
+    },
+    {
+      "module": "Setup",
+      "name": "Employee Internal Work History"
+    },
+    {
+      "module": "Core",
+      "name": "Error Log"
+    },
+    {
+      "module": "Desk",
+      "name": "Event"
+    },
+    {
+      "module": "Desk",
+      "name": "Event Notifications"
+    },
+    {
+      "module": "Desk",
+      "name": "Event Participants"
+    },
+    {
+      "module": "Accounts",
+      "name": "Exchange Rate Revaluation"
+    },
+    {
+      "module": "Accounts",
+      "name": "Exchange Rate Revaluation Account"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Exercise"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Exercise Difficulty Level"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Exercise Type"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Exercise Type Step"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Fee Validity"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Fee Validity Reference"
+    },
+    {
+      "module": "Core",
+      "name": "File"
+    },
+    {
+      "module": "Accounts",
+      "name": "Finance Book"
+    },
+    {
+      "module": "Accounts",
+      "name": "Financial Report Row"
+    },
+    {
+      "module": "Accounts",
+      "name": "Financial Report Template"
+    },
+    {
+      "module": "Accounts",
+      "name": "Fiscal Year"
+    },
+    {
+      "module": "Accounts",
+      "name": "Fiscal Year Company"
+    },
+    {
+      "module": "Desk",
+      "name": "Form Tour"
+    },
+    {
+      "module": "Desk",
+      "name": "Form Tour Step"
+    },
+    {
+      "module": "CRM",
+      "name": "Frappe CRM Allowed User"
+    },
+    {
+      "module": "Contacts",
+      "name": "Gender"
+    },
+    {
+      "module": "Integrations",
+      "name": "Geolocation Settings"
+    },
+    {
+      "module": "Accounts",
+      "name": "GL Entry"
+    },
+    {
+      "module": "Setup",
+      "name": "Global Defaults"
+    },
+    {
+      "module": "Desk",
+      "name": "Global Search DocType"
+    },
+    {
+      "module": "Desk",
+      "name": "Global Search Settings"
+    },
+    {
+      "module": "Integrations",
+      "name": "Google Calendar"
+    },
+    {
+      "module": "Integrations",
+      "name": "Google Contacts"
+    },
+    {
+      "module": "Integrations",
+      "name": "Google Settings"
+    },
+    {
+      "module": "Core",
+      "name": "Has Domain"
+    },
+    {
+      "module": "Core",
+      "name": "Has Role"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Healthcare Activity"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Healthcare Payment Record"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Healthcare Practitioner"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Healthcare Schedule Time Slot"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Healthcare Service Unit"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Healthcare Service Unit Type"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Healthcare Settings"
+    },
+    {
+      "module": "Website",
+      "name": "Help Article"
+    },
+    {
+      "module": "Website",
+      "name": "Help Category"
+    },
+    {
+      "module": "Setup",
+      "name": "Holiday"
+    },
+    {
+      "module": "Setup",
+      "name": "Holiday List"
+    },
+    {
+      "module": "Email",
+      "name": "IMAP Folder"
+    },
+    {
+      "module": "Regional",
+      "name": "Import Supplier Invoice"
+    },
+    {
+      "module": "Telephony",
+      "name": "Incoming Call Handling Schedule"
+    },
+    {
+      "module": "Telephony",
+      "name": "Incoming Call Settings"
+    },
+    {
+      "module": "Setup",
+      "name": "Incoterm"
+    },
+    {
+      "module": "Selling",
+      "name": "Industry Type"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Inpatient Medication Entry"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Inpatient Medication Entry Detail"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Inpatient Medication Order"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Inpatient Medication Order Entry"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Inpatient Occupancy"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Inpatient Record"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Inpatient Record Item"
+    },
+    {
+      "module": "Selling",
+      "name": "Installation Note"
+    },
+    {
+      "module": "Selling",
+      "name": "Installation Note Item"
+    },
+    {
+      "module": "Core",
+      "name": "Installed Application"
+    },
+    {
+      "module": "Core",
+      "name": "Installed Applications"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Insurance Claim"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Insurance Claim Coverage"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Insurance Payor"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Insurance Payor Contract"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Insurance Payor Eligibility Plan"
+    },
+    {
+      "module": "Integrations",
+      "name": "Integration Request"
+    },
+    {
+      "module": "Stock",
+      "name": "Inventory Dimension"
+    },
+    {
+      "module": "Accounts",
+      "name": "Invoice Discounting"
+    },
+    {
+      "module": "Support",
+      "name": "Issue"
+    },
+    {
+      "module": "Support",
+      "name": "Issue Priority"
+    },
+    {
+      "module": "Support",
+      "name": "Issue Type"
+    },
+    {
+      "module": "Stock",
+      "name": "Item"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Alternative"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Attribute"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Attribute Value"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Barcode"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Customer Detail"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Default"
+    },
+    {
+      "module": "Setup",
+      "name": "Item Group"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Item Insurance Eligibility"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Lead Time"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Manufacturer"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Price"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Quality Inspection Parameter"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Reorder"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Supplier"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Tax"
+    },
+    {
+      "module": "Accounts",
+      "name": "Item Tax Template"
+    },
+    {
+      "module": "Accounts",
+      "name": "Item Tax Template Detail"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Variant"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Variant Attribute"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Variant Settings"
+    },
+    {
+      "module": "Stock",
+      "name": "Item Website Specification"
+    },
+    {
+      "module": "Accounts",
+      "name": "Item Wise Tax Detail"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Job Card"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Job Card Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Job Card Operation"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Job Card Scheduled Time"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Job Card Secondary Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Job Card Time Log"
+    },
+    {
+      "module": "Accounts",
+      "name": "Journal Entry"
+    },
+    {
+      "module": "Accounts",
+      "name": "Journal Entry Account"
+    },
+    {
+      "module": "Accounts",
+      "name": "Journal Entry Template"
+    },
+    {
+      "module": "Accounts",
+      "name": "Journal Entry Template Account"
+    },
+    {
+      "module": "Desk",
+      "name": "Kanban Board"
+    },
+    {
+      "module": "Desk",
+      "name": "Kanban Board Column"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Lab Prescription"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Lab Test"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Lab Test Group Template"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Lab Test Sample"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Lab Test Template"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Lab Test UOM"
+    },
+    {
+      "module": "Stock",
+      "name": "Landed Cost Item"
+    },
+    {
+      "module": "Stock",
+      "name": "Landed Cost Purchase Receipt"
+    },
+    {
+      "module": "Stock",
+      "name": "Landed Cost Taxes and Charges"
+    },
+    {
+      "module": "Stock",
+      "name": "Landed Cost Vendor Invoice"
+    },
+    {
+      "module": "Stock",
+      "name": "Landed Cost Voucher"
+    },
+    {
+      "module": "Core",
+      "name": "Language"
+    },
+    {
+      "module": "Integrations",
+      "name": "LDAP Group Mapping"
+    },
+    {
+      "module": "Integrations",
+      "name": "LDAP Settings"
+    },
+    {
+      "module": "CRM",
+      "name": "Lead"
+    },
+    {
+      "module": "Accounts",
+      "name": "Ledger Health"
+    },
+    {
+      "module": "Accounts",
+      "name": "Ledger Health Monitor"
+    },
+    {
+      "module": "Accounts",
+      "name": "Ledger Health Monitor Company"
+    },
+    {
+      "module": "Accounts",
+      "name": "Ledger Merge"
+    },
+    {
+      "module": "Accounts",
+      "name": "Ledger Merge Accounts"
+    },
+    {
+      "module": "Printing",
+      "name": "Letter Head"
+    },
+    {
+      "module": "Assets",
+      "name": "Linked Location"
+    },
+    {
+      "module": "Desk",
+      "name": "List Filter"
+    },
+    {
+      "module": "Desk",
+      "name": "List View Settings"
+    },
+    {
+      "module": "Assets",
+      "name": "Location"
+    },
+    {
+      "module": "Core",
+      "name": "Log Setting User"
+    },
+    {
+      "module": "Core",
+      "name": "Log Settings"
+    },
+    {
+      "module": "Core",
+      "name": "Logs To Clear"
+    },
+    {
+      "module": "CRM",
+      "name": "Lost Reason Detail"
+    },
+    {
+      "module": "Regional",
+      "name": "Lower Deduction Certificate"
+    },
+    {
+      "module": "Accounts",
+      "name": "Loyalty Point Entry"
+    },
+    {
+      "module": "Accounts",
+      "name": "Loyalty Point Entry Redemption"
+    },
+    {
+      "module": "Accounts",
+      "name": "Loyalty Program"
+    },
+    {
+      "module": "Accounts",
+      "name": "Loyalty Program Collection"
+    },
+    {
+      "module": "Maintenance",
+      "name": "Maintenance Schedule"
+    },
+    {
+      "module": "Maintenance",
+      "name": "Maintenance Schedule Detail"
+    },
+    {
+      "module": "Maintenance",
+      "name": "Maintenance Schedule Item"
+    },
+    {
+      "module": "Assets",
+      "name": "Maintenance Team Member"
+    },
+    {
+      "module": "Maintenance",
+      "name": "Maintenance Visit"
+    },
+    {
+      "module": "Maintenance",
+      "name": "Maintenance Visit Purpose"
+    },
+    {
+      "module": "Stock",
+      "name": "Manufacturer"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Manufacturing Settings"
+    },
+    {
+      "module": "CRM",
+      "name": "Market Segment"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Master Production Schedule"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Master Production Schedule Item"
+    },
+    {
+      "module": "Stock",
+      "name": "Material Request"
+    },
+    {
+      "module": "Stock",
+      "name": "Material Request Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Material Request Plan Item"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Medical Department"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Medication"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Medication Class"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Medication Ingredient"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Medication Linked Item"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Medication Request"
+    },
+    {
+      "module": "Automation",
+      "name": "Milestone"
+    },
+    {
+      "module": "Automation",
+      "name": "Milestone Tracker"
+    },
+    {
+      "module": "Accounts",
+      "name": "Mode of Payment"
+    },
+    {
+      "module": "Accounts",
+      "name": "Mode of Payment Account"
+    },
+    {
+      "module": "Core",
+      "name": "Module Def"
+    },
+    {
+      "module": "Desk",
+      "name": "Module Onboarding"
+    },
+    {
+      "module": "Core",
+      "name": "Module Profile"
+    },
+    {
+      "module": "Accounts",
+      "name": "Monthly Distribution"
+    },
+    {
+      "module": "Accounts",
+      "name": "Monthly Distribution Percentage"
+    },
+    {
+      "module": "Core",
+      "name": "Navbar Item"
+    },
+    {
+      "module": "Core",
+      "name": "Navbar Settings"
+    },
+    {
+      "module": "Printing",
+      "name": "Network Printer Settings"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Non Conformance"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Normal Test Result"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Normal Test Template"
+    },
+    {
+      "module": "Desk",
+      "name": "Note"
+    },
+    {
+      "module": "Desk",
+      "name": "Note Seen By"
+    },
+    {
+      "module": "Email",
+      "name": "Notification"
+    },
+    {
+      "module": "Desk",
+      "name": "Notification Log"
+    },
+    {
+      "module": "Email",
+      "name": "Notification Recipient"
+    },
+    {
+      "module": "Desk",
+      "name": "Notification Settings"
+    },
+    {
+      "module": "Desk",
+      "name": "Notification Subscribed Document"
+    },
+    {
+      "module": "Desk",
+      "name": "Notification Type"
+    },
+    {
+      "module": "Desk",
+      "name": "Notification Type Preference"
+    },
+    {
+      "module": "Desk",
+      "name": "Number Card"
+    },
+    {
+      "module": "Desk",
+      "name": "Number Card Link"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Nursing Checklist Template"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Nursing Checklist Template Task"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Nursing Task"
+    },
+    {
+      "module": "Integrations",
+      "name": "OAuth Authorization Code"
+    },
+    {
+      "module": "Integrations",
+      "name": "OAuth Bearer Token"
+    },
+    {
+      "module": "Integrations",
+      "name": "OAuth Client"
+    },
+    {
+      "module": "Integrations",
+      "name": "OAuth Client Role"
+    },
+    {
+      "module": "Integrations",
+      "name": "OAuth Provider Settings"
+    },
+    {
+      "module": "Integrations",
+      "name": "OAuth Scope"
+    },
+    {
+      "module": "Integrations",
+      "name": "OAuth Settings"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Observation"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Observation Component"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Observation Reference Range"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Observation Sample Collection"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Observation Template"
+    },
+    {
+      "module": "Desk",
+      "name": "Onboarding Permission"
+    },
+    {
+      "module": "Desk",
+      "name": "Onboarding Step"
+    },
+    {
+      "module": "Desk",
+      "name": "Onboarding Step Map"
+    },
+    {
+      "module": "Accounts",
+      "name": "Opening Invoice Creation Tool"
+    },
+    {
+      "module": "Accounts",
+      "name": "Opening Invoice Creation Tool Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Operation"
+    },
+    {
+      "module": "CRM",
+      "name": "Opportunity"
+    },
+    {
+      "module": "CRM",
+      "name": "Opportunity Item"
+    },
+    {
+      "module": "CRM",
+      "name": "Opportunity Lost Reason"
+    },
+    {
+      "module": "CRM",
+      "name": "Opportunity Lost Reason Detail"
+    },
+    {
+      "module": "CRM",
+      "name": "Opportunity Type"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Organism"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Organism Test Item"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Organism Test Result"
+    },
+    {
+      "module": "Accounts",
+      "name": "Overdue Payment"
+    },
+    {
+      "module": "Core",
+      "name": "Package"
+    },
+    {
+      "module": "Core",
+      "name": "Package Import"
+    },
+    {
+      "module": "Core",
+      "name": "Package Release"
+    },
+    {
+      "module": "Stock",
+      "name": "Packed Item"
+    },
+    {
+      "module": "Stock",
+      "name": "Packing Slip"
+    },
+    {
+      "module": "Stock",
+      "name": "Packing Slip Item"
+    },
+    {
+      "module": "Core",
+      "name": "Page"
+    },
+    {
+      "module": "Accounts",
+      "name": "Party Account"
+    },
+    {
+      "module": "Accounts",
+      "name": "Party Link"
+    },
+    {
+      "module": "Selling",
+      "name": "Party Specific Item"
+    },
+    {
+      "module": "Setup",
+      "name": "Party Type"
+    },
+    {
+      "module": "Core",
+      "name": "Patch Log"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Appointment"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Assessment"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Assessment Detail"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Assessment Parameter"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Assessment Sheet"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Assessment Template"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Care Type"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Encounter"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Encounter Diagnosis"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Encounter Symptom"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient History Custom Document Type"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient History Settings"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient History Standard Document Type"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Insurance Coverage"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Insurance Policy"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Medical Record"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Patient Relation"
+    },
+    {
+      "module": "Support",
+      "name": "Pause SLA On Status"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Entry"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Entry Deduction"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Entry Reference"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Gateway Account"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Ledger Entry"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Order"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Order Reference"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Reconciliation"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Reconciliation Allocation"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Reconciliation Invoice"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Reconciliation Payment"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Reference"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Request"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Schedule"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Term"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Terms Template"
+    },
+    {
+      "module": "Accounts",
+      "name": "Payment Terms Template Detail"
+    },
+    {
+      "module": "Accounts",
+      "name": "Pegged Currencies"
+    },
+    {
+      "module": "Accounts",
+      "name": "Pegged Currency Details"
+    },
+    {
+      "module": "Accounts",
+      "name": "Period Closing Voucher"
+    },
+    {
+      "module": "Core",
+      "name": "Permission Inspector"
+    },
+    {
+      "module": "Core",
+      "name": "Permission Log"
+    },
+    {
+      "module": "Core",
+      "name": "Permission Type"
+    },
+    {
+      "module": "Website",
+      "name": "Personal Data Deletion Request"
+    },
+    {
+      "module": "Website",
+      "name": "Personal Data Deletion Step"
+    },
+    {
+      "module": "Website",
+      "name": "Personal Data Download Request"
+    },
+    {
+      "module": "Stock",
+      "name": "Pick List"
+    },
+    {
+      "module": "Stock",
+      "name": "Pick List Item"
+    },
+    {
+      "module": "ERPNext Integrations",
+      "name": "Plaid Settings"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Plant Floor"
+    },
+    {
+      "module": "Website",
+      "name": "Portal Menu Item"
+    },
+    {
+      "module": "Website",
+      "name": "Portal Settings"
+    },
+    {
+      "module": "Utilities",
+      "name": "Portal User"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Closing Entry"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Closing Entry Detail"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Closing Entry Taxes"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Customer Group"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Field"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Invoice"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Invoice Item"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Invoice Merge Log"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Invoice Reference"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Item Group"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Opening Entry"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Opening Entry Detail"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Payment Method"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Profile"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Profile User"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Search Fields"
+    },
+    {
+      "module": "Accounts",
+      "name": "POS Settings"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Practitioner Availability"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Practitioner Schedule"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Practitioner Service Unit Schedule"
+    },
+    {
+      "module": "Core",
+      "name": "Prepared Report"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Prescription Dosage"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Prescription Duration"
+    },
+    {
+      "module": "Stock",
+      "name": "Price List"
+    },
+    {
+      "module": "Stock",
+      "name": "Price List Country"
+    },
+    {
+      "module": "Accounts",
+      "name": "Pricing Rule"
+    },
+    {
+      "module": "Accounts",
+      "name": "Pricing Rule Brand"
+    },
+    {
+      "module": "Accounts",
+      "name": "Pricing Rule Detail"
+    },
+    {
+      "module": "Accounts",
+      "name": "Pricing Rule Item Code"
+    },
+    {
+      "module": "Accounts",
+      "name": "Pricing Rule Item Group"
+    },
+    {
+      "module": "Printing",
+      "name": "Print Format"
+    },
+    {
+      "module": "Printing",
+      "name": "Print Format Field Template"
+    },
+    {
+      "module": "Printing",
+      "name": "Print Heading"
+    },
+    {
+      "module": "Printing",
+      "name": "Print Settings"
+    },
+    {
+      "module": "Printing",
+      "name": "Print Style"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Procedure Prescription"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Deferred Accounting"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Payment Reconciliation"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Payment Reconciliation Log"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Payment Reconciliation Log Allocations"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Period Closing Voucher"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Period Closing Voucher Detail"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Statement Of Accounts"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Statement Of Accounts CC"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Statement Of Accounts Customer"
+    },
+    {
+      "module": "Accounts",
+      "name": "Process Subscription"
+    },
+    {
+      "module": "Selling",
+      "name": "Product Bundle"
+    },
+    {
+      "module": "Selling",
+      "name": "Product Bundle Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Production Plan"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Production Plan Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Production Plan Item Reference"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Production Plan Material Request"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Production Plan Material Request Warehouse"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Production Plan Sales Order"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Production Plan Sub Assembly Item"
+    },
+    {
+      "module": "Projects",
+      "name": "Project"
+    },
+    {
+      "module": "Projects",
+      "name": "Project Template"
+    },
+    {
+      "module": "Projects",
+      "name": "Project Template Task"
+    },
+    {
+      "module": "Projects",
+      "name": "Project Type"
+    },
+    {
+      "module": "Projects",
+      "name": "Project Update"
+    },
+    {
+      "module": "Projects",
+      "name": "Project User"
+    },
+    {
+      "module": "Projects",
+      "name": "Projects Settings"
+    },
+    {
+      "module": "Accounts",
+      "name": "Promotional Scheme"
+    },
+    {
+      "module": "Accounts",
+      "name": "Promotional Scheme Price Discount"
+    },
+    {
+      "module": "Accounts",
+      "name": "Promotional Scheme Product Discount"
+    },
+    {
+      "module": "Custom",
+      "name": "Property Setter"
+    },
+    {
+      "module": "CRM",
+      "name": "Prospect"
+    },
+    {
+      "module": "CRM",
+      "name": "Prospect Lead"
+    },
+    {
+      "module": "CRM",
+      "name": "Prospect Opportunity"
+    },
+    {
+      "module": "Accounts",
+      "name": "PSOA Cost Center"
+    },
+    {
+      "module": "Accounts",
+      "name": "PSOA Project"
+    },
+    {
+      "module": "Accounts",
+      "name": "Purchase Invoice"
+    },
+    {
+      "module": "Accounts",
+      "name": "Purchase Invoice Advance"
+    },
+    {
+      "module": "Accounts",
+      "name": "Purchase Invoice Item"
+    },
+    {
+      "module": "Buying",
+      "name": "Purchase Order"
+    },
+    {
+      "module": "Buying",
+      "name": "Purchase Order Item"
+    },
+    {
+      "module": "Buying",
+      "name": "Purchase Order Item Supplied"
+    },
+    {
+      "module": "Stock",
+      "name": "Purchase Receipt"
+    },
+    {
+      "module": "Stock",
+      "name": "Purchase Receipt Item"
+    },
+    {
+      "module": "Buying",
+      "name": "Purchase Receipt Item Supplied"
+    },
+    {
+      "module": "Accounts",
+      "name": "Purchase Taxes and Charges"
+    },
+    {
+      "module": "Accounts",
+      "name": "Purchase Taxes and Charges Template"
+    },
+    {
+      "module": "Integrations",
+      "name": "Push Notification Settings"
+    },
+    {
+      "module": "Stock",
+      "name": "Putaway Rule"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Action"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Action Resolution"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Feedback"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Feedback Parameter"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Feedback Template"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Feedback Template Parameter"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Goal"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Goal Objective"
+    },
+    {
+      "module": "Stock",
+      "name": "Quality Inspection"
+    },
+    {
+      "module": "Stock",
+      "name": "Quality Inspection Parameter"
+    },
+    {
+      "module": "Stock",
+      "name": "Quality Inspection Parameter Group"
+    },
+    {
+      "module": "Stock",
+      "name": "Quality Inspection Reading"
+    },
+    {
+      "module": "Stock",
+      "name": "Quality Inspection Template"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Meeting"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Meeting Agenda"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Meeting Minutes"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Procedure"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Procedure Process"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Review"
+    },
+    {
+      "module": "Quality Management",
+      "name": "Quality Review Objective"
+    },
+    {
+      "module": "Integrations",
+      "name": "Query Parameters"
+    },
+    {
+      "module": "Stock",
+      "name": "Quick Stock Balance"
+    },
+    {
+      "module": "Selling",
+      "name": "Quotation"
+    },
+    {
+      "module": "Selling",
+      "name": "Quotation Item"
+    },
+    {
+      "module": "Setup",
+      "name": "Quotation Lost Reason"
+    },
+    {
+      "module": "Setup",
+      "name": "Quotation Lost Reason Detail"
+    },
+    {
+      "module": "Core",
+      "name": "Recorder"
+    },
+    {
+      "module": "Core",
+      "name": "Recorder Event"
+    },
+    {
+      "module": "Core",
+      "name": "Recorder Query"
+    },
+    {
+      "module": "Core",
+      "name": "Recorder Suggested Index"
+    },
+    {
+      "module": "Automation",
+      "name": "Reminder"
+    },
+    {
+      "module": "Utilities",
+      "name": "Rename Tool"
+    },
+    {
+      "module": "Email",
+      "name": "Reply To Address"
+    },
+    {
+      "module": "Core",
+      "name": "Report"
+    },
+    {
+      "module": "Core",
+      "name": "Report Column"
+    },
+    {
+      "module": "Core",
+      "name": "Report Filter"
+    },
+    {
+      "module": "Accounts",
+      "name": "Repost Accounting Ledger"
+    },
+    {
+      "module": "Accounts",
+      "name": "Repost Accounting Ledger Items"
+    },
+    {
+      "module": "Accounts",
+      "name": "Repost Allowed Types"
+    },
+    {
+      "module": "Stock",
+      "name": "Repost Item Valuation"
+    },
+    {
+      "module": "Accounts",
+      "name": "Repost Payment Ledger"
+    },
+    {
+      "module": "Accounts",
+      "name": "Repost Payment Ledger Items"
+    },
+    {
+      "module": "Buying",
+      "name": "Request for Quotation"
+    },
+    {
+      "module": "Buying",
+      "name": "Request for Quotation Item"
+    },
+    {
+      "module": "Buying",
+      "name": "Request for Quotation Supplier"
+    },
+    {
+      "module": "Core",
+      "name": "Role"
+    },
+    {
+      "module": "Core",
+      "name": "Role Permission for Page and Report"
+    },
+    {
+      "module": "Core",
+      "name": "Role Profile"
+    },
+    {
+      "module": "Core",
+      "name": "Role Replication"
+    },
+    {
+      "module": "Desk",
+      "name": "Route History"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Routing"
+    },
+    {
+      "module": "Core",
+      "name": "RQ Job"
+    },
+    {
+      "module": "Core",
+      "name": "RQ Worker"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Sales Forecast"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Sales Forecast Item"
+    },
+    {
+      "module": "Accounts",
+      "name": "Sales Invoice"
+    },
+    {
+      "module": "Accounts",
+      "name": "Sales Invoice Advance"
+    },
+    {
+      "module": "Accounts",
+      "name": "Sales Invoice Item"
+    },
+    {
+      "module": "Accounts",
+      "name": "Sales Invoice Payment"
+    },
+    {
+      "module": "Accounts",
+      "name": "Sales Invoice Reference"
+    },
+    {
+      "module": "Accounts",
+      "name": "Sales Invoice Timesheet"
+    },
+    {
+      "module": "Selling",
+      "name": "Sales Order"
+    },
+    {
+      "module": "Selling",
+      "name": "Sales Order Item"
+    },
+    {
+      "module": "Setup",
+      "name": "Sales Partner"
+    },
+    {
+      "module": "Accounts",
+      "name": "Sales Partner Item"
+    },
+    {
+      "module": "Selling",
+      "name": "Sales Partner Type"
+    },
+    {
+      "module": "Setup",
+      "name": "Sales Person"
+    },
+    {
+      "module": "CRM",
+      "name": "Sales Stage"
+    },
+    {
+      "module": "Accounts",
+      "name": "Sales Taxes and Charges"
+    },
+    {
+      "module": "Accounts",
+      "name": "Sales Taxes and Charges Template"
+    },
+    {
+      "module": "Selling",
+      "name": "Sales Team"
+    },
+    {
+      "module": "Contacts",
+      "name": "Salutation"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Sample Collection"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Sample Type"
+    },
+    {
+      "module": "Core",
+      "name": "Scheduled Job Log"
+    },
+    {
+      "module": "Core",
+      "name": "Scheduled Job Type"
+    },
+    {
+      "module": "Core",
+      "name": "Scheduler Event"
+    },
+    {
+      "module": "Core",
+      "name": "Security Settings"
+    },
+    {
+      "module": "Core",
+      "name": "Security Settings Contact"
+    },
+    {
+      "module": "Core",
+      "name": "Security Settings Language"
+    },
+    {
+      "module": "Selling",
+      "name": "Selling Settings"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Sensitivity"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Sensitivity Test Result"
+    },
+    {
+      "module": "Stock",
+      "name": "Serial and Batch Bundle"
+    },
+    {
+      "module": "Stock",
+      "name": "Serial and Batch Entry"
+    },
+    {
+      "module": "Stock",
+      "name": "Serial No"
+    },
+    {
+      "module": "Core",
+      "name": "Server Script"
+    },
+    {
+      "module": "Support",
+      "name": "Service Day"
+    },
+    {
+      "module": "Support",
+      "name": "Service Level Agreement"
+    },
+    {
+      "module": "Support",
+      "name": "Service Level Priority"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Service Request"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Service Request Category"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Service Request Reason"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Service Unit Type Item"
+    },
+    {
+      "module": "Core",
+      "name": "Session Default"
+    },
+    {
+      "module": "Core",
+      "name": "Session Default Settings"
+    },
+    {
+      "module": "Accounts",
+      "name": "Share Balance"
+    },
+    {
+      "module": "Accounts",
+      "name": "Share Transfer"
+    },
+    {
+      "module": "Accounts",
+      "name": "Share Type"
+    },
+    {
+      "module": "Accounts",
+      "name": "Shareholder"
+    },
+    {
+      "module": "Stock",
+      "name": "Shipment"
+    },
+    {
+      "module": "Stock",
+      "name": "Shipment Delivery Note"
+    },
+    {
+      "module": "Stock",
+      "name": "Shipment Parcel"
+    },
+    {
+      "module": "Stock",
+      "name": "Shipment Parcel Template"
+    },
+    {
+      "module": "Accounts",
+      "name": "Shipping Rule"
+    },
+    {
+      "module": "Accounts",
+      "name": "Shipping Rule Condition"
+    },
+    {
+      "module": "Accounts",
+      "name": "Shipping Rule Country"
+    },
+    {
+      "module": "Desk",
+      "name": "Sidebar Item Group"
+    },
+    {
+      "module": "Desk",
+      "name": "Sidebar Item Group Link"
+    },
+    {
+      "module": "Support",
+      "name": "SLA Fulfilled On Status"
+    },
+    {
+      "module": "Integrations",
+      "name": "Slack Webhook URL"
+    },
+    {
+      "module": "Selling",
+      "name": "SMS Center"
+    },
+    {
+      "module": "Core",
+      "name": "SMS Log"
+    },
+    {
+      "module": "Core",
+      "name": "SMS Parameter"
+    },
+    {
+      "module": "Core",
+      "name": "SMS Settings"
+    },
+    {
+      "module": "Website",
+      "name": "Social Link Settings"
+    },
+    {
+      "module": "Integrations",
+      "name": "Social Login Key"
+    },
+    {
+      "module": "Accounts",
+      "name": "South Africa VAT Account"
+    },
+    {
+      "module": "Regional",
+      "name": "South Africa VAT Settings"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Specimen"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Closing Balance"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Closing Entry"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Entry"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Entry Detail"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Entry Type"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Ledger Entry"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Reconciliation"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Reconciliation Item"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Reposting Settings"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Reservation Entry"
+    },
+    {
+      "module": "Stock",
+      "name": "Stock Settings"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Sub Operation"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting BOM"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Inward Order"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Inward Order Item"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Inward Order Received Item"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Inward Order Secondary Item"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Inward Order Service Item"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Order"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Order Item"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Order Service Item"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Order Supplied Item"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Receipt"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Receipt Item"
+    },
+    {
+      "module": "Subcontracting",
+      "name": "Subcontracting Receipt Supplied Item"
+    },
+    {
+      "module": "Core",
+      "name": "Submission Queue"
+    },
+    {
+      "module": "Accounts",
+      "name": "Subscription"
+    },
+    {
+      "module": "Accounts",
+      "name": "Subscription Invoice"
+    },
+    {
+      "module": "Accounts",
+      "name": "Subscription Plan"
+    },
+    {
+      "module": "Accounts",
+      "name": "Subscription Plan Detail"
+    },
+    {
+      "module": "Accounts",
+      "name": "Subscription Settings"
+    },
+    {
+      "module": "Core",
+      "name": "Success Action"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier"
+    },
+    {
+      "module": "Setup",
+      "name": "Supplier Group"
+    },
+    {
+      "module": "Accounts",
+      "name": "Supplier Group Item"
+    },
+    {
+      "module": "Accounts",
+      "name": "Supplier Item"
+    },
+    {
+      "module": "Selling",
+      "name": "Supplier Number At Customer"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Quotation"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Quotation Item"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Scorecard"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Scorecard Criteria"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Scorecard Period"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Scorecard Scoring Criteria"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Scorecard Scoring Standing"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Scorecard Scoring Variable"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Scorecard Standing"
+    },
+    {
+      "module": "Buying",
+      "name": "Supplier Scorecard Variable"
+    },
+    {
+      "module": "Support",
+      "name": "Support Search Source"
+    },
+    {
+      "module": "Support",
+      "name": "Support Settings"
+    },
+    {
+      "module": "Desk",
+      "name": "System Console"
+    },
+    {
+      "module": "Desk",
+      "name": "System Health Report"
+    },
+    {
+      "module": "Desk",
+      "name": "System Health Report Errors"
+    },
+    {
+      "module": "Desk",
+      "name": "System Health Report Failing Jobs"
+    },
+    {
+      "module": "Desk",
+      "name": "System Health Report Queue"
+    },
+    {
+      "module": "Desk",
+      "name": "System Health Report Tables"
+    },
+    {
+      "module": "Desk",
+      "name": "System Health Report Workers"
+    },
+    {
+      "module": "Core",
+      "name": "System Settings"
+    },
+    {
+      "module": "Desk",
+      "name": "Tag"
+    },
+    {
+      "module": "Desk",
+      "name": "Tag Link"
+    },
+    {
+      "module": "Setup",
+      "name": "Target Detail"
+    },
+    {
+      "module": "Projects",
+      "name": "Task"
+    },
+    {
+      "module": "Projects",
+      "name": "Task Depends On"
+    },
+    {
+      "module": "Projects",
+      "name": "Task Type"
+    },
+    {
+      "module": "Accounts",
+      "name": "Tax Category"
+    },
+    {
+      "module": "Accounts",
+      "name": "Tax Rule"
+    },
+    {
+      "module": "Accounts",
+      "name": "Tax Withholding Account"
+    },
+    {
+      "module": "Accounts",
+      "name": "Tax Withholding Category"
+    },
+    {
+      "module": "Accounts",
+      "name": "Tax Withholding Entry"
+    },
+    {
+      "module": "Accounts",
+      "name": "Tax Withholding Group"
+    },
+    {
+      "module": "Accounts",
+      "name": "Tax Withholding Rate"
+    },
+    {
+      "module": "Telephony",
+      "name": "Telephony Call Type"
+    },
+    {
+      "module": "Setup",
+      "name": "Terms and Conditions"
+    },
+    {
+      "module": "Setup",
+      "name": "Territory"
+    },
+    {
+      "module": "Accounts",
+      "name": "Territory Item"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Therapy Plan"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Therapy Plan Detail"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Therapy Plan Template"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Therapy Plan Template Detail"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Therapy Session"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Therapy Type"
+    },
+    {
+      "module": "Projects",
+      "name": "Timesheet"
+    },
+    {
+      "module": "Projects",
+      "name": "Timesheet Detail"
+    },
+    {
+      "module": "Desk",
+      "name": "ToDo"
+    },
+    {
+      "module": "Integrations",
+      "name": "Token Cache"
+    },
+    {
+      "module": "Website",
+      "name": "Top Bar Item"
+    },
+    {
+      "module": "Setup",
+      "name": "Transaction Deletion Record"
+    },
+    {
+      "module": "Accounts",
+      "name": "Transaction Deletion Record Details"
+    },
+    {
+      "module": "Setup",
+      "name": "Transaction Deletion Record Item"
+    },
+    {
+      "module": "Setup",
+      "name": "Transaction Deletion Record To Delete"
+    },
+    {
+      "module": "Core",
+      "name": "Translation"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Treatment Counselling"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Treatment Plan Template"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Treatment Plan Template Item"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Treatment Plan Template Practitioner"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Triage Level"
+    },
+    {
+      "module": "Regional",
+      "name": "UAE VAT Account"
+    },
+    {
+      "module": "Regional",
+      "name": "UAE VAT Settings"
+    },
+    {
+      "module": "Email",
+      "name": "Unhandled Email"
+    },
+    {
+      "module": "Accounts",
+      "name": "Unreconcile Payment"
+    },
+    {
+      "module": "Accounts",
+      "name": "Unreconcile Payment Entries"
+    },
+    {
+      "module": "Setup",
+      "name": "UOM"
+    },
+    {
+      "module": "Stock",
+      "name": "UOM Category"
+    },
+    {
+      "module": "Stock",
+      "name": "UOM Conversion Detail"
+    },
+    {
+      "module": "Setup",
+      "name": "UOM Conversion Factor"
+    },
+    {
+      "module": "Core",
+      "name": "User"
+    },
+    {
+      "module": "Core",
+      "name": "User Document Type"
+    },
+    {
+      "module": "Core",
+      "name": "User Email"
+    },
+    {
+      "module": "Builder",
+      "name": "User Font"
+    },
+    {
+      "module": "Core",
+      "name": "User Group"
+    },
+    {
+      "module": "Core",
+      "name": "User Group Member"
+    },
+    {
+      "module": "Core",
+      "name": "User Invitation"
+    },
+    {
+      "module": "Core",
+      "name": "User Permission"
+    },
+    {
+      "module": "Core",
+      "name": "User Role"
+    },
+    {
+      "module": "Core",
+      "name": "User Role Profile"
+    },
+    {
+      "module": "Core",
+      "name": "User Select Document Type"
+    },
+    {
+      "module": "Core",
+      "name": "User Session Display"
+    },
+    {
+      "module": "Core",
+      "name": "User Social Login"
+    },
+    {
+      "module": "Core",
+      "name": "User Type"
+    },
+    {
+      "module": "Core",
+      "name": "User Type Module"
+    },
+    {
+      "module": "Website",
+      "name": "UTM Campaign"
+    },
+    {
+      "module": "Website",
+      "name": "UTM Medium"
+    },
+    {
+      "module": "Website",
+      "name": "UTM Source"
+    },
+    {
+      "module": "Stock",
+      "name": "Variant Field"
+    },
+    {
+      "module": "Setup",
+      "name": "Vehicle"
+    },
+    {
+      "module": "Core",
+      "name": "Version"
+    },
+    {
+      "module": "Utilities",
+      "name": "Video"
+    },
+    {
+      "module": "Utilities",
+      "name": "Video Settings"
+    },
+    {
+      "module": "Core",
+      "name": "View Log"
+    },
+    {
+      "module": "Healthcare",
+      "name": "Vital Signs"
+    },
+    {
+      "module": "Telephony",
+      "name": "Voice Call Settings"
+    },
+    {
+      "module": "Stock",
+      "name": "Warehouse"
+    },
+    {
+      "module": "Stock",
+      "name": "Warehouse Type"
+    },
+    {
+      "module": "Support",
+      "name": "Warranty Claim"
+    },
+    {
+      "module": "Website",
+      "name": "Web Form"
+    },
+    {
+      "module": "Website",
+      "name": "Web Form Field"
+    },
+    {
+      "module": "Website",
+      "name": "Web Form List Column"
+    },
+    {
+      "module": "Website",
+      "name": "Web Form Request"
+    },
+    {
+      "module": "Website",
+      "name": "Web Page"
+    },
+    {
+      "module": "Website",
+      "name": "Web Page Block"
+    },
+    {
+      "module": "Website",
+      "name": "Web Page View"
+    },
+    {
+      "module": "Website",
+      "name": "Web Template"
+    },
+    {
+      "module": "Website",
+      "name": "Web Template Field"
+    },
+    {
+      "module": "Integrations",
+      "name": "Webhook"
+    },
+    {
+      "module": "Integrations",
+      "name": "Webhook Data"
+    },
+    {
+      "module": "Integrations",
+      "name": "Webhook Header"
+    },
+    {
+      "module": "Integrations",
+      "name": "Webhook Request Log"
+    },
+    {
+      "module": "Portal",
+      "name": "Website Attribute"
+    },
+    {
+      "module": "Portal",
+      "name": "Website Filter Field"
+    },
+    {
+      "module": "Setup",
+      "name": "Website Item Group"
+    },
+    {
+      "module": "Website",
+      "name": "Website Meta Tag"
+    },
+    {
+      "module": "Website",
+      "name": "Website Route Meta"
+    },
+    {
+      "module": "Website",
+      "name": "Website Route Redirect"
+    },
+    {
+      "module": "Website",
+      "name": "Website Script"
+    },
+    {
+      "module": "Website",
+      "name": "Website Settings"
+    },
+    {
+      "module": "Website",
+      "name": "Website Sidebar"
+    },
+    {
+      "module": "Website",
+      "name": "Website Sidebar Item"
+    },
+    {
+      "module": "Website",
+      "name": "Website Slideshow"
+    },
+    {
+      "module": "Website",
+      "name": "Website Slideshow Item"
+    },
+    {
+      "module": "Website",
+      "name": "Website Theme"
+    },
+    {
+      "module": "Website",
+      "name": "Website Theme Ignore App"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Work Order"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Work Order Additional Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Work Order Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Work Order Operation"
+    },
+    {
+      "module": "Workflow",
+      "name": "Workflow"
+    },
+    {
+      "module": "Workflow",
+      "name": "Workflow Action"
+    },
+    {
+      "module": "Workflow",
+      "name": "Workflow Action Master"
+    },
+    {
+      "module": "Workflow",
+      "name": "Workflow Action Permitted Role"
+    },
+    {
+      "module": "Workflow",
+      "name": "Workflow Document State"
+    },
+    {
+      "module": "Workflow",
+      "name": "Workflow State"
+    },
+    {
+      "module": "Workflow",
+      "name": "Workflow Transition"
+    },
+    {
+      "module": "Workflow",
+      "name": "Workflow Transition Task"
+    },
+    {
+      "module": "Workflow",
+      "name": "Workflow Transition Tasks"
+    },
+    {
+      "module": "Desk",
+      "name": "Workspace"
+    },
+    {
+      "module": "Desk",
+      "name": "Workspace Chart"
+    },
+    {
+      "module": "Desk",
+      "name": "Workspace Custom Block"
+    },
+    {
+      "module": "Desk",
+      "name": "Workspace Link"
+    },
+    {
+      "module": "Desk",
+      "name": "Workspace Number Card"
+    },
+    {
+      "module": "Desk",
+      "name": "Workspace Quick List"
+    },
+    {
+      "module": "Desk",
+      "name": "Workspace Shortcut"
+    },
+    {
+      "module": "Desk",
+      "name": "Workspace Sidebar"
+    },
+    {
+      "module": "Desk",
+      "name": "Workspace Sidebar Item"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Workstation"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Workstation Cost"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Workstation Operating Component"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Workstation Operating Component Account"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Workstation Type"
+    },
+    {
+      "module": "Manufacturing",
+      "name": "Workstation Working Hour"
+    }
+  ],
+  "setup": true,
+  "synthetic_counts": {
+    "Healthcare Practitioner": 0,
+    "Patient": 0,
+    "Patient Appointment": 0
+  }
+}

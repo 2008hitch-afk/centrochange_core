@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "checks": [
+    "private UAT methods deny Guest",
+    "private UAT methods deny Management operator",
+    "seed denies missing cc_uat_demo even for Administrator",
+    "seed denies missing cc_synthetic_dev even for Administrator",
+    "all UAT management methods remain non-whitelisted"
+  ]
+}

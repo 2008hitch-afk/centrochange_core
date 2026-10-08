@@ -1,0 +1,51 @@
+{
+  "status": "PASS",
+  "scope": "enabled scheduler and actual short/long worker probes; not per-cron completion certification",
+  "periodic_job_configuration": [
+    {
+      "name": "t6lq5rmsnu",
+      "method": "centrochange_core.finance.ts.catch_up",
+      "last_execution": "2026-10-05 21:40:03.150655",
+      "stopped": 0,
+      "frequency": "Cron"
+    },
+    {
+      "name": "t6lfqnpj21",
+      "method": "centrochange_core.finance.sdi.catch_up",
+      "last_execution": "2026-10-05 21:40:01.967930",
+      "stopped": 0,
+      "frequency": "Cron"
+    },
+    {
+      "name": "t6lifh5qen",
+      "method": "centrochange_core.finance.admin_queue.catch_up",
+      "last_execution": "2026-10-05 21:40:02.352599",
+      "stopped": 0,
+      "frequency": "Cron"
+    },
+    {
+      "name": "t6l83r7i2f",
+      "method": "centrochange_core.finance.collections.catch_up",
+      "last_execution": "2026-10-05 21:40:01.423442",
+      "stopped": 0,
+      "frequency": "Cron"
+    },
+    {
+      "name": "t6l64bp7i2",
+      "method": "centrochange_core.operations.notifications.dispatch_pending",
+      "last_execution": "2026-10-05 21:40:02.987621",
+      "stopped": 0,
+      "frequency": "Cron"
+    },
+    {
+      "name": "t6lkau0gd6",
+      "method": "centrochange_core.operations.automation.catch_up",
+      "last_execution": "2026-10-05 21:40:02.658320",
+      "stopped": 0,
+      "frequency": "Cron"
+    }
+  ],
+  "scheduled_job_log_rows": 0,
+  "note": "Native create_log disabled: last_execution can update on Start/Complete/Failed and alone does not prove completion. Actual worker execution is evidenced separately by runtime, native notice and fiscal suites.",
+  "official_pinned_source": "https://github.com/frappe/frappe/blob/6a329d068416768ec47ccd3326b9cc95a8d7bf99/frappe/core/doctype/scheduled_job_type/scheduled_job_type.py"
+}

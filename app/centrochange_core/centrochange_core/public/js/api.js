@@ -7,6 +7,7 @@ export async function api(method,args={},post=false){
   if(!response.ok){
     let message='Operazione non riuscita. Verifica autorizzazioni e dati.';
     try{const messages=JSON.parse(data._server_messages||'[]');if(messages.length){const last=JSON.parse(messages.at(-1));message=last.message.replace(/<[^>]*>/g,'');}}catch{}
+    message=({'Payment review required before a subsequent session; contact secretariat':'La seduta successiva è bloccata da un pagamento scaduto. Contatta la segreteria.','Patient or practitioner interval is already booked':'L’intervallo è già occupato per il paziente o il professionista.','Cannot mark a future or ongoing session performed':'La seduta non è ancora terminata: non può essere segnata come svolta.','Choose an open debt and extend its effective due date':'Seleziona un debito aperto e una scadenza successiva a quella attuale.'})[message]||message;
     if(response.status===403)message='Accesso negato: verifica assegnazione, centro e stato della seduta.';
     throw new Error(message);
   }

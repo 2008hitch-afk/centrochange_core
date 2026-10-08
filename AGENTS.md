@@ -121,6 +121,7 @@ Le capability Finance/Admin `CC-CAP-041..050` derivano dal delivery design appro
 ## Macro-goal execution
 
 Current macro-goal: **GOAL-02 — MVP Ready for Client UAT (#23)**.
+GOAL-01 is OWNER_ACCEPTED / DEV PASS under DECISION-055; reuse its accepted baseline. GOAL-02 is authorized by HC-0005 DECISION-056. No automatic stack merge or GOAL-03 authorization.
 
 Codex should work autonomously within the active goal and should not stop after each child issue. Stop only for a material blocker as defined in `docs/MVP-GOAL-ROADMAP-v0.1.md`. GOAL-03 is not authorized.
 

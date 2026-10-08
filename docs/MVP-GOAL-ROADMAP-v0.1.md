@@ -45,6 +45,8 @@ A goal does not automatically authorize the next goal where a separate HITCH gat
 | GOAL-04 — Go-Live & Stabilization | #25 | QUEUED | Requires explicit production/go-live authorization |
 | GOAL-05 — Delivery Closure & Continuity | #26 | QUEUED | Requires stabilized live delivery |
 
+Technical evidence (distinct from formal authority): GOAL-01 [Completion report](MVP-GOAL-COMPLETION-REPORT-2026-10-05.md); GOAL-02 **TECHNICAL DONE / UAT READY**, [Completion report](GOAL-02-COMPLETION-REPORT-2026-10-05.md). Owner visual UAT / final acceptance pending; no automatic stack merge.
+
 ## 4. GOAL-01 — MVP DEV End-to-End
 
 **Issue:** #22
@@ -223,4 +225,6 @@ GOAL-01 is formally accepted by HC-0005 DECISION-055.
 GOAL-02 (#23) is formally authorized by HC-0005 DECISION-056.
 
 > Execute **GOAL-02 — MVP Ready for Client UAT (#23)** autonomously according to this roadmap and `AGENTS.md`. Reuse the accepted GOAL-01 DEV candidate, load only relevant `APPROVATO` generalized learnings, verify upstream behavior against official documentation/pinned source/runtime, and continue through the technical child work required to reach GOAL-02 Done. Stop only for a material blocker. Keep all production, real-data, real-provider and GOAL-03 gates closed.
+
+Required technical deliverables: named synthetic UAT candidate, client validation package, whole-goal learning extraction and GOAL-02 Completion Report. No automatic stack merge or real provider traffic.
 

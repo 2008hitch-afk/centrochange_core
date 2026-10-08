@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "reports": [
+    {
+      "status": "PASS",
+      "checks": [
+        "Management login and nonblank finance page identity",
+        "visible rule and explicit zero threshold configuration, without UI default",
+        "performed unpaid expectation visibly SUSPENDED and unknown, never definitive zero",
+        "authorized queue modal shows patient professional applied threshold unpaid count and suspended state",
+        "visible Management override matures current position and replaces only current projection, retaining historical source",
+        "threshold controls and current position mobile layout without document overflow",
+        "Accountant rendered position remains read-only without threshold/override actions",
+        "no application JavaScript exceptions or framework overlay"
+      ],
+      "viewports": [
+        "1536x1024",
+        "390x844"
+      ],
+      "errors": []
+    }
+  ],
+  "browser_plugin": "unavailable",
+  "fallback": "pinned Playwright container"
+}

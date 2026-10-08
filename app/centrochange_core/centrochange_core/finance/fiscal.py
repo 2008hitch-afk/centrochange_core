@@ -88,4 +88,13 @@ def records(center,domain):
     if domain not in ('SDI','TS'):frappe.throw('Unsupported fiscal domain')
     rows=current_rows('CC Fiscal Transaction',{'center':center,'domain':domain},fields=['name','direction','reference_doctype','reference_name','status','attempt_count','retryable','error_class','external_protocol','corrects'])
     if len(rows)>500:frappe.throw('Narrow the fiscal workspace before listing more than 500 records')
+    for row in rows:
+        if row.reference_doctype=='Sales Invoice':
+            invoice=frappe.db.get_value('Sales Invoice',row.reference_name,['customer','cc_center'],as_dict=True)
+            if invoice and invoice.cc_center==center:
+                row.reference_label=row.reference_name+' · '+(frappe.db.get_value('Customer',invoice.customer,'customer_name') or invoice.customer)
+        elif row.reference_doctype=='CC Economic Source Link':
+            source=frappe.db.get_value('CC Economic Source Link',row.reference_name,['customer','center','session_date'],as_dict=True)
+            if source and source.center==center:
+                row.reference_label=str(source.session_date)+' · '+(frappe.db.get_value('Customer',source.customer,'customer_name') or source.customer)
     return rows

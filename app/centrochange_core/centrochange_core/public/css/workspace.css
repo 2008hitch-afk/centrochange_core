@@ -7,3 +7,5 @@
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin:24px 0}.metric{border:1px solid var(--line);padding:18px;border-radius:6px}.metric span{display:block;color:var(--muted);font-size:14px}.metric strong{display:block;font-size:27px;margin-top:10px}.action-buttons{display:grid;gap:12px;margin-top:24px}.nav-button{text-decoration:none;color:inherit}.detail table{font-size:13px}
 
 .finance-page .page-header{flex-wrap:wrap;gap:16px}.finance-page h1{font-size:38px}.finance-page #detail .table-wrap table{min-width:360px}@media(max-width:900px){.finance-page .workspace{grid-template-columns:minmax(0,1fr)!important}}
+
+.validation-guide{overflow-wrap:anywhere}.validation-guide nav{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0}.validation-guide nav .primary{display:inline-block;padding:12px 16px;border-radius:6px;text-decoration:none}.validation-guide section{margin:28px 0;padding-top:12px;border-top:1px solid var(--line)}.validation-guide p,.validation-guide li{line-height:1.6}.validation-guide li{margin:8px 0}

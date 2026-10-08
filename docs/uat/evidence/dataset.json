@@ -1,0 +1,160 @@
+{
+  "checks": [
+    "seven synthetic enabled users, eight patients, two centers and two professionals",
+    "exactly 48h timely, 47h late, package-covered history",
+    "native submitted patient balances 60/0, unposted draft and supplier balance 100",
+    "overdue native patient debt blocks subsequent session; internal/local email trace only",
+    "approved N1 pair ranking and explicit missing configuration REVIEW",
+    "native bank matching/unmatched and invalid retained XML exception",
+    "actual queued workers completed SdI/TS pure simulations; TS pending remains explicit",
+    "audit history and actionable administrative exceptions retained"
+  ],
+  "normalized": {
+    "anchor": "2026-10-05",
+    "appointment_states": {
+      "Alfa da prenotare": {
+        "appointment_date": "2026-10-12",
+        "appointment_time": "9:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Pending",
+        "cc_late_cancellation": "0",
+        "cc_performed": "0",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      },
+      "Alfa non incassata 1": {
+        "appointment_date": "2026-09-28",
+        "appointment_time": "9:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Due",
+        "cc_late_cancellation": "0",
+        "cc_performed": "1",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      },
+      "Alfa non incassata 2": {
+        "appointment_date": "2026-09-29",
+        "appointment_time": "9:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Due",
+        "cc_late_cancellation": "0",
+        "cc_performed": "1",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      },
+      "Beta parzialmente incassata": {
+        "appointment_date": "2026-09-28",
+        "appointment_time": "10:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Due",
+        "cc_late_cancellation": "0",
+        "cc_performed": "1",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      },
+      "Delta annullata puntuale": {
+        "appointment_date": "2026-09-30",
+        "appointment_time": "12:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Non Due",
+        "cc_late_cancellation": "0",
+        "cc_performed": "0",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      },
+      "Delta annullata tardiva": {
+        "appointment_date": "2026-09-30",
+        "appointment_time": "13:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Due",
+        "cc_late_cancellation": "1",
+        "cc_performed": "0",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      },
+      "Epsilon pacchetto": {
+        "appointment_date": "2026-09-28",
+        "appointment_time": "14:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Package Covered",
+        "cc_late_cancellation": "0",
+        "cc_performed": "1",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      },
+      "Gamma incassata": {
+        "appointment_date": "2026-09-28",
+        "appointment_time": "11:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Due",
+        "cc_late_cancellation": "0",
+        "cc_performed": "1",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      },
+      "Theta insoluto scaduto": {
+        "appointment_date": "2026-09-29",
+        "appointment_time": "10:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Due",
+        "cc_late_cancellation": "0",
+        "cc_performed": "1",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      },
+      "Zeta configurazione mancante": {
+        "appointment_date": "2026-09-28",
+        "appointment_time": "15:00:00",
+        "cc_booking_date": "2026-09-21",
+        "cc_economic_state": "Due",
+        "cc_late_cancellation": "0",
+        "cc_performed": "1",
+        "cc_price_snapshot": "100.0",
+        "duration": "60"
+      }
+    },
+    "expectations": {
+      "Alfa non incassata 1": "OK",
+      "Alfa non incassata 2": "SUSPENDED",
+      "Beta parzialmente incassata": "OK",
+      "Epsilon pacchetto": "OK",
+      "Gamma incassata": "OK",
+      "Theta insoluto scaduto": "OK",
+      "Zeta configurazione mancante": "REVIEW"
+    },
+    "fiscal": {
+      "SdI accepted": "ACCEPTED_OR_DELIVERED",
+      "TS accepted": "ACCEPTED",
+      "TS pending": "ELIGIBILITY_PENDING"
+    },
+    "patients": [
+      "Alfa",
+      "Altro centro",
+      "Beta",
+      "Delta",
+      "Epsilon",
+      "Gamma",
+      "Theta",
+      "Zeta"
+    ],
+    "payable": 100,
+    "receivables": {
+      "Beta parzialmente incassata": 60.0,
+      "Gamma incassata": 0.0,
+      "Theta insoluto scaduto": 100.0
+    },
+    "roles": [
+      "a",
+      "b",
+      "c",
+      "f",
+      "m",
+      "s",
+      "t"
+    ],
+    "version": "goal02-demo-v1"
+  },
+  "semantic_sha256": "9e1a61146ce666e50f5bf78ccd9995989dbc302e9c2dc6f6942d370583a9c09a",
+  "status": "PASS",
+  "version": "goal02-demo-v1"
+}
