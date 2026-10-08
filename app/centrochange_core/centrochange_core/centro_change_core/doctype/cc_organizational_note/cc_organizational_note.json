@@ -1,0 +1,115 @@
+{
+ "doctype": "DocType",
+ "name": "CC Organizational Note",
+ "module": "Centro Change Core",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 0,
+ "fields": [
+  {
+   "fieldname": "patient",
+   "fieldtype": "Link",
+   "label": "Patient",
+   "reqd": 1,
+   "options": "Patient"
+  },
+  {
+   "fieldname": "center",
+   "fieldtype": "Link",
+   "label": "Center",
+   "reqd": 1,
+   "options": "Branch"
+  },
+  {
+   "fieldname": "practitioner",
+   "fieldtype": "Link",
+   "label": "Practitioner",
+   "reqd": 0,
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fieldname": "content",
+   "fieldtype": "Text Editor",
+   "label": "Content",
+   "reqd": 1
+  },
+  {
+   "fieldname": "authored_by",
+   "fieldtype": "Link",
+   "label": "Authored By",
+   "reqd": 1,
+   "options": "User"
+  },
+  {
+   "fieldname": "corrects",
+   "fieldtype": "Link",
+   "label": "Corrects",
+   "reqd": 0,
+   "options": "CC Organizational Note"
+  }
+ ],
+ "field_order": [
+  "patient",
+  "center",
+  "practitioner",
+  "content",
+  "authored_by",
+  "corrects"
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Secretariat",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Professional",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": []
+}

@@ -85,5 +85,19 @@ def current_rows(doctype, filters=None, fields=None, pluck=None):
 def roles(user=None):
 	user=user or frappe.session.user
 	if frappe.flags.get("cc_permission_current_read"):
-		return current_rows("Has Role", {"parent":user}, pluck="role")
+		names=current_rows("Has Role", {"parent":user,"parenttype":"User"}, pluck="role")
+		return [name for name in names if not frappe.db.get_value("Role",name,"disabled",for_update=True)]
 	return frappe.get_roles(user)
+
+
+def patient_contexts(user=None):
+	"""Exact patient/center pairs, never a Cartesian product of independent scopes."""
+	user=user or frappe.session.user
+	if not enabled(user):
+		return set()
+	filters={'active':1,'center':['in',centers(user) or ['']]}
+	if 'CC Professional' in roles(user):
+		filters['practitioner']=practitioner_for(user) or ''
+	elif 'CC Secretariat' not in roles(user):
+		return set()
+	return {(row.patient,row.center) for row in current_rows('CC Patient Assignment',filters,fields=['patient','center'])}

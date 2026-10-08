@@ -25,6 +25,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--env-file',required=True)
     parser.add_argument('--with-booking',action='store_true')
+    parser.add_argument('--with-operations',action='store_true')
     args=parser.parse_args()
     config=dict(line.split('=',1) for line in Path(args.env_file).read_text().splitlines() if line and not line.startswith('#'))
     assert config['SITE_NAME']=='centrochange.local'
@@ -55,7 +56,7 @@ def main():
         call(opener,path,data,403)
         checks.append(label)
     try:
-        fixture=execute('centrochange_core.security.dev_acceptance.create_http',{'scheduling':args.with_booking})
+        fixture=execute('centrochange_core.security.dev_acceptance.create_http',{'scheduling':args.with_booking or args.with_operations,'operations':args.with_operations})
         admin=session(fixture['users']['m']['name'],fixture['users']['m']['password'])
         a=session(**{'user':fixture['users']['a']['name'],'password':fixture['users']['a']['password']})
         b=session(**{'user':fixture['users']['b']['name'],'password':fixture['users']['b']['password']})
@@ -85,7 +86,7 @@ def main():
             values=[future.result()['message']['name'] for future in futures]
             assert values[0]==values[1]
         checks.append('concurrent membership retry single relationship')
-        if args.with_booking:
+        if args.with_booking or args.with_operations:
             payload={'patient':own,'practitioner':fixture['practitioners'][0],'center':fixture['centers'][0],
                 'appointment_type':fixture['catalog']['Appointment Type'][0], 'appointment_date':'2099-01-12',
                 'appointment_time':'09:00:00','reason':fixture['tag']}
@@ -125,9 +126,35 @@ def main():
             call(admin,'/api/method/frappe.client.set_value',{'doctype':'CC Public Booking Route','name':'Marco','fieldname':'enabled','value':1})
             call(admin,'/api/method/frappe.client.set_value',{'doctype':'Appointment Type','name':fixture['catalog']['Appointment Type'][0],'fieldname':'cc_first_meeting','value':0})
             denied('public subsequent-session profile denied',guest,public,{**public_payload,'email':fixture['tag'].lower()+'-other@example.invalid','request_key':fixture['tag']+'-subsequent'})
+        if args.with_operations:
+            private='/api/resource/CC%20Private%20Note/'+urllib.parse.quote(fixture['private_note'],safe='')
+            assert call(a,private)['data']['content'].endswith('SYNTHETIC PRIVATE BODY')
+            checks.append('own private note REST body read')
+            root=session('Administrator',config['ADMIN_PASSWORD'])
+            secretary=session(fixture['users']['s']['name'],fixture['users']['s']['password'])
+            for label,principal in [('Management',admin),('Administrator',root),('secretariat',secretary)]:
+                denied(label+' private REST body denied',principal,private)
+                denied(label+' private client query denied',principal,'/api/method/frappe.client.get_list',{'doctype':'CC Private Note','fields':'["content"]'})
+            call(admin,'/api/method/centrochange_core.security.lifecycle.set_assignment',{'patient':own,'center':fixture['centers'][0],
+                'practitioner':fixture['practitioners'][1],'active':1,'reason':fixture['tag']})
+            assert call(b,resource(own))['data']['name']==own
+            denied('second assigned professional private REST body denied',b,private)
+            package_payload={**payload,'patient_package':fixture['package'],'reason':fixture['tag']}
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                futures=[pool.submit(call,session(fixture['users']['m']['name'],fixture['users']['m']['password']),method,
+                    {**package_payload,'appointment_date':date,'appointment_time':time,'request_key':'last-unit-'+str(index)},(200,417))
+                    for index,(date,time) in enumerate([('2099-01-12','11:00:00'),('2099-01-19','09:00:00')])]
+                values=[future.result() for future in futures]
+                assert sorted(value['http_status'] for value in values)==[200,417],values
+            checks.append('concurrent distinct slots reserve last package unit once')
+            projection=call(admin,'/api/method/centrochange_core.operations.packages.balance?'+urllib.parse.urlencode({'package':fixture['package'],'center':fixture['centers'][0]}))['message']
+            assert projection=={'remaining':1,'reserved':1,'available':0}
+            checks.append('HTTP package projection reflects single reservation')
         call(admin,'/api/method/centrochange_core.security.lifecycle.reassign'  ,{'patient':own,'center':fixture['centers'][0],
              'old_practitioner':fixture['practitioners'][0],'new_practitioner':fixture['practitioners'][1],'reason':fixture['tag']})
         denied('former session revoked after commit',a,resource(own))
+        if args.with_operations:
+            denied('former professional private note revoked after reassignment',a,private)
         assert call(b,resource(own))['data']['name']==own
         checks.append('replacement session granted after commit')
         call(admin,'/api/method/centrochange_core.security.lifecycle.replace_principal',

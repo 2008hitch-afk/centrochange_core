@@ -3,7 +3,7 @@
 import frappe
 from frappe.sessions import clear_sessions
 
-from centrochange_core.security.guards import enabled, is_manager, require_manager
+from centrochange_core.security.guards import enabled, is_manager, require_manager, require_patient, centers, roles
 from centrochange_core.security.install import CLINICAL_FIELDS
 
 
@@ -18,6 +18,13 @@ class PatientMixin:
 	def validate(self):
 		super().validate()
 		previous = self.get_doc_before_save()
+		from centrochange_core.scheduling.public_booking import SERVICE_USER
+		public=frappe.flags.get('cc_public_ingress') and frappe.session.user==SERVICE_USER
+		if not public:
+			if previous:
+				require_patient(self.name,'write')
+			elif not is_manager() and (not enabled() or not centers() or 'CC Secretariat' not in roles() or 'CC Professional' in roles()):
+				frappe.throw('Operational patient creation permission required',frappe.PermissionError)
 		for field in CLINICAL_FIELDS:
 			if self.get(field) and (not previous or self.get(field) != previous.get(field)):
 				frappe.throw("Clinical content belongs in contextual guarded records, not the shared patient identity")
@@ -57,10 +64,20 @@ class ManagedShareMixin:
 
 
 class UserMixin:
+	def validate(self):
+		super().validate()
+		previous=self.get_doc_before_save()
+		before={row.role for row in previous.roles if row.role.startswith('CC ')} if previous else set()
+		after={row.role for row in self.roles if row.role.startswith('CC ')}
+		if before!=after and frappe.session.user!='Administrator' and not frappe.flags.get('cc_user_roles_write'):
+			frappe.throw('Centro Change role changes require controlled identity provisioning',frappe.PermissionError)
+
 	def _is_cc_user(self):
+		previous=self.get_doc_before_save()
 		return bool(frappe.db.exists("Healthcare Practitioner", {"user_id": self.name})
 			or frappe.db.exists("CC Center Membership", {"user": self.name})
-			or any(role.role.startswith("CC ") for role in self.roles))
+			or any(role.role.startswith("CC ") for role in self.roles)
+			or previous and any(role.role.startswith("CC ") for role in previous.roles))
 
 	def check_enable_disable(self):
 		if not self._is_cc_user():
@@ -82,6 +99,7 @@ class UserMixin:
 	def on_update(self):
 		if not self._is_cc_user():
 			return super().on_update()
+		frappe.db.after_commit.add(lambda: frappe.clear_cache(user=self.name))
 		invalidate = not self.enabled or super().has_value_changed("user_type")
 		self._cc_defer_user_type_logout = True
 		try:

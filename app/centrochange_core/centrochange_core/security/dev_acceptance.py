@@ -118,7 +118,7 @@ def run(extra_checks=None):
 
 
 @synthetic_test
-def create_http(scheduling=False):
+def create_http(scheduling=False,operations=False):
 	"""Create explicitly marked disposable HTTP fixtures; harness destroys them."""
 	if frappe.session.user != 'Administrator' or frappe.conf.get('cc_synthetic_dev') != 1:
 		frappe.throw('Synthetic DEV Administrator required')
@@ -162,6 +162,17 @@ def create_http(scheduling=False):
 			'practitioner':result['practitioners'][0],'appointment_type':profile.name,'enabled':1}).insert()
 		result['catalog']={'CC Public Booking Route':[route.name],'Item':[item.name],'Price List':[price_list.name],'Appointment Type':[profile.name],
 			'Item Price':[price.name],'CC Center Service':[availability.name],'Practitioner Schedule':[schedule]}
+	if operations:
+		from centrochange_core.operations.notes import add_note
+		from centrochange_core.operations.packages import issue
+		frappe.set_user(result['users']['a']['name'])
+		result['private_note']=add_note(result['patients'][0],result['centers'][0],tag+' SYNTHETIC PRIVATE BODY',1)['name']
+		result['org_note']=add_note(result['patients'][0],result['centers'][0],tag+' SYNTHETIC ORG BODY',0)['name']
+		frappe.set_user('Administrator')
+		template=frappe.get_doc({'doctype':'CC Package Template','title':tag+' PACKAGE','service_item':result['catalog']['Item'][0],
+			'units':1,'enabled':1}).insert()
+		result['package']=issue(template.name,result['patients'][0],[result['centers'][0]],tag+'-issue',tag)['name']
+		result['catalog']['CC Package Template']=[template.name]
 	frappe.db.commit()
 	return result
 
@@ -187,12 +198,20 @@ def destroy_http(fixture):
 		groups.update(fixture['catalog'])
 		groups['Patient Appointment']=frappe.get_all('Patient Appointment',filters={'patient':['in',fixture['patients']]},pluck='name')
 		assert all((frappe.db.get_value('Patient Appointment',name,'cc_service_label') or '').startswith(tag+' ') for name in groups['Patient Appointment'])
+	groups['CC Private Note']=frappe.get_all('CC Private Note',filters={'patient':['in',fixture['patients']]},pluck='name')
+	groups['CC Organizational Note']=frappe.get_all('CC Organizational Note',filters={'patient':['in',fixture['patients']]},pluck='name')
+	groups['CC Patient Package']=frappe.get_all('CC Patient Package',filters={'patient':['in',fixture['patients']]},pluck='name')
+	groups['CC Package Ledger']=frappe.get_all('CC Package Ledger',filters={'package':['in',groups['CC Patient Package'] or ['']]},pluck='name')
+	groups['CC Settlement']=frappe.get_all('CC Settlement',filters={'appointment':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
+	groups['CC Notification']=frappe.get_all('CC Notification',filters={'recipient':['in',users]},pluck='name')
 	groups['CC Patient Assignment']=frappe.get_all('CC Patient Assignment',filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['CC Center Membership']=frappe.get_all('CC Center Membership',filters={'user':['in',users]},pluck='name')
 	groups['CC Audit Event']=frappe.get_all('CC Audit Event',filters={'reason':tag},pluck='name')
 	if fixture.get('catalog'):
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'Patient Appointment',
 			'reference_name':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
+		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package'):
+			groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':protected,'reference_name':['in',groups[protected] or ['']]},pluck='name')
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'CC Patient Assignment',
 			'reference_name':['in',groups.get('CC Patient Assignment') or ['']]},pluck='name')
 	# Native Patient creates contacts/customers; discover only links to these exact fixtures.

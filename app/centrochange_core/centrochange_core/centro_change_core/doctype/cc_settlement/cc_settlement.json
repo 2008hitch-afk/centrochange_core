@@ -1,0 +1,121 @@
+{
+ "doctype": "DocType",
+ "name": "CC Settlement",
+ "module": "Centro Change Core",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 0,
+ "fields": [
+  {
+   "fieldname": "appointment",
+   "fieldtype": "Link",
+   "label": "Appointment",
+   "reqd": 1,
+   "options": "Patient Appointment"
+  },
+  {
+   "fieldname": "paid",
+   "fieldtype": "Check",
+   "label": "Paid",
+   "reqd": 0,
+   "default": "0"
+  },
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Link",
+   "label": "Mode Of Payment",
+   "reqd": 0,
+   "options": "Mode of Payment"
+  },
+  {
+   "fieldname": "actor",
+   "fieldtype": "Link",
+   "label": "Actor",
+   "reqd": 1,
+   "options": "User"
+  },
+  {
+   "fieldname": "event_time",
+   "fieldtype": "Datetime",
+   "label": "Event Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "label": "Sequence",
+   "reqd": 1
+  }
+ ],
+ "field_order": [
+  "appointment",
+  "paid",
+  "mode_of_payment",
+  "actor",
+  "event_time",
+  "reason",
+  "sequence"
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Secretariat",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  },
+  {
+   "role": "CC Professional",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 0
+  }
+ ],
+ "actions": [],
+ "links": [],
+ "states": []
+}

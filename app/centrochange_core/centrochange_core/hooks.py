@@ -7,12 +7,18 @@ app_license = "agpl-3.0"
 
 required_apps = ["erpnext", "healthcare"]
 before_install = "centrochange_core.security.install.ensure_roles"
-after_install = "centrochange_core.security.install.configure"
+after_install = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure"]
 before_migrate = "centrochange_core.security.install.ensure_roles"
-after_migrate = "centrochange_core.security.install.configure"
-before_request = ["centrochange_core.security.api.before_request"]
+after_migrate = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure"]
+before_request = ["centrochange_core.security.api.before_request", "centrochange_core.operations.notes.request_guard"]
 
 permission_query_conditions = {
+    "CC Notification": "centrochange_core.operations.permissions.notification_query",
+    "CC Settlement": "centrochange_core.operations.permissions.settlement_query",
+    "CC Package Ledger": "centrochange_core.operations.permissions.ledger_query",
+    "CC Patient Package": "centrochange_core.operations.permissions.package_query",
+    "CC Private Note": "centrochange_core.operations.notes.private_query",
+    "CC Organizational Note": "centrochange_core.operations.notes.organizational_query",
     "Practitioner Schedule": "centrochange_core.scheduling.availability.schedule_query",
     "Practitioner Availability": "centrochange_core.scheduling.availability.availability_query",
     "Patient Appointment": "centrochange_core.scheduling.booking.appointment_query",
@@ -23,6 +29,12 @@ permission_query_conditions = {
     "CC Patient Assignment": "centrochange_core.security.permissions.assignment_query",
 }
 has_permission = {
+    "CC Notification": "centrochange_core.operations.permissions.notification_permission",
+    "CC Settlement": "centrochange_core.operations.permissions.settlement_permission",
+    "CC Package Ledger": "centrochange_core.operations.permissions.ledger_permission",
+    "CC Patient Package": "centrochange_core.operations.permissions.package_permission",
+    "CC Private Note": "centrochange_core.operations.notes.private_permission",
+    "CC Organizational Note": "centrochange_core.operations.notes.organizational_permission",
     "Practitioner Schedule": "centrochange_core.scheduling.availability.schedule_permission",
     "Practitioner Availability": "centrochange_core.scheduling.availability.availability_permission",
     "Patient Appointment": "centrochange_core.scheduling.booking.appointment_permission",
@@ -66,3 +78,5 @@ for method in ("check_payment_reqd", "invoice_appointment", "update_fee_validity
     override_whitelisted_methods["healthcare.healthcare.doctype.patient_appointment.patient_appointment." + method] = "centrochange_core.scheduling.booking.blocked_native"
 for method in ("get_appointments", "get_logged_in_patient", "get_departments", "get_practitioners", "get_patients", "get_settings", "get_slots", "make_appointment", "get_fees", "get_print_format", "get_orders", "get_payment_link"):
     override_whitelisted_methods["healthcare.healthcare.api.patient_portal." + method] = "centrochange_core.scheduling.booking.blocked_native"
+
+scheduler_events = {"cron": {"*/5 * * * *": ["centrochange_core.operations.automation.catch_up"]}}

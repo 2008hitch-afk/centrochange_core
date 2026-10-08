@@ -1,0 +1,25 @@
+{
+ "doctype": "DocType",
+ "name": "CC Package Center",
+ "module": "Centro Change Core",
+ "autoname": "hash",
+ "engine": "InnoDB",
+ "track_changes": 0,
+ "fields": [
+  {
+   "fieldname": "center",
+   "fieldtype": "Link",
+   "label": "Center",
+   "reqd": 1,
+   "options": "Branch"
+  }
+ ],
+ "field_order": [
+  "center"
+ ],
+ "permissions": [],
+ "actions": [],
+ "links": [],
+ "states": [],
+ "istable": 1
+}
