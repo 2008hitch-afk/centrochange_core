@@ -39,8 +39,8 @@ A goal does not automatically authorize the next goal where a separate HITCH gat
 
 | Goal | GitHub issue | Status | Current authority |
 |---|---:|---|---|
-| GOAL-01 — MVP DEV End-to-End | #22 | **DONE / DEV PASS** | [Completion report](MVP-GOAL-COMPLETION-REPORT-2026-10-05.md); draft stack awaits review |
-| GOAL-02 — MVP Ready for Client UAT | #23 | QUEUED | Requires GOAL-01 completion/review |
+| GOAL-01 — MVP DEV End-to-End | #22 | **OWNER ACCEPTED / DEV PASS** | Accepted by HC-0005 DECISION-055; [Completion report](MVP-GOAL-COMPLETION-REPORT-2026-10-05.md); draft stack awaits review |
+| GOAL-02 — MVP Ready for Client UAT | #23 | **ACTIVE / AUTHORIZED** | Authorized by HC-0005 DECISION-056 |
 | GOAL-03 — Production Readiness | #24 | QUEUED | Requires GOAL-02/UAT basis |
 | GOAL-04 — Go-Live & Stabilization | #25 | QUEUED | Requires explicit production/go-live authorization |
 | GOAL-05 — Delivery Closure & Continuity | #26 | QUEUED | Requires stabilized live delivery |
@@ -208,9 +208,19 @@ GOAL-01 uses synthetic data only. Real client/patient data requires a separate a
 ### Production boundary
 No roadmap artifact itself authorizes production, provider credentials or real SdI/TS traffic.
 
+
+### Cross-client technical learning
+At the end of every macro-goal, Codex performs Goal Learning Extraction according to `AGENTS.md` and the governance in `2008hitch-afk/erpnext-frappe-delivery-knowledge`.
+
+Only sanitized `CANDIDATE` learning artifacts may be created autonomously. Promotion to `APPROVATO` requires HITCH review and explicit Owner approval.
+
+The completion report must record the candidate learning artifacts produced or `NO_GENERALIZABLE_LEARNING`. This housekeeping requirement does not alter the technical PASS/PARTIAL/FAIL result of the client goal.
+
 ## 10. Current command for Codex
 
-For the current phase:
+GOAL-01 is formally accepted by HC-0005 DECISION-055.
 
-> Execute **GOAL-01 (#22)** autonomously according to this roadmap, `AGENTS.md`, the MVP Implementation Baseline and Capability Map. Start from #21 and continue through the technical child work needed to reach GOAL-01 Done. Stop only for a material blocker as defined in GOAL-01.
+GOAL-02 (#23) is formally authorized by HC-0005 DECISION-056.
+
+> Execute **GOAL-02 — MVP Ready for Client UAT (#23)** autonomously according to this roadmap and `AGENTS.md`. Reuse the accepted GOAL-01 DEV candidate, load only relevant `APPROVATO` generalized learnings, verify upstream behavior against official documentation/pinned source/runtime, and continue through the technical child work required to reach GOAL-02 Done. Stop only for a material blocker. Keep all production, real-data, real-provider and GOAL-03 gates closed.
 
