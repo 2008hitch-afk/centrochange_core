@@ -51,5 +51,21 @@ def main():
     assert status in ((401,403) if role=='guest' else (403,))
     assert not value.get('message') and not value.get('data')
    checks.append({'role':role,'surface':'private-note native document API','status':status,'result':'PASS'})
+ if a.phase=='after':
+  # Retained-session defense: only isolated synthetic User.enabled is toggled;
+  # original flag restored in finally, without changing modified or role grants.
+  user=fixture['users']['c']['name'];u=fixture['users']['c']
+  opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+  assert call(opener,'/api/method/login',{'usr':u['name'],'pwd':u['password']},True)[0]==200
+  assert call(opener,'/api/method/ping')[0]==200
+  assert 'ENABLED=1' in execute("print('ENABLED='+str(frappe.db.get_value('User',"+repr(user)+",'enabled')));frappe.db.rollback();frappe.destroy()")
+  try:
+   execute("frappe.db.set_value('User',"+repr(user)+",'enabled',0,update_modified=False);frappe.db.commit();frappe.destroy()")
+   status,value,_=call(opener,'/api/method/ping')
+   assert status==403 and not value.get('message') and not value.get('data')
+   checks.append({'role':'c-disabled-retained-session','surface':'actual HTTP ping denied after isolated principal disable','status':status,'result':'PASS'})
+  finally:
+   execute("frappe.db.set_value('User',"+repr(user)+",'enabled',1,update_modified=False);frappe.db.commit();frappe.destroy()")
+  assert 'ENABLED=1' in execute("print('ENABLED='+str(frappe.db.get_value('User',"+repr(user)+",'enabled')));frappe.db.rollback();frappe.destroy()")
  print(json.dumps({'status':'PASS','phase':a.phase,'checks':checks,'synthetic_only':True,'business_mutations':'NONE','raw_responses_recorded':False}))
 if __name__=='__main__':main()
