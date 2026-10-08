@@ -189,7 +189,7 @@ def reschedule(appointment,appointment_date,appointment_time,reason):
 	doc=frappe.get_doc('Patient Appointment',appointment,for_update=True)
 	doc.check_permission('read')
 	require_booking(doc.patient,doc.practitioner,doc.cc_center)
-	if doc.status in ('Cancelled','Closed','No Show'):
+	if doc.status in ('Cancelled','No Show') or (doc.status=='Closed' and doc.cc_closure_state!='Reopened'):
 		frappe.throw('Finalized appointments require a governed correction')
 	from centrochange_core.operations.lifecycle import require_mutable
 	require_mutable(doc)
