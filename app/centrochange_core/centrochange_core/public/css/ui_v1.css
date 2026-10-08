@@ -20,3 +20,6 @@ body[data-path="login"] .login-content.page-card{min-height:0;height:auto;displa
 .for-login .btn-login,.for-forgot .btn-forgot,.for-signup .btn-signup{background:var(--tblr-primary)!important;border-color:var(--tblr-primary)!important;color:white!important}
 
 .report-list>section.card{padding:1rem;margin-bottom:1rem}#professional-filters>label:first-child,#patient-filters>label:first-child{min-width:10rem}
+
+/* Shared public/error actions override supported native website primary styling. */
+.cc-public .btn-primary{background:var(--tblr-primary)!important;border-color:var(--tblr-primary)!important;color:white!important}
