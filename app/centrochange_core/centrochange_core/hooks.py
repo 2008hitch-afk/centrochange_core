@@ -148,3 +148,6 @@ for dt in ("Payment Entry", "Sales Invoice"):
 # Supported website hooks, presentation only; native login/auth remains pinned upstream.
 update_website_context = ["centrochange_core.operations.website_brand.context"]
 web_include_css = ["/assets/centrochange_core/vendor/tabler-core-1.6.1/tabler.min.css", "/assets/centrochange_core/css/client_brand.css", "/assets/centrochange_core/css/ui_v1.css"]
+
+# Native language resolution checked against pinned printview context.
+before_request = ["centrochange_core.operations.website_brand.client_language"]

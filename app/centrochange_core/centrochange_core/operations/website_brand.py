@@ -12,3 +12,9 @@ def context(values):
         values.title='Centro Change — Accesso'
         # Native login macro retains structure/logic; remove the upstream logo source too.
         values.logo='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E'
+
+
+def client_language():
+    # Request-local presentation only, native authentication/printing unchanged.
+    if getattr(getattr(frappe.local,'request',None),'path',None) in ('/login','/printview'):
+        frappe.local.lang='it'
