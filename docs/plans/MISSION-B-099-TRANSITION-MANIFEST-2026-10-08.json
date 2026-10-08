@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "status": "DRAFT_PROPOSED_NOT_ACTIVE",
+  "issue": "https://github.com/2008hitch-afk/centrochange_core/issues/99",
+  "authorization": [
+    "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6068177100",
+    "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6068226431"
+  ],
+  "proposed_repository_path": "docs/plans/MISSION-B-099-TRANSITION-MANIFEST-2026-10-08.json",
+  "prepared_at": "2026-10-08T20:18:17.161865+00:00",
+  "source_commit": "e85fce588de6012a47da302710b9f9c615211279",
+  "risk": "HIGH_SHARED_HOST",
+  "execution_allowed_now": false,
+  "time_boundary": {
+    "valid_from": "2026-10-08T22:14:24+02:00",
+    "authorization_expires_at": "2026-10-09T06:14:24+02:00",
+    "effective_hard_stop": "2026-10-09T06:14:00+02:00",
+    "authorization_latest_start_at": "2026-10-09T03:14:24+02:00",
+    "effective_latest_start_at": "2026-10-09T03:14:00+02:00",
+    "minimum_verify_rollback_reserve_seconds": 10800,
+    "rule": "Do not begin mutations unless conservative remaining duration including verification and safe stop fits; never extend implicitly.",
+    "checked_at": "2026-10-08T20:23:38.440854+00:00",
+    "expiry_at_documentation_check": "NOT_EXPIRED_EXECUTION_STILL_BLOCKED"
+  },
+  "current": {
+    "frappe": "16.31.0",
+    "erpnext": "16.32.0",
+    "healthcare": {
+      "version": "16.5.2",
+      "commit": "934d6c162868139dfbe80c23d6102adb7ec25adb"
+    },
+    "builder": {
+      "version": "1.33.0",
+      "commit": "41987c064da4650e6901b5da82b7c76add452ebf"
+    },
+    "base": "frappe/erpnext:v16.32.0@sha256:481168fa7ba34bb9803e80139dff6df80bc161352cc7b478ae90b0c0da814f90",
+    "application_image": "centrochange-g2d:e85fce588de6-clean",
+    "application_image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  "target": {
+    "frappe": {
+      "version": "16.50.0",
+      "commit": "f20f92d29706510551b4438cc196b0323a7f1a92"
+    },
+    "erpnext": {
+      "version": "16.50.0",
+      "commit": "7474d9e786277383de1242ab882f16856d17a9c9"
+    },
+    "healthcare": {
+      "version": "16.6.1",
+      "commit": "dda107b26e3a0fe1dbd65c7257371235de054a04"
+    },
+    "builder": {
+      "version": "1.35.1",
+      "commit": "37e958bc4f801d06d0438c21b97b42c45c4eaa51"
+    },
+    "base": "frappe/erpnext:v16.50.0@sha256:833bceb57233908cbc949d7aa533942b18e54b329d846b933b66937c62b7e4ae",
+    "linux_amd64_manifest": "sha256:cc179bd950c355dfdfde4d1e80588de5fff05ccad1a3c2aafc4d7fb253f8a7ad",
+    "application_image_proposed": "centrochange-b99:e85fce588de6-frappe1650",
+    "application_image_digest": null,
+    "digest_rule": "Capture immutable application image digest after authorized build; verify app parity and versions before first site mutation. No floating upstream refs."
+  },
+  "unchanged_dependencies": {
+    "mariadb": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+    "redis": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+    "playwright": "mcr.microsoft.com/playwright:v1.58.2-noble@sha256:6446946a1d9fd62d9ae501312a2d76a43ee688542b21622056a372959b65d63d"
+  },
+  "isolated_lab": {
+    "project": "centrochange-b99-rehearsal",
+    "site": "b99.local",
+    "frontend_bind": "127.0.0.1",
+    "port": 8099,
+    "network": "centrochange-b99-rehearsal-net",
+    "volumes": [
+      "centrochange-b99-rehearsal-db-data",
+      "centrochange-b99-rehearsal-sites",
+      "centrochange-b99-rehearsal-redis-cache-data",
+      "centrochange-b99-rehearsal-redis-queue-data"
+    ],
+    "rollback_volumes_prefix": "centrochange-b99-rehearsal-restore-",
+    "rules": [
+      "Explicitly resolve every image/network/volume/project/site name before start; compose -p alone insufficient.",
+      "No application source bind; no shared mounts including anonymous logs.",
+      "DB and Redis have no host ports.",
+      "Fresh local credentials only, outside Git, files 0600 directory 0700.",
+      "Deny real SMTP/provider/TS/SdI and runtime external egress; simulated synthetic fixtures only.",
+      "Do not execute original hardcoded UAT, m97 or CAP037 provisioners."
+    ]
+  },
+  "protected_projects": {
+    "centrochange-dev": {
+      "port": 8082,
+      "application_image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c"
+    },
+    "centrochange-m97-lab": {
+      "port": 8097,
+      "application_image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888"
+    },
+    "centrochange-g2d-20261008": {
+      "port": 8098,
+      "application_image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+    }
+  },
+  "protected_resources_rule": "All existing containers, images/tags, named and anonymous volumes, networks, services, cron, databases and source checkout unchanged. Inventory IDs/start/restarts/mounts before and after. No global cleanup/prune or Docker settings changes.",
+  "preflight_observed": {
+    "remote_main": "e85fce588de6012a47da302710b9f9c615211279",
+    "checkout_branch": "issue-97/before-request-guards",
+    "checkout_head": "9d12f5e06df92ed35de843b882f3a40e82c02b19",
+    "checkout_clean": true,
+    "free_disk_approx_gib": 21,
+    "available_memory_approx_gib": 3.6,
+    "swap_bytes": 0,
+    "docker_images": 44,
+    "docker_containers": 30,
+    "docker_active_containers": 27,
+    "docker_volumes": 47,
+    "port_8099_listening": false,
+    "resource_names_currently_collide": false,
+    "capacity_certified": false,
+    "concurrent_mutative_mission_excluded": false,
+    "note": "Read-only process metadata shows no build/bench/git process, but multiple Codex processes; this alone does not prove exclusive host access. No scripts executed.",
+    "checked_at": "2026-10-08T20:22:59.153961+00:00",
+    "free_disk_bytes": 22422528000,
+    "available_memory_bytes": 3946958848,
+    "compose_static_result": "PASS_STRUCTURAL_ONLY_NOT_EXECUTABLE_APPROVAL",
+    "compose_proposal_sha256": "989822cf835dda332a1420b80ff9dda4e7dd6331a04eb6e84c543f3083dd56b5",
+    "compose_notes": [
+      "9 services, 4 exclusive named volumes, internal network, no source bind, frontend loopback 8099 only.",
+      "No configurator auto-run; bootstrap/migrate/restore remain separate explicitly gated operations.",
+      "Validated with nonsecret placeholders only; no credentials created or read.",
+      "Generated Compose proposal remains outside repository and is not authorized for execution."
+    ]
+  },
+  "mandatory_pre_mutation_gates": {
+    "structured_manifest_versioned_and_reviewed": "DOCUMENT_DRAFT_PR_ONLY_REVIEW_AND_ACTIVATION_PENDING",
+    "authorization_scope_and_time": "PRESENT_WITH_CONDITIONAL_START",
+    "immutable_source_and_upstream_pins": "VERIFIED",
+    "CAP037_original_plan": "UNAVAILABLE_404",
+    "capacity_bounded_peak_memory_disk_and_rollback_reserve": "BLOCKED_CONSERVATIVE_BUDGET_NOT_MET",
+    "exclusive_mutation_guard": "NOT_CERTIFIED",
+    "resolved_compose_resource_disjointness": "STATIC_STRUCTURE_PASS_EXECUTION_PARAMETERS_AND_SEQUENCING_PENDING",
+    "offline_current_image_checkpoint_recoverability": "NOT_YET_CREATED"
+  },
+  "checkpoint": {
+    "components": [
+      "Complete native database backup with no include/exclude filtering",
+      "Public files",
+      "Private files",
+      "Site config and necessary encryption key securely held",
+      "Common site settings sanitized manifest and secret-bearing original held privately",
+      "Installed apps and versions, source parity, immutable CURRENT image archive",
+      "Normalized schema/DocType/Custom Field/Property Setter inventories",
+      "Normalized DocPerm/Custom DocPerm/roles/User Permission/assignments",
+      "Canonical clinical-operational-economic-audit record fingerprints",
+      "File SHA256 manifest",
+      "Queue state and scheduler state"
+    ],
+    "native_backup_command_template": "bench --site b99.local backup --with-files --compress --ignore-backup-conf --backup-path <lab-private-checkpoint-directory>",
+    "quiescence": "Only new lab; stop writes and scheduler/workers coherently; verify no pending jobs before complete checkpoint, otherwise stop and document. Never quiesce existing projects.",
+    "storage": "Encrypted private archive outside Git and outside Docker pruning domain; custody separate from sanitized report; checksums and verified decrypt integrity.",
+    "image_retention": "Save complete CURRENT image and required pinned images outside Docker store before upgrade; hash and retain through Owner review. Local tag alone unsafe because scheduled image prune. No cron modification."
+  },
+  "execution_sequence": [
+    "Satisfy every pre-mutation gate; re-read time and remote source; preserve metadata inventory.",
+    "Create independent CURRENT site using G2D-proven recipe redirected exclusively to new lab; prepare deterministic synthetic discriminating fixtures.",
+    "Quiesce only new lab, capture full checkpoint and normalized pre-upgrade inventories, verify archive integrity and CURRENT image recovery.",
+    "Build TARGET from exact product source and official pinned apps without manual patches; record final image digest and inspect dependency/asset/app parity.",
+    "Change only new lab application services to TARGET, native migrate with preserved exit code, no --skip-failing, then assets/runtime health.",
+    "Compare patch log/schema/permissions and canonical data; run redirected existing 39 suites plus target-specific discriminants.",
+    "Execute actual rollback even on TARGET PASS: fresh isolated recovery volumes with exact CURRENT image, native DB/public/private restore and securely held config; no old code against migrated target DB.",
+    "Preserve independent restore exit code; compare full pre-checkpoint normalized schema/custom metadata/security/business/file fingerprints before further mutative smoke.",
+    "Verify CURRENT functional/security smoke and protected inventories; retain lab/evidence; stop by effective hard deadline."
+  ],
+  "target_specific_discriminants": [
+    "ERPNext native/custom permission migration, Payment Terms/Bank Account/Customer/Supplier/Cost Center/Company and role positives/negatives",
+    "Six effective before_request guards in original order through real WSGI and 55 HTTP security cases",
+    "Cross-center, professional A/B/C, assigned patients, private notes including direct/query/export/download/print",
+    "Bank reconciliation permissions and native Payment Entry rounding; invoice/receipt/outstanding/drill-down canonical equality",
+    "Marley Fee Validity reference migration and Patient Appointment booking/move/cancel without semantic changes",
+    "Frappe session/file/report/migration changes and Builder framework UI asset compatibility",
+    "Desktop/mobile Agenda geometry and stale-response/search-select/debranding regressions",
+    "Synthetic-only fiscal/background jobs, idempotency, no real outbound transmission"
+  ],
+  "g2d_reuse": {
+    "suite_count": 39,
+    "final_status": "PASS_CODEX_EVIDENCE_REVIEWED_HITCH_DETAILED_REVIEW_PENDING",
+    "harness_adaptations": "Outside product, reviewed destination/replay/Italian labels/combobox/mobile and synthetic fixture mapping only; retain original failures and retests.",
+    "limits": [
+      "One clean image build; no bit-identical second build",
+      "Some frontend transitive dependencies not fully locked",
+      "Not upgrade or rollback evidence",
+      "Do not compare final augmented dataset to initial seed fingerprint"
+    ],
+    "evidence_reference": "G2D REPORT.md and SUMMARY.json reviewed locally; detailed HITCH review pending; no raw logs or credentials included."
+  },
+  "pass_criteria": [
+    "All required gates and exact pins satisfied",
+    "Target build/app parity/runtime/migrate PASS with independently retained exit codes",
+    "39 suites executed PASS and target discriminants PASS; no unexecuted suite PASS",
+    "No unapproved role/visibility/business/accounting delta or leakage",
+    "Checkpoint integrity and actual CURRENT restore PASS including normalized schema/custom fields/custom permissions/file/business fingerprints",
+    "Protected original resources unchanged and no real provider traffic",
+    "Finish verification and safe stop by hard deadline"
+  ],
+  "fail_closed": [
+    "New permission expansion or compatibility issue needing product changes: stop for Owner; do not patch to pass.",
+    "Capacity or isolation not guaranteed: no resource creation.",
+    "No approved versioned manifesto: no build/start/migrate/restore.",
+    "Deadline insufficient: no implicit extension.",
+    "Missing suite or unproven restore: PARTIAL, never PASS.",
+    "Leakage/data loss/shared environment mutation: FAIL."
+  ],
+  "remaining_owner_actions": [
+    "Review documentary PR and separately decide merge/activation; neither is authorized by documentation publication.",
+    "Provide authoritative CAP037 access or copy, without rerunning historic tests.",
+    "Provide sufficient isolated resource capacity or approve a defensible revised resource envelope; no cleanup or shared-environment changes assumed.",
+    "Establish exclusive mutation ownership before any future Docker operation; multiple Codex processes are visible.",
+    "Authorize future execution only with valid time boundary and all technical gates complete; publication does not extend previous expiry."
+  ],
+  "excluded": [
+    "GitHub writes except authorized manifest-only documentation branch/commit/draft PR and linking comment on issue 99; no merge or main changes",
+    "Product changes or canonical pins changes",
+    "Existing environment changes",
+    "Cron/global config changes or prune",
+    "Real data/providers/TS/SdI",
+    "Production/UAT promotion",
+    "GOAL-03 or GOAL-02 acceptance"
+  ],
+  "documentation_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6068333243",
+  "publication_source_draft_sha256": "cd1c26550845717ebe466a65a51aa076f0e1485e88815444b5cb0fe9e4c87eb0",
+  "capacity_estimate": {
+    "status": "BLOCKED_AGAINST_CONSERVATIVE_PROPOSED_BUDGET",
+    "current_application_image_uncompressed_bytes": 9157603600,
+    "incremental_disk_budget_gib": 32,
+    "peak_additional_memory_budget_gib": 5,
+    "basis": "Planning allowance: full CURRENT image archive about 8.53 GiB, TARGET about 8.53 GiB (estimate based on CURRENT), transient build space about 8.53 GiB, checkpoints/restored files about 2.4 GiB, safety reserve about 4 GiB; rounded 32 GiB. Peak memory budget is conservative and unmeasured for TARGET, no swap. Not an upstream minimum or a demonstrated peak. Shared layers/compression may lower actual usage but are not counted as guaranteed savings.",
+    "observed_disk_gib": 20.88,
+    "observed_available_memory_gib": 3.68,
+    "rule": "Do not build to measure on shared host without a separately approved sufficient resource envelope; do not prune or stop existing environments."
+  }
+}
