@@ -6,13 +6,17 @@ app_email = "dev@centrochange.local"
 app_license = "agpl-3.0"
 
 required_apps = ["erpnext", "healthcare"]
-before_install = "centrochange_core.security.install.ensure_roles"
-after_install = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure"]
-before_migrate = "centrochange_core.security.install.ensure_roles"
-after_migrate = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure"]
+before_install = ["centrochange_core.security.install.ensure_roles", "centrochange_core.finance.install.ensure_roles"]
+after_install = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure", "centrochange_core.finance.install.configure"]
+before_migrate = ["centrochange_core.security.install.ensure_roles", "centrochange_core.finance.install.ensure_roles"]
+after_migrate = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure", "centrochange_core.finance.install.configure"]
 before_request = ["centrochange_core.security.diagnostics.before_request", "centrochange_core.security.api.before_request", "centrochange_core.operations.notes.request_guard"]
 
 permission_query_conditions = {
+    "Customer": "centrochange_core.finance.permissions.customer_query",
+    "Supplier": "centrochange_core.finance.permissions.supplier_query",
+    "Cost Center": "centrochange_core.finance.permissions.cost_center_query",
+    "CC Economic Source Link": "centrochange_core.finance.guards.source_query",
     "CC Notification": "centrochange_core.operations.permissions.notification_query",
     "CC Settlement": "centrochange_core.operations.permissions.settlement_query",
     "CC Package Ledger": "centrochange_core.operations.permissions.ledger_query",
@@ -29,6 +33,8 @@ permission_query_conditions = {
     "CC Patient Assignment": "centrochange_core.security.permissions.assignment_query",
 }
 has_permission = {
+    **{doctype: "centrochange_core.finance.permissions.master_permission" for doctype in ("Customer","Supplier","Cost Center")},
+    "CC Economic Source Link": "centrochange_core.finance.guards.source_permission",
     "CC Notification": "centrochange_core.operations.permissions.notification_permission",
     "CC Settlement": "centrochange_core.operations.permissions.settlement_permission",
     "CC Package Ledger": "centrochange_core.operations.permissions.ledger_permission",
@@ -53,6 +59,7 @@ extend_doctype_class = {
     "User": ["centrochange_core.security.mixins.UserMixin"],
 }
 doc_events = {
+    "Branch": {"validate": "centrochange_core.finance.bridge.protected_center"},
     "Practitioner Schedule": {event: "centrochange_core.scheduling.availability.protected_schedule" for event in ("validate", "on_trash")},
     "Practitioner Availability": {event: "centrochange_core.scheduling.availability.protected_schedule" for event in ("validate", "on_cancel", "on_trash")},
     "CC Audit Event": {event: "centrochange_core.security.audit.immutable"

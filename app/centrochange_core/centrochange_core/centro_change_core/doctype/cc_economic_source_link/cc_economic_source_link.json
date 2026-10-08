@@ -1,0 +1,254 @@
+{
+ "doctype": "DocType",
+ "name": "CC Economic Source Link",
+ "module": "Centro Change Core",
+ "custom": 0,
+ "is_submittable": 0,
+ "issingle": 0,
+ "track_changes": 0,
+ "autoname": "hash",
+ "field_order": [
+  "source_key",
+  "appointment",
+  "patient",
+  "customer",
+  "practitioner",
+  "supplier",
+  "center",
+  "company",
+  "cost_center",
+  "service_item",
+  "service_label",
+  "duration",
+  "price",
+  "currency",
+  "booking_date",
+  "session_date",
+  "economic_state",
+  "performed",
+  "operational_paid",
+  "revision",
+  "settlement_revision",
+  "package",
+  "captured_by",
+  "snapshot_hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "source_key",
+   "label": "Source Key",
+   "fieldtype": "Data",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "appointment",
+   "label": "Canonical Appointment",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Patient Appointment"
+  },
+  {
+   "fieldname": "patient",
+   "label": "Patient Identity Reference",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Patient"
+  },
+  {
+   "fieldname": "customer",
+   "label": "Accounting Customer",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Customer"
+  },
+  {
+   "fieldname": "practitioner",
+   "label": "Professional Reference",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fieldname": "supplier",
+   "label": "Accounting Supplier",
+   "fieldtype": "Link",
+   "options": "Supplier"
+  },
+  {
+   "fieldname": "center",
+   "label": "Center",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Branch"
+  },
+  {
+   "fieldname": "company",
+   "label": "Company",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Company"
+  },
+  {
+   "fieldname": "cost_center",
+   "label": "Cost Center",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "service_item",
+   "label": "Service Snapshot",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Item"
+  },
+  {
+   "fieldname": "service_label",
+   "label": "Service Label Snapshot",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "duration",
+   "label": "Duration Snapshot",
+   "fieldtype": "Float"
+  },
+  {
+   "fieldname": "price",
+   "label": "Price Snapshot",
+   "fieldtype": "Currency"
+  },
+  {
+   "fieldname": "currency",
+   "label": "Currency Snapshot",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "Currency"
+  },
+  {
+   "fieldname": "booking_date",
+   "label": "Booking Date Snapshot",
+   "fieldtype": "Date"
+  },
+  {
+   "fieldname": "session_date",
+   "label": "Session Date Snapshot",
+   "fieldtype": "Date"
+  },
+  {
+   "fieldname": "economic_state",
+   "label": "Economic Disposition Snapshot",
+   "fieldtype": "Data"
+  },
+  {
+   "fieldname": "performed",
+   "label": "Performed Snapshot",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "operational_paid",
+   "label": "Operational Paid Snapshot",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "revision",
+   "label": "Economic Revision",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "settlement_revision",
+   "label": "Settlement Revision",
+   "fieldtype": "Int"
+  },
+  {
+   "fieldname": "package",
+   "label": "Package Reference",
+   "fieldtype": "Link",
+   "options": "CC Patient Package"
+  },
+  {
+   "fieldname": "captured_by",
+   "label": "Captured By",
+   "fieldtype": "Link",
+   "reqd": 1,
+   "options": "User"
+  },
+  {
+   "fieldname": "snapshot_hash",
+   "label": "Snapshot Hash",
+   "fieldtype": "Data",
+   "reqd": 1
+  }
+ ],
+ "permissions": [
+  {
+   "role": "CC Manager",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 1
+  },
+  {
+   "role": "CC Finance",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 1
+  },
+  {
+   "role": "CC Secretariat",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 1
+  },
+  {
+   "role": "CC Accountant",
+   "read": 1,
+   "write": 0,
+   "create": 0,
+   "delete": 0,
+   "submit": 0,
+   "cancel": 0,
+   "amend": 0,
+   "report": 0,
+   "export": 0,
+   "import": 0,
+   "share": 0,
+   "print": 0,
+   "email": 0,
+   "select": 1
+  }
+ ],
+ "engine": "InnoDB"
+}

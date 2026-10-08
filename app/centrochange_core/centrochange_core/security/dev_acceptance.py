@@ -118,14 +118,17 @@ def run(extra_checks=None):
 
 
 @synthetic_test
-def create_http(scheduling=False,operations=False):
+def create_http(scheduling=False,operations=False,finance=False):
 	"""Create explicitly marked disposable HTTP fixtures; harness destroys them."""
 	if frappe.session.user != 'Administrator' or frappe.conf.get('cc_synthetic_dev') != 1:
 		frappe.throw('Synthetic DEV Administrator required')
 	from frappe.utils.password import update_password
 	tag = 'CC-HTTP-' + frappe.generate_hash(length=10)
 	result = {'tag':tag, 'users':{}, 'patients':[], 'practitioners':[], 'centers':[]}
-	for label, role in [('a','CC Professional'), ('b','CC Professional'), ('c','CC Professional'), ('s','CC Secretariat'), ('m','CC Manager')]:
+	identities=[('a','CC Professional'),('b','CC Professional'),('c','CC Professional'),('s','CC Secretariat'),('m','CC Manager')]
+	if finance:
+		identities += [('f','CC Finance'),('t','CC Accountant')]
+	for label, role in identities:
 		name = tag.lower() + '-' + label + '@example.invalid'
 		frappe.get_doc({'doctype':'User','email':name,'first_name':tag+' '+label,
 			'enabled':1,'send_welcome_email':0,'roles':[{'role':role}]}).insert(ignore_permissions=True)
@@ -173,6 +176,17 @@ def create_http(scheduling=False,operations=False):
 			'units':1,'enabled':1}).insert()
 		result['package']=issue(template.name,result['patients'][0],[result['centers'][0]],tag+'-issue',tag)['name']
 		result['catalog']['CC Package Template']=[template.name]
+	if finance:
+		from centrochange_core.finance import bridge
+		from centrochange_core.scheduling.booking import book
+		frappe.set_user('Administrator')
+		result['finance']={'cost_center':bridge.map_center(result['centers'][0],tag)['cost_center'],
+			'customer':bridge.map_patient(result['patients'][0],result['centers'][0],tag)['customer'],
+			'supplier':bridge.map_practitioner(result['practitioners'][0],result['centers'][0],tag)['supplier']}
+		appointment=book(result['patients'][0],result['practitioners'][0],result['centers'][0],result['catalog']['Appointment Type'][0],
+			'2099-01-12','09:00:00',tag+'-finance-book',tag)['name']
+		result['finance']['source']=bridge.capture(appointment,tag)['name']
+		result['finance']['appointment']=appointment
 	frappe.db.commit()
 	return result
 
@@ -204,6 +218,9 @@ def destroy_http(fixture):
 	groups['CC Organizational Note']=frappe.get_all('CC Organizational Note',filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['CC Patient Package']=frappe.get_all('CC Patient Package',filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['CC Package Ledger']=frappe.get_all('CC Package Ledger',filters={'package':['in',groups['CC Patient Package'] or ['']]},pluck='name')
+	groups['CC Economic Source Link']=frappe.get_all('CC Economic Source Link',filters={'appointment':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
+	groups['Supplier']=[name for name in (frappe.db.get_value('Healthcare Practitioner',prac,'supplier') for prac in fixture['practitioners']) if name]
+	groups['Cost Center']=[name for name in (frappe.db.get_value('Branch',center,'cc_cost_center') for center in fixture['centers']) if name]
 	groups['CC Settlement']=frappe.get_all('CC Settlement',filters={'appointment':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
 	groups['CC Notification']=frappe.get_all('CC Notification',filters={'recipient':['in',users]},pluck='name')
 	groups['CC Patient Assignment']=frappe.get_all('CC Patient Assignment',filters={'patient':['in',fixture['patients']]},pluck='name')
@@ -212,7 +229,7 @@ def destroy_http(fixture):
 	if fixture.get('catalog'):
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'Patient Appointment',
 			'reference_name':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
-		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package'):
+		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package','CC Economic Source Link'):
 			groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':protected,'reference_name':['in',groups[protected] or ['']]},pluck='name')
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'CC Patient Assignment',
 			'reference_name':['in',groups.get('CC Patient Assignment') or ['']]},pluck='name')
@@ -222,6 +239,9 @@ def destroy_http(fixture):
 		'link_name':['in',fixture['patients']]},pluck='parent')
 	groups['Customer']=[frappe.db.get_value('Patient',name,'customer') for name in fixture['patients']]
 	groups['Customer']=[name for name in groups['Customer'] if name]
+	for doctype,names,field,prefix in [('Supplier',groups.get('Supplier',[]),'supplier_name',tag),
+		('Customer',groups.get('Customer',[]),'customer_name',tag),('Cost Center',groups.get('Cost Center',[]),'cost_center_name','CC '+tag)]:
+		assert all((frappe.db.get_value(doctype,name,field) or '').startswith(prefix) for name in names)
 	for doctype,names in groups.items():
 		if not names:
 			continue
