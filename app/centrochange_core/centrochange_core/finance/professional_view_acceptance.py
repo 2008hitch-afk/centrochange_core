@@ -42,7 +42,16 @@ def run():
         data=professional_view(**{**args,'start':'2026-10-12','end':'2026-10-18'})
         future_native=frappe.db.count('Patient Appointment',{'cc_center':center,'practitioner':practitioner,'appointment_date':['between',['2026-10-12','2026-10-18']]})
         assert data['counts']['sessions']==future_native and len(data['sessions'])==future_native
-        assert data['counts']['future']==future_native
+        # Owner correction can move a performed session into this date interval.
+        # Keep the original performed fact, not an assumption that all dates are bookings.
+        native_rows=frappe.get_all('Patient Appointment',filters={'cc_center':center,'practitioner':practitioner,'appointment_date':['between',['2026-10-12','2026-10-18']]},fields=['name','status','cc_performed','appointment_date','appointment_time'])
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        now=datetime.now(ZoneInfo('Europe/Rome')).replace(tzinfo=None)
+        expected_future=sum(r.status!='Cancelled' and not r.cc_performed and datetime.combine(r.appointment_date,frappe.utils.get_time(r.appointment_time))>now for r in native_rows)
+        assert data['counts']['future']==expected_future
+        assert data['counts']['performed']==sum(bool(r.cc_performed) and r.status!='Cancelled' for r in native_rows)
+        assert data['counts']['cancelled']==sum(r.status=='Cancelled' for r in native_rows)
         checks.append('future period deterministic native session projection')
         from centrochange_core.finance.professional_economics import compare
         frappe.set_user(fixture['users']['f']['name'])
