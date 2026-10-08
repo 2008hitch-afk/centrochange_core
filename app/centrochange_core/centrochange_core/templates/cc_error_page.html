@@ -1,0 +1,9 @@
+{% extends "templates/cc_web_base.html" %}
+{% block content %}
+<main class="cc-public card" aria-labelledby="cc-error-title">
+<p class="brand">Centro Change</p>
+<h1 id="cc-error-title">{{ cc_error_title or "Operazione non disponibile" }}</h1>
+<p>{{ cc_error_message or "Riprova. Se il problema continua, contatta il referente del centro." }}</p>
+<a class="btn btn-primary" href="{{ primary_action or '/centrochange' }}">{{ cc_error_action or "Torna all’agenda" }}</a>
+</main>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "templates/base.html" %}
+{% block favicon %}{% endblock %}
+{% block navbar %}<nav class="container py-3" aria-label="Centro Change"><a href="/centrochange">Centro Change</a></nav>{% endblock %}
+{% block footer %}<footer class="container py-3"><span>Centro Change</span></footer>{% endblock %}
+
+{% block head_include %}{{ super() }}{% include "templates/cc_ui_assets.html" %}{% endblock %}

@@ -1,0 +1,106 @@
+{
+  "packages": {
+    "@tabler/core": "1.6.1",
+    "@tabler/icons": "3.35.0"
+  },
+  "source": "Exact published npm archives, package metadata and byte hashes retained. Core license from official dev LICENSE (1.6.1 package declares MIT but excludes license file); Icons license from package. No demos/plugins/fonts/CDN.",
+  "core_npm_integrity": "sha512-lgmR9gcxRp5JlLxcmRi9Rz85JrEvH6Bz71KnlcPVSa97wtwQNjgSs3g3fxwbAlulHyRMghhIV04QUuW3pqDsIg==",
+  "files": [
+    {
+      "file": "tabler-core-1.6.1/LICENSE",
+      "sha256": "4f88a82d13be3c5c63a12c5631eae914aa4381b6dc17641bf1ab85f3f8f6c8a5"
+    },
+    {
+      "file": "tabler-core-1.6.1/package.json",
+      "sha256": "353c3653d70f5de1dc4079f772adb99c467fe48cd0a31681ec94941669c1b6ba"
+    },
+    {
+      "file": "tabler-core-1.6.1/tabler.min.css",
+      "sha256": "370a2d4e608ae518351d10528fc7dbe19b354ae5062c51b2a9cb294850d65403"
+    },
+    {
+      "file": "tabler-core-1.6.1/tabler.min.js",
+      "sha256": "9d26ca1aa061a0c647305654e32efc2c8838e348b2423e9d1f4593869868e09b"
+    },
+    {
+      "file": "tabler-icons-3.35.0/LICENSE",
+      "sha256": "5a3b65e1ad6a081759fde376fe14e2cd88552a9ebea89a8168f34eab1e96109f"
+    },
+    {
+      "file": "tabler-icons-3.35.0/bell.svg",
+      "sha256": "baefc2c6ef9042fc85551567bb72ca875a59c1259e902005f58caf37396e9d4e"
+    },
+    {
+      "file": "tabler-icons-3.35.0/book.svg",
+      "sha256": "73ab02c7b3b227458691b2fd71e6fee2521a6699071314b1e3fbd7b63c5ae1bc"
+    },
+    {
+      "file": "tabler-icons-3.35.0/building-bank.svg",
+      "sha256": "8d9d7a163a32840b23031749ed11c3ac9698c870e70ccb423a6b9bf950c1316b"
+    },
+    {
+      "file": "tabler-icons-3.35.0/calendar-week.svg",
+      "sha256": "30542827bca3952d86542c615037a30e3e745af2db3799592bac1936d7a9bc53"
+    },
+    {
+      "file": "tabler-icons-3.35.0/chart-bar.svg",
+      "sha256": "1e1c0928a0bb0881f595078eff60892c0c0e102a5a0a671623f601d129b5655f"
+    },
+    {
+      "file": "tabler-icons-3.35.0/clock.svg",
+      "sha256": "eaa12052f6cdc839b8b27f23558f202866c8751dd04a1481fd30430acc2e6526"
+    },
+    {
+      "file": "tabler-icons-3.35.0/file-code.svg",
+      "sha256": "c3884b03c5dd004fd87c2955a55ac1a265c31325a9249800b040341651355ee7"
+    },
+    {
+      "file": "tabler-icons-3.35.0/file-invoice.svg",
+      "sha256": "d2c9828ffc40d0837572ebd211c9affb76e2a6559237ac4a512acc848e4ce37c"
+    },
+    {
+      "file": "tabler-icons-3.35.0/history.svg",
+      "sha256": "83ac1cda8ed8fa2339dca1db56e67982304b0853d9be7bae2ec6ce28e030324b"
+    },
+    {
+      "file": "tabler-icons-3.35.0/list-check.svg",
+      "sha256": "d4601970b901f7c8d92375e72da511ef34353d6c3e5a4c15b0dbeedd68f9eef8"
+    },
+    {
+      "file": "tabler-icons-3.35.0/logout.svg",
+      "sha256": "0931921f2b538832ad9fdd16e643bcea42fc4c8786016c8e9863144e8a505988"
+    },
+    {
+      "file": "tabler-icons-3.35.0/menu-2.svg",
+      "sha256": "f8ba425bb0bf68042aad5ef06cf8c2970980a1d76e884e132ecdf6d5bc1eb87f"
+    },
+    {
+      "file": "tabler-icons-3.35.0/package.json",
+      "sha256": "52f4858abe9081d17c7fecbd14d0d307f706a673ce545187c3b02ec96eadda6f"
+    },
+    {
+      "file": "tabler-icons-3.35.0/receipt.svg",
+      "sha256": "662e432343b0bf6cb74d57c0a74eaf30f141bb45ad73e1daf7c78e6d070f3e9e"
+    },
+    {
+      "file": "tabler-icons-3.35.0/send.svg",
+      "sha256": "d4570a285547d409ba645fce7604c30758899e8ace7a8408428eae754945ffe2"
+    },
+    {
+      "file": "tabler-icons-3.35.0/settings.svg",
+      "sha256": "3e1f110886f6c39b462fc8bca41af4a84b803add39751bb57825983c9660bd0f"
+    },
+    {
+      "file": "tabler-icons-3.35.0/shield-check.svg",
+      "sha256": "75d414f414fbf1418ca0160ff59a5217b464f7a666852d9f587dcb27bda1d322"
+    },
+    {
+      "file": "tabler-icons-3.35.0/users.svg",
+      "sha256": "e3b3f9a797451260ab75f7a46ff02832f582167ad0bd1cb2d08ae7dfcfdbafae"
+    },
+    {
+      "file": "tabler-icons-3.35.0/wallet.svg",
+      "sha256": "fc4822d3e5b041d29d5dfd06be107361073b72d002889331df780aa421d4d46d"
+    }
+  ]
+}

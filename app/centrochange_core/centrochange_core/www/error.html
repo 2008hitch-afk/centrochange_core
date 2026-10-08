@@ -1,0 +1,3 @@
+{% extends "templates/cc_error_page.html" %}
+{% set cc_error_title = "Accesso non consentito" if http_status_code == 403 else "Pagina non trovata" if http_status_code == 404 else "Operazione non disponibile" %}
+{% set cc_error_message = "Verifica il percorso e le autorizzazioni. Se il problema continua, contatta il referente del centro." %}
