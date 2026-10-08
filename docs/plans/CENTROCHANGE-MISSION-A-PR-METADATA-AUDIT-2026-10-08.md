@@ -70,3 +70,9 @@ Numeri di file/commit sono **relativi al diff di ciascuna PR sulla propria base*
 Una sola missione **`integrate-stacked-prs-safely`**, con lista PR/SHA fissa, rehearsal non distruttivo, verifica dei diff, nessun `force-push`, nessun patch al runtime UAT e stop su qualunque contenuto o conflitto non previsto. **Emissione dell'incarico solo dopo approvazione Owner del piano di merge.**
 
 **Criterio d'uscita Missione A:** audit e strategia testati per iscritto + Owner retest (#75) + decisione esplicita sul merge. Non significa GOAL-02 accepted.
+
+## Supplemento di verifica: review GitHub campionate (2026-10-08)
+
+Sono state lette le review PR tramite l'API GitHub per **17 PR campionate**: #27, #30, #32, #34, #38, #40, #42, #44, #47, #50, #54, #56, #61, #65, #92, #93, #94. La risposta per ognuna riporta **zero review submission registrate**. Questo non elimina le evidenze dei test, le discussioni PR o l'accettazione Owner di GOAL-01, ma conferma che **non si puo' assumere che il processo di code review GitHub sia gia' completato**. Non estrapolare a tutte le 34 PR: il controllo non e' esaustivo.
+
+**Decisione tecnica ancora da preparare:** approvazione per una prima review aggregata del prodotto da HEAD #94 verso main o merge sequenziale delle 34 PR preservando tracciabilita'. Va simulato su clone e analizzata la parita' dei commit/finali prima di scegliere. La scelta non e' automatica e non va delegata implicitamente a Codex.
