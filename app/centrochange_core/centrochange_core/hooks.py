@@ -148,7 +148,8 @@ for dt in ("Payment Entry", "Sales Invoice"):
 # Supported website hooks, presentation only; native login/auth remains pinned upstream.
 update_website_context = ["centrochange_core.operations.website_brand.context"]
 web_include_css = ["/assets/centrochange_core/vendor/tabler-core-1.6.1/tabler.min.css", "/assets/centrochange_core/css/client_brand.css", "/assets/centrochange_core/css/ui_v1.css"]
-before_request = ["centrochange_core.operations.website_brand.client_language"]
+# Append presentation after the original request guards; never replace security hooks.
+before_request.append("centrochange_core.operations.website_brand.client_language")
 get_print_format_template = "centrochange_core.operations.website_brand.print_template_locale"
 after_request = ["centrochange_core.security.response_cache.protect"]
 before_request.append("centrochange_core.operations.website_brand.login_language")
