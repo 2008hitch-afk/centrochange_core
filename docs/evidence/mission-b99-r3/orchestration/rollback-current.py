@@ -7,17 +7,17 @@ services=list(conf['services']);ops.cmd(ops.compose('stop',*services),'target-st
 rr=r/'rollback';rr.mkdir(mode=0o700,exist_ok=True)
 base=json.loads((r/'credentials.json').read_text());base['db']=secrets.token_hex(24);(rr/'credentials.json').write_text(json.dumps(base));(rr/'credentials.json').chmod(0o600)
 (rr/'runtime.env').write_text('B99_DB_PASSWORD='+base['db']+'\nDB_PASSWORD='+base['db']+'\nADMIN_PASSWORD='+base['admin']+'\nSITE_NAME=b99.local\nHTTP_PORT=8099\n');(rr/'runtime.env').chmod(0o600)
-(rr/'compose.json').write_text(json.dumps(json.loads(json.dumps(conf).replace('r3-','r3-rollback-')),indent=2))
-s=(r/'ops.py').read_text().replace("PROJECT+'-r3-", "PROJECT+'-r3-rollback-")
+(rr/'compose.json').write_text(json.dumps(json.loads(json.dumps(conf).replace('r3-fit-','r3-fit-rollback-')),indent=2))
+s=(r/'ops.py').read_text().replace("PROJECT+'-r3-fit-", "PROJECT+'-r3-fit-rollback-")
 s=s.replace("(ROOT/'safety-stop.json')","(ROOT.parent/'safety-stop.json')").replace("(ROOT/'monitor-heartbeat')","(ROOT.parent/'monitor-heartbeat')")
-s=s.replace("[PROJECT+'-r3-rollback-net',PROJECT+'-r3-rollback-http']","[PROJECT+'-r3-rollback-net',PROJECT+'-r3-rollback-http',PROJECT+'-r3-net',PROJECT+'-r3-http']")
-s=s.replace("assert PROJECT+'-r3-rollback-http' not in c['NetworkSettings']['Networks'] or c['Name']== '/'+PROJECT+'-r3-rollback-frontend-1'","assert PROJECT+'-r3-rollback-http' not in c['NetworkSettings']['Networks'] or c['Name']== '/'+PROJECT+'-r3-rollback-frontend-1'")
+s=s.replace("[PROJECT+'-r3-fit-rollback-net',PROJECT+'-r3-fit-rollback-http']","[PROJECT+'-r3-fit-rollback-net',PROJECT+'-r3-fit-rollback-http',PROJECT+'-r3-fit-net',PROJECT+'-r3-fit-http']")
+s=s.replace("assert PROJECT+'-r3-fit-rollback-http' not in c['NetworkSettings']['Networks'] or c['Name']== '/'+PROJECT+'-r3-fit-rollback-frontend-1'","assert PROJECT+'-r3-fit-rollback-http' not in c['NetworkSettings']['Networks'] or c['Name']== '/'+PROJECT+'-r3-fit-rollback-frontend-1'")
 (rr/'ops.py').write_text(s)
 spec=importlib.util.spec_from_file_location('rollback_ops',rr/'ops.py');ro=importlib.util.module_from_spec(spec);spec.loader.exec_module(ro)
-ro.cmd(ro.compose('up','-d','r3-rollback-db','r3-rollback-redis-cache','r3-rollback-redis-queue'),'rollback-db-up')
+ro.cmd(ro.compose('up','-d','r3-fit-rollback-db','r3-fit-rollback-redis-cache','r3-fit-rollback-redis-queue'),'rollback-db-up')
 for _ in range(90):
  ro.safe()
- if subprocess.check_output(['docker','inspect','-f','{{.State.Health.Status}}',ops.PROJECT+'-r3-rollback-db-1'],text=True).strip()=='healthy':break
+ if subprocess.check_output(['docker','inspect','-f','{{.State.Health.Status}}',ops.PROJECT+'-r3-fit-rollback-db-1'],text=True).strip()=='healthy':break
  time.sleep(2)
 else:raise RuntimeError('Rollback DB not healthy')
 ro.restore_current('rollback-current');print('REAL CURRENT RESTORE COMPLETED',flush=True)
@@ -27,7 +27,7 @@ def inventory(path):return json.loads(next(x for x in path.read_text().splitline
 a=inventory(pathlib.Path('/home/empv26/.local/state/centrochange-b99-r2-20261009/current-inventory-retry.log'));b=inventory(rr/'rollback-inventory.log');cmp={k:a[k]==b[k] for k in ['schema','metadata','business','files','installed_apps','pins']};(r/'rollback-reconciliation.json').write_text(json.dumps(cmp,indent=2));assert all(cmp.values()),'RESTORE INVENTORY MISMATCH'
 print('ROLLBACK INVENTORY RECONCILIATION PASS',flush=True)
 ro.oneoff("import subprocess\nsubprocess.run(['bench','--site','b99.local','enable-scheduler'],check=True)",'rollback-enable-scheduler')
-ro.cmd(ro.compose('up','-d','--no-build','r3-rollback-backend','r3-rollback-websocket','r3-rollback-queue-short','r3-rollback-queue-long','r3-rollback-scheduler','r3-rollback-frontend'),'rollback-runtime-up')
+ro.cmd(ro.compose('up','-d','--no-build','r3-fit-rollback-backend','r3-fit-rollback-websocket','r3-fit-rollback-queue-short','r3-fit-rollback-queue-long','r3-fit-rollback-scheduler','r3-fit-rollback-frontend'),'rollback-runtime-up')
 for _ in range(60):
  try:
   import urllib.request

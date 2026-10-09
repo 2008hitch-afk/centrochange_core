@@ -1,18 +1,18 @@
 {
   "name": "centrochange-b99-rehearsal",
   "networks": {
-    "centrochange-b99-rehearsal-r3-net": {
-      "name": "centrochange-b99-rehearsal-r3-net",
+    "centrochange-b99-rehearsal-r3-fit-net": {
+      "name": "centrochange-b99-rehearsal-r3-fit-net",
       "driver": "bridge",
       "internal": true
     },
-    "centrochange-b99-rehearsal-r3-http": {
-      "name": "centrochange-b99-rehearsal-r3-http",
+    "centrochange-b99-rehearsal-r3-fit-http": {
+      "name": "centrochange-b99-rehearsal-r3-fit-http",
       "driver": "bridge"
     }
   },
   "services": {
-    "r3-backend": {
+    "r3-fit-backend": {
       "restart": "no",
       "command": null,
       "entrypoint": null,
@@ -23,7 +23,7 @@
       },
       "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
       "networks": {
-        "centrochange-b99-rehearsal-r3-net": {
+        "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
             "backend"
           ]
@@ -33,19 +33,19 @@
       "volumes": [
         {
           "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-sites",
+          "source": "centrochange-b99-rehearsal-r3-fit-sites",
           "target": "/home/frappe/frappe-bench/sites",
           "volume": {}
         }
       ],
       "depends_on": {
-        "r3-db": {
+        "r3-fit-db": {
           "condition": "service_healthy"
         },
-        "r3-redis-cache": {
+        "r3-fit-redis-cache": {
           "condition": "service_healthy"
         },
-        "r3-redis-queue": {
+        "r3-fit-redis-queue": {
           "condition": "service_healthy"
         }
       },
@@ -55,12 +55,15 @@
         "centrochange.mission": "B99-R3"
       }
     },
-    "r3-db": {
+    "r3-fit-db": {
       "restart": "no",
       "command": [
         "--character-set-server=utf8mb4",
         "--collation-server=utf8mb4_unicode_ci",
-        "--skip-character-set-client-handshake"
+        "--skip-character-set-client-handshake",
+        "--innodb-buffer-pool-size=64M",
+        "--table-open-cache=256",
+        "--table-definition-cache=400"
       ],
       "entrypoint": null,
       "environment": {
@@ -68,7 +71,7 @@
       },
       "image": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
       "networks": {
-        "centrochange-b99-rehearsal-r3-net": {
+        "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
             "db"
           ]
@@ -77,7 +80,7 @@
       "volumes": [
         {
           "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-db-data",
+          "source": "centrochange-b99-rehearsal-r3-fit-db-data",
           "target": "/var/lib/mysql",
           "volume": {}
         }
@@ -95,13 +98,13 @@
         "start_period": "2m0s"
       },
       "depends_on": {},
-      "mem_limit": "384m",
-      "memswap_limit": "384m",
+      "mem_limit": "512m",
+      "memswap_limit": "512m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
     },
-    "r3-frontend": {
+    "r3-fit-frontend": {
       "restart": "no",
       "command": [
         "nginx-entrypoint.sh"
@@ -117,28 +120,28 @@
       },
       "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
       "networks": {
-        "centrochange-b99-rehearsal-r3-net": {
+        "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
             "frontend"
           ]
         },
-        "centrochange-b99-rehearsal-r3-http": {}
+        "centrochange-b99-rehearsal-r3-fit-http": {}
       },
       "pull_policy": "never",
       "volumes": [
         {
           "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-sites",
+          "source": "centrochange-b99-rehearsal-r3-fit-sites",
           "target": "/home/frappe/frappe-bench/sites",
           "volume": {}
         }
       ],
       "depends_on": {
-        "r3-backend": {
+        "r3-fit-backend": {
           "condition": "service_started",
           "required": true
         },
-        "r3-websocket": {
+        "r3-fit-websocket": {
           "condition": "service_started",
           "required": true
         }
@@ -158,7 +161,7 @@
         "centrochange.mission": "B99-R3"
       }
     },
-    "r3-queue-long": {
+    "r3-fit-queue-long": {
       "restart": "no",
       "command": [
         "bench",
@@ -169,7 +172,7 @@
       "entrypoint": null,
       "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
       "networks": {
-        "centrochange-b99-rehearsal-r3-net": {
+        "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
             "queue-long"
           ]
@@ -179,29 +182,29 @@
       "volumes": [
         {
           "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-sites",
+          "source": "centrochange-b99-rehearsal-r3-fit-sites",
           "target": "/home/frappe/frappe-bench/sites",
           "volume": {}
         }
       ],
       "depends_on": {
-        "r3-db": {
+        "r3-fit-db": {
           "condition": "service_healthy"
         },
-        "r3-redis-cache": {
+        "r3-fit-redis-cache": {
           "condition": "service_healthy"
         },
-        "r3-redis-queue": {
+        "r3-fit-redis-queue": {
           "condition": "service_healthy"
         }
       },
-      "mem_limit": "224m",
-      "memswap_limit": "224m",
+      "mem_limit": "192m",
+      "memswap_limit": "192m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
     },
-    "r3-queue-short": {
+    "r3-fit-queue-short": {
       "restart": "no",
       "command": [
         "bench",
@@ -212,7 +215,7 @@
       "entrypoint": null,
       "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
       "networks": {
-        "centrochange-b99-rehearsal-r3-net": {
+        "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
             "queue-short"
           ]
@@ -222,35 +225,35 @@
       "volumes": [
         {
           "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-sites",
+          "source": "centrochange-b99-rehearsal-r3-fit-sites",
           "target": "/home/frappe/frappe-bench/sites",
           "volume": {}
         }
       ],
       "depends_on": {
-        "r3-db": {
+        "r3-fit-db": {
           "condition": "service_healthy"
         },
-        "r3-redis-cache": {
+        "r3-fit-redis-cache": {
           "condition": "service_healthy"
         },
-        "r3-redis-queue": {
+        "r3-fit-redis-queue": {
           "condition": "service_healthy"
         }
       },
-      "mem_limit": "224m",
-      "memswap_limit": "224m",
+      "mem_limit": "192m",
+      "memswap_limit": "192m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
     },
-    "r3-redis-cache": {
+    "r3-fit-redis-cache": {
       "restart": "no",
       "command": null,
       "entrypoint": null,
       "image": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
       "networks": {
-        "centrochange-b99-rehearsal-r3-net": {
+        "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
             "redis-cache"
           ]
@@ -259,7 +262,7 @@
       "volumes": [
         {
           "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-redis-cache-data",
+          "source": "centrochange-b99-rehearsal-r3-fit-redis-cache-data",
           "target": "/data",
           "volume": {}
         }
@@ -275,19 +278,19 @@
         "retries": 10
       },
       "depends_on": {},
-      "mem_limit": "32m",
-      "memswap_limit": "32m",
+      "mem_limit": "64m",
+      "memswap_limit": "64m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
     },
-    "r3-redis-queue": {
+    "r3-fit-redis-queue": {
       "restart": "no",
       "command": null,
       "entrypoint": null,
       "image": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
       "networks": {
-        "centrochange-b99-rehearsal-r3-net": {
+        "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
             "redis-queue"
           ]
@@ -296,7 +299,7 @@
       "volumes": [
         {
           "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-redis-queue-data",
+          "source": "centrochange-b99-rehearsal-r3-fit-redis-queue-data",
           "target": "/data",
           "volume": {}
         }
@@ -312,13 +315,13 @@
         "retries": 10
       },
       "depends_on": {},
-      "mem_limit": "32m",
-      "memswap_limit": "32m",
+      "mem_limit": "64m",
+      "memswap_limit": "64m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
     },
-    "r3-scheduler": {
+    "r3-fit-scheduler": {
       "restart": "no",
       "command": [
         "bench",
@@ -327,7 +330,7 @@
       "entrypoint": null,
       "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
       "networks": {
-        "centrochange-b99-rehearsal-r3-net": {
+        "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
             "scheduler"
           ]
@@ -337,29 +340,29 @@
       "volumes": [
         {
           "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-sites",
+          "source": "centrochange-b99-rehearsal-r3-fit-sites",
           "target": "/home/frappe/frappe-bench/sites",
           "volume": {}
         }
       ],
       "depends_on": {
-        "r3-db": {
+        "r3-fit-db": {
           "condition": "service_healthy"
         },
-        "r3-redis-cache": {
+        "r3-fit-redis-cache": {
           "condition": "service_healthy"
         },
-        "r3-redis-queue": {
+        "r3-fit-redis-queue": {
           "condition": "service_healthy"
         }
       },
-      "mem_limit": "128m",
-      "memswap_limit": "128m",
+      "mem_limit": "96m",
+      "memswap_limit": "96m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
     },
-    "r3-websocket": {
+    "r3-fit-websocket": {
       "restart": "no",
       "command": [
         "node",
@@ -368,7 +371,7 @@
       "entrypoint": null,
       "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
       "networks": {
-        "centrochange-b99-rehearsal-r3-net": {
+        "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
             "websocket"
           ]
@@ -378,19 +381,19 @@
       "volumes": [
         {
           "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-sites",
+          "source": "centrochange-b99-rehearsal-r3-fit-sites",
           "target": "/home/frappe/frappe-bench/sites",
           "volume": {}
         }
       ],
       "depends_on": {
-        "r3-db": {
+        "r3-fit-db": {
           "condition": "service_healthy"
         },
-        "r3-redis-cache": {
+        "r3-fit-redis-cache": {
           "condition": "service_healthy"
         },
-        "r3-redis-queue": {
+        "r3-fit-redis-queue": {
           "condition": "service_healthy"
         }
       },
@@ -402,17 +405,17 @@
     }
   },
   "volumes": {
-    "centrochange-b99-rehearsal-r3-db-data": {
-      "name": "centrochange-b99-rehearsal-r3-db-data"
+    "centrochange-b99-rehearsal-r3-fit-db-data": {
+      "name": "centrochange-b99-rehearsal-r3-fit-db-data"
     },
-    "centrochange-b99-rehearsal-r3-redis-cache-data": {
-      "name": "centrochange-b99-rehearsal-r3-redis-cache-data"
+    "centrochange-b99-rehearsal-r3-fit-redis-cache-data": {
+      "name": "centrochange-b99-rehearsal-r3-fit-redis-cache-data"
     },
-    "centrochange-b99-rehearsal-r3-redis-queue-data": {
-      "name": "centrochange-b99-rehearsal-r3-redis-queue-data"
+    "centrochange-b99-rehearsal-r3-fit-redis-queue-data": {
+      "name": "centrochange-b99-rehearsal-r3-fit-redis-queue-data"
     },
-    "centrochange-b99-rehearsal-r3-sites": {
-      "name": "centrochange-b99-rehearsal-r3-sites"
+    "centrochange-b99-rehearsal-r3-fit-sites": {
+      "name": "centrochange-b99-rehearsal-r3-fit-sites"
     }
   }
 }

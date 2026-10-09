@@ -31,7 +31,7 @@ def safe(args,kwargs):
     if '/qa/'+script+'.cjs' in args: args=args[:2]+['-v',str(lab.ROOT/(script+'-adapted.cjs'))+':/qa/'+script+'.cjs:ro']+args[2:]
    assert browser in args and '--rm' in args
    assert 'CC_BASE_URL=http://centrochange.local:8080' in args
-   ix=args.index('--network');args[ix+1]='container:'+lab.PROJECT+'-r3-frontend-1'
+   ix=args.index('--network');args[ix+1]='container:'+lab.PROJECT+'-r3-fit-frontend-1'
    args=args[:2]+['--memory','512m','--memory-swap','512m','--label','centrochange.mission=B99-R3']+args[2:]
  elif args[0] in ['git','node']:pass
  else:raise AssertionError('Unreviewed subprocess '+str(args[:2]))

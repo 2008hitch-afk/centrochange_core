@@ -308,6 +308,18 @@
       "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
       "rollback_by": "2026-10-09T15:01:00+02:00",
       "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "memory_redistribution_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T10:48:19.968048+00:00",
+      "previous_segment": "STOPPED_OOM_DB_384MiB",
+      "change": "New isolated r3-fit storage; DB 512MiB with native bounded caches, Redis 64MiB each; runtime caps 2016MiB plus browser 512MiB =2528MiB",
+      "aggregate_max_mib": 2560,
+      "thresholds_unchanged": true,
+      "build_reused": true,
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
     }
   }
 }

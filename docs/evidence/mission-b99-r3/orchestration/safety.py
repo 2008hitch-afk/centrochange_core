@@ -21,7 +21,7 @@ while not (r/'monitor-finish').exists():
   try:
    if 'populated 1' not in (cg/'cgroup.events').read_text():continue
    cap=(cg/'memory.max').read_text().strip();sw=(cg/'memory.swap.max').read_text().strip();cur=int((cg/'memory.current').read_text());peak=int((cg/'memory.peak').read_text());events=dict((k,int(v)) for k,v in (x.split() for x in (cg/'memory.events').read_text().splitlines()));paused=(cg/'cgroup.freeze').read_text().strip()=='1'
-   isbuild=c['name']=='/centrochange-b99-r3-builder';builder|=isbuild;lab|=not isbuild
+   isbuild=c['name']=='/centrochange-b99-r3-fit-builder';builder|=isbuild;lab|=not isbuild
    if cap=='max':
     # Ignore only a confirmed exited container's transient teardown cgroup.
     running=subprocess.check_output(['docker','inspect','-f','{{.State.Running}}',cid],text=True,timeout=10).strip()

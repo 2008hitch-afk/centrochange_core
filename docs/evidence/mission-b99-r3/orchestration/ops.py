@@ -1,5 +1,5 @@
 import pathlib,json,subprocess,time,datetime
-ROOT=pathlib.Path(__file__).parent; PROJECT='centrochange-b99-rehearsal';SITE='b99.local';SOURCE=pathlib.Path('/home/empv26/.local/state/centrochange-b99-execution-20261008/source');IMAGE='sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80';BACKEND=PROJECT+'-r3-backend-1'
+ROOT=pathlib.Path(__file__).parent; PROJECT='centrochange-b99-rehearsal';SITE='b99.local';SOURCE=pathlib.Path('/home/empv26/.local/state/centrochange-b99-execution-20261008/source');IMAGE='sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80';BACKEND=PROJECT+'-r3-fit-backend-1'
 def safe():
  assert not (ROOT/'safety-stop.json').exists(),'SAFETY_STOP'
  assert time.time()-(ROOT/'monitor-heartbeat').stat().st_mtime<15,'MONITOR_LOST'
@@ -22,7 +22,7 @@ def cmd(args,label,input=None,timeout=1800):
 def isolation():
  ids=subprocess.check_output(['docker','ps','-aq','--filter','label=centrochange.mission=B99-R3','--filter','label=com.docker.compose.project='+PROJECT],text=True).split();assert ids
  for c in json.loads(subprocess.check_output(['docker','inspect',*ids],text=True)):
-  assert all(n in [PROJECT+'-r3-net',PROJECT+'-r3-http'] for n in c['NetworkSettings']['Networks']); assert PROJECT+'-r3-http' not in c['NetworkSettings']['Networks'] or c['Name']== '/'+PROJECT+'-r3-frontend-1'
+  assert all(n in [PROJECT+'-r3-fit-net',PROJECT+'-r3-fit-http'] for n in c['NetworkSettings']['Networks']); assert PROJECT+'-r3-fit-http' not in c['NetworkSettings']['Networks'] or c['Name']== '/'+PROJECT+'-r3-fit-frontend-1'
   for m in c['Mounts']:
    if m['Type']=='bind':
     assert m['Destination']=='/checkpoint' and m['RW']==False;continue
@@ -31,7 +31,7 @@ def isolation():
  return True
 
 def oneoff(code,label,image=None):
- isolation(); return cmd(['docker','run','-i','-e','FRAPPE_STREAM_LOGGING=1','--name',PROJECT+'-r3-'+label,'--label','centrochange.mission=B99-R3','--label','com.docker.compose.project='+PROJECT,'--label','com.docker.compose.service='+label,'--network',PROJECT+'-r3-net','--memory','1536m','--memory-swap','1536m','--restart','no','--mount','type=volume,source='+PROJECT+'-r3-sites,target=/home/frappe/frappe-bench/sites','--workdir','/home/frappe/frappe-bench','--entrypoint','/home/frappe/frappe-bench/env/bin/python',image or IMAGE],label,code)
+ isolation(); return cmd(['docker','run','-i','-e','FRAPPE_STREAM_LOGGING=1','--name',PROJECT+'-r3-fit-'+label,'--label','centrochange.mission=B99-R3','--label','com.docker.compose.project='+PROJECT,'--label','com.docker.compose.service='+label,'--network',PROJECT+'-r3-fit-net','--memory','1536m','--memory-swap','1536m','--restart','no','--mount','type=volume,source='+PROJECT+'-r3-fit-sites,target=/home/frappe/frappe-bench/sites','--workdir','/home/frappe/frappe-bench','--entrypoint','/home/frappe/frappe-bench/env/bin/python',image or IMAGE],label,code)
 def execute(code,label='execute'):
  isolation();return cmd(['docker','exec','-i','-e','FRAPPE_STREAM_LOGGING=1','-w','/home/frappe/frappe-bench',BACKEND,'env/bin/python'],label,"import frappe,json\nfrappe.init(site='b99.local',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')\n"+code)
 
@@ -45,5 +45,5 @@ def restore_current(label):
  bootstrap=['bench','new-site',SITE,'--db-host','db','--db-name',None,'--db-password',None,'--mariadb-root-password',creds['db'],'--admin-password',creds['admin'],'--mariadb-user-host-login-scope','%','--force']
  code+='args='+repr(bootstrap)+"\nargs[6]=cfg['db_name'];args[8]=cfg['db_password'];subprocess.run(args,check=True)\nshutil.copyfile('/checkpoint/site_config.json',site/'site_config.json')\n"
  code+='subprocess.run('+repr(argv)+',check=True)\n'
- args=['docker','run','-i','-e','FRAPPE_STREAM_LOGGING=1','--name',PROJECT+'-r3-'+label,'--label','centrochange.mission=B99-R3','--label','com.docker.compose.project='+PROJECT,'--label','com.docker.compose.service='+label,'--network',PROJECT+'-r3-net','--memory','1536m','--memory-swap','1536m','--restart','no','--mount','type=volume,source='+PROJECT+'-r3-sites,target=/home/frappe/frappe-bench/sites','--mount','type=bind,source='+str(CHECKPOINT)+',target=/checkpoint,readonly','--workdir','/home/frappe/frappe-bench','--entrypoint','/home/frappe/frappe-bench/env/bin/python',IMAGE]
+ args=['docker','run','-i','-e','FRAPPE_STREAM_LOGGING=1','--name',PROJECT+'-r3-fit-'+label,'--label','centrochange.mission=B99-R3','--label','com.docker.compose.project='+PROJECT,'--label','com.docker.compose.service='+label,'--network',PROJECT+'-r3-fit-net','--memory','1536m','--memory-swap','1536m','--restart','no','--mount','type=volume,source='+PROJECT+'-r3-fit-sites,target=/home/frappe/frappe-bench/sites','--mount','type=bind,source='+str(CHECKPOINT)+',target=/checkpoint,readonly','--workdir','/home/frappe/frappe-bench','--entrypoint','/home/frappe/frappe-bench/env/bin/python',IMAGE]
  return cmd(args,label,code)
