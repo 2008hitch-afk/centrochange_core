@@ -13,7 +13,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
   const today=iso(new Date());
   const date=d=>new Date(d+'T12:00:00').toLocaleDateString('it-IT');
   const money=v=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(v||0);
-  const human=v=>String(v||'').replace(/^CC-HTTP-UAT\d+\s*/i,'').replace(/^CC-UAT-\S+\s*/i,'');
+  const human=v=>{const text=String(v||'').replace(/CC-HTTP-[A-Za-z0-9]+\s+/g,'');return ({a:'Alfa',b:'Beta',c:'Gamma'})[text]||text;};
   const label=v=>({'Scheduled':'Prenotata','Open':'Aperta','Closed':'Chiusa','Cancelled':'Cancellata','Paid':'Pagata','Unpaid':'Da pagare','Pending':'In attesa','Overdue':'Scaduta','OK':'Confermato','SUSPENDED':'Sospeso','REVIEW':'Da verificare'})[v]||v||'—';
   const center=page.add_field({fieldname:'center',label:'Centro',fieldtype:'Select',options:[],change:()=>load()});
   const start=page.add_field({fieldname:'start',label:'Dal',fieldtype:'Date',default:today,change:()=>load()});
@@ -62,7 +62,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     let generation=0;const control=d.fields_dict.patient;
     control.$input.on('input',async()=>{const g=++generation;const search=control.get_value();try{
       const rows=await call('operations.workspace.patient_search',{center:center.get_value(),query:search});
-      if(g!==generation)return;control.set_data(rows.map(p=>({label:human(p.patient_name),value:p.name})));
+      if(g!==generation)return;control.set_data(rows.patients.map(p=>({label:human(p.patient_name),value:p.name})));
     }catch(e){if(g===generation)frappe.msgprint(e.message);}});
     d.show();
   }
