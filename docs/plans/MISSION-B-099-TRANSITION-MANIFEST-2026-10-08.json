@@ -287,6 +287,16 @@
     "builder_read_bps": 8388608,
     "builder_write_bps": 4194304,
     "thresholds_unchanged": true,
-    "shared_runtime_mutations": false
+    "shared_runtime_mutations": false,
+    "serialized_asset_reuse_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T10:26:24.154683+00:00",
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "previous_segment": "STOPPED_PSI_GUARD",
+      "change": "Reuse successfully built native Builder/Healthcare and official base assets; build only Centro Change assets in final layer",
+      "safety_thresholds_unchanged": true,
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
+    }
   }
 }

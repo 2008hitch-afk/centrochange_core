@@ -26,5 +26,5 @@ COPY --chown=frappe:frappe app/centrochange_core /home/frappe/frappe-bench/apps/
 
 RUN uv pip install --no-cache --python /home/frappe/frappe-bench/env/bin/python --editable /home/frappe/frappe-bench/apps/centrochange_core \
     && printf '\n%s\n' centrochange_core >> sites/apps.txt \
-    && bench build \
+    && bench build --app centrochange_core \
     && cp -a sites/assets/. assets/
