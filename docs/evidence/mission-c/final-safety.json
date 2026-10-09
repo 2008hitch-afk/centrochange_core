@@ -8,5 +8,7 @@
   "disk_free_bytes": 13268246528,
   "protected_changes": [],
   "rc22_http": 200,
-  "own_running": []
+  "own_running": [],
+  "protected_count": 137,
+  "protected_mount_changes": []
 }

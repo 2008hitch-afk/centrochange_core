@@ -52,4 +52,4 @@ Non ancora implementati nel Desk: disponibilità visuale, filtro professionisti,
 
 Il container browser ha raggiunto esattamente il limite512MiB; Docker State.OOMKilled=true, contatore host oom_kill +1. Nessun OOM dei servizi C backend/db né dei protetti osservato. Monitor ha fermato tutti e soli i container C109. Host memory PSI full massimo0%, some0.12%; IO full massimo78.55% durante copia limitata, stabilizzato prima dei test. OOM è locale al budget QA: non prova esaurimento RAM host.
 
-Tutti i container/volumi/immagini C sono conservati e **spenti**. RC22 HTTP200 e identità/stato/start/restart/reti dei110 container protetti invariati. Nessun riavvio automatico né soglia allentata.
+Tutti i container/volumi/immagini C sono conservati e **spenti**. RC22 HTTP200 e identità/stato/start/restart/reti dei137 container protetti invariati. Nessun riavvio automatico né soglia allentata.
