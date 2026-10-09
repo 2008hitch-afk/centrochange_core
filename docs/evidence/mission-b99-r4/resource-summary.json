@@ -1,0 +1,12 @@
+{
+  "samples": 157,
+  "oom_delta": 0,
+  "memory_psi_full_max": 0.18,
+  "io_psi_full_max": 22.21,
+  "memory_available_min": 4705128448,
+  "cgroup_usage_peak": 1281216512,
+  "disk_before": 17933406208,
+  "disk_after": 16765829120,
+  "safety_stop": false,
+  "removed_resources": []
+}

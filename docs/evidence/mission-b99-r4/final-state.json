@@ -1,0 +1,17 @@
+{
+  "status": "R4_STOPPED_PARTIAL_COMPATIBILITY_DEFECTS",
+  "execution_allowed_now": false,
+  "authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6080248134",
+  "started_at": "2026-10-09T12:06:38.717680+00:00",
+  "source": "e85fce588de6012a47da302710b9f9c615211279",
+  "rollback_by": "2026-10-09T18:47:00+02:00",
+  "hard_stop": "2026-10-09T21:47:00+02:00",
+  "project": "centrochange-b99-r4",
+  "memory_runtime_browser_bytes": 2684354560,
+  "memory_build_bytes": 2147483648,
+  "incremental_disk_budget_bytes": 3221225472,
+  "reuse_r3_build": true,
+  "restore_r2_checkpoint": "new isolated clone required for R4 changes; no bootstrap or rebuild",
+  "thresholds_unchanged": true,
+  "finished_at": "2026-10-09T12:19:50.627140+00:00"
+}
