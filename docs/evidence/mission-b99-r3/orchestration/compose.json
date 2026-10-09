@@ -49,8 +49,8 @@
           "condition": "service_healthy"
         }
       },
-      "mem_limit": "768m",
-      "memswap_limit": "768m",
+      "mem_limit": "640m",
+      "memswap_limit": "640m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
@@ -313,8 +313,8 @@
           "condition": "service_healthy"
         }
       },
-      "mem_limit": "128m",
-      "memswap_limit": "128m",
+      "mem_limit": "256m",
+      "memswap_limit": "256m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
