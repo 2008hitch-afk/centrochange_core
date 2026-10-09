@@ -32,7 +32,7 @@ def inventory(path):return json.loads(next(x for x in path.read_text().splitline
 a=inventory(pathlib.Path('/home/empv26/.local/state/centrochange-b99-r2-20261009/current-inventory-retry.log'));b=inventory(rr/'rollback-inventory.log');cmp={k:a[k]==b[k] for k in ['schema','metadata','business','files','installed_apps','pins']};(r/'rollback-reconciliation.json').write_text(json.dumps(cmp,indent=2));assert all(cmp.values()),'RESTORE INVENTORY MISMATCH'
 print('ROLLBACK INVENTORY RECONCILIATION PASS',flush=True)
 ro.oneoff("import subprocess\nsubprocess.run(['bench','--site','b99.local','enable-scheduler'],check=True)",'rollback-enable-scheduler')
-ro.cmd(ro.compose('up','-d','--no-build','r3-fit-rollback-backend','r3-fit-rollback-websocket','r3-fit-rollback-queue-short','r3-fit-rollback-queue-long','r3-fit-rollback-scheduler','r3-fit-rollback-frontend'),'rollback-runtime-up')
+ro.cmd(ro.compose('up','-d','--no-build','r3-fit-rollback-backend','r3-fit-rollback-websocket','r3-fit-rollback-queue-long','r3-fit-rollback-scheduler','r3-fit-rollback-frontend'),'rollback-runtime-up')
 for _ in range(60):
  try:
   import urllib.request
