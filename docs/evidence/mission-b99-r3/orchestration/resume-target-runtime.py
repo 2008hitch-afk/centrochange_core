@@ -2,7 +2,9 @@ import ops,json,importlib.util,time
 r=ops.ROOT;rr=r/'rollback';spec=importlib.util.spec_from_file_location('ro',rr/'ops.py');ro=importlib.util.module_from_spec(spec);spec.loader.exec_module(ro)
 delta=json.loads((r/'target-role-delta.json').read_text());assert delta['user_role_assignments_preserved'];assert json.loads((r/'target-migration-status.json').read_text())['status']=='PASS'
 ro.cmd(ro.compose('stop',*json.loads((rr/'compose.json').read_text())['services']),'stop-current-before-target-regressions')
-conf=json.loads((r/'compose.json').read_text());(r/'compose-current.json').write_text(json.dumps(conf,indent=2));target=json.loads((r/'target-image.json').read_text())['immutable_id']
+conf=json.loads((r/'compose.json').read_text());
+if not (r/'compose-current.json').exists():(r/'compose-current.json').write_text(json.dumps(conf,indent=2))
+target=json.loads((r/'target-image.json').read_text())['immutable_id']
 for svc in conf['services'].values():
  if svc['image']==ops.IMAGE:svc['image']=target
 (r/'compose-target.json').write_text(json.dumps(conf,indent=2));(r/'compose.json').write_text(json.dumps(conf,indent=2))
