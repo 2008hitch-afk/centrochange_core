@@ -1,0 +1,37 @@
+[
+  {
+    "suite": "uat",
+    "status": "FAIL",
+    "seconds": 34.41536498069763
+  },
+  {
+    "suite": "professional",
+    "status": "FAIL",
+    "seconds": 32.38385510444641
+  },
+  {
+    "suite": "patient",
+    "status": "FAIL",
+    "seconds": 32.19870901107788
+  },
+  {
+    "suite": "expectations",
+    "status": "FAIL",
+    "seconds": 32.264004707336426
+  },
+  {
+    "suite": "ts_detail",
+    "status": "FAIL",
+    "seconds": 32.24490690231323
+  },
+  {
+    "suite": "confirmation",
+    "status": "FAIL",
+    "seconds": 32.53429579734802
+  },
+  {
+    "suite": "search",
+    "status": "FAIL",
+    "seconds": 24.040836095809937
+  }
+]

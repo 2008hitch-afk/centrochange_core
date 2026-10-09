@@ -1,0 +1,332 @@
+[
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-queue-long-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-backend-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-scheduler-1",
+    "running": false,
+    "exit_code": 137,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-enable-scheduler-1791544504",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-inventory-1791544501",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-supplement-1791544501",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-current-1791544454",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-scheduler-1",
+    "running": false,
+    "exit_code": 137,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-backend-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-target-supplement-1791544172",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-target-supplement-1791543857",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-enable-scheduler-1791543769",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-inventory-1791543767",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-supplement-1791543766",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-current-1791543741",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-queue-long-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-target-supplement-1791543636",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-frontend-1",
+    "running": false,
+    "exit_code": 137,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-websocket-1",
+    "running": false,
+    "exit_code": 137,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-queue-short-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-target-supplement-1791543468",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-target-normalized-roles-1791543361",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-r3-fit-supplement-rollback",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-frontend-1",
+    "running": false,
+    "exit_code": 137,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-websocket-1",
+    "running": false,
+    "exit_code": 1,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-queue-short-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-enable-scheduler-1791543185",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-inventory-1791543183",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-current-1791543158",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-target-inventory-1791543149",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-migrate-target-1791543096",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-clone-current-inventory-1791543094",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-rollback-current",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-redis-queue-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-redis-cache-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-rollback-db-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-clone-current",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-redis-queue-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-redis-cache-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-fit-db-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-rollback-redis-queue-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-rollback-redis-cache-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-rollback-db-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-migrate-target",
+    "running": false,
+    "exit_code": 1,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-clone-current-inventory",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-clone-current",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-redis-cache-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-redis-queue-1",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-r3-db-1",
+    "running": false,
+    "exit_code": 137,
+    "image": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c"
+  },
+  {
+    "name": "/centrochange-b99-r3-target-pin-check",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce"
+  },
+  {
+    "name": "/centrochange-b99-r3-thaw-1791540859",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-r3-thaw-1791540843",
+    "running": false,
+    "exit_code": 2,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-r3-builder",
+    "running": false,
+    "exit_code": 137,
+    "image": "sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea"
+  },
+  {
+    "name": "/centrochange-b99-r3-cache-finish",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80"
+  },
+  {
+    "name": "/centrochange-b99-r3-cache-copy",
+    "running": false,
+    "exit_code": 0,
+    "image": "sha256:cec9f139f45e93c5c69c60f8b07cfad9f43f4ef6b6a6cd917527fea5ff2e3dea"
+  }
+]

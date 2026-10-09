@@ -1,0 +1,30 @@
+{
+  "frappe/frappe/__init__.py": {
+    "sha256": "840b4f9980c42eaa551f3e805cde667b9ae889522462f0d768f0327840c8919d",
+    "official_source": "https://raw.githubusercontent.com/frappe/frappe/f20f92d29706510551b4438cc196b0323a7f1a92/frappe/__init__.py"
+  },
+  "frappe/frappe/app.py": {
+    "sha256": "1e910e76bcbf596dc708dbd4d8f682f6a6e37368971afcca5f4512efeaa845f9",
+    "official_source": "https://raw.githubusercontent.com/frappe/frappe/f20f92d29706510551b4438cc196b0323a7f1a92/frappe/app.py"
+  },
+  "frappe/frappe/handler.py": {
+    "sha256": "29c0a830d5400bd03b053e2c2e6d8d35a95d26c2b40d8a5d881c32d798401d7e",
+    "official_source": "https://raw.githubusercontent.com/frappe/frappe/f20f92d29706510551b4438cc196b0323a7f1a92/frappe/handler.py"
+  },
+  "frappe/frappe/permissions.py": {
+    "sha256": "ae3c1285b87094fef39c27c4a5f73c258da11f955ce45169ca6b4996558f6bd8",
+    "official_source": "https://raw.githubusercontent.com/frappe/frappe/f20f92d29706510551b4438cc196b0323a7f1a92/frappe/permissions.py"
+  },
+  "erpnext/erpnext/__init__.py": {
+    "sha256": "d3699f8691ab6e556491e224e0dcc845344e122fea43aefd8293f51890cc6923",
+    "official_source": "https://raw.githubusercontent.com/frappe/erpnext/7474d9e786277383de1242ab882f16856d17a9c9/erpnext/__init__.py"
+  },
+  "erpnext/erpnext/accounts/doctype/sales_invoice/sales_invoice.py": {
+    "sha256": "af580ca6fed4626bfc3fcaa96e0f53039fe1d82947e4bb1f8f70ba61270fec76",
+    "official_source": "https://raw.githubusercontent.com/frappe/erpnext/7474d9e786277383de1242ab882f16856d17a9c9/erpnext/accounts/doctype/sales_invoice/sales_invoice.py"
+  },
+  "erpnext/erpnext/accounts/doctype/payment_entry/payment_entry.py": {
+    "sha256": "914499826c15e5a3b5b45b1030b62ea3fc3e94e463a80ced5933ac8e8545dabb",
+    "official_source": "https://raw.githubusercontent.com/frappe/erpnext/7474d9e786277383de1242ab882f16856d17a9c9/erpnext/accounts/doctype/payment_entry/payment_entry.py"
+  }
+}

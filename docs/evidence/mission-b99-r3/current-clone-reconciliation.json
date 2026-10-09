@@ -1,0 +1,7 @@
+{
+  "schema": true,
+  "metadata": true,
+  "business": true,
+  "files": true,
+  "installed_apps": true
+}

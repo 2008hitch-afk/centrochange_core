@@ -1,0 +1,158 @@
+[
+  {
+    "suite": "target-backend-240",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 17.459518909454346
+  },
+  {
+    "suite": "target-hooks-six",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 1.4655818939208984
+  },
+  {
+    "suite": "target-http-55",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 7.438025951385498
+  },
+  {
+    "suite": "target-security",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 2.3276546001434326
+  },
+  {
+    "suite": "target-finance",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 2.0405941009521484
+  },
+  {
+    "suite": "target-receivables",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 5.607152700424194
+  },
+  {
+    "suite": "target-banking",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 5.905337810516357
+  },
+  {
+    "suite": "target-incoming",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.9815666675567627
+  },
+  {
+    "suite": "target-professional",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.8376009464263916
+  },
+  {
+    "suite": "target-reporting",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.831739902496338
+  },
+  {
+    "suite": "target-sdi",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.8088579177856445
+  },
+  {
+    "suite": "target-ts",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.7889294624328613
+  },
+  {
+    "suite": "target-browser-uat",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.2569613456726074
+  },
+  {
+    "suite": "target-browser-professional",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.269038438796997
+  },
+  {
+    "suite": "target-browser-patient",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.3123981952667236
+  },
+  {
+    "suite": "target-browser-expectations",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.274369716644287
+  },
+  {
+    "suite": "target-browser-ts_detail",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.324669599533081
+  },
+  {
+    "suite": "target-browser-confirmation",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.2626755237579346
+  },
+  {
+    "suite": "target-browser-search",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.2214043140411377
+  },
+  {
+    "suite": "target-browser-accounting",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.1851882934570312
+  },
+  {
+    "suite": "target-browser-permissions",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.3104853630065918
+  },
+  {
+    "suite": "target-browser-walkthrough",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.247758150100708
+  },
+  {
+    "suite": "target-browser-ui_v1",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.218503713607788
+  },
+  {
+    "suite": "target-browser-print",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.187324047088623
+  },
+  {
+    "suite": "target-browser-states",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.2220439910888672
+  },
+  {
+    "suite": "target-browser-agenda_geometry",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 1.2421183586120605
+  }
+]

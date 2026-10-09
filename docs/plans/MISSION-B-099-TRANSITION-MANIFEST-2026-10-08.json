@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "OWNER_AUTHORIZED_R2_STOPPED_BLOCKED",
+  "status": "R3_STOPPED_PARTIAL_PSI_GUARD",
   "issue": "https://github.com/2008hitch-afk/centrochange_core/issues/99",
   "authorization": [
     "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6068177100",
@@ -273,5 +273,111 @@
     "CURRENT_QA_archive_sha256": "b108212acb4c56ece80ba3058da652bad03323417f75f03e80fd67184f729411",
     "outcome": "BLOCKED_PSI_MEMORY_GUARDRAIL",
     "stopped_at_utc": "2026-10-09T08:21:27Z"
+  },
+  "activation_r3": {
+    "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+    "activated_at_utc": "2026-10-09T08:38:07Z",
+    "rollback_by": "2026-10-09T15:01:00+02:00",
+    "hard_stop": "2026-10-09T18:01:00+02:00",
+    "checkpoint": "REUSE_R2_COMPLETE_VERIFIED",
+    "preserve_r1_r2": true,
+    "build_memory_bytes": 2147483648,
+    "lab_browser_memory_bytes": 2684354560,
+    "build_parallelism": 1,
+    "builder_read_bps": 8388608,
+    "builder_write_bps": 4194304,
+    "thresholds_unchanged": true,
+    "shared_runtime_mutations": false,
+    "serialized_asset_reuse_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T10:26:24.154683+00:00",
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "previous_segment": "STOPPED_PSI_GUARD",
+      "change": "Reuse successfully built native Builder/Healthcare and official base assets; build only Centro Change assets in final layer",
+      "safety_thresholds_unchanged": true,
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "validation_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T10:43:43.339685+00:00",
+      "previous_segment": "STOPPED_POST_IMPORT_PSI",
+      "reuse": "TARGET import exit 0, immutable pins and 239 core files plus 7 official fingerprints PASS",
+      "mutations_before_this_segment": "No site/database restored or migrated",
+      "safety_thresholds_unchanged": true,
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "memory_redistribution_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T10:48:19.968048+00:00",
+      "previous_segment": "STOPPED_OOM_DB_384MiB",
+      "change": "New isolated r3-fit storage; DB 512MiB with native bounded caches, Redis 64MiB each; runtime caps 2016MiB plus browser 512MiB =2528MiB",
+      "aggregate_max_mib": 2560,
+      "thresholds_unchanged": true,
+      "build_reused": true,
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "multi_queue_worker_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T11:00:08.935582+00:00",
+      "previous_segment": "STOPPED_LONG_WORKER_192MiB_OOM",
+      "change": "One existing native multi-queue worker (long,default,short) at384MiB; duplicate short worker stopped; services2048MiB plusQA512MiB=2560MiB",
+      "aggregate_max_mib": 2560,
+      "all_safety_thresholds_unchanged": true,
+      "target_migration_reused": "PASS",
+      "real_rollback_already_verified": true,
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "measured_scheduler_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T11:09:28.887707+00:00",
+      "previous_segment": "STOPPED_SCHEDULER_128MiB_OOM",
+      "change": "Backend640MiB vs measured360.34MiB peak; scheduler256MiB; one multi-queue384MiB; totalservices2048+QA512=2560MiB",
+      "all_safety_thresholds_unchanged": true,
+      "prior_OOM_events_retained": true,
+      "target_migration_reused": "PASS",
+      "real_rollback_already_verified": true,
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "native_asset_mapping_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T11:15:27.138379+00:00",
+      "change": "Native bench build --apps frappe,erpnext,healthcare,centrochange_core; preserve cached Builder frontend; no manual asset manifest patches",
+      "import_rate_mib_per_second": 2,
+      "all_safety_thresholds_unchanged": true,
+      "source_and_dependency_pins_unchanged": true,
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "cached_native_mapping_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T11:38:15.466776+00:00",
+      "change": "Native bench build --using-cached rebuilds assets.json from already built official assets; no redundant frontend compilation",
+      "thresholds_unchanged": true,
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
+    }
+  },
+  "execution_result_r3": {
+    "status": "PARTIAL",
+    "recorded_at": "2026-10-09T11:40:18.997013+00:00",
+    "upgrade_native_migrate": "PASS",
+    "backend_checks": 240,
+    "http_checks": 55,
+    "six_hooks": "PASS",
+    "real_rollback": "PASS_189_OPERATIONAL_CHECKS",
+    "browser_regression": "NOT_PASSED",
+    "final_guard": "PSI",
+    "all_r3_stopped": true,
+    "rc22_unchanged": true
   }
 }

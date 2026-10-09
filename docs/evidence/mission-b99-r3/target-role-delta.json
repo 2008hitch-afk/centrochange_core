@@ -1,0 +1,88 @@
+{
+  "added": [
+    {
+      "parent": "Home",
+      "parenttype": "Workspace",
+      "role": "Desk User"
+    },
+    {
+      "parent": "SMS Settings",
+      "parenttype": "SMS Settings",
+      "role": "Accounts Manager"
+    },
+    {
+      "parent": "SMS Settings",
+      "parenttype": "SMS Settings",
+      "role": "Accounts User"
+    },
+    {
+      "parent": "SMS Settings",
+      "parenttype": "SMS Settings",
+      "role": "Purchase Manager"
+    },
+    {
+      "parent": "SMS Settings",
+      "parenttype": "SMS Settings",
+      "role": "Purchase User"
+    },
+    {
+      "parent": "SMS Settings",
+      "parenttype": "SMS Settings",
+      "role": "Sales Manager"
+    },
+    {
+      "parent": "SMS Settings",
+      "parenttype": "SMS Settings",
+      "role": "Sales User"
+    },
+    {
+      "parent": "SMS Settings",
+      "parenttype": "SMS Settings",
+      "role": "Stock Manager"
+    },
+    {
+      "parent": "SMS Settings",
+      "parenttype": "SMS Settings",
+      "role": "Stock User"
+    },
+    {
+      "parent": "SMS Settings",
+      "parenttype": "SMS Settings",
+      "role": "System Manager"
+    },
+    {
+      "parent": "Stock Ledger Entries of Cancelled Vouchers",
+      "parenttype": "Report",
+      "role": "Stock Manager"
+    },
+    {
+      "parent": "Stock Ledger Entries of Cancelled Vouchers",
+      "parenttype": "Report",
+      "role": "System Manager"
+    },
+    {
+      "parent": "Stock Valuation Comparison",
+      "parenttype": "Report",
+      "role": "Accounts Manager"
+    },
+    {
+      "parent": "Stock Valuation Comparison",
+      "parenttype": "Report",
+      "role": "Stock Manager"
+    },
+    {
+      "parent": "component-explorer",
+      "parenttype": "Page",
+      "role": "System Manager"
+    },
+    {
+      "parent": "workspace-restore",
+      "parenttype": "Page",
+      "role": "Workspace Manager"
+    }
+  ],
+  "removed": [],
+  "normalized_semantic_roles_preserved": false,
+  "user_role_assignments_preserved": true,
+  "raw_Has_Role_includes_non_user_parents": true
+}
