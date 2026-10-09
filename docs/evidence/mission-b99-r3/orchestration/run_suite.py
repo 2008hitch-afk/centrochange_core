@@ -30,6 +30,14 @@ def safe(args,kwargs):
   if args[1]=='run':
    for script in ['public','finance','threshold','audit','bank_trace']:
     if '/qa/'+script+'.cjs' in args: args=args[:2]+['-v',str(lab.ROOT/(script+'-adapted.cjs'))+':/qa/'+script+'.cjs:ro']+args[2:]
+   # TARGET native login uses a submit button instead of the old btn-login class.
+   script_path=next((x for x in args if isinstance(x,str) and x.startswith('/qa/') and x.endswith('.cjs')),None)
+   if script_path:
+    canonical=lab.SOURCE/'infra/browser'/pathlib.Path(script_path).name
+    adapted=lab.ROOT/('target-selector-'+canonical.name)
+    content=canonical.read_text().replace('.form-login .btn-login','.form-login button[type="submit"]')
+    adapted.write_text(content)
+    args=args[:2]+['-v',str(adapted)+':'+script_path+':ro']+args[2:]
    assert browser in args and '--rm' in args
    assert 'CC_BASE_URL=http://centrochange.local:8080' in args
    ix=args.index('--network');args[ix+1]='container:'+lab.PROJECT+'-r3-fit-frontend-1'
