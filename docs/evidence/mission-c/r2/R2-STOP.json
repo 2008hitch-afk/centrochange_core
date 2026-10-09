@@ -1,0 +1,16 @@
+{
+  "mission": "C109-R2-FULL-UI",
+  "status": "STOPPED_ON_OOM",
+  "observed_utc": "2026-10-09T20:23:32Z",
+  "source_sha": "0c85d72d589c7eb59eca8ef949d18c87b9af2bc5",
+  "image": "sha256:1beab705b2511464212740a5fd2f87bc42ea64aff2b71058c35736392756c21e",
+  "qa_container": "centrochange-c109-r2-browser-m-1791577406",
+  "qa_memory_limit_bytes": 536870912,
+  "oom_killed": true,
+  "host_mem_available_bytes": 5074771968,
+  "host_mem_psi_full_pct": 0.0,
+  "rc22_http": 200,
+  "c109_http_after_stop": null,
+  "protected_containers_invariant": 137,
+  "reason": "Repeated native Catalog navigation in one QA browser process exceeded QA cgroup 512MiB; monitor stopped C109; no retry."
+}
