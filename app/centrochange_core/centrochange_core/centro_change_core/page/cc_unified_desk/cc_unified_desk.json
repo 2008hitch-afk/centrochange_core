@@ -1,0 +1,26 @@
+{
+  "doctype": "Page",
+  "name": "cc-unified-desk",
+  "page_name": "cc-unified-desk",
+  "title": "Centro Change",
+  "module": "Centro Change Core",
+  "standard": "Yes",
+  "system_page": 0,
+  "roles": [
+    {
+      "role": "CC Manager"
+    },
+    {
+      "role": "CC Secretariat"
+    },
+    {
+      "role": "CC Professional"
+    },
+    {
+      "role": "CC Finance"
+    },
+    {
+      "role": "CC Accountant"
+    }
+  ]
+}
