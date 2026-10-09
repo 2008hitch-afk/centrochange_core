@@ -57,7 +57,8 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       if(token!==generation)return;
       const section=document.createElement('section');section.className='cc-desk-surface '+(doc.body.className||'');
       shell.querySelector('.sidebar')?.remove();
-      const links=items.filter(([id])=>allowed[id]).map(([id,text])=>`<a href="${surfaces[id].path}" class="cc-desk-route ${id===view?'active':''}">${text}</a>`).join('');
+      let links=items.filter(([id])=>allowed[id]).map(([id,text])=>`<a href="${surfaces[id].path}" class="cc-desk-route ${id===view?'active':''}">${text}</a>`).join('');
+      if(roles.has('CC Manager'))links+='<details class="cc-desk-catalog"><summary>Catalogo</summary><div><a href="/app/item">Servizi</a><a href="/app/item-price">Tariffe</a><a href="/app/appointment-type">Tipi di seduta</a><a href="/app/cc-center-service">Servizi del centro</a><a href="/app/cc-package-template">Modelli pacchetto</a></div></details>';
       const routebar=document.createElement('nav');routebar.className='cc-desk-routebar';routebar.setAttribute('aria-label','Aree Centro Change');routebar.innerHTML=links;
       const nav=document.createElement('header');nav.className='cc-desk-topnav';
       nav.innerHTML='<nav id="navigation" aria-label="Funzioni della sezione"></nav><button type="button" id="logout">Esci</button>';
