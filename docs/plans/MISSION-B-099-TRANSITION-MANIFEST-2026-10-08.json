@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "OWNER_AUTHORIZED_RUN_STOPPED_BLOCKED",
+  "status": "OWNER_AUTHORIZED_R2_ACTIVE",
   "issue": "https://github.com/2008hitch-afk/centrochange_core/issues/99",
   "authorization": [
     "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6068177100",
@@ -10,7 +10,7 @@
   "prepared_at": "2026-10-08T20:18:17.161865+00:00",
   "source_commit": "e85fce588de6012a47da302710b9f9c615211279",
   "risk": "HIGH_SHARED_HOST",
-  "execution_allowed_now": false,
+  "execution_allowed_now": true,
   "time_boundary": {
     "valid_from": "2026-10-08T22:14:24+02:00",
     "authorization_expires_at": "2026-10-09T06:14:24+02:00",
@@ -258,5 +258,18 @@
     "report": "docs/evidence/mission-b99/REPORT.md",
     "resume_allowed_now": false,
     "activation_commit": "db9e630cfc99729c9264be1ee2939686b866cf84"
+  },
+  "activation_r2": {
+    "authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6076948191",
+    "recorded_at": "2026-10-09T08:03:49.482574+00:00",
+    "rollback_by": "2026-10-09T15:01:00+02:00",
+    "hard_stop": "2026-10-09T18:01:00+02:00",
+    "budget_disk_gib": 32,
+    "build_memory_bytes": 2147483648,
+    "lab_browser_memory_bytes": 2684354560,
+    "build_parallelism": 1,
+    "R1_resources": "PRESERVE_ALL",
+    "R2_volume_prefix": "centrochange-b99-rehearsal-r2-",
+    "CURRENT_QA_archive_sha256": "b108212acb4c56ece80ba3058da652bad03323417f75f03e80fd67184f729411"
   }
 }
