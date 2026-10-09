@@ -1,0 +1,10 @@
+{
+  "status": "ANOMALY_RETAINED",
+  "previous_last_oom_kill": 0,
+  "resumed_initial_oom_kill": 1,
+  "increment": 1,
+  "victim": "NOT_VERIFIED",
+  "correlated_build_exit": 137,
+  "prior_guard": "PSI",
+  "current_segment_protections_unchanged": true
+}
