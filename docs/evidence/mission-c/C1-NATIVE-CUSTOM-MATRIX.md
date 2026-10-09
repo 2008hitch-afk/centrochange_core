@@ -47,3 +47,7 @@ Baseline applicativa main `2fab181cd61cfc69e341d9fa1849038c6646e87e`; prototipo 
 Direzione: operazioni, Finance e amministrazione già autorizzate. Segreteria: operazioni e report già permessi; nessuna nota privata. Finance/Accountant: Finance nei centri correnti, read/write secondo guard esistente. Professionisti A/B: solo contesti propri; C senza assegnazione: nessun paziente o seduta. Guest: nessun Desk, solo pubblico. `desk_access=1` dei ruoli CC è già esistente, non viene modificato.
 
 Le superfici native sono candidate, non PASS preventivi: accesso Form/List, metadata e API devono essere verificati sul clone. Le funzionalità non implementate nel primo percorso C2 restano esplicitamente non verificate. Non si duplicano anagrafiche, ledger, policy, endpoint autorizzativi o ruoli.
+
+## Verifica versione Desk durante C2
+
+Frappe16.50 usa anche [Sidebar standard pinned](https://github.com/frappe/frappe/blob/f20f92d29706510551b4438cc196b0323a7f1a92/frappe/desk/doctype/sidebar/sidebar.py), con JSON esportato sotto modulo/sidebar/nome/nome.json. La Sidebar calcolata automaticamente elencava nomi tecnici: il prototipo usa Sidebar di modulo esplicita con link alla Page. Nessun nuovo grant; i servizi rimangono i permission boundary. Confermato sul runtime C109, non inferito dalle sole API storiche Workspace.

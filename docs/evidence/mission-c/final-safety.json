@@ -1,0 +1,12 @@
+{
+  "host_oom_delta": 1,
+  "browser_peak_sampled_bytes": 536870912,
+  "aggregate_peak_sampled_bytes": 1254789120,
+  "memory_psi_full_max": 0.0,
+  "memory_psi_some_max": 0.12,
+  "io_psi_full_max": 78.55,
+  "disk_free_bytes": 13268246528,
+  "protected_changes": [],
+  "rc22_http": 200,
+  "own_running": []
+}

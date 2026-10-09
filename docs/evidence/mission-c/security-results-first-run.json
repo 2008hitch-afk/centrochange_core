@@ -1,0 +1,431 @@
+[
+  {
+    "name": "a login",
+    "status": "PASS"
+  },
+  {
+    "name": "a agenda 0",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "a own appointments only",
+    "status": "PASS"
+  },
+  {
+    "name": "a finance 0",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "a agenda 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "a finance 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "a native list own only",
+    "status": "PASS"
+  },
+  {
+    "name": "a private-note boundary",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "a generic accounting query guard",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "a finance.reporting.export_csv denied",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "a finance.reporting.professional_view denied",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "a finance.patient_reporting.patient_view denied",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "b login",
+    "status": "PASS"
+  },
+  {
+    "name": "b agenda 0",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "b own appointments only",
+    "status": "PASS"
+  },
+  {
+    "name": "b finance 0",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "b agenda 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "b finance 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "b native list own only",
+    "status": "PASS"
+  },
+  {
+    "name": "b private-note boundary",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "b generic accounting query guard",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "b finance.reporting.export_csv denied",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "b finance.reporting.professional_view denied",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "b finance.patient_reporting.patient_view denied",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "c login",
+    "status": "PASS"
+  },
+  {
+    "name": "c agenda 0",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "c no appointments",
+    "status": "PASS"
+  },
+  {
+    "name": "c finance 0",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "c agenda 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "c finance 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "c native list no appointments",
+    "status": "PASS"
+  },
+  {
+    "name": "c private-note boundary",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "c generic accounting query guard",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "c finance.reporting.export_csv denied",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "c finance.reporting.professional_view denied",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "c finance.patient_reporting.patient_view denied",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "f login",
+    "status": "PASS"
+  },
+  {
+    "name": "f agenda 0",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "f finance 0",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "f finance no private note field",
+    "status": "PASS"
+  },
+  {
+    "name": "f agenda 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "f finance 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "f private-note boundary",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "f generic accounting query guard",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "m login",
+    "status": "PASS"
+  },
+  {
+    "name": "m agenda 0",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "m finance 0",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "m finance no private note field",
+    "status": "PASS"
+  },
+  {
+    "name": "m agenda 1",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "m finance 1",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "m finance no private note field",
+    "status": "PASS"
+  },
+  {
+    "name": "m private-note boundary",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "m generic accounting query guard",
+    "status": "FAIL",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "s login",
+    "status": "PASS"
+  },
+  {
+    "name": "s agenda 0",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "s finance 0",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "s finance no private note field",
+    "status": "PASS"
+  },
+  {
+    "name": "s agenda 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "s finance 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "s private-note boundary",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "s generic accounting query guard",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "t login",
+    "status": "PASS"
+  },
+  {
+    "name": "t agenda 0",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "t finance 0",
+    "status": "PASS",
+    "observed": {
+      "http": 200
+    }
+  },
+  {
+    "name": "t finance no private note field",
+    "status": "PASS"
+  },
+  {
+    "name": "t agenda 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "t finance 1",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "t private-note boundary",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  },
+  {
+    "name": "t generic accounting query guard",
+    "status": "PASS",
+    "observed": {
+      "http": 403
+    }
+  }
+]

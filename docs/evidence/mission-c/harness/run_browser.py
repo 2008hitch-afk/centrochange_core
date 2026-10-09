@@ -1,0 +1,5 @@
+import pathlib,subprocess,time,json,sys
+r=pathlib.Path(__file__).parent;assert not (r/'safety-stop.json').exists();assert time.time()-(r/'monitor-heartbeat').stat().st_mtime<15
+script=sys.argv[1] if len(sys.argv)>1 else 'qa-smoke.cjs';out=r/'screenshots';out.mkdir(exist_ok=True)
+a=['docker','run','--name','centrochange-c109-browser-'+str(int(time.time())),'--label','centrochange.mission=C109','--label','com.docker.compose.project=centrochange-c109','--memory','512m','--memory-swap','512m','--network','container:centrochange-c109-c-fit-frontend-1','--mount','type=bind,source='+str(r/script)+',target=/qa/test.cjs,readonly','--mount','type=bind,source='+str(r/'qa-fixture.json')+',target=/qa-fixture.json,readonly','--mount','type=bind,source='+str(out)+',target=/qa-results','sha256:f970b8eb4b0bd2186df380e6dffb1607f9fd8a75f67c04ba5f3c9d87d36e72d3','node','/qa/test.cjs']
+p=subprocess.run(a,capture_output=True,text=True,timeout=400);(r/(script+'.log')).write_text(p.stdout+p.stderr);print(p.returncode,p.stdout[-1000:],p.stderr[-1000:]);assert p.returncode==0;assert not (r/'safety-stop.json').exists()
