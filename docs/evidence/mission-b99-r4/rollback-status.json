@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "real_native_restore": true,
+  "full_schema_metadata_business_files_pins_reconciled": true,
+  "http_ping": 200,
+  "operational_smoke_checks": 189
+}

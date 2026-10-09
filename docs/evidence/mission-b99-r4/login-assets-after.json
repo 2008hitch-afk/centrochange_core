@@ -1,0 +1,34 @@
+[
+  {
+    "asset": "/assets/frappe/dist/css/website.bundle.I7XSLFJG.css",
+    "status": 200
+  },
+  {
+    "asset": "/assets/erpnext/dist/css/erpnext-web.bundle.QSDGQRTQ.css",
+    "status": 200
+  },
+  {
+    "asset": "/assets/centrochange_core/vendor/tabler-core-1.6.1/tabler.min.css",
+    "status": 200
+  },
+  {
+    "asset": "/assets/centrochange_core/css/client_brand.css",
+    "status": 200
+  },
+  {
+    "asset": "/assets/centrochange_core/css/ui_v1.css",
+    "status": 200
+  },
+  {
+    "asset": "/assets/frappe/dist/css/login.bundle.AANOXAS6.css",
+    "status": 200
+  },
+  {
+    "asset": "/assets/frappe/dist/js/frappe-web.bundle.WG7HPFAP.js",
+    "status": 200
+  },
+  {
+    "asset": "/website_script.js",
+    "status": 200
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "suite": "ts_detail",
+    "status": "PASS",
+    "exit_code": 0
+  },
+  {
+    "suite": "accounting",
+    "status": "PASS",
+    "exit_code": 0
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "source": "R2 stopped backend site private/uat/demo.json",
+  "sha256": "634c2ff93c786429c4ecae561f5ab4c7856bbc4073befdb58aebda4dc6160a3a",
+  "native_upload_backup_excluded_this_manifest": true,
+  "private_only": true
+}

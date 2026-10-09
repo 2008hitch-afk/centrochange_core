@@ -1,0 +1,90 @@
+[
+  {
+    "suite": "uat",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 11.73589038848877
+  },
+  {
+    "suite": "professional",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 10.603249073028564
+  },
+  {
+    "suite": "patient",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 15.628167867660522
+  },
+  {
+    "suite": "expectations",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 4.001194477081299
+  },
+  {
+    "suite": "ts_detail",
+    "status": "PASS",
+    "exit_code": 1,
+    "seconds": 2.927077531814575,
+    "initial_status": "FAIL",
+    "fixture_correction": "canonical synthetic services on isolated R4 only"
+  },
+  {
+    "suite": "confirmation",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 3.6495070457458496
+  },
+  {
+    "suite": "search",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 14.117877006530762
+  },
+  {
+    "suite": "accounting",
+    "status": "PASS",
+    "exit_code": 1,
+    "seconds": 32.65888595581055,
+    "initial_status": "FAIL",
+    "fixture_correction": "canonical synthetic services on isolated R4 only"
+  },
+  {
+    "suite": "permissions",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 6.485766172409058
+  },
+  {
+    "suite": "walkthrough",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 18.488004446029663
+  },
+  {
+    "suite": "ui_v1",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 41.001770973205566
+  },
+  {
+    "suite": "print",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 4.759150266647339
+  },
+  {
+    "suite": "states",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 4.515732049942017
+  },
+  {
+    "suite": "agenda_geometry",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 6.179966449737549
+  }
+]
