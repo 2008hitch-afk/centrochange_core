@@ -17,13 +17,13 @@ def cmd(args,label,input=None,timeout=1800):
 def isolation():
  ids=subprocess.check_output(['docker','ps','-aq','--filter','label=centrochange.mission=B99-R2'],text=True).split();assert ids
  for c in json.loads(subprocess.check_output(['docker','inspect',*ids],text=True)):
-  assert all(n==PROJECT+'-r2-net' for n in c['NetworkSettings']['Networks'])
+  assert all(n in [PROJECT+'-r2-net',PROJECT+'-r2-http'] for n in c['NetworkSettings']['Networks']); assert PROJECT+'-r2-http' not in c['NetworkSettings']['Networks'] or c['Name']== '/'+PROJECT+'-r2-frontend-1'
   for m in c['Mounts']:
    assert m['Type']=='volume'
    if not m['Name'].startswith(PROJECT+'-'):assert m['Destination']=='/home/frappe/frappe-bench/logs' and subprocess.check_output(['docker','ps','-aq','--no-trunc','--filter','volume='+m['Name']],text=True).split()==[c['Id']]
  return True
 
 def oneoff(code,label,image=None):
- isolation(); return cmd(['docker','run','-i','--name',PROJECT+'-r2-'+label,'--label','centrochange.mission=B99-R2','--label','com.docker.compose.project='+PROJECT,'--label','com.docker.compose.service='+label,'--network',PROJECT+'-r2-net','--memory','1536m','--memory-swap','1536m','--restart','no','--mount','type=volume,source='+PROJECT+'-r2-sites,target=/home/frappe/frappe-bench/sites','--workdir','/home/frappe/frappe-bench','--entrypoint','/home/frappe/frappe-bench/env/bin/python',image or IMAGE],label,code)
+ isolation(); return cmd(['docker','run','-i','-e','FRAPPE_STREAM_LOGGING=1','--name',PROJECT+'-r2-'+label,'--label','centrochange.mission=B99-R2','--label','com.docker.compose.project='+PROJECT,'--label','com.docker.compose.service='+label,'--network',PROJECT+'-r2-net','--memory','1536m','--memory-swap','1536m','--restart','no','--mount','type=volume,source='+PROJECT+'-r2-sites,target=/home/frappe/frappe-bench/sites','--workdir','/home/frappe/frappe-bench','--entrypoint','/home/frappe/frappe-bench/env/bin/python',image or IMAGE],label,code)
 def execute(code,label='execute'):
  isolation();return cmd(['docker','exec','-i','-e','FRAPPE_STREAM_LOGGING=1','-w','/home/frappe/frappe-bench',BACKEND,'env/bin/python'],label,"import frappe,json\nfrappe.init(site='b99.local',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')\n"+code)

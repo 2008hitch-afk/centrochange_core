@@ -24,6 +24,8 @@ while not (r/'monitor-finish').exists():
   if not own or not c['State']['Running']:continue
   isbuild=c['Name'].startswith('/buildx_buildkit_');builder|=isbuild;lab|=not isbuild
   rel=next(x.split(':',2)[2].strip().lstrip('/') for x in pathlib.Path('/proc',str(c['State']['Pid']),'cgroup').read_text().splitlines() if x.startswith('0::'));cg=pathlib.Path('/sys/fs/cgroup')/rel
+  while cg.name!='docker-'+c['Id']+'.scope' and cg!=pathlib.Path('/sys/fs/cgroup'):cg=cg.parent
+  if cg.name!='docker-'+c['Id']+'.scope':raise RuntimeError('CONTAINER_CGROUP_NOT_PROVEN')
   cap=(cg/'memory.max').read_text().strip();cur=int((cg/'memory.current').read_text());peak=int((cg/'memory.peak').read_text());events=dict((k,int(v)) for k,v in (x.split() for x in (cg/'memory.events').read_text().splitlines()))
   if cap=='max' or (cg/'memory.swap.max').read_text().strip()!='0':errs.append('CAP_NOT_ENFORCED')
   else:caps+=int(cap)

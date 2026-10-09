@@ -5,6 +5,10 @@
       "name": "centrochange-b99-rehearsal-r2-net",
       "driver": "bridge",
       "internal": true
+    },
+    "centrochange-b99-rehearsal-r2-http": {
+      "name": "centrochange-b99-rehearsal-r2-http",
+      "driver": "bridge"
     }
   },
   "services": {
@@ -117,7 +121,8 @@
           "aliases": [
             "frontend"
           ]
-        }
+        },
+        "centrochange-b99-rehearsal-r2-http": {}
       },
       "pull_policy": "never",
       "volumes": [
