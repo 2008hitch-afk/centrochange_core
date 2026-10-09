@@ -22,6 +22,7 @@ def denied(fn):
 try:
     f=fixtures.create_http(scheduling=True,operations=True,finance=True,public_route=False)
     prepared=receivables_acceptance.prepare_http(f)
+    principal=f['users']['f']['name'];frappe.set_user(principal)
     inv=receivables.draft([prepared['source']],'2026-10-05','2026-10-31',f['tag']+'-adapter-invoice',f['tag'])['name']
     receivables.submit(inv,f['tag']);invoice=frappe.get_doc('Sales Invoice',inv)
     company=require_synthetic();bank=frappe.db.get_single_value('CC Finance Settings','bank_account') or frappe.db.get_value('Company',company,'default_cash_account')
@@ -30,6 +31,14 @@ try:
     assert not frappe.has_permission('Payment Entry','create')
     assert not frappe.has_permission('Sales Taxes and Charges Template','select')
     native_adapter.sales_taxes(f['centers'][0],company)
+    from centrochange_core.security.audit import internal_write
+    xml=frappe.get_doc({'doctype':'File','file_name':'synthetic-service.xml','attached_to_doctype':'Sales Invoice','attached_to_name':inv,'is_private':1,'content':'<synthetic/>'})
+    denied(lambda:xml.validate_attachment_references())
+    with internal_write('cc_accounting_write'):
+        xml.validate_attachment_references()
+        denied(lambda:xml.check_permission('delete'))
+        xml.is_private=0;denied(lambda:xml.validate_attachment_references());xml.is_private=1
+    checks.append('native Italy XML submitted under Finance; direct generic write and premature/public XML rejected')
     doc=native_adapter.payment_document(invoice,40,bank)
     assert doc.owner==principal and doc.party==invoice.customer and doc.paid_amount==doc.received_amount==40
     assert doc.references[0].allocated_amount==40 and doc.is_new()
@@ -50,6 +59,8 @@ try:
         frappe.set_user(f['users'][role]['name'])
         denied(lambda:native_adapter.sales_taxes(f['centers'][0],company))
         denied(lambda:native_adapter.payment_document(invoice,40,bank))
+        with internal_write('cc_accounting_write'):
+            denied(lambda:xml.validate_attachment_references())
         checks.append(role+' actual-principal native adapters denied')
     frappe.set_user(principal)
     result=receivables.pay(inv,40,'2026-10-05',f['tag']+'-adapter-pay',f['tag'])
@@ -66,6 +77,8 @@ try:
     frappe.set_user(principal)
     denied(lambda:native_adapter.payment_document(invoice,10,bank))
     denied(lambda:native_adapter.sales_taxes(f['centers'][0],company))
+    with internal_write('cc_accounting_write'):
+        denied(lambda:xml.validate_attachment_references())
     checks.append('revoked-center canonical invoice and tax adapters denied')
     print(json.dumps({'status':'PASS','checks':checks,'permission_grants_added':False,'principal_elevation':False}))
 finally:
