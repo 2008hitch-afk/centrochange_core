@@ -8,6 +8,9 @@ def redact(t):
  for v in json.loads((ROOT/'credentials.json').read_text()).values(): t=t.replace(v,'[REDACTED]')
  for k,v in json.loads(pathlib.Path('/home/empv26/.local/state/centrochange-b99-r2-20261009/checkpoint/site_config.json').read_text()).items():
   if isinstance(v,str) and k in ['db_password','encryption_key'] and v:t=t.replace(v,'[REDACTED]')
+ if (ROOT/'sensitive-values.json').exists():
+  for v in json.loads((ROOT/'sensitive-values.json').read_text()):
+   if isinstance(v,str) and len(v)>=8:t=t.replace(v,'[REDACTED]')
  return t
 
 def compose(*args):return ['docker','compose','--env-file',str(ROOT/'runtime.env'),'-f',str(ROOT/'compose.json'),*args]
