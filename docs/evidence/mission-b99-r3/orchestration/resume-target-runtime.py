@@ -5,8 +5,8 @@ ro.cmd(ro.compose('stop',*json.loads((rr/'compose.json').read_text())['services'
 conf=json.loads((r/'compose.json').read_text());
 if not (r/'compose-current.json').exists():(r/'compose-current.json').write_text(json.dumps(conf,indent=2))
 target=json.loads((r/'target-image.json').read_text())['immutable_id']
-for svc in conf['services'].values():
- if svc['image']==ops.IMAGE:svc['image']=target
+for name,svc in conf['services'].items():
+ if name not in ['r3-fit-db','r3-fit-redis-cache','r3-fit-redis-queue']:svc['image']=target
 (r/'compose-target.json').write_text(json.dumps(conf,indent=2));(r/'compose.json').write_text(json.dumps(conf,indent=2))
 ops.cmd(ops.compose('up','-d','r3-fit-db','r3-fit-redis-cache','r3-fit-redis-queue'),'target-db-resume')
 supp=r/'supplement-private-uat'
