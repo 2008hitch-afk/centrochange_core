@@ -16,10 +16,8 @@ while not (r/'monitor-finish').exists():
  if pressure>=3:errs.append('PSI')
  if oom>oom0:errs.append('OOM')
  if mem['SwapTotal']!=mem['SwapFree']:errs.append('SWAP')
- ids=subprocess.check_output(['docker','ps','-aq','--no-trunc'],text=True,timeout=10).split();cs=json.loads(subprocess.check_output(['docker','inspect',*ids],text=True,timeout=10));by={c['Id']:c for c in cs}
- for b in base:
-  c=by.get(b['id']);
-  if not c or c['Image']!=b['image'] or c['RestartCount']!=b['restart'] or c['State']['StartedAt']!=b['started'] or c['State']['Running']!=b['running']:errs.append('PROTECTED_CHANGED')
+ ids=subprocess.check_output(['docker','ps','-aq','--no-trunc','--filter','label=centrochange.mission=B99-R3'],text=True,timeout=10).split();cs=json.loads(subprocess.check_output(['docker','inspect',*ids],text=True,timeout=10));by={c['Id']:c for c in cs}
+ if (r/'protected-event-alert.json').exists() or time.time()-float((r/'events-heartbeat').read_text())>15:errs.append('PROTECTED_EVENT_MONITOR')
  probes=[];builder=lab=False;caps=usage=0
  for c in cs:
   own=c['Config'].get('Labels',{}).get('centrochange.mission')=='B99-R3' or c['Name']=='/centrochange-b99-r3-builder'
