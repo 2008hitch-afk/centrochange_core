@@ -10,7 +10,7 @@ with tarfile.open(a.base_archive,'r:') as src:
  assert desc['digest']=='sha256:342dd48b649aae93fe2e9cc080e44b1ff622b11c900bd084b636af3f2e4624a7'
  manifest=json.load(src.extractfile('blobs/sha256/'+desc['digest'].split(':')[1]));config=json.load(src.extractfile('blobs/sha256/'+manifest['config']['digest'].split(':')[1]))
 raw=io.BytesIO();folder='app/centrochange_core/centrochange_core/centro_change_core/page'
-files=[root/folder/'__init__.py',*sorted((root/folder/'cc_unified_desk').glob('*'))]
+files=[root/folder/'__init__.py',*sorted((root/folder/'cc_unified_desk').glob('*')),*sorted((root/'app/centrochange_core/centrochange_core/centro_change_core/sidebar').glob('*.json'))]
 with tarfile.open(fileobj=raw,mode='w') as t:
  for f in files:
   if not f.is_file() or f.suffix not in ('.py','.json','.css','.js'):continue

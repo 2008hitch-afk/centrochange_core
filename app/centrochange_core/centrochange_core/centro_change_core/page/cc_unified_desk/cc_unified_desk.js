@@ -15,9 +15,9 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
   const money=v=>new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(v||0);
   const human=v=>{const text=String(v||'').replace(/CC-HTTP-[A-Za-z0-9]+\s+/g,'');return ({a:'Alfa',b:'Beta',c:'Gamma'})[text]||text;};
   const label=v=>({'Scheduled':'Prenotata','Open':'Aperta','Closed':'Chiusa','Cancelled':'Cancellata','Paid':'Pagata','Unpaid':'Da pagare','Pending':'In attesa','Overdue':'Scaduta','OK':'Confermato','SUSPENDED':'Sospeso','REVIEW':'Da verificare'})[v]||v||'—';
-  const center=page.add_field({fieldname:'center',label:'Centro',fieldtype:'Select',options:[],change:()=>load()});
-  const start=page.add_field({fieldname:'start',label:'Dal',fieldtype:'Date',default:today,change:()=>load()});
-  const end=page.add_field({fieldname:'end',label:'Al',fieldtype:'Date',default:today,change:()=>load()});
+  const center=page.add_field({fieldname:'center',label:'Centro',fieldtype:'Select',options:[],change:()=>{if(!setting)load();}});
+  const start=page.add_field({fieldname:'start',label:'Dal',fieldtype:'Date',default:today,change:()=>{if(!setting)load();}});
+  const end=page.add_field({fieldname:'end',label:'Al',fieldtype:'Date',default:today,change:()=>{if(!setting)load();}});
   const nav=$('<nav class="cc-nav" aria-label="Percorsi Centro Change"></nav>').appendTo(root);
   const content=$('<div class="cc-content" aria-live="polite"></div>').appendTo(root);
   const context=()=>({center:center.get_value(),start:start.get_value(),end:end.get_value()});
@@ -43,6 +43,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     // Canonical services remain authoritative; no direct native document mutation.
     const actions=$('<div class="cc-nav"></div>').appendTo(box);
     $('<button class="btn btn-default">Sposta</button>').appendTo(actions).on('click',()=>{const m=new frappe.ui.Dialog({title:'Sposta seduta',fields:[{fieldname:'appointment_date',label:'Data',fieldtype:'Date',reqd:1,default:row.appointment_date},{fieldname:'appointment_time',label:'Ora',fieldtype:'Time',reqd:1,default:row.appointment_time},{fieldname:'reason',label:'Motivo',fieldtype:'Small Text',reqd:1}],primary_action_label:'Conferma',primary_action:async values=>{try{await call('scheduling.booking.reschedule',{appointment:row.name,...values},true);m.hide();d.hide();await load();}catch(e){frappe.msgprint(e.message);}}});m.show();});
+    $('<button class="btn btn-default">Cancella seduta</button>').appendTo(actions).on('click',()=>{const m=new frappe.ui.Dialog({title:'Cancella seduta',fields:[{fieldname:'reason',label:'Motivo',fieldtype:'Small Text',reqd:1}],primary_action_label:'Conferma cancellazione',primary_action:async values=>{try{await call('operations.lifecycle.cancel',{appointment:row.name,...values},true);m.hide();d.hide();await load();}catch(e){frappe.msgprint(e.message);}}});m.show();});
     $('<button class="btn btn-default">Apri percorso operativo completo</button>').appendTo(actions).on('click',()=>window.open('/centrochange','_blank','noopener'));
   }catch(e){frappe.msgprint(e.message);}}
   async function book(){
@@ -66,6 +67,16 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     }catch(e){if(g===generation)frappe.msgprint(e.message);}});
     d.show();
   }
+  async function invoice(row){try{
+    const response=await fetch('/api/resource/Sales%20Invoice/'+encodeURIComponent(row.name),{credentials:'same-origin'});if(!response.ok)throw new Error('Documento non autorizzato.');const doc=(await response.json()).data;
+    const boot=await call('finance.reporting.bootstrap',{center:context().center});
+    const box=$('<div></div>').append($('<p></p>').text(row.name+' · '+date(doc.posting_date)),table([{customer:human(doc.customer),gross:money(doc.grand_total),residue:money(doc.outstanding_amount),due:date(doc.due_date),state:label(doc.status)}],[['customer','Soggetto fiscale'],['gross','Emesso'],['residue','Residuo'],['due','Scadenza'],['state','Stato']]));
+    const detail=dialog('Fattura paziente',box);
+    if(boot.can_write&&doc.docstatus===1&&doc.outstanding_amount>0)$('<button class="btn btn-primary">Registra incasso</button>').appendTo(box).on('click',()=>{
+      const key=Array.from(crypto.getRandomValues(new Uint8Array(16)),n=>n.toString(16).padStart(2,'0')).join('');
+      const d=new frappe.ui.Dialog({title:'Registra incasso',fields:[{fieldname:'amount',label:'Importo',fieldtype:'Currency',default:doc.outstanding_amount,reqd:1},{fieldname:'posting_date',label:'Data contabile',fieldtype:'Date',default:today,reqd:1},{fieldname:'reason',label:'Motivo',fieldtype:'Small Text',reqd:1}],primary_action_label:'Conferma incasso',primary_action:async values=>{try{await call('finance.receivables.pay',{name:row.name,...values,request_key:key},true);d.hide();detail.hide();await load();}catch(e){frappe.msgprint(e.message);}}});d.show();
+    });
+  }catch(e){frappe.msgprint(e.message);}}
   async function load(){
     if(!center.get_value())return;const generation=++state.generation;content.text('Caricamento…');
     page.clear_primary_action();
@@ -91,7 +102,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
         const data=await call('finance.reporting.summary',ctx);if(generation!==state.generation)return;content.empty();const k=$('<div class="cc-kpis"></div>').appendTo(content);
         for(const [key,title] of [['billed_gross','Fatturato'],['collected','Incassato'],['receivable_outstanding','Residuo']])$('<div class="cc-kpi"></div>').append($('<strong></strong>').text(title),$('<p></p>').text(money(data.totals[key]))).appendTo(k);
         content.append($('<p class="cc-note"></p>').text('Fatture e incassi: data contabile. Sedute: data seduta. Nessuna ripartizione del saldo tra pazienti con soggetto fiscale condiviso.'));
-        content.append(table(data.sales_invoices.map(i=>({...i,amount:money(i.grand_total),residue:money(i.outstanding_amount)})),[['name','Fattura'],['posting_date','Data contabile'],['amount','Emesso'],['residue','Residuo']],row=>frappe.set_route('Form','Sales Invoice',row.name)));
+        content.append(table(data.sales_invoices.map(i=>({...i,amount:money(i.grand_total),residue:money(i.outstanding_amount)})),[['name','Fattura'],['posting_date','Data contabile'],['amount','Emesso'],['residue','Residuo']],invoice));
         $('<button class="btn btn-default">Percorso Finance completo</button>').appendTo(content).on('click',()=>window.open('/finanza','_blank','noopener'));
       }
     }catch(e){if(generation===state.generation)error(e);}
