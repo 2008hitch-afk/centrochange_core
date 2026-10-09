@@ -1,0 +1,114 @@
+[
+  {
+    "segment": "centrochange-b99-r3-20261009",
+    "samples": 976,
+    "memory_psi_full_max": 3.2,
+    "io_psi_full_max": 92.23,
+    "min_mem_available": 3691577344,
+    "min_disk_available": 29061988352,
+    "oom_counter_start": 0,
+    "oom_counter_end": 0,
+    "max_cgroup_peak": 2151948288,
+    "guard_errors": [
+      "PSI"
+    ]
+  },
+  {
+    "segment": "centrochange-b99-r3-assets-20261009",
+    "samples": 23,
+    "memory_psi_full_max": 2.72,
+    "io_psi_full_max": 48.69,
+    "min_mem_available": 3978645504,
+    "min_disk_available": 16855121920,
+    "oom_counter_start": 5,
+    "oom_counter_end": 5,
+    "max_cgroup_peak": 2054283264,
+    "guard_errors": [
+      "PSI"
+    ]
+  },
+  {
+    "segment": "centrochange-b99-r3-cached-20261009",
+    "samples": 7,
+    "memory_psi_full_max": 2.89,
+    "io_psi_full_max": 8.69,
+    "min_mem_available": 5806739456,
+    "min_disk_available": 17877905408,
+    "oom_counter_start": 5,
+    "oom_counter_end": 5,
+    "max_cgroup_peak": 42012672,
+    "guard_errors": [
+      "PSI"
+    ]
+  },
+  {
+    "segment": "centrochange-b99-r3-final-20261009",
+    "samples": 81,
+    "memory_psi_full_max": 0.26,
+    "io_psi_full_max": 40.45,
+    "min_mem_available": 4885504000,
+    "min_disk_available": 16849448960,
+    "oom_counter_start": 5,
+    "oom_counter_end": 5,
+    "max_cgroup_peak": 350441472,
+    "guard_errors": []
+  },
+  {
+    "segment": "centrochange-b99-r3-fit-20261009",
+    "samples": 113,
+    "memory_psi_full_max": 0.72,
+    "io_psi_full_max": 20.62,
+    "min_mem_available": 5024010240,
+    "min_disk_available": 17183006720,
+    "oom_counter_start": 3,
+    "oom_counter_end": 4,
+    "max_cgroup_peak": 547610624,
+    "guard_errors": [
+      "OOM",
+      "PROBE_OOM"
+    ]
+  },
+  {
+    "segment": "centrochange-b99-r3-resume-20261009",
+    "samples": 182,
+    "memory_psi_full_max": 1.3,
+    "io_psi_full_max": 80.21,
+    "min_mem_available": 5609738240,
+    "min_disk_available": 19037138944,
+    "oom_counter_start": 1,
+    "oom_counter_end": 1,
+    "max_cgroup_peak": 2147483648,
+    "guard_errors": [
+      "CAP_NOT_ENFORCED",
+      "PSI"
+    ]
+  },
+  {
+    "segment": "centrochange-b99-r3-validation-20261009",
+    "samples": 22,
+    "memory_psi_full_max": 0.29,
+    "io_psi_full_max": 19.52,
+    "min_mem_available": 5076938752,
+    "min_disk_available": 18461827072,
+    "oom_counter_start": 1,
+    "oom_counter_end": 3,
+    "max_cgroup_peak": 592773120,
+    "guard_errors": [
+      "OOM"
+    ]
+  },
+  {
+    "segment": "centrochange-b99-r3-worker-20261009",
+    "samples": 91,
+    "memory_psi_full_max": 0.34,
+    "io_psi_full_max": 23.59,
+    "min_mem_available": 5092081664,
+    "min_disk_available": 16980996096,
+    "oom_counter_start": 4,
+    "oom_counter_end": 5,
+    "max_cgroup_peak": 419442688,
+    "guard_errors": [
+      "OOM"
+    ]
+  }
+]

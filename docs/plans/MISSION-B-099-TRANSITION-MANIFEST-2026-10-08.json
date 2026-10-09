@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+  "status": "R3_STOPPED_PARTIAL_PSI_GUARD",
   "issue": "https://github.com/2008hitch-afk/centrochange_core/issues/99",
   "authorization": [
     "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6068177100",
@@ -10,7 +10,7 @@
   "prepared_at": "2026-10-08T20:18:17.161865+00:00",
   "source_commit": "e85fce588de6012a47da302710b9f9c615211279",
   "risk": "HIGH_SHARED_HOST",
-  "execution_allowed_now": true,
+  "execution_allowed_now": false,
   "time_boundary": {
     "valid_from": "2026-10-08T22:14:24+02:00",
     "authorization_expires_at": "2026-10-09T06:14:24+02:00",
@@ -366,5 +366,18 @@
       "rollback_by": "2026-10-09T15:01:00+02:00",
       "hard_stop": "2026-10-09T18:01:00+02:00"
     }
+  },
+  "execution_result_r3": {
+    "status": "PARTIAL",
+    "recorded_at": "2026-10-09T11:40:18.997013+00:00",
+    "upgrade_native_migrate": "PASS",
+    "backend_checks": 240,
+    "http_checks": 55,
+    "six_hooks": "PASS",
+    "real_rollback": "PASS_189_OPERATIONAL_CHECKS",
+    "browser_regression": "NOT_PASSED",
+    "final_guard": "PSI",
+    "all_r3_stopped": true,
+    "rc22_unchanged": true
   }
 }
