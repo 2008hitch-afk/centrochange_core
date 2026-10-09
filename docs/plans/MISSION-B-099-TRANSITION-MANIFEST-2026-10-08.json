@@ -357,6 +357,14 @@
       "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
       "rollback_by": "2026-10-09T15:01:00+02:00",
       "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "cached_native_mapping_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T11:38:15.466776+00:00",
+      "change": "Native bench build --using-cached rebuilds assets.json from already built official assets; no redundant frontend compilation",
+      "thresholds_unchanged": true,
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
     }
   }
 }

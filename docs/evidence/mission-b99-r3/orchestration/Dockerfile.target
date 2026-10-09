@@ -26,5 +26,5 @@ COPY --chown=frappe:frappe app/centrochange_core /home/frappe/frappe-bench/apps/
 
 RUN uv pip install --no-cache --python /home/frappe/frappe-bench/env/bin/python --editable /home/frappe/frappe-bench/apps/centrochange_core \
     && printf '\n%s\n' centrochange_core >> sites/apps.txt \
-    && bench build --apps frappe,erpnext,healthcare,centrochange_core \
+    && bench build --app centrochange_core && bench build --using-cached --apps frappe,erpnext,builder,healthcare,centrochange_core \
     && cp -a sites/assets/. assets/
