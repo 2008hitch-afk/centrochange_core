@@ -23,3 +23,6 @@ body[data-path="login"] .login-content.page-card{min-height:0;height:auto;displa
 
 /* Shared public/error actions override supported native website primary styling. */
 .cc-public .btn-primary{background:var(--tblr-primary)!important;border-color:var(--tblr-primary)!important;color:white!important}
+
+/* Native Frappe 16.50 login keeps es-button behavior with Tabler presentation. */
+body[data-path=login] .form-login button[type=submit].btn-primary{background:var(--tblr-primary)!important;border-color:var(--tblr-primary)!important;color:white!important}

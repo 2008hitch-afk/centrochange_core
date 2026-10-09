@@ -63,8 +63,8 @@ def draft(sources,posting_date,due_date,request_key,reason):
     income=settings.income_account or accounts.default_income_account
     if not settings.sales_tax_template or not settings.receipt_mode:
         frappe.throw('Configure and review the explicit DEV fiscal profile before drafting')
-    from erpnext.controllers.accounts_controller import get_taxes_and_charges
-    taxes=get_taxes_and_charges('Sales Taxes and Charges Template',settings.sales_tax_template)
+    from centrochange_core.finance.native_adapter import sales_taxes
+    taxes=sales_taxes(rows[0].center,company)
     with internal_write('cc_accounting_write'):
         doc=frappe.get_doc({'doctype':'Sales Invoice','customer':rows[0].customer,'company':company,
             'currency':rows[0].currency,'conversion_rate':1,'posting_date':posting_date,'set_posting_time':1,
@@ -117,8 +117,8 @@ def pay(name,amount,posting_date,request_key,reason,reference=None,bank_account=
         configured=frappe.db.get_value('Branch',doc.cc_center,'cc_bank_account',for_update=True)
         if not configured or frappe.db.get_value('Bank Account',configured,'account')!=bank_account:
             frappe.throw('Receipt bank must match the configured center account',frappe.PermissionError)
-    from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
-    payment=get_payment_entry('Sales Invoice',name,party_amount=amount,bank_account=bank,bank_amount=amount)
+    from centrochange_core.finance.native_adapter import payment_document
+    payment=payment_document(doc,amount,bank)
     payment.update({'posting_date':posting_date,'reference_no':reference or request_key,'reference_date':posting_date,
         'cc_center':doc.cc_center,'cc_request_key':key('receipt',request_key),'cc_request_hash':fingerprint})
     with internal_write('cc_accounting_write'):
