@@ -23,6 +23,9 @@ for _ in range(90):
  time.sleep(2)
 else:raise RuntimeError('Rollback DB not healthy')
 ro.restore_current('rollback-current');print('REAL CURRENT RESTORE COMPLETED',flush=True)
+supp=r/'supplement-private-uat';assert (supp/'demo.json').is_file()
+ro.cmd(['docker','run','--name',ops.PROJECT+'-r3-fit-rollback-supplement-'+str(int(time.time())),'--label','centrochange.mission=B99-R3','--network','none','--user','0','--memory','32m','--memory-swap','32m','--mount','type=bind,source='+str(supp)+',target=/supplement,readonly','--mount','type=volume,source='+ops.PROJECT+'-r3-fit-rollback-sites,target=/sites','--entrypoint','sh',ops.IMAGE,'-c','mkdir -p /sites/b99.local/private/uat && cp /supplement/demo.json /sites/b99.local/private/uat/demo.json && chown -R 1000:1000 /sites/b99.local/private/uat && chmod 600 /sites/b99.local/private/uat/demo.json'],'rollback-private-manifest-restore')
+
 prefix="import frappe,json\nfrappe.init(site='b99.local',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')\n"
 ro.oneoff(prefix+(r/'inventory-code.py').read_text(),'rollback-inventory')
 def inventory(path):return json.loads(next(x for x in path.read_text().splitlines() if x.startswith('INVENTORY=')).split('=',1)[1])
