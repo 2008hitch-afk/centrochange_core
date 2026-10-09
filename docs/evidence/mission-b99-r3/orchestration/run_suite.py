@@ -21,7 +21,8 @@ def safe(args,kwargs):
  assert not any(v in repr(args)+str(kwargs.get('input','')) for v in ['centrochange-dev','centrochange-m97','mission97.local','127.0.0.1:8082','127.0.0.1:8097'])
  assert not kwargs.get('shell',False)
  if args[0]=='docker':
-  assert args[1] in ['exec','ps','inspect','build','run']
+  assert args[1] in ['exec','ps','inspect','image','build','run']
+  if args[1]=='image':assert args[2:] == ['inspect',browser]
   if args[1]=='exec':assert lab.BACKEND in args
   if args[1]=='inspect':assert all(x.startswith(lab.PROJECT+'-') for x in args[2:])
   if args[1]=='ps':assert 'label=com.docker.compose.project='+lab.PROJECT in args
