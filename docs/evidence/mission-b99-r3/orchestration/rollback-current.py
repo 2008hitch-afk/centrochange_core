@@ -35,7 +35,7 @@ for _ in range(60):
  except Exception:pass
  time.sleep(2)
 else:raise RuntimeError('Restored HTTP unavailable')
-print(ro.execute("from centrochange_core.uat import demo\nprint('VALIDATION='+json.dumps(demo.validate(),default=str));frappe.db.rollback();frappe.destroy()",'rollback-demo-validation'))
+out=ro.execute("from centrochange_core.uat import demo\nprint('VALIDATION='+json.dumps(demo.validate(),default=str));frappe.db.rollback();frappe.destroy()",'rollback-demo-validation'); validation=json.loads(next(x for x in out.splitlines() if x.startswith('VALIDATION=')).split('=',1)[1]);assert validation['status']=='PASS'
 # Bounded real restored runtime smoke, no external providers or app mutation.
 import urllib.request
 assert urllib.request.urlopen('http://127.0.0.1:8099/api/method/ping',timeout=10).status==200

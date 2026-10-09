@@ -11,14 +11,14 @@ ENV NODE_OPTIONS="--max-old-space-size=1024 --dns-result-order=ipv4first" CMAKE_
 USER frappe
 WORKDIR /home/frappe/frappe-bench
 
-RUN --mount=type=cache,id=b99-r3-uv,target=/home/frappe/.cache/uv,uid=1000,gid=1000 --mount=type=cache,id=b99-r3-yarn,target=/home/frappe/.cache/yarn,uid=1000,gid=1000 yarn config set network-concurrency 1 \
+RUN --mount=type=cache,id=b99-r3-uv,target=/home/frappe/.cache/uv,uid=1000,gid=1000 --mount=type=cache,id=b99-r3-yarn,target=/home/frappe/.cache/yarn,uid=1000,gid=1000 --mount=type=cache,id=b99-r3-cypress,target=/home/frappe/.cache/Cypress,uid=1000,gid=1000 yarn config set network-concurrency 1 \
     && yarn config set network-timeout 600000 \
     && git config --global http.version HTTP/1.1 \
     && bench get-app --branch "${BUILDER_TAG}" builder https://github.com/frappe/builder.git \
     && test "$(git -C apps/builder rev-parse HEAD)" = "${BUILDER_REF}"
 
 # Marley portal imports this public build-time setting from common_site_config.
-RUN --mount=type=cache,id=b99-r3-uv,target=/home/frappe/.cache/uv,uid=1000,gid=1000 --mount=type=cache,id=b99-r3-yarn,target=/home/frappe/.cache/yarn,uid=1000,gid=1000 bench set-config -gp socketio_port 9000 \
+RUN --mount=type=cache,id=b99-r3-uv,target=/home/frappe/.cache/uv,uid=1000,gid=1000 --mount=type=cache,id=b99-r3-yarn,target=/home/frappe/.cache/yarn,uid=1000,gid=1000 --mount=type=cache,id=b99-r3-cypress,target=/home/frappe/.cache/Cypress,uid=1000,gid=1000 bench set-config -gp socketio_port 9000 \
     && bench get-app --branch "${HEALTHCARE_TAG}" healthcare https://github.com/earthians/marley.git \
     && test "$(git -C apps/healthcare rev-parse HEAD)" = "${HEALTHCARE_REF}"
 
