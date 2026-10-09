@@ -29,6 +29,7 @@ except Exception:
  (r/'target-migration-status.json').write_text(json.dumps({'status':'FAIL','rollback_required':True}));raise
 (r/'target-migration-status.json').write_text(json.dumps({'status':'PASS','rollback_required':True}));print('TARGET MIGRATION PASS',flush=True)
 ops.oneoff(prefix+(r/'inventory-code.py').read_text(),'target-inventory',image=target)
+c=inv(r/'target-inventory.log');delta={'core_custom_fields_preserved':b['cc_fields']==c['cc_fields'],'core_custom_permissions_preserved':b['cc_perms']['Custom DocPerm']==c['cc_perms']['Custom DocPerm'],'user_roles_preserved':b['metadata']['Has Role']==c['metadata']['Has Role'],'user_permissions_preserved':b['metadata']['User Permission']==c['metadata']['User Permission'],'native_docperm_changed':b['cc_perms']['DocPerm']!=c['cc_perms']['DocPerm'],'native_schema_changed':b['schema']!=c['schema']};(r/'target-schema-permissions.json').write_text(json.dumps(delta,indent=2));assert all(delta[k] for k in ['core_custom_fields_preserved','core_custom_permissions_preserved','user_roles_preserved','user_permissions_preserved']),'Unexpected custom security/schema delta; real rollback required'
 # Runtime config is versioned orchestration; keep CURRENT config preserved.
 (r/'compose-current.json').write_text((r/'compose.json').read_text());(r/'compose.json').write_text((r/'compose-target.json').read_text())
 ops.cmd(ops.compose('up','-d','--no-build','r3-backend','r3-websocket','r3-queue-short','r3-queue-long','r3-scheduler','r3-frontend'),'target-runtime-up');print('TARGET RUNTIME STARTED',flush=True)

@@ -7,7 +7,10 @@ def suite(name,args):
  started=time.time()
  try:
   p=subprocess.run(args,text=True,capture_output=True,timeout=min(480,remaining-300));status='PASS' if p.returncode==0 else 'FAIL';output=p.stdout+p.stderr;rc=p.returncode
- except subprocess.TimeoutExpired as e:status='FAIL';output='HARNESS_TIMEOUT';rc=124
+ except subprocess.TimeoutExpired as e:
+  status='FAIL';output='HARNESS_TIMEOUT';rc=124
+  qa=subprocess.check_output(['docker','ps','-q','--filter','label=centrochange.mission=B99-R3','--filter','ancestor=sha256:f970b8eb4b0bd2186df380e6dffb1607f9fd8a75f67c04ba5f3c9d87d36e72d3'],text=True).split()
+  if qa:subprocess.run(['docker','stop','--time','15',*qa],capture_output=True)
  (r/(name+'.log')).write_text(ops.redact(output));row={'suite':name,'status':status,'exit_code':rc,'seconds':time.time()-started};rows.append(row);(r/'target-regressions.json').write_text(json.dumps(rows,indent=2));print(json.dumps(row),flush=True);ops.safe()
 # Fresh TARGET authentication and runtime health before fixture-heavy browser checks.
 import urllib.request

@@ -19,4 +19,9 @@ pins={}
 for app in ['frappe','erpnext','builder','healthcare']:
  try:pins[app]=subprocess.check_output(['git','-C','/home/frappe/frappe-bench/apps/'+app,'rev-parse','HEAD'],text=True,stderr=subprocess.DEVNULL).strip()
  except subprocess.CalledProcessError:pins[app]={'version':__import__(app).__version__,'git_metadata':'official image omits .git'}
-print('INVENTORY='+json.dumps({'schema':schema,'metadata':meta,'business':business,'files':files,'pins':pins,'installed_apps':frappe.get_installed_apps(),'core_patches':frappe.get_all('Patch Log',filters={'patch':['like','centrochange_core%']},pluck='patch')},default=str,sort_keys=True));frappe.db.rollback();frappe.destroy()
+cc_fields=frappe.get_all('Custom Field',filters={'fieldname':['like','cc_%']},fields=['dt','fieldname','fieldtype','options','reqd','read_only','hidden','depends_on','mandatory_depends_on','permlevel'],order_by='dt, fieldname')
+cc_perms={}
+for dt in ['DocPerm','Custom DocPerm']:
+ rows=frappe.get_all(dt,fields=['parent','role','permlevel','read','write','create','delete','submit','cancel','amend','select','print','email','report','import','export','share','if_owner'],order_by='parent, role, permlevel')
+ cc_perms[dt]=[x for x in rows if x['parent'].startswith('CC ') or x['parent'] in ['Patient','Patient Appointment','Healthcare Practitioner','Sales Invoice','Payment Entry','Purchase Invoice','Customer']]
+print('INVENTORY='+json.dumps({'cc_fields':cc_fields,'cc_perms':cc_perms,'schema':schema,'metadata':meta,'business':business,'files':files,'pins':pins,'installed_apps':frappe.get_installed_apps(),'core_patches':frappe.get_all('Patch Log',filters={'patch':['like','centrochange_core%']},pluck='patch')},default=str,sort_keys=True));frappe.db.rollback();frappe.destroy()
