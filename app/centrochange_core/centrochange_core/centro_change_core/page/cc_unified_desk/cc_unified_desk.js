@@ -57,10 +57,11 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       if(token!==generation)return;
       const section=document.createElement('section');section.className='cc-desk-surface '+(doc.body.className||'');
       shell.querySelector('.sidebar')?.remove();
-      const nav=document.createElement('header');nav.className='cc-desk-topnav';
       const links=items.filter(([id])=>allowed[id]).map(([id,text])=>`<a href="${surfaces[id].path}" class="cc-desk-route ${id===view?'active':''}">${text}</a>`).join('');
-      nav.innerHTML=`<nav id="navigation" aria-label="Navigazione Centro Change">${links}</nav><button type="button" id="logout">Esci</button>`;
-      shell.prepend(nav);section.append(shell);
+      const routebar=document.createElement('nav');routebar.className='cc-desk-routebar';routebar.setAttribute('aria-label','Aree Centro Change');routebar.innerHTML=links;
+      const nav=document.createElement('header');nav.className='cc-desk-topnav';
+      nav.innerHTML='<nav id="navigation" aria-label="Funzioni della sezione"></nav><button type="button" id="logout">Esci</button>';
+      shell.prepend(nav);section.append(routebar,shell);
       const dialog=doc.querySelector('#modal');if(dialog)section.append(dialog);
       root.replaceChildren(section);
       window.ccDeskSurfaceRoot=section;
