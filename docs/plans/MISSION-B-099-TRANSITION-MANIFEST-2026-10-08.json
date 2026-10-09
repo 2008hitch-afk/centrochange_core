@@ -297,6 +297,17 @@
       "safety_thresholds_unchanged": true,
       "rollback_by": "2026-10-09T15:01:00+02:00",
       "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "validation_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T10:43:43.339685+00:00",
+      "previous_segment": "STOPPED_POST_IMPORT_PSI",
+      "reuse": "TARGET import exit 0, immutable pins and 239 core files plus 7 official fingerprints PASS",
+      "mutations_before_this_segment": "No site/database restored or migrated",
+      "safety_thresholds_unchanged": true,
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
     }
   }
 }
