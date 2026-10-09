@@ -134,3 +134,28 @@ I test possono generare soltanto evidenze sintetiche o sanitizzate in GitHub. Le
 5. Niente QR automatico nella V1: soltanto disegno dell'estensibilità.
 
 **Stato attuale:** soltanto plan e simulazione GitHub; ZERO conclusioni di compatibilità hardware o runtime.
+
+## 11. Posizionamento server e connettività: decisione prima della M4
+
+Il documento vigente sul runtime descrive DEV su workstation Windows/WSL2 + Docker, non certifica che esista già un ambiente PROD Centro Change su VPS. Il nuovo gateway fisico sarà nello studio, mentre la collocazione finale del Gestionale Centro Change dovrà essere confermata prima di implementare M4/M5/M7.
+
+- **Gestionale e gateway entrambi in LAN studio:** il traffico multimediale può rimanere sulla LAN dopo autorizzazione; il telefono deve potersi connettere al percorso browser sicuro.
+- **Gestionale esterno / cloud e gateway nello studio:** usare un tunnel autenticato outbound dal gateway o altro collegamento privato autorizzato; non esporre direttamente ViP/RTSP, ingresso o apriporta su Internet. Il flusso verso i telefoni dovrà attraversare una infrastruttura sicura con controllo dell'accesso e verifica del budget banda, senza registrazione.
+- **Internet studio assente:** monitor 6801W continua a funzionare. Le notifiche o azioni mobile remote non vanno promesse senza test espliciti.
+- **Presenza Wi-Fi:** non considerare l'IP pubblico condiviso come prova di essere nello studio. La verifica viene effettuata dal lato AP/router, associata in modo sicuro al dispositivo/user autorizzato; verificare comportamento con MAC randomizzato, standby e connessione dati mobile.
+
+Questa scelta può modificare stime, costi ricorrenti e modalità di push. Codex deve proporre una matrice di alternative e non decidere o installare autonomamente un tunnel.
+
+## 12. Evoluzioni future, non incluse nell'MVP
+
+Le stime seguenti sono per pianificazione, non per il preventivo attuale.
+
+| Future phase | Funzione | Stima ulteriore | Dipendenze |
+|---|---|---|---|
+| F1 | QR per check-in del paziente, senza apertura automatica | 3–6 giornate | regole appuntamento, consenso/informative, UX, link temporanei |
+| F2 | QR personale temporaneo per apertura, lettore ingresso e permessi | 6–12 giornate software + installazione esterna | autorizzazioni condominiali, sicurezza anti-replay, lettore e test |
+| F3 | App Centro Change iOS + Android da frontend riusato | 10–20 giornate software + tempi revisione store | push nativo, login, media, sicurezza, account store |
+| F4 | Automatismi arrivo paziente / professionista / segreteria | 4–8 giornate | funzionamento già validato di Gestionale + modello evento |
+
+Queste fasi possono partire **solo dopo** accettazione del modulo base e nuova valutazione clinica/privacy, perché ingresso e appuntamenti dei pazienti non devono rendere pubblico chi è in cura o quando arriva.
+
