@@ -29,7 +29,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     if(!rows.length)t.find('tbody').append($('<tr></tr>').append($('<td></td>').attr('colspan',columns.length).text('Nessun risultato autorizzato nel periodo.')));
     return $('<div class="cc-scroll"></div>').append(t);
   }
-  function dialog(title,html){const d=new frappe.ui.Dialog({title,fields:[{fieldtype:'HTML',fieldname:'body'}]});d.fields_dict.body.$wrapper.append(html);d.show();return d;}
+  function dialog(title,html){const d=new frappe.ui.Dialog({title,fields:[{fieldtype:'HTML',fieldname:'body'}]});d.fields_dict.body.$wrapper.append(html);d.on_page_show=()=>d.get_close_btn().trigger('focus');d.show();return d;}
   async function appointment(row){try{
     const history=await call('operations.workspace.patient_history',{center:context().center,patient:row.patient});
     const found=history.appointments.find(a=>a.name===row.name);if(!found)throw new Error('Seduta non più disponibile nel contesto autorizzato.');
