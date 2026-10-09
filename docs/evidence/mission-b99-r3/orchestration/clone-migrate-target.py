@@ -11,7 +11,7 @@ for _ in range(90):
  if subprocess.check_output(['docker','inspect','-f','{{.State.Health.Status}}',ops.PROJECT+'-r3-fit-db-1'],text=True).strip()=='healthy':break
  time.sleep(2)
 else:raise RuntimeError('R3 DB not healthy')
-ops.restore_current('clone-current');print('CURRENT RESTORED INTO R3',flush=True)
+assert json.loads((r/'clone-current.result.json').read_text())['exit_code']==0;print('REUSE NATIVE CURRENT RESTORE ALREADY COMPLETED',flush=True)
 prefix="import frappe,json\nfrappe.init(site='b99.local',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')\n"
 ops.oneoff(prefix+(r/'inventory-code.py').read_text(),'clone-current-inventory')
 def inv(path):return json.loads(next(x for x in path.read_text().splitlines() if x.startswith('INVENTORY=')).split('=',1)[1])
