@@ -1,4 +1,4 @@
-# B99 R5 — compatibility fixes (DRAFT / NOT fully validated)
+# B99 R5 — compatibility fixes (DRAFT / final technical validation PASS)
 
 Owner authority: issue #99, comment 6080880107. Product baseline: main
 `2fab181cd61cfc69e341d9fa1849038c6646e87e`; original application source
@@ -37,7 +37,7 @@ https://github.com/frappe/erpnext/blob/7474d9e786277383de1242ab882f16856d17a9c9/
 Native Payment Entry source:
 https://github.com/frappe/erpnext/blob/7474d9e786277383de1242ab882f16856d17a9c9/erpnext/accounts/doctype/payment_entry/payment_entry.py
 
-## Actual R5 results
+## Initial R5 results (historical PSI-blocked segment)
 
 At app revision f80cf534fd071d283cb2c8efc6fe3f1fbd0cb920:
 
@@ -59,5 +59,34 @@ The unchanged host memory PSI guard fired after image import. All R5 containers
 are stopped; no OOM occurred. 112 pre-existing containers retain image, state,
 restart count, mounts and network configuration; RC22 HTTP remains 200.
 The complete CURRENT checkpoint and CURRENT/QA/TARGET images are preserved.
-Do not merge or deploy this draft until actual final-image positive/negative,
-Finance/browser/full regression and real rollback acceptance have passed.
+The initial stop above is preserved. The separately authorized final continuation
+below completed final-image acceptance; this remains DRAFT pending review.
+
+
+## Authorized final continuation — 2026-10-09
+
+Owner authority: issue #99 comment 6083231999. Exact corrected app revision
+8639b7982255446eacf0147ae952346442849f1b; actual image
+sha256:342dd48b649aae93fe2e9cc080e44b1ff622b11c900bd084b636af3f2e4624a7.
+No rebuild or re-import. Runtime file hashes match Git.
+
+**MISSION-B-R5-VALIDATION: PASS**. Actual final-image results:
+
+- Finance 9/9 PASS, including receivables submit and Secretariat SdI cancellation.
+- Browser 14/14 PASS, including native login Tabler and responsive Agenda geometry.
+- Backend 240, HTTP55, hooks6 PASS.
+- Scoped adapter/XML actual-actor positive/negative acceptance: 11 checks PASS;
+  extended HTTP booking/operations/security: 38 PASS.
+- TARGET schema/custom fields/canonical permissions/apps/pins unchanged versus
+  the already migrated TARGET. No redundant migration.
+- Native CURRENT rollback real restore PASS, full schema/metadata/business/files/
+  apps/pins reconciliation PASS, demo validation and 189 operational checks PASS.
+- No new OOM or guard stop; memory full PSI max0.00%, some0.18%; protected110
+  non-R5 containers unchanged, RC22HTTP200. R5 stopped, resources retained.
+
+Supplemental HTTP fixture collision on existing Marco was resolved only in the
+host wrapper by using the already approved, verified-free Francesca alias. No
+application policy or assertions changed; failed setup attempts retained as
+harness failures. See evidence PR #108, final-validation/REPORT.md and wrappers.
+Prior PSI stop chronology is intact. No main merge, UAT upgrade or production
+approval follows from this technical PASS.
