@@ -1,0 +1,34 @@
+[
+  {
+    "status": "PASS",
+    "checks": [
+      "m authorized REST CC Economic Source Link",
+      "m authorized REST Customer",
+      "m authorized REST Supplier",
+      "s authorized REST CC Economic Source Link",
+      "s authorized REST Customer",
+      "s authorized REST Supplier",
+      "f authorized REST CC Economic Source Link",
+      "f authorized REST Customer",
+      "f authorized REST Supplier",
+      "t authorized REST CC Economic Source Link",
+      "t authorized REST Customer",
+      "t authorized REST Supplier",
+      "a professional financial source REST denied",
+      "b professional financial source REST denied",
+      "f accounting Patient clinical master REST denied",
+      "t accounting Patient clinical master REST denied",
+      "accounting identities acquire no private clinical REST access",
+      "financial client query positive nonempty and scoped",
+      "generic REST financial snapshot rewrite denied",
+      "authorized mapping API replay idempotent",
+      "t unauthorized/cross-center mapping API denied",
+      "a unauthorized/cross-center mapping API denied",
+      "f unauthorized/cross-center mapping API denied",
+      "financial identity cannot invoke clinical operational history"
+    ]
+  },
+  {
+    "cleanup": "PASS"
+  }
+]

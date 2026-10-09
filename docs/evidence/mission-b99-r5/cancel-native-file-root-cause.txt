@@ -1,0 +1,81 @@
+Traceback (most recent call last):
+  File "apps/frappe/frappe/app.py", line 158, in application
+    response = frappe.api.handle(request)
+  File "apps/frappe/frappe/api/__init__.py", line 63, in handle
+    data = endpoint(**arguments)
+  File "apps/frappe/frappe/api/v1.py", line 41, in handle_rpc_call
+    return frappe.handler.handle()
+           ~~~~~~~~~~~~~~~~~~~~~^^
+  File "apps/frappe/frappe/handler.py", line 54, in handle
+    data = execute_cmd(cmd)
+  File "apps/frappe/frappe/handler.py", line 87, in execute_cmd
+    return frappe.call(method, **frappe.form_dict)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "apps/frappe/frappe/__init__.py", line 1150, in call
+    return fn(*args, **newargs)
+  File "apps/frappe/frappe/utils/typing_validations.py", line 36, in wrapper
+    return func(*args, **kwargs)
+  File "apps/centrochange_core/centrochange_core/security/audit.py", line 32, in wrapped
+    return function(*args, **kwargs)
+  File "apps/centrochange_core/centrochange_core/finance/receivables.py", line 142, in cancel
+    doc.cancel()
+    ~~~~~~~~~~^^
+  File "apps/frappe/frappe/utils/typing_validations.py", line 36, in wrapper
+    return func(*args, **kwargs)
+  File "apps/frappe/frappe/model/document.py", line 1357, in cancel
+    return self._cancel()
+           ~~~~~~~~~~~~^^
+  File "apps/frappe/frappe/model/document.py", line 1338, in _cancel
+    return self.save()
+           ~~~~~~~~~^^
+  File "apps/frappe/frappe/model/document.py", line 558, in save
+    return self._save(*args, **kwargs)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "apps/frappe/frappe/model/document.py", line 613, in _save
+    self.run_post_save_methods()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "apps/frappe/frappe/model/document.py", line 1462, in run_post_save_methods
+    self.run_method("on_cancel")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "apps/frappe/frappe/model/document.py", line 1262, in run_method
+    out = Document.hook(fn)(self, *args, **kwargs)
+  File "apps/frappe/frappe/model/document.py", line 1664, in composer
+    return composed(self, method, *args, **kwargs)
+  File "apps/frappe/frappe/model/document.py", line 1646, in runner
+    add_to_return_value(self, f(self, method, *args, **kwargs))
+                              ~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "apps/erpnext/erpnext/regional/italy/utils.py", line 398, in sales_invoice_on_cancel
+    remove_file(attachment.name, attached_to_doctype=doc.doctype, attached_to_name=doc.name)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "apps/frappe/frappe/utils/file_manager.py", line 290, in remove_file
+    frappe.delete_doc(
+    ~~~~~~~~~~~~~~~~~^
+    	"File", fid, ignore_permissions=ignore_permissions, delete_permanently=delete_permanently
+     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "apps/frappe/frappe/__init__.py", line 761, in delete_doc
+    return frappe.model.delete_doc.delete_doc(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+    	doctype,
+     ^^^^^^^^
+    ...<8 lines>...
+    	delete_permanently,
+     ^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "apps/frappe/frappe/model/delete_doc.py", line 173, in delete_doc
+    check_permission_and_not_submitted(doc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "apps/frappe/frappe/model/delete_doc.py", line 297, in check_permission_and_not_submitted
+    doc.check_permission("delete")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "apps/frappe/frappe/model/document.py", line 401, in check_permission
+    self._handle_permission_failure(permtype)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "apps/frappe/frappe/model/document.py", line 422, in _handle_permission_failure
+    self.raise_no_permission_to(perm_type)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "apps/frappe/frappe/model/document.py", line 437, in raise_no_permission_to
+    raise frappe.PermissionError
+frappe.exceptions.PermissionError

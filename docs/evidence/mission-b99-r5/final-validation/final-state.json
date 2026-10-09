@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "image": "sha256:342dd48b649aae93fe2e9cc080e44b1ff622b11c900bd084b636af3f2e4624a7",
+  "product_revision": "8639b7982255446eacf0147ae952346442849f1b",
+  "protected_count": 110,
+  "protected_changes": [],
+  "rc22_http": 200,
+  "r5_running": [],
+  "r5_oom_killed": [],
+  "host_oom_delta": 0,
+  "memory_full_psi_peak": 0.0,
+  "memory_some_psi_peak": 0.18,
+  "io_full_psi_peak": 21.7,
+  "sampled_own_memory_peak": 1631252480,
+  "sampled_caps_peak": 2684354560,
+  "minimum_available": 4683841536,
+  "final_available": 5782061056,
+  "final_disk_available": 13831942144,
+  "r5_real_rollback": {
+    "status": "PASS",
+    "real_native_restore": true,
+    "full_schema_metadata_business_files_pins_reconciled": true,
+    "http_ping": 200,
+    "operational_smoke_checks": 189
+  },
+  "stop_marker_exists": false,
+  "all_previous_guard_records_retained": true,
+  "time_utc": "2026-10-09T14:58:10Z"
+}

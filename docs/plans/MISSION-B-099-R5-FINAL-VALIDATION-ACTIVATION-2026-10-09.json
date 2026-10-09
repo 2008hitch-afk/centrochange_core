@@ -1,0 +1,21 @@
+{
+  "status": "R5_FINAL_VALIDATION_ACTIVE",
+  "execution_allowed_now": true,
+  "authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6083231999",
+  "started_at": "2026-10-09T14:47:31.966985+00:00",
+  "base_source": "e85fce588de6012a47da302710b9f9c615211279",
+  "product_commit": "8639b7982255446eacf0147ae952346442849f1b",
+  "rollback_by": "2026-10-09T18:47:00+02:00",
+  "hard_stop": "2026-10-09T21:47:00+02:00",
+  "project": "centrochange-b99-r5",
+  "memory_runtime_browser_bytes": 2684354560,
+  "memory_build_bytes": 2147483648,
+  "incremental_disk_budget_bytes": 2147483648,
+  "source_clone": "cleanly stopped R4 migrated TARGET copied into exclusive R5 volumes",
+  "reuse_target_image": true,
+  "thresholds_unchanged": true,
+  "previous_segment": "R5_BLOCKED_PSI",
+  "previous_guard_preserved": true,
+  "recovery_evidence": "three stable samples; no own running container, no OOM, RC22 HTTP200; archive complete; next phase imports existing artifact, no heavy copy retry",
+  "reimport_required": false
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "suite": "uat",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 13.415933847427368
+  },
+  {
+    "suite": "professional",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 11.04990816116333
+  },
+  {
+    "suite": "patient",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 16.611645936965942
+  },
+  {
+    "suite": "expectations",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 4.154934406280518
+  },
+  {
+    "suite": "ts_detail",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 2.7588894367218018
+  },
+  {
+    "suite": "confirmation",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 3.2927629947662354
+  },
+  {
+    "suite": "search",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 13.87322211265564
+  },
+  {
+    "suite": "accounting",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 3.256345510482788
+  },
+  {
+    "suite": "permissions",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 7.2517170906066895
+  },
+  {
+    "suite": "walkthrough",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 19.38654661178589
+  },
+  {
+    "suite": "ui_v1",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 43.90201139450073
+  },
+  {
+    "suite": "print",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 4.865725755691528
+  },
+  {
+    "suite": "states",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 5.035966634750366
+  },
+  {
+    "suite": "agenda_geometry",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 6.423021554946899
+  }
+]

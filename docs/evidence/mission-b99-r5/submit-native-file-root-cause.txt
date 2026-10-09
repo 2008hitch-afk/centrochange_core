@@ -1,0 +1,89 @@
+Traceback (most recent call last):
+  File "<stdin>", line 14, in <module>
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/utils/typing_validations.py", line 36, in wrapper
+    return func(*args, **kwargs)
+  File "/home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/security/audit.py", line 32, in wrapped
+    return function(*args, **kwargs)
+  File "/home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/finance/receivables.py", line 91, in submit
+    doc.submit()
+    ~~~~~~~~~~^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/utils/typing_validations.py", line 36, in wrapper
+    return func(*args, **kwargs)
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1352, in submit
+    return self._submit()
+           ~~~~~~~~~~~~^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1333, in _submit
+    return self.save()
+           ~~~~~~~~~^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 558, in save
+    return self._save(*args, **kwargs)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 613, in _save
+    self.run_post_save_methods()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1460, in run_post_save_methods
+    self.run_method("on_submit")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1262, in run_method
+    out = Document.hook(fn)(self, *args, **kwargs)
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1664, in composer
+    return composed(self, method, *args, **kwargs)
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1646, in runner
+    add_to_return_value(self, f(self, method, *args, **kwargs))
+                              ~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/erpnext/erpnext/regional/italy/utils.py", line 345, in sales_invoice_on_submit
+    prepare_and_attach_invoice(doc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "/home/frappe/frappe-bench/apps/erpnext/erpnext/regional/italy/utils.py", line 374, in prepare_and_attach_invoice
+    _file.save()
+    ~~~~~~~~~~^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 558, in save
+    return self._save(*args, **kwargs)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 580, in _save
+    return self.insert()
+           ~~~~~~~~~~~^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 487, in insert
+    self.run_before_save_methods()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1414, in run_before_save_methods
+    self.run_method("validate")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1262, in run_method
+    out = Document.hook(fn)(self, *args, **kwargs)
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1664, in composer
+    return composed(self, method, *args, **kwargs)
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1638, in runner
+    add_to_return_value(self, fn(self, *args, **kwargs))
+                              ~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 1259, in fn
+    return method_object(*args, **kwargs)
+  File "/home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/finance/files.py", line 49, in validate
+    return super().validate()
+           ~~~~~~~~~~~~~~~~^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/core/doctype/file/file.py", line 185, in validate
+    self.validate_attachment_references()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/core/doctype/file/file.py", line 216, in validate_attachment_references
+    check_write_permission(self.attached_to_doctype, self.attached_to_name)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/handler.py", line 249, in check_write_permission
+    frappe.get_lazy_doc(doctype, name, check_permission="write")
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 175, in get_lazy_doc
+    return get_doc_permission_check(doc, check_permission)
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 189, in get_doc_permission_check
+    doc.check_permission(check_permission)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 401, in check_permission
+    self._handle_permission_failure(permtype)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/model/document.py", line 421, in _handle_permission_failure
+    check_doctype_permission(parent_doctype or self.doctype, perm_type)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/permissions.py", line 927, in check_doctype_permission
+    frappe.has_permission(doctype, ptype, throw=True, ignore_share_permissions=True)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/frappe/frappe-bench/apps/frappe/frappe/__init__.py", line 647, in has_permission
+    raise frappe.PermissionError
+frappe.exceptions.PermissionError

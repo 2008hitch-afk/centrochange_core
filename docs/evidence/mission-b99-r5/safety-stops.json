@@ -1,0 +1,10 @@
+{
+  "packaging": [
+    "PSI"
+  ],
+  "validation": [
+    "PSI"
+  ],
+  "stop_markers_retained": true,
+  "guards_unchanged": true
+}

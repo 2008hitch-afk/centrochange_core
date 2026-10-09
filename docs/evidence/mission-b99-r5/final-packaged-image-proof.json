@@ -1,0 +1,19 @@
+{
+  "manifest": "sha256:342dd48b649aae93fe2e9cc080e44b1ff622b11c900bd084b636af3f2e4624a7",
+  "config": "sha256:2cd6630f61378072a2af39d8a755436ee80cdacc1619e05913f95ea179722a4a",
+  "layer": "sha256:1491eb792da03c01477ec6da06164a3cf0329836b801a9845b4b0e23635985f8",
+  "diff_id": "sha256:64368bfcdf1b8d656fd1ef0002a1fba7f574eaf17560d09fb28ecd02826d63d3",
+  "product_revision": "8639b7982255446eacf0147ae952346442849f1b",
+  "files": [
+    "app/centrochange_core/centrochange_core/finance/files.py",
+    "app/centrochange_core/centrochange_core/finance/incoming.py",
+    "app/centrochange_core/centrochange_core/finance/native_adapter.py",
+    "app/centrochange_core/centrochange_core/finance/receivables.py",
+    "app/centrochange_core/centrochange_core/operations/website_brand.py",
+    "app/centrochange_core/centrochange_core/public/css/ui_v1.css",
+    "app/centrochange_core/centrochange_core/public/js/ui_v1.js",
+    "app/centrochange_core/centrochange_core/templates/cc_web_base.html"
+  ],
+  "method": "versioned OCI COPY-only layers; no compilation or upstream modification",
+  "archive_bytes": 1648742400
+}

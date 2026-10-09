@@ -1,0 +1,56 @@
+[
+  {
+    "suite": "security",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 9.036313533782959
+  },
+  {
+    "suite": "finance",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 4.561620235443115
+  },
+  {
+    "suite": "receivables",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 9.376814603805542
+  },
+  {
+    "suite": "banking",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 10.087178230285645
+  },
+  {
+    "suite": "incoming",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 10.075944662094116
+  },
+  {
+    "suite": "professional",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 9.826603174209595
+  },
+  {
+    "suite": "reporting",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 9.865797996520996
+  },
+  {
+    "suite": "sdi",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 11.441839933395386
+  },
+  {
+    "suite": "ts",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 12.848214149475098
+  }
+]

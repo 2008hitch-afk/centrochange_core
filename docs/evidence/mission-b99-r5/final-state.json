@@ -1,0 +1,21 @@
+{
+  "status": "BLOCKED_PSI",
+  "protected_count": 112,
+  "protected_changes": [],
+  "rc22_http": 200,
+  "r5_running": [],
+  "r5_oom_killed": [],
+  "host_oom_delta": 0,
+  "memory_full_psi_peak": 10.85,
+  "memory_some_psi_peak": 12.0,
+  "io_full_psi_peak": 86.72,
+  "sampled_own_memory_peak": 2048970752,
+  "sampled_caps_peak": 2147483648,
+  "minimum_available": 4933087232,
+  "final_available": 5857435648,
+  "final_disk_available": 14338179072,
+  "target_clone_mutated": true,
+  "r5_real_rollback": "NOT_EXECUTED",
+  "current_checkpoint_preserved": true,
+  "time_utc": "2026-10-09T13:00:46Z"
+}
