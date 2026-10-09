@@ -1,0 +1,27 @@
+[
+  {
+    "status": "PASS",
+    "checks": [
+      "own REST read",
+      "cross REST read denied",
+      "zero assignment REST read denied",
+      "REST list scoped nonempty",
+      "frappe.client.get_list scoped",
+      "frappe.desk.reportview.get scoped",
+      "native report export denied",
+      "native data export denied",
+      "Marley detail cross denied",
+      "unwhitelisted DEV fixture denied",
+      "generic relationship mutation denied",
+      "concurrent membership retry single relationship",
+      "former session revoked after commit",
+      "replacement session granted after commit",
+      "old principal replacement revoked",
+      "replacement principal granted",
+      "disabled existing session denied"
+    ]
+  },
+  {
+    "cleanup": "PASS"
+  }
+]

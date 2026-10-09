@@ -1,0 +1,22 @@
+[
+  {
+    "status": "PASS",
+    "checks": [
+      "secretariat XML source intake and finance exact replay",
+      "m positive scoped incoming source REST without automatic payable",
+      "s positive scoped incoming source REST without automatic payable",
+      "f positive scoped incoming source REST without automatic payable",
+      "t positive scoped incoming source REST without automatic payable",
+      "native private payload download hash and professional REST/file/download/intake denial",
+      "management supplier binding secretariat reviewed native draft finance submit and accountant denial",
+      "native supplier bank withdrawal reconciliation payable reduction and audited reversal",
+      "native supplier cancel amend reissue partial full payment and replay through HTTP",
+      "professional native payable direct projection and export denied",
+      "generic incoming source rewrite and string-valued private-file declassification denied",
+      "cross-center intake and revoked-center native source list and private download denied"
+    ]
+  },
+  {
+    "cleanup": "PASS"
+  }
+]

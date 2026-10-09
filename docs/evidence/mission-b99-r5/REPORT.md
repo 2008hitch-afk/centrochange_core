@@ -122,3 +122,10 @@ A safe explicitly authorized restart must address repeated host PSI during Docke
 image import without weakening existing thresholds, then run the final-image XML
 positive/negative tests, all Finance/browser/security suites and real CURRENT
 restore/reconciliation. This draft is not READY for merge, UAT upgrade or promotion.
+
+
+## Subsequent authorized final validation
+
+The historical BLOCKED result above is retained. Owner comment 6083231999
+authorized a distinct continuation: [Final validation report](final-validation/REPORT.md)
+records PASS on the actual final image, including real CURRENT rollback.

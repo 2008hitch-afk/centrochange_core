@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "session_print": "PASS",
+      "status": 200,
+      "italian": true,
+      "canonical_closure_state": "Closed",
+      "guarded_http_status": 200,
+      "italian_human_labels": true,
+      "preview": "Browser setContent displays exact authenticated API HTML on existing origin with verified local Tabler CSS; no new server route."
+    },
+    {
+      "status": 200,
+      "url": "http://centrochange.local:8080/printview?doctype=Sales%20Invoice&name=SYNTHETIC-INVOICE",
+      "lang": "it",
+      "heading": "Centro Change SYNTHETIC DEV",
+      "italian": true,
+      "labels": [
+        "Fattura di vendita",
+        "Cliente:",
+        "Intestatario:",
+        "Numero fattura:",
+        "Data fattura:",
+        "Scadenza pagamento:"
+      ]
+    },
+    {
+      "status": 200,
+      "url": "http://centrochange.local:8080/printview?doctype=Sales%20Invoice&name=SYNTHETIC-INVOICE&_lang=it",
+      "lang": "it",
+      "heading": "Centro Change SYNTHETIC DEV",
+      "italian": true,
+      "labels": [
+        "Fattura di vendita",
+        "Cliente:",
+        "Intestatario:",
+        "Numero fattura:",
+        "Data fattura:",
+        "Scadenza pagamento:"
+      ]
+    },
+    {
+      "permission_negative": [
+        "a native invoice print denied with no document disclosure",
+        "b native invoice print denied with no document disclosure",
+        "c native invoice print denied with no document disclosure"
+      ],
+      "status": 403
+    }
+  ],
+  "mutations": "NONE"
+}

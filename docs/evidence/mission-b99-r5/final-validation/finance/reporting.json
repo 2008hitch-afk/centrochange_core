@@ -1,0 +1,31 @@
+[
+  {
+    "status": "PASS",
+    "checks": [
+      "secretariat XML source intake and finance exact replay",
+      "m positive scoped incoming source REST without automatic payable",
+      "s positive scoped incoming source REST without automatic payable",
+      "f positive scoped incoming source REST without automatic payable",
+      "t positive scoped incoming source REST without automatic payable",
+      "native private payload download hash and professional REST/file/download/intake denial",
+      "management supplier binding secretariat reviewed native draft finance submit and accountant denial",
+      "native supplier bank withdrawal reconciliation payable reduction and audited reversal",
+      "native supplier cancel amend reissue partial full payment and replay through HTTP",
+      "professional native payable direct projection and export denied",
+      "generic incoming source rewrite and string-valued private-file declassification denied",
+      "management explicit compensation configuration and native REST unknown unpaid expectation without inferred zero",
+      "DECISION-054 scoped threshold N0 suspension, immutable unpaid facts, Management audited override once and unauthorized override/configuration denied",
+      "native paid receivable permits explicit rule snapshot and native payable OK comparison; unknown aggregate stays explicit",
+      "center queue condition dedupe and audited assignment priority due deferral with read-only and unauthorized-assignee denial",
+      "all financial roles scoped REST positives; professional REST list export services and generic financial rewrites denied",
+      "all financial roles report native document totals reconcile and Accountant bootstrap is readonly",
+      "readonly Accountant scoped CSV excludes clinical bodies and future-session unknown expectations remain explicit",
+      "professional reports bootstrap export, cross-center report and arbitrary private record projection denied",
+      "cross-center intake and revoked-center native source list and private download denied",
+      "revoked-center professional snapshots comparisons rules queue and reports denied"
+    ]
+  },
+  {
+    "cleanup": "PASS"
+  }
+]

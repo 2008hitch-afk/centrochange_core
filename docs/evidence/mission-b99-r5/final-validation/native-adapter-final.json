@@ -1,0 +1,20 @@
+[
+  {
+    "status": "PASS",
+    "checks": [
+      "native Italy XML submitted under Finance; direct generic write and premature/public XML rejected",
+      "Finance own scoped factories work without native create/select or actor switch",
+      "in-memory forged ownership/center ignored in favor of canonical locked invoice",
+      "non-positive non-finite and over-balance payments rejected",
+      "foreign center/company and non-invoice contexts rejected",
+      "a actual-principal native adapters denied",
+      "b actual-principal native adapters denied",
+      "c actual-principal native adapters denied",
+      "t actual-principal native adapters denied",
+      "native posted partial payment/idempotence retain real owner and before/after audit actor",
+      "revoked-center canonical invoice and tax adapters denied"
+    ],
+    "permission_grants_added": false,
+    "principal_elevation": false
+  }
+]

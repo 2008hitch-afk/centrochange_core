@@ -1,0 +1,12 @@
+{
+  "compared_to": "R3 migrated TARGET inventory",
+  "checks": {
+    "schema": true,
+    "cc_fields": true,
+    "cc_perms": true,
+    "installed_apps": true,
+    "pins": true,
+    "core_patches": true
+  },
+  "schema_and_core_metadata_preserved": true
+}

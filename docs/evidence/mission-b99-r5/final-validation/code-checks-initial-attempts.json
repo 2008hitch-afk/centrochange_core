@@ -1,0 +1,26 @@
+[
+  {
+    "suite": "backend-240",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 15.241905450820923
+  },
+  {
+    "suite": "hooks-six",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 1.2985756397247314
+  },
+  {
+    "suite": "http-55",
+    "status": "PASS",
+    "exit_code": 0,
+    "seconds": 6.109382390975952
+  },
+  {
+    "suite": "security-booking-operations",
+    "status": "FAIL",
+    "exit_code": 1,
+    "seconds": 2.128084421157837
+  }
+]
