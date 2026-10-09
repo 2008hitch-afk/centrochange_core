@@ -1,0 +1,33 @@
+{
+  "mission": "C109-R2-FULL-UI",
+  "authority": "Issue109 OWNER_APPROVED_FULL_UI_C1_C3 2026-10-09; PR110 \u00a77",
+  "status": "ACTIVE",
+  "start_utc": "2026-10-09T19:58:55.833148+00:00",
+  "validation_stop_utc": "2026-10-09T23:13:55.833148+00:00",
+  "hard_stop_utc": "2026-10-09T23:58:55.833148+00:00",
+  "source_sha": "6c2801cd2a7c3d17a0a58e93f58c379171fa39db",
+  "image": "sha256:c932e75841a0119363da07c11abeb6223f1fb7c99905250e4255753cbcb282ef",
+  "project": "centrochange-c109",
+  "site": "b99.local (C-only volume)",
+  "port": "127.0.0.1:8109",
+  "runtime_cap_bytes": 2147483648,
+  "qa_cap_bytes": 536870912,
+  "aggregate_cap_bytes": 2684354560,
+  "qa_mode": "fresh Chromium container per role/suite; only one at a time",
+  "disk_free_bytes": 13275418624,
+  "disk_incremental_budget_bytes": 3221225472,
+  "disk_hard_reserve_bytes": 4294967296,
+  "host_mem_available_bytes": 5839101952,
+  "protected_count": 137,
+  "old_stop_retained": "/home/empv26/.local/state/centrochange-c109/safety-stop.json",
+  "stop": [
+    "any host/container OOM",
+    "mem PSI full>=1 or some>=5 for3 samples",
+    "MemAvailable<768MiB immediate or<1GiB3 samples",
+    "RC22 HTTP/event anomaly",
+    "disk<4GiB",
+    "deadline",
+    "resource isolation anomaly"
+  ],
+  "recovery": "stop C109 containers only, preserve all volumes/images/checkpoints; RC22 unchanged"
+}
