@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "OWNER_AUTHORIZED_R2_ACTIVE",
+  "status": "OWNER_AUTHORIZED_R2_STOPPED_BLOCKED",
   "issue": "https://github.com/2008hitch-afk/centrochange_core/issues/99",
   "authorization": [
     "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6068177100",
@@ -10,7 +10,7 @@
   "prepared_at": "2026-10-08T20:18:17.161865+00:00",
   "source_commit": "e85fce588de6012a47da302710b9f9c615211279",
   "risk": "HIGH_SHARED_HOST",
-  "execution_allowed_now": true,
+  "execution_allowed_now": false,
   "time_boundary": {
     "valid_from": "2026-10-08T22:14:24+02:00",
     "authorization_expires_at": "2026-10-09T06:14:24+02:00",
@@ -270,6 +270,8 @@
     "build_parallelism": 1,
     "R1_resources": "PRESERVE_ALL",
     "R2_volume_prefix": "centrochange-b99-rehearsal-r2-",
-    "CURRENT_QA_archive_sha256": "b108212acb4c56ece80ba3058da652bad03323417f75f03e80fd67184f729411"
+    "CURRENT_QA_archive_sha256": "b108212acb4c56ece80ba3058da652bad03323417f75f03e80fd67184f729411",
+    "outcome": "BLOCKED_PSI_MEMORY_GUARDRAIL",
+    "stopped_at_utc": "2026-10-09T08:21:27Z"
   }
 }

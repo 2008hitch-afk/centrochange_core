@@ -1,0 +1,102 @@
+{
+  "status": "BLOCKED",
+  "reason": "PSI_MEMORY_SUSTAINED_GUARDRAIL",
+  "source": "e85fce588de6012a47da302710b9f9c615211279",
+  "current_bootstrap_install_migrate": "PASS",
+  "current_demo": "PASS",
+  "current_backend_review": "PASS",
+  "current_hooks_and_http": "PASS",
+  "checkpoint_integrity": "PASS",
+  "target_build": "STOPPED_GUARDRAIL",
+  "target_migration": "NOT_EXECUTED",
+  "target_regression": "NOT_EXECUTED",
+  "real_rollback": "NOT_EXECUTED_TARGET_NEVER_MIGRATED",
+  "protected_containers_unchanged": 14,
+  "measured_peaks_bytes": {
+    "/centrochange-b99-rehearsal-r2-redis-queue-1": 11534336,
+    "/centrochange-b99-rehearsal-r2-redis-cache-1": 33624064,
+    "/centrochange-b99-rehearsal-r2-db-1": 387383296,
+    "/centrochange-b99-rehearsal-r2-bootstrap-current": 621121536,
+    "/centrochange-b99-rehearsal-r2-seed-current-retry": 178032640,
+    "/centrochange-b99-rehearsal-r2-frontend-1": 13627392,
+    "/centrochange-b99-rehearsal-r2-queue-short-1": 138375168,
+    "/centrochange-b99-rehearsal-r2-websocket-1": 64065536,
+    "/centrochange-b99-rehearsal-r2-queue-long-1": 234881024,
+    "/centrochange-b99-rehearsal-r2-scheduler-1": 122945536,
+    "/centrochange-b99-rehearsal-r2-backend-1": 382832640,
+    "/centrochange-b99-rehearsal-r2-checkpoint-current": 17543168,
+    "/buildx_buildkit_centrochange-b99-r2-builder0": 1746731008
+  },
+  "min_mem_available_bytes": 4953804800,
+  "max_memory_psi": {
+    "some": 4.2,
+    "full": 4.01
+  },
+  "max_io_psi": {
+    "some": 7.72,
+    "full": 7.02
+  },
+  "oom_delta": 0,
+  "stop_sample": {
+    "io_psi": {
+      "some": 3.48,
+      "full": 1.37
+    },
+    "reclaim_writeback": {
+      "nr_dirty": 13880,
+      "nr_writeback": 8151,
+      "allocstall_dma": 0,
+      "allocstall_dma32": 0,
+      "allocstall_normal": 8355,
+      "allocstall_movable": 43138,
+      "allocstall_device": 0,
+      "pgsteal_kswapd": 42866601,
+      "pgsteal_direct": 12455731,
+      "pgsteal_khugepaged": 2856,
+      "pgsteal_proactive": 0,
+      "pgscan_kswapd": 43450151,
+      "pgscan_direct": 12640826,
+      "pgscan_khugepaged": 2856,
+      "pgscan_proactive": 0,
+      "pgscan_direct_throttle": 0,
+      "pgscan_anon": 0,
+      "pgscan_file": 56099010,
+      "pgsteal_anon": 0,
+      "pgsteal_file": 55330344
+    },
+    "disk_available": 41403752448,
+    "time": 1791534087.4041407,
+    "available": 5886173184,
+    "psi": {
+      "some": 2.42,
+      "full": 2.35
+    },
+    "oom": 0,
+    "caps": 2147483648,
+    "usage": 1746632704,
+    "probes": [
+      {
+        "name": "/buildx_buildkit_centrochange-b99-r2-builder0",
+        "current": 1746632704,
+        "peak": 1746731008,
+        "max": "2147483648",
+        "events": {
+          "low": 0,
+          "high": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_kill": 0,
+          "oom_group_kill": 0,
+          "sock_throttled": 0
+        }
+      }
+    ],
+    "errors": [
+      "PSI"
+    ]
+  },
+  "initial_disk_available_bytes": 44730351616,
+  "final_disk_available_bytes": 39899607040,
+  "checkpoint_external_preserved": true,
+  "stop_time_utc": "2026-10-09T08:21:27Z"
+}

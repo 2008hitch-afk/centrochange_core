@@ -1,0 +1,25 @@
+{
+  "rows": [
+    {
+      "path": "/sys/fs/cgroup/system.slice/docker-38ac9ce3aedf2393a49d31327db24780d5857e92eaef6e918cf1a52ebff8fec7.scope/init",
+      "memory.max": "max",
+      "memory.current": "335872",
+      "swap.max": "max"
+    },
+    {
+      "path": "/sys/fs/cgroup/system.slice/docker-38ac9ce3aedf2393a49d31327db24780d5857e92eaef6e918cf1a52ebff8fec7.scope",
+      "memory.max": "2147483648",
+      "memory.current": "9691136",
+      "swap.max": "0"
+    },
+    {
+      "path": "/sys/fs/cgroup/system.slice",
+      "memory.max": "max",
+      "memory.current": "3037052928",
+      "swap.max": "max"
+    }
+  ],
+  "pid_cgroup": "0::/system.slice/docker-38ac9ce3aedf2393a49d31327db24780d5857e92eaef6e918cf1a52ebff8fec7.scope/init\n",
+  "host_memory": 2147483648,
+  "host_swap": 2147483648
+}

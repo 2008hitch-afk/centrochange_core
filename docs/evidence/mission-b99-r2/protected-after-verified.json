@@ -1,0 +1,72 @@
+[
+  {
+    "id": "9ed3cb07910b2ebfac216add66d9e02a58ee01c14575a50e1c415f0cf0c3443e",
+    "name": "/centrochange-b99-rehearsal-bootstrap-current",
+    "unchanged": true
+  },
+  {
+    "id": "11b8589e19ea5bb3896b307d65b91df36e6ad6141f9f87f0690370d59793c86f",
+    "name": "/centrochange-b99-rehearsal-redis-cache-1",
+    "unchanged": true
+  },
+  {
+    "id": "8ba3441f200ece0c9a1849cbdca10d78338aee1d12402260345cf87d0a00a08d",
+    "name": "/centrochange-b99-rehearsal-redis-queue-1",
+    "unchanged": true
+  },
+  {
+    "id": "22daf5613af24c582e5261f8ffd1c45a2cf0a69c114e9f48393dfbc2fe960e41",
+    "name": "/centrochange-b99-rehearsal-db-1",
+    "unchanged": true
+  },
+  {
+    "id": "4283499a973bf3ea00f5282300f2e4aa3c21ce1e294a00cc8217b7e0ed0cbecc",
+    "name": "/centrochange-dev-frontend-1",
+    "unchanged": true
+  },
+  {
+    "id": "89282eabae30ece7a072e7f36a2420b0237e869b396e41bf4dfeeebc03968abe",
+    "name": "/centrochange-dev-websocket-1",
+    "unchanged": true
+  },
+  {
+    "id": "7775561c691d1d86c5da70c389b88e14081c64ca36f0b45efb3314a884fe5b4c",
+    "name": "/centrochange-dev-backend-1",
+    "unchanged": true
+  },
+  {
+    "id": "0734332e4210c36a44d508f445830e0779dfa02816e342ec6ad2953079e3d0ac",
+    "name": "/centrochange-dev-queue-short-1",
+    "unchanged": true
+  },
+  {
+    "id": "558a6968d87be9f2f6a20f91037613580a9c83c15b1f2fc744570be0f86e7bf1",
+    "name": "/centrochange-dev-scheduler-1",
+    "unchanged": true
+  },
+  {
+    "id": "a2bb4587bf3305f0822948acdb43dd3318e8250c7a3b6befbb3cf2b4d199372a",
+    "name": "/centrochange-dev-queue-long-1",
+    "unchanged": true
+  },
+  {
+    "id": "7fed2d6b37cee05819caa768d89701a7714adc07f63c3de58aa991b2a62ce42c",
+    "name": "/centrochange-dev-configurator-1",
+    "unchanged": true
+  },
+  {
+    "id": "77ab007443ed74be2f7e92dba7604a217bee349eb1433eb3a38efcd8370ccdf4",
+    "name": "/centrochange-dev-redis-cache-1",
+    "unchanged": true
+  },
+  {
+    "id": "dab9deddfba35764654e784feb069a8f80291f08cb2c6b961d2f4349d48b0e89",
+    "name": "/centrochange-dev-redis-queue-1",
+    "unchanged": true
+  },
+  {
+    "id": "82fbeecff7286bac2b012857bbfe0eec7aa4c2e7f81be349b0fbaf5d732f6ae8",
+    "name": "/centrochange-dev-db-1",
+    "unchanged": true
+  }
+]

@@ -1,0 +1,34 @@
+{
+  "complete_native_backup": true,
+  "db_and_files_integrity": "PASS",
+  "hashes": {
+    "20261009_101726-b99_local-private-files.tgz": {
+      "bytes": 2524,
+      "sha256": "2361292879216369935e35bfd8b297b3258125bd1a6df94043cf86519edbd99b"
+    },
+    "20261009_101726-b99_local-files.tgz": {
+      "bytes": 171,
+      "sha256": "201a1651eeaa99f59dba0c98622ef770ce92d9f85a956251f67ecb001d083295"
+    },
+    "20261009_101726-b99_local-database.sql.gz": {
+      "bytes": 1184673,
+      "sha256": "a2fe1f5df00020b5685bd170e88d354fa63aaad5208932c108f0a2adc7c89420"
+    },
+    "site_config.json": {
+      "bytes": 308,
+      "sha256": "86df97b592ad5382a5c76795d5b2b4f050f3543b0e0036db3da6a1c0ba9d2d07"
+    },
+    "common_site_config.json": {
+      "bytes": 227,
+      "sha256": "19deb1f320cf56adb35a03b6c35ef28b942267c30686860df811d68b92a4b1d4"
+    },
+    "apps.txt": {
+      "bytes": 52,
+      "sha256": "b9156671f0b5ae8f7243bc3eb2143de269ccb401645936d3eaae2853d3052fdc"
+    },
+    "20261009_101726-b99_local-site_config_backup.json": {
+      "bytes": 308,
+      "sha256": "86df97b592ad5382a5c76795d5b2b4f050f3543b0e0036db3da6a1c0ba9d2d07"
+    }
+  }
+}

@@ -1,0 +1,231 @@
+{
+  "business": {
+    "tabBank Transaction": {
+      "count": 2,
+      "sha256": "3be49f5759006c398138e6f3a521c543d62c41dfbaa3926e1b8569cbab9377d6"
+    },
+    "tabBank Transaction Payments": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "tabCC Admin Exception": {
+      "count": 8,
+      "sha256": "b6d3e400b6d8a4b35e186b28f6635815de8114c3eb99c676a16aabf555f1814c"
+    },
+    "tabCC Audit Event": {
+      "count": 112,
+      "sha256": "9aea68603f485f871a9312585e0a060d4d8495f309f4ac7836e51721bd549e62"
+    },
+    "tabCC Booking Confirmation": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "tabCC Center Membership": {
+      "count": 7,
+      "sha256": "8f4c9393612e8e5d5bca6fc992ab0c1b97b538d300d3498b054b8d24286278a7"
+    },
+    "tabCC Center Service": {
+      "count": 1,
+      "sha256": "f34dae39db572ef5996591c2a488be77cee0a52b16b54d9a093b9b21849c6c0f"
+    },
+    "tabCC Compensation Rule": {
+      "count": 1,
+      "sha256": "804428bb9a4a61ff867c8e92ca7a47d13fce054b3a193973b7ab84272ee58094"
+    },
+    "tabCC Economic Source Link": {
+      "count": 10,
+      "sha256": "5f7bb18968c5e2111405e627dc64ca19bd03e592aa1e942a1f2ef4dd5ed98e56"
+    },
+    "tabCC Fiscal Attempt": {
+      "count": 2,
+      "sha256": "16200c0d0267a9ad3b8901fade477f61f5e31011fd2a79ea1cbc105e12f4f300"
+    },
+    "tabCC Fiscal Transaction": {
+      "count": 3,
+      "sha256": "acdad33c0f88aeb073a4b59364b5f643aa35baf147350c5efea521dd8f338708"
+    },
+    "tabCC Incoming Invoice": {
+      "count": 2,
+      "sha256": "9a19c97d4516941dfe3084407f9029952309cae0684a90501a9010709a4b19e6"
+    },
+    "tabCC Notification": {
+      "count": 1,
+      "sha256": "e57a72e594ff5854e7a8f20632ca0881422b0ba1527d349f1e26090bd5f1656a"
+    },
+    "tabCC Organizational Note": {
+      "count": 1,
+      "sha256": "fa8c129c283c3ee2ab51310876b02a7a6c2a44683f467d9339ccdaf8d88c181f"
+    },
+    "tabCC Package Center": {
+      "count": 2,
+      "sha256": "9b3e19031ac3afbd36d41c4e7242a8028a0b6913cbb5fc1036498680e43169cf"
+    },
+    "tabCC Package Ledger": {
+      "count": 4,
+      "sha256": "da18e0dad938ffa0053ab1040507e4020cae3dc00596df55f6008e52bc96abb9"
+    },
+    "tabCC Package Template": {
+      "count": 1,
+      "sha256": "aac14c20831d023d78d6d77cd49da3ce3553caf20ce5633156e9dda448d5ee8c"
+    },
+    "tabCC Patient Assignment": {
+      "count": 8,
+      "sha256": "2f2dfeab3105667795e0b4378b7730a4947489966ddccc375347cac556fa911d"
+    },
+    "tabCC Patient Package": {
+      "count": 2,
+      "sha256": "4226179216a55e9882e3be53b30bfbd2b0768c19e2a571967fee3c880381ced7"
+    },
+    "tabCC Payment Agreement": {
+      "count": 7,
+      "sha256": "60a498c11c55d04c5d73568ce6e6350f574a2f37d2540803a8df1757c028ef58"
+    },
+    "tabCC Payment Notice": {
+      "count": 1,
+      "sha256": "c14490195c17236661187cc621621f4bd5c7dcdc86fc132fa5eeb6a88a3f7575"
+    },
+    "tabCC Payment Override": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "tabCC Private Note": {
+      "count": 1,
+      "sha256": "2334d36aa6937a33eecad698c1c2ca8b4343e875e5e0b038057226e91b5ab08a"
+    },
+    "tabCC Professional Comparison": {
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "tabCC Professional Expectation": {
+      "count": 7,
+      "sha256": "f5bc8c7a16366f66eed9dbffc57a3f25c81cda35be47656fa26b2528bdd32a62"
+    },
+    "tabCC Public Booking Route": {
+      "count": 1,
+      "sha256": "56bb8d210f1ace00c59715accf0b64e5a4a1a83de1ce93b95fe21f724e9d5e80"
+    },
+    "tabCC Settlement": {
+      "count": 7,
+      "sha256": "78308232e07bb1ba40b7946ecc0e218d994e39d9d1f6389fdb074d887e224f58"
+    },
+    "tabCC TS Input Review": {
+      "count": 1,
+      "sha256": "7a3644c27dba684b86c1ab211a82cab5151a0e2892a9456b92f96fea65ac5ddb"
+    },
+    "tabCC Unpaid Threshold": {
+      "count": 1,
+      "sha256": "6a2ab1aa8cc4150164c6b904d4fe6f7ba704649164c73317e93d98205d537d44"
+    },
+    "tabCustomer": {
+      "count": 8,
+      "sha256": "bf0109597fe679fcea3762eb4e46992cf8478c67194ffb37be927bb36db9860f"
+    },
+    "tabGL Entry": {
+      "count": 12,
+      "sha256": "d80a81b73b0d7f214ec1b8c69482170cbdb3e7817e875d334cf827179c425393"
+    },
+    "tabHealthcare Practitioner": {
+      "count": 2,
+      "sha256": "da387938ff6de04145f6c6f0abfa185b9de6f66cb8d74cc24a417b65b7809212"
+    },
+    "tabPatient": {
+      "count": 8,
+      "sha256": "008e8522a1442c538196b09497472e5535922db0e7ed47342912be3554c49d4c"
+    },
+    "tabPatient Appointment": {
+      "count": 10,
+      "sha256": "ac1c257840412bc7f8ce71838dbf524deef742968cbd98a981b3a16b3d526a64"
+    },
+    "tabPayment Entry": {
+      "count": 2,
+      "sha256": "5c2c695051d852173a9999a650ea10a34922b70b20766859d2f87d9a9c0bc99e"
+    },
+    "tabPayment Entry Reference": {
+      "count": 2,
+      "sha256": "03312ea9db140da921b987b2ab4ad2c694192500f6003dd081c51a13719050b1"
+    },
+    "tabPayment Ledger Entry": {
+      "count": 6,
+      "sha256": "edc1c5ccf3717f4ef9682cb2d5053733e37a93f9e15959a9bbd98f121438f763"
+    },
+    "tabPurchase Invoice": {
+      "count": 1,
+      "sha256": "67f81ec9103e02252684fbc15e7ad7de830d2e09b12a4255e2cc8b2a5975a14e"
+    },
+    "tabPurchase Invoice Item": {
+      "count": 1,
+      "sha256": "57ceb5bc212f83a622ab040d528804eea773b373515cff8253d16d9182d7975f"
+    },
+    "tabSales Invoice": {
+      "count": 4,
+      "sha256": "d8b62054f4b1023db6d4363675eab90d248abff19040d98cbabeb23d476f3961"
+    },
+    "tabSales Invoice Item": {
+      "count": 4,
+      "sha256": "4ff4c87488baf0a4c0f88a2fca547e63b6bc37753f2f28754043a67240a2c52a"
+    }
+  },
+  "core_patches": [],
+  "files": {
+    "private/files/CC-FISCAL-15c4a4cfc3972146de3f1046912d72ac3456c6f3632a9ad985d589a99d03ff7c.payload": "15c4a4cfc3972146de3f1046912d72ac3456c6f3632a9ad985d589a99d03ff7c",
+    "private/files/CC-FISCAL-90795b9bf87369bfae15a260e181f9314711122d818f28b6b6fd0940e51ab7bd.payload": "90795b9bf87369bfae15a260e181f9314711122d818f28b6b6fd0940e51ab7bd",
+    "private/files/CC-INCOMING-2b6b71c1c7450bf8307786fcd95fe74131baff15a280c20c269f1d2e61995e47.xml.payload": "2b6b71c1c7450bf8307786fcd95fe74131baff15a280c20c269f1d2e61995e47",
+    "private/files/CC-INCOMING-84a1f94b38381b6bb37017c5677da7545629880ea881f89a707cf4cc60c6b819.xml.payload": "84a1f94b38381b6bb37017c5677da7545629880ea881f89a707cf4cc60c6b819",
+    "private/files/IT00000000000_00001.xml": "2834866da5eea58fbeb068f07bb5946e42fc2e4ffa781377f449fe3e9f06601c",
+    "private/files/IT00000000000_00002.xml": "e359535d3fceadabab38f472f1d655480043e440d398f76175625f4c4c032900",
+    "private/files/IT00000000000_00003.xml": "4b50ca2f1b0977225beed1c2e7d275d2c0d827d5417415b6748b2dcb882d71c5"
+  },
+  "installed_apps": [
+    "frappe",
+    "erpnext",
+    "builder",
+    "healthcare",
+    "centrochange_core"
+  ],
+  "metadata": {
+    "Custom DocPerm": {
+      "count": 88,
+      "sha256": "65ea6ddc1b1443e4f019cfa26afdb277433b3712afe4ee945f860cd3465a7d3f"
+    },
+    "Custom Field": {
+      "count": 165,
+      "sha256": "1e5c81ef7feda3639696419e4b690560425922185ae3c9664a88a03c414b02c2"
+    },
+    "DocPerm": {
+      "count": 1410,
+      "sha256": "17dc64f64c9b97c76df55b903866d87fb0d3d95e08d5fe2396684560f472f5c8"
+    },
+    "DocType": {
+      "count": 978,
+      "sha256": "dc76f70b054d1f558b9069d7130d178fa585c1f439d386765701af3c7734d8df"
+    },
+    "Has Role": {
+      "count": 723,
+      "sha256": "6e2cfd84ac587e7f0c031a6d1dab4018484cc8d88404638712da92c074719043"
+    },
+    "Property Setter": {
+      "count": 197,
+      "sha256": "cba2167098de8d58849adb5a1477401184706a07c219cf51622bb7127b2d5df2"
+    },
+    "Role": {
+      "count": 61,
+      "sha256": "e53a7ab35e987118b8add1455f2446fac6fa72bc4941c58f364b7ac692deef84"
+    },
+    "User Permission": {
+      "count": 2,
+      "sha256": "b1c4e2de6fb41c4597cfe6d1f19a128e533f88814726d8c6e5da9b5df12ab2c0"
+    }
+  },
+  "pins": {
+    "builder": "41987c064da4650e6901b5da82b7c76add452ebf",
+    "erpnext": {
+      "git_metadata": "official image omits .git",
+      "version": "16.32.0"
+    },
+    "frappe": {
+      "git_metadata": "official image omits .git",
+      "version": "16.31.0"
+    },
+    "healthcare": "934d6c162868139dfbe80c23d6102adb7ec25adb"
+  }
+}
