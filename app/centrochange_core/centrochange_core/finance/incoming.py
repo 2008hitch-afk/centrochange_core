@@ -256,13 +256,15 @@ def pay(name,amount,posting_date,request_key,reason,reference=None,bank_account=
         configured=frappe.db.get_value('Branch',native.cc_center,'cc_bank_account',for_update=True)
         if not configured or frappe.db.get_value('Bank Account',configured,'account')!=bank_account:
             frappe.throw('Payment bank must match the configured center account',frappe.PermissionError)
+    before_outstanding=native.outstanding_amount
     from centrochange_core.finance.native_adapter import payment_document
     payment=payment_document(native,amount,bank)
     payment.update({'posting_date':posting_date,'reference_no':reference or request_key,'reference_date':posting_date,
         'cc_center':native.cc_center,'cc_request_key':key('supplier-payment',request_key),'cc_request_hash':fingerprint})
     with internal_write('cc_accounting_write'):
         payment.insert(ignore_permissions=True);payment.submit()
-    append('SUPPLIER_PAYMENT_POSTED',payment.doctype,payment.name,None,{'invoice':name,'allocated':amount},reason)
+    append('SUPPLIER_PAYMENT_POSTED',payment.doctype,payment.name,{'invoice':name,'outstanding':before_outstanding},
+        {'invoice':name,'allocated':amount,'outstanding':frappe.db.get_value('Purchase Invoice',name,'outstanding_amount')},reason)
     return {'payment':payment.name,'invoice':balance(native)}
 
 

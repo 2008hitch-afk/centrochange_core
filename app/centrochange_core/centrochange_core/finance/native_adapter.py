@@ -35,6 +35,8 @@ def payment_document(invoice, amount, bank_account):
     """
     if invoice.doctype not in ('Sales Invoice', 'Purchase Invoice') or not invoice.get('cc_center'):
         frappe.throw('Managed invoice required', frappe.PermissionError)
+    # Resolve authoritative stored facts; never trust an in-memory forged owner/center.
+    invoice = frappe.get_doc(invoice.doctype, invoice.name, for_update=True)
     require_finance(invoice.cc_center, True)
     invoice.check_permission('read')
     company = require_synthetic()
