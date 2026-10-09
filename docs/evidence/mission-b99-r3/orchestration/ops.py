@@ -2,7 +2,7 @@ import pathlib,json,subprocess,time,datetime
 ROOT=pathlib.Path(__file__).parent; PROJECT='centrochange-b99-rehearsal';SITE='b99.local';SOURCE=pathlib.Path('/home/empv26/.local/state/centrochange-b99-execution-20261008/source');IMAGE='sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80';BACKEND=PROJECT+'-r3-backend-1'
 def safe():
  assert not (ROOT/'safety-stop.json').exists(),'SAFETY_STOP'
- assert time.time()-float((ROOT/'monitor-heartbeat').read_text())<15,'MONITOR_LOST'
+ assert time.time()-(ROOT/'monitor-heartbeat').stat().st_mtime<15,'MONITOR_LOST'
  assert time.time()<datetime.datetime.fromisoformat('2026-10-09T18:01:00+02:00').timestamp(),'DEADLINE'
 def redact(t):
  for v in json.loads((ROOT/'credentials.json').read_text()).values(): t=t.replace(v,'[REDACTED]')

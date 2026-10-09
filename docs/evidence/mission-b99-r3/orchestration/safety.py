@@ -46,6 +46,6 @@ while not (r/'monitor-finish').exists():
   if action and not errs:
    pending[cid]=subprocess.Popen(['docker',action,cid],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
    with open(r/'backoff.jsonl','a') as bf:bf.write(json.dumps({'time':time.time(),'action':action,'container':name,'memory_psi':mp,'io_psi':ip})+'\n')
- out.write(json.dumps({'time':time.time(),'available':mem['MemAvailable'],'psi':mp,'io_psi':ip,'oom':oom,'caps':caps,'usage':usage,'probes':probes,'errors':errs,'disk_available':disk,'rc22_ping_seconds':latency,'reclaim_writeback':{k:int(v) for k,v in v.items() if k.startswith(('pgscan','pgsteal','allocstall')) or k in ['nr_dirty','nr_writeback']}})+'\n');(r/'monitor-heartbeat').write_text(str(time.time()))
+ out.write(json.dumps({'time':time.time(),'available':mem['MemAvailable'],'psi':mp,'io_psi':ip,'oom':oom,'caps':caps,'usage':usage,'probes':probes,'errors':errs,'disk_available':disk,'rc22_ping_seconds':latency,'reclaim_writeback':{k:int(v) for k,v in v.items() if k.startswith(('pgscan','pgsteal','allocstall')) or k in ['nr_dirty','nr_writeback']}})+'\n');tmp=r/'monitor-heartbeat.tmp';tmp.write_text(str(time.time()));tmp.replace(r/'monitor-heartbeat')
  if errs:(r/'safety-stop.json').write_text(json.dumps(errs));stop();sys.exit(2)
  time.sleep(5)

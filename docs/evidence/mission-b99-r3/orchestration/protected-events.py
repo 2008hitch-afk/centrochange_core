@@ -5,7 +5,7 @@ p=subprocess.Popen(['docker','events','--format','{{json .}}'],stdout=subprocess
 try:
  while not (r/'monitor-finish').exists():
   if p.poll() is not None:(r/'protected-event-alert.json').write_text(json.dumps({'error':'EVENT_STREAM_LOST'}));break
-  (r/'events-heartbeat').write_text(str(time.time()))
+  tmp=r/'events-heartbeat.tmp';tmp.write_text(str(time.time()));tmp.replace(r/'events-heartbeat')
   if select.select([p.stdout],[],[],2)[0]:
    line=p.stdout.readline()
    if not line:continue
