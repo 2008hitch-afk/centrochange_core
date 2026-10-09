@@ -21,7 +21,7 @@
         "GUNICORN_TIMEOUT": "120",
         "GUNICORN_WORKERS": "1"
       },
-      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce",
       "networks": {
         "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
@@ -118,7 +118,7 @@
         "UPSTREAM_REAL_IP_HEADER": "X-Forwarded-For",
         "UPSTREAM_REAL_IP_RECURSIVE": "off"
       },
-      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce",
       "networks": {
         "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
@@ -170,7 +170,7 @@
         "long,default,short"
       ],
       "entrypoint": null,
-      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce",
       "networks": {
         "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
@@ -198,51 +198,8 @@
           "condition": "service_healthy"
         }
       },
-      "mem_limit": "192m",
-      "memswap_limit": "192m",
-      "labels": {
-        "centrochange.mission": "B99-R3"
-      }
-    },
-    "r3-fit-queue-short": {
-      "restart": "no",
-      "command": [
-        "bench",
-        "worker",
-        "--queue",
-        "short,default"
-      ],
-      "entrypoint": null,
-      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
-      "networks": {
-        "centrochange-b99-rehearsal-r3-fit-net": {
-          "aliases": [
-            "queue-short"
-          ]
-        }
-      },
-      "pull_policy": "never",
-      "volumes": [
-        {
-          "type": "volume",
-          "source": "centrochange-b99-rehearsal-r3-fit-sites",
-          "target": "/home/frappe/frappe-bench/sites",
-          "volume": {}
-        }
-      ],
-      "depends_on": {
-        "r3-fit-db": {
-          "condition": "service_healthy"
-        },
-        "r3-fit-redis-cache": {
-          "condition": "service_healthy"
-        },
-        "r3-fit-redis-queue": {
-          "condition": "service_healthy"
-        }
-      },
-      "mem_limit": "192m",
-      "memswap_limit": "192m",
+      "mem_limit": "384m",
+      "memswap_limit": "384m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
@@ -328,7 +285,7 @@
         "schedule"
       ],
       "entrypoint": null,
-      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce",
       "networks": {
         "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [
@@ -356,8 +313,8 @@
           "condition": "service_healthy"
         }
       },
-      "mem_limit": "96m",
-      "memswap_limit": "96m",
+      "mem_limit": "128m",
+      "memswap_limit": "128m",
       "labels": {
         "centrochange.mission": "B99-R3"
       }
@@ -369,7 +326,7 @@
         "/home/frappe/frappe-bench/apps/frappe/socketio.js"
       ],
       "entrypoint": null,
-      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image": "sha256:10e701947cccc377dc1d3c2082a03ef69b81d14da8e08fac75f07e78bcf974ce",
       "networks": {
         "centrochange-b99-rehearsal-r3-fit-net": {
           "aliases": [

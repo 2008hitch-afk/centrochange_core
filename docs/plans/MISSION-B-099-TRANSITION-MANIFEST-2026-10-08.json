@@ -320,6 +320,19 @@
       "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
       "rollback_by": "2026-10-09T15:01:00+02:00",
       "hard_stop": "2026-10-09T18:01:00+02:00"
+    },
+    "multi_queue_worker_segment": {
+      "status": "OWNER_AUTHORIZED_R3_ACTIVE",
+      "recorded_at": "2026-10-09T11:00:08.935582+00:00",
+      "previous_segment": "STOPPED_LONG_WORKER_192MiB_OOM",
+      "change": "One existing native multi-queue worker (long,default,short) at384MiB; duplicate short worker stopped; services2048MiB plusQA512MiB=2560MiB",
+      "aggregate_max_mib": 2560,
+      "all_safety_thresholds_unchanged": true,
+      "target_migration_reused": "PASS",
+      "real_rollback_already_verified": true,
+      "owner_authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6077401448",
+      "rollback_by": "2026-10-09T15:01:00+02:00",
+      "hard_stop": "2026-10-09T18:01:00+02:00"
     }
   }
 }
