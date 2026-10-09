@@ -104,32 +104,32 @@ Consegne versionate:
 
 ## 7. OWNER APPROVED — Estensione del mandato a UI COMPLETA (2026-10-09)
 
-**Cronologia della decisione:** dopo il primo esito \`MISSION-C: BLOCKED\`, l'Owner ha ricevuto una proposta esplicita: «approvi l'aggiornamento della Missione C da *prototipo* a **UI completa, funzionante e tecnicamente collaudata**, con ripresa controllata dopo verifica delle risorse?». Risposta Owner: **«approvo»**.
+**Cronologia della decisione:** dopo il primo esito `MISSION-C: BLOCKED`, l'Owner ha ricevuto una proposta esplicita: «approvi l'aggiornamento della Missione C da *prototipo* a **UI completa, funzionante e tecnicamente collaudata**, con ripresa controllata dopo verifica delle risorse?». Risposta Owner: **«approvo»**.
 
 Questa approvazione **supersede solo il limite di deliverable C2/C3 "prototipo/confronto parziale" dei paragrafi 1–6**, NON il registro storico, la decisione architetturale HITCH, le restrizioni operative o la distinzione tra tecnico PASS e accettazione Owner.
 
 **Nuovo outcome tecnico di Missione C:**
-\`MISSION-C: READY_FOR_OWNER_UAT\` soltanto quando l'**intera UI interna già prevista e compresa nel baseline GOAL-02** è accessibile, funzionante e tecnicamente verificata in un solo percorso Desk coerente (nativo/adattato/custom), con tutte le superfici cliente-facing italiane, ruoli/centri/professionisti segregati, responsività e accessibilità adeguate. Il test Owner e l'approvazione restano **PENDING** anche se i test tecnici sono PASS. Altrimenti \`PARTIAL / BLOCKED / FAIL\` onestamente motivato. Non presentare un prototipo di tre viste come UI completa.
+`MISSION-C: READY_FOR_OWNER_UAT` soltanto quando l'**intera UI interna già prevista e compresa nel baseline GOAL-02** è accessibile, funzionante e tecnicamente verificata in un solo percorso Desk coerente (nativo/adattato/custom), con tutte le superfici cliente-facing italiane, ruoli/centri/professionisti segregati, responsività e accessibilità adeguate. Il test Owner e l'approvazione restano **PENDING** anche se i test tecnici sono PASS. Altrimenti `PARTIAL / BLOCKED / FAIL` onestamente motivato. Non presentare un prototipo di tre viste come UI completa.
 
 ### 7.1 Lavoro da preservare e punto di ripresa
 
 - C1 **completa** con matrice 24 aree [PR DRAFT #111](https://github.com/2008hitch-afk/centrochange_core/pull/111): riusare; modificarla solo per evidenze necessarie.
-- C2 primo prototipo [PR DRAFT #112](https://github.com/2008hitch-afk/centrochange_core/pull/112), source \`6c2801cd2a7c3d17a0a58e93f58c379171fa39db\`, stacked su [PR DRAFT #107](https://github.com/2008hitch-afk/centrochange_core/pull/107): Desk Page/Sidebar, Agenda, Pazienti, Finance read-only; NON ripartire da zero.
+- C2 primo prototipo [PR DRAFT #112](https://github.com/2008hitch-afk/centrochange_core/pull/112), source `6c2801cd2a7c3d17a0a58e93f58c379171fa39db`, stacked su [PR DRAFT #107](https://github.com/2008hitch-afk/centrochange_core/pull/107): Desk Page/Sidebar, Agenda, Pazienti, Finance read-only; NON ripartire da zero.
 - C3 parziale: **69 HTTP PASS, 19 browser PASS, 1 test Manager FAIL da discriminare** (centro fisso non impostato nell'harness); browser Finance/Accountant, scenari mutativi, sicurezza completa e parity di tutte le viste non provati.
-- Stop reale: **OOM QA 512MiB**, host \`oom_kill +1\`. C109 spento, dataset/immagini/checkpoint protetti; **RC22 HTTP200, 137 altri container invariati**. Tutti i vecchi FAIL/PSI/stop restano evidenza, mai mascherati.
-- Ultime evidenze in \`docs/evidence/mission-c/{C1-NATIVE-CUSTOM-MATRIX,C2-PROTOTYPE-REPORT,C3-WEBAPP-VS-DESK-COMPARISON,FINAL-REPORT}.md\` sul branch \`issue-109/unified-desk-evidence\`. Nuove run append-only con SHA, image digest, risultati per suite, senza riscrivere il BLOCKED precedente.
+- Stop reale: **OOM QA 512MiB**, host `oom_kill +1`. C109 spento, dataset/immagini/checkpoint protetti; **RC22 HTTP200, 137 altri container invariati**. Tutti i vecchi FAIL/PSI/stop restano evidenza, mai mascherati.
+- Ultime evidenze in `docs/evidence/mission-c/{C1-NATIVE-CUSTOM-MATRIX,C2-PROTOTYPE-REPORT,C3-WEBAPP-VS-DESK-COMPARISON,FINAL-REPORT}.md` sul branch `issue-109/unified-desk-evidence`. Nuove run append-only con SHA, image digest, risultati per suite, senza riscrivere il BLOCKED precedente.
 
 ### 7.2 Deliverable "tutte le schermate"
 
-Completare la UI **per ogni area interna approvata della matrice C1**, con stesso ambito commerciale/funzionale già previsto in GOAL-02, distinguendo chiaramente NATIVE / SUPPORTED_ADAPTATION / CC_CUSTOM_DESK_PAGE. Aree obbligatorie secondo rilevanza del ruolo: login/navigazione; Agenda, filtro professionista/centro e geometria calendario; disponibilità; prenotare/spostare/annullare; sedute/stati/riapertura/chiusura; pazienti, professionisti, ricerca e note autorizzate; servizi/prezzi/pacchetti; fatture clienti e fornitori, incassi/pagamenti, crediti/rettefiche; banca/riconciliazione; report, print/export; SdI/TS **solo simulati**; comunicazioni/notifiche; accessi/centri; amministrazione/compensi/coda; audit.
+Completare la UI **per ogni area interna approvata della matrice C1**, con stesso ambito commerciale/funzionale già previsto in GOAL-02, distinguendo chiaramente NATIVE / SUPPORTED_ADAPTATION / CC_CUSTOM_DESK_PAGE. Aree obbligatorie secondo rilevanza del ruolo: login/navigazione; Agenda, filtro professionista/centro e geometria calendario; disponibilità; prenotare/spostare/annullare; sedute/stati/riapertura/chiusura; pazienti, professionisti, ricerca e note autorizzate; servizi/prezzi/pacchetti; fatture clienti e fornitori, incassi/pagamenti, crediti/rettifiche; banca/riconciliazione; report, print/export; SdI/TS **solo simulati**; comunicazioni/notifiche; accessi/centri; amministrazione/compensi/coda; audit.
 
-Per ogni area **dimostrare** vista, ricerca/navigazione, azioni effettivamente esistenti, stati loading/empty/error/disabled, UX italiana, desktop/mobile, accesso per ruolo e negativo via direct/list/API/query/report/export/print. Riutilizzare senza duplicare documenti, ledger, DB, autorizzazioni o regole; preferire API e servizi canonici \`centrochange_core\`; nessun bypass dei permessi via Desk.
+Per ogni area **dimostrare** vista, ricerca/navigazione, azioni effettivamente esistenti, stati loading/empty/error/disabled, UX italiana, desktop/mobile, accesso per ruolo e negativo via direct/list/API/query/report/export/print. Riutilizzare senza duplicare documenti, ledger, DB, autorizzazioni o regole; preferire API e servizi canonici `centrochange_core`; nessun bypass dei permessi via Desk.
 
 Una funzione classificata **BLOCKED_NEEDS_DECISION** (es. report nativi ERPNext che richiedono privilegi non concessi) **non viene sbloccata** per ottenere un PASS: mantenerne il percorso alternativo autorizzato attraverso servizi/pagina scoped; se il requisito approvato non è realizzabile senza variazione di policy/architettura, sospendere la parte e chiedere all'Owner una decisione mirata. Non dichiarare la UI completa con una funzione contrattualmente richiesta assente. Il primo incontro pubblico e le superfici DEV-only restano esclusi dalla conversione Desk, come documentato nella C1.
 
 **Nessuna scorciatoia:** collegamenti temporanei alla vecchia webapp, placeholder, schermate vuote, screenshot, o pulsanti non collegati a workflow **non sono evidenza** di completamento della nuova UI interna. I riferimenti tra Desk e superfici native necessarie possono esistere se l'esperienza resta unica/coerente e la funzione è davvero coperta, documentando ogni integrazione.
 
-La conformità visiva parte da \`docs/ui/CENTROCHANGE-UI-DESIGN-SYSTEM-v1.md\` (Owner approved, Tabler1.6.1/UI Centro Change) e dall'UAT RC22 come benchmark, senza presumere che Desk chrome standard rispetti automaticamente branding e lingua; localizzare **senza** patch upstream o CSS distruttivo al core.
+La conformità visiva parte da `docs/ui/CENTROCHANGE-UI-DESIGN-SYSTEM-v1.md` (Owner approved, Tabler1.6.1/UI Centro Change) e dall'UAT RC22 come benchmark, senza presumere che Desk chrome standard rispetti automaticamente branding e lingua; localizzare **senza** patch upstream o CSS distruttivo al core.
 
 ### 7.3 Ripresa controllata post-OOM (vincolo prioritario)
 
@@ -144,8 +144,8 @@ L'Owner autorizza una **nuova continuazione C** limitata alla stessa sperimentaz
 
 ### 7.4 Exit gate aggiornato e documenti
 
-Risultato Codex \`MISSION-C: READY_FOR_OWNER_UAT / PARTIAL / FAIL / BLOCKED\`, con:
-- matrice tracciabile **24/24** che espliciti per area \`IMPLEMENTED + TESTED / NOT_APPLICABLE_PUBLIC_DEV / BLOCKED_BY_OWNER_DECISION\`, senza falsi PASS;
+Risultato Codex `MISSION-C: READY_FOR_OWNER_UAT / PARTIAL / FAIL / BLOCKED`, con:
+- matrice tracciabile **24/24** che espliciti per area `IMPLEMENTED + TESTED / NOT_APPLICABLE_PUBLIC_DEV / BLOCKED_BY_OWNER_DECISION`, senza falsi PASS;
 - registro di parità con webapp RC22/GOAL-02 per flusso, sette ruoli+Guest, aree/tenant, privacy, dati canonici/audit;
 - test reali browser e sicurezza positivi/negativi, screenshot rappresentativi desktop/mobile; finance mutativa/reconciliation e TS/SdI simulati ove compresi, non simulare traffico provider reale;
 - immagini, source SHA, parità codice/runtime, UI/asset, restart/restore lab, log sanitizzati, memoria/disco/PSI/OOM e conferma RC22 invariato;
