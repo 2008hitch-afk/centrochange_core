@@ -247,14 +247,25 @@ html[data-preview-embed="1"] #previewShell{display:none}
   get("avatar").textContent=selected.toUpperCase().slice(0,2);get("agendaActor").textContent=a.name;
   const notify=!!(ring&&a.present);
   get("ringAlert").classList.toggle("show",notify);get("topDot").classList.toggle("show",notify);get("navDot").classList.toggle("show",notify);
+  document.querySelectorAll('[data-page="videocitofono"]').forEach(el=>el.classList.toggle("ringing",!!ring));
+  get("intercomCard").classList.toggle("ringing",!!ring);
+  get("doorbellLight").classList.toggle("live",!!ring);
+  get("doorbellLight").textContent=ring?"Chiamata in corso…":active?"Risposta da smartphone":physical?"Risposta dal citofono":"Premi per suonare";
+  get("ringButton").disabled=!!(ring||active);
   get("bellTop").setAttribute("aria-label",notify?"Chiamata al videocitofono":"Apri videocitofono");
   get("answer").disabled=!(ring&&a.present);
   get("openDoor").disabled=!((ring||active)&&a.present&&a.allowed&&!call.opened);
   get("endCall").disabled=!(ring||active);
   get("physicalAnswer").disabled=!ring;
+  get("audioToggle").disabled=!(active&&call.owner===selected);
+  get("audioToggle").textContent=active&&call.owner===selected?(call.muted?"Audio spento · demo":"Audio acceso · demo"):"Audio (demo)";
+  get("audioToggle").className=active&&call.owner===selected?(call.muted?"button call-audio off":"button call-audio on"):"button call-audio";
+  get("camera").classList.toggle("visitor-visible",!!(ring||active));
+  get("camera").classList.toggle("ring-animation",!!ring);
+  get("camera").classList.toggle("opened",!!(call&&call.opened));
   get("camera").classList.toggle("active",!!(ring||active||physical));
-  get("callBadge").textContent=ring?"Sta suonando":active?"In gestione":physical?"Risposta fisica":"In attesa";
-  get("callBadge").className=ring?"pill warn":(active||physical)?"pill ok":"pill";
+  get("callBadge").textContent=call&&call.opened?"Porta aperta":ring?"Sta suonando":active?"In gestione":physical?"Risposta fisica":"In attesa";
+  get("callBadge").className=call&&call.opened?"pill ok":ring?"pill warn":(active||physical)?"pill ok":"pill";
   get("statusLight").className=ring?"light ringing":(active||physical)?"light live":"light";
   let description="In attesa di una persona all'ingresso.",caption="Nessuna chiamata · immagine fittizia";
   if(ring){description="Chiamata in arrivo: tutti i professionisti presenti ricevono l'avviso.";caption="Visitante all'ingresso · video simulato"}
@@ -271,9 +282,15 @@ html[data-preview-embed="1"] #previewShell{display:none}
   else get("openDoor").textContent="Apri porta";
   get("eventFeed").textContent=history;
  }
- function ringing(){seq++;call={id:seq,status:"ringing",owner:null,opened:false};say("È stato premuto il campanello. Avviso simulato ai presenti; squilla anche il dispositivo fisico.");render()}
- function answer(){if(!call||call.status!=="ringing"||!actor().present)return;call.status="mobile";call.owner=selected;say(actors[selected].name+" ha risposto: audio assegnato esclusivamente a questo professionista. Il citofono fisico smette di suonare (demo).");showPage("videocitofono");render()}
- function open(){if(!call||!["ringing","mobile"].includes(call.status)||!actor().present||!actor().allowed||call.opened)return;call.opened=true;say("Apertura porta SIMULATA da "+actors[selected].name+". Nessun comando è stato inviato a un dispositivo.");render()}
+ function ringing(){
+   if(call&&(call.status==="ringing"||call.status==="mobile"))return;
+   seq++;call={id:seq,status:"ringing",owner:null,opened:false,muted:false};
+   say("Chiamata in arrivo. È comparsa la notifica ai presenti; guarda il visitatore sullo schermo.");
+   showPage("videocitofono");render();
+   get("page-videocitofono").scrollIntoView({behavior:"smooth",block:"start"});
+ }
+ function answer(){if(!call||call.status!=="ringing"||!actor().present)return;call.status="mobile";call.owner=selected;call.muted=false;say(actors[selected].name+" ha risposto. Audio attivo (simulato), il citofono fisico smette di suonare.");showPage("videocitofono");render()}
+ function open(){if(!call||!["ringing","mobile"].includes(call.status)||!actor().present||!actor().allowed||call.opened)return;call.opened=true;say("Porta aperta (simulazione) da "+actors[selected].name+". Nessun comando è stato inviato a un dispositivo.");render()}
  function answerPhysical(){if(!call||call.status!=="ringing")return;call.status="physical";say("Risposta simulata dal citofono fisico: le notifiche sui telefoni si chiudono e nessuna conversazione mobile può iniziare.");render()}
  function end(){if(!call||!["ringing","mobile"].includes(call.status))return;call=null;say("Chiamata conclusa nella simulazione. Nessun dato è stato salvato.");render()}
  function reset(){call=null;selected="alfa";get("actor").value="alfa";actors.alfa.present=true;actors.beta.present=true;actors.gamma.present=false;actors.alfa.allowed=true;actors.beta.allowed=true;actors.gamma.allowed=true;say("Simulazione azzerata, nessun dato persistente.");showPage("agenda");render()}
@@ -283,6 +300,12 @@ html[data-preview-embed="1"] #previewShell{display:none}
  get("ringButton").addEventListener("click",ringing);
  get("answer").addEventListener("click",answer);
  get("openDoor").addEventListener("click",open);
+ get("audioToggle").addEventListener("click",()=>{
+  if(!call||call.status!=="mobile"||call.owner!==selected)return;
+  call.muted=!call.muted;
+  say(call.muted?"Audio disattivato (demo).":"Audio attivato (demo).");
+  render();
+ });
  get("physicalAnswer").addEventListener("click",answerPhysical);
  get("endCall").addEventListener("click",end);
  get("reset").addEventListener("click",reset);
