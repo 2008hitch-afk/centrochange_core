@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <title>Centro Change — Professionista · Videocitofono DEMO</title>
+<script>
+document.documentElement.dataset.previewEmbed = new URLSearchParams(location.search).get("embed") === "1" ? "1" : "0";
+</script>
 <style>
 :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f6f8;color:#1d2935;--primary:#12665f;--border:#dfe6e8;--muted:#657380;--surface:#fff;--shadow:0 8px 26px rgba(16,43,48,.045)}
 *{box-sizing:border-box}body{margin:0}button,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.42;cursor:not-allowed}button:focus-visible,select:focus-visible{outline:3px solid #4cb9ac;outline-offset:2px}
@@ -15,9 +18,54 @@ main{max-width:1200px;margin:0 auto;padding:30px clamp(16px,4vw,43px) 70px}.titl
 .intercom-card{border-color:#bbd8d3;box-shadow:0 0 0 1px #c6e6df, var(--shadow)}.screen{background:#162b33;border-radius:12px;min-height:235px;display:grid;place-items:center;overflow:hidden;position:relative;color:#e9f2f4;margin:15px 0}.screen:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(70,100,101,.2) 1px,transparent 1px),linear-gradient(rgba(70,100,101,.18) 1px,transparent 1px);background-size:39px 39px}.screen:after{content:"SIMULAZIONE VIDEO";position:absolute;top:13px;left:14px;letter-spacing:.08em;font-size:10px;font-weight:800;color:#cddde0}.door{width:115px;height:158px;border:8px solid #617b83;border-bottom:0;background:linear-gradient(130deg,#29464c,#1b3339);border-radius:9px 9px 0 0;position:relative;margin:14px auto -60px}.door:after{content:"";width:10px;height:10px;border-radius:50%;background:#d8bd79;position:absolute;top:88px;right:10px;box-shadow:0 0 20px #e5bd67}.screen-label{position:absolute;bottom:20px;left:15px;right:15px;font-size:12px;text-align:center;color:#d5e6e7}.screen.active{outline:2px solid #3fba9c;outline-offset:-2px}.call-status{font-size:12px;color:#536773}.light{display:inline-block;height:8px;width:8px;background:#9ca9ad;border-radius:50%;margin-right:5px}.light.live{background:#20ad78;box-shadow:0 0 0 4px #ddf5e9}.light.ringing{background:#e88d1b;box-shadow:0 0 0 4px #fff2df}.hint{background:#f2f7f7;border-radius:9px;padding:12px;font-size:12px;color:#3e5860;margin-top:12px;line-height:1.5;min-height:41px}.select-label{display:block;font-size:12px;font-weight:750;color:#4c5b64;margin-bottom:8px}select{width:100%;min-height:43px;padding:9px 10px;border:1px solid var(--border);background:white;border-radius:8px;font-size:13px;color:#2f414c}.flag{display:flex;align-items:start;gap:9px;color:#43575f;font-size:12px;line-height:1.5;margin:11px 0}.flag input{margin-top:2px;accent-color:var(--primary)}.helper{font-size:11px;color:#6e7d88;line-height:1.5}.banner-ring{display:none;background:#e5f6ee;border:1px solid #b0dfc8;color:#136b48;padding:14px;border-radius:12px;margin-top:15px;font-size:13px}.banner-ring.show{display:block}.demo-controls{border-top:1px solid var(--border);padding-top:14px;margin-top:16px}.nav-overview{display:none}.page-only{display:none}.page-only.active{display:block}#activity{color:#435560;font-size:12px;min-height:48px}.date{font-size:12px;color:#72818a}.unavailable{color:var(--muted);font-size:12px}
 @media(max-width:1000px){.layout{grid-template-columns:minmax(0,1fr) 295px}.sidebar{width:185px;padding:15px 8px}.shell{grid-template-columns:185px minmax(0,1fr)}.brand{font-size:18px}}
 @media(max-width:740px){.shell{display:block}.sidebar{display:none}.topbar{padding:12px 16px}.top-actions{gap:7px}main{padding:20px 13px 80px}.layout{grid-template-columns:1fr}.card{padding:16px}.kpis{gap:7px}.kpi{padding:12px 8px}.kpi b{font-size:19px}.nav-overview{display:flex;gap:7px;overflow:auto;margin:16px 0}.nav-overview button{flex:0 0 auto}.screen{min-height:215px}.appointment{grid-template-columns:45px minmax(0,1fr) auto;gap:6px}.pill{font-size:10px}}
+
+/* Shell per la scelta visuale: l'iframe ha davvero un viewport proprio.
+   Non emula sistema operativo, UA, touch, permessi, browser o push. */
+html[data-preview-embed="0"] body>.shell{display:none}
+html[data-preview-embed="1"] #previewShell{display:none}
+#previewShell{min-height:100dvh;display:flex;flex-direction:column;background:#f2f5f6}
+.preview-toolbar{background:#fff;border-bottom:1px solid #dce5e6;padding:13px clamp(13px,3vw,33px);display:flex;gap:16px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.preview-title{font-size:15px;font-weight:800;color:#1a423f;letter-spacing:-.02em}
+.preview-title small{font-size:11px;font-weight:500;color:#617680;display:block;margin-top:2px;letter-spacing:0}
+.preview-choices{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.preview-choices .button[aria-pressed="true"]{border-color:#12665f;color:white;background:#12665f}
+.preview-choices select{width:auto;min-width:155px;min-height:40px}
+.preview-stage{flex:1;min-height:0;display:flex;align-items:stretch;justify-content:center}
+.preview-device{position:relative;background:#fff}
+.preview-device iframe{display:block;width:100%;height:100%;border:0;background:#fff}
+.preview-stage[data-view="desktop"] .preview-device{width:100%;height:calc(100dvh - 89px);min-height:560px}
+.preview-stage[data-view="mobile"]{align-items:flex-start;overflow:auto;padding:26px 12px 38px;background:radial-gradient(circle at 50% 15%,#e9f4f0,#e9eff2 55%,#e1e9ed)}
+.preview-stage[data-view="mobile"] .preview-device{width:calc(var(--phone-width,390px) + 18px);height:calc(min(780px,100dvh - 195px) + 36px);min-height:610px;border:9px solid #273a40;border-radius:36px;overflow:hidden;box-shadow:0 18px 55px rgba(18,39,43,.22)}
+.preview-stage[data-view="mobile"] .preview-device:before{content:"";display:block;width:100%;height:18px;background:#273a40}
+.preview-stage[data-view="mobile"] .preview-device:after{content:"";position:absolute;top:5px;left:50%;transform:translateX(-50%);width:62px;height:5px;border-radius:999px;background:#778e94}
+.preview-stage[data-view="mobile"] iframe{height:calc(100% - 18px)}
+.preview-help{padding:10px 22px 13px;text-align:center;color:#657783;font-size:11px;line-height:1.45;border-top:1px solid #dce5e6;background:#fff}
+#devicePresetGroup{display:none;align-items:center;gap:7px}
+.preview-stage[data-view="mobile"]~*{}
+@media(max-width:550px){.preview-toolbar{gap:10px;justify-content:center}.preview-title{width:100%;text-align:center}.preview-stage[data-view="mobile"]{padding:12px 0 20px}.preview-stage[data-view="mobile"] .preview-device{max-width:calc(100vw - 10px);height:calc(100dvh - 194px);min-height:490px}.preview-choices{justify-content:center}.preview-choices .button{padding:9px 11px}.preview-choices select{min-width:133px}}
 </style>
 </head>
 <body>
+<section id="previewShell" aria-label="Seleziona il tipo di visualizzazione">
+  <header class="preview-toolbar">
+    <div class="preview-title">Centro Change · Anteprima professionista<small>Seleziona la visuale per verificare l'interfaccia responsive</small></div>
+    <div class="preview-choices" role="group" aria-label="Visualizzazione demo">
+      <button type="button" id="previewDesktop" class="button" aria-pressed="true">▤ Computer</button>
+      <button type="button" id="previewMobile" class="button" aria-pressed="false">▯ Smartphone</button>
+      <label id="devicePresetGroup" for="devicePreset"><span class="helper">Schermo</span>
+        <select id="devicePreset" aria-label="Larghezza schermo smartphone">
+          <option value="390">iPhone · 390 px</option>
+          <option value="412">Android · 412 px</option>
+          <option value="375">Compatto · 375 px</option>
+        </select>
+      </label>
+    </div>
+  </header>
+  <div id="previewStage" class="preview-stage" data-view="desktop">
+    <div class="preview-device"><iframe id="previewFrame" title="Simulazione interattiva del gestionale Centro Change" loading="eager"></iframe></div>
+  </div>
+  <footer class="preview-help">Il telefono è una simulazione grafica con viewport responsive reale. Non emula hardware, notifiche di sistema, touch o Chrome DevTools. I pulsanti del videocitofono non azionano dispositivi reali.</footer>
+</section>
 <div class="shell">
 <aside class="sidebar" aria-label="Navigazione demo">
   <div class="brand">Centro Change <small>Gestionale · anteprima</small></div>
@@ -95,6 +143,7 @@ main{max-width:1200px;margin:0 auto;padding:30px clamp(16px,4vw,43px) 70px}.titl
 <script>
 (function(){
  "use strict";
+ if(document.documentElement.dataset.previewEmbed!=="1")return;
  const get=id=>document.getElementById(id);
  const actors={alfa:{name:"Professionista Alfa",present:true,allowed:true},beta:{name:"Professionista Beta",present:true,allowed:true},gamma:{name:"Professionista Gamma",present:false,allowed:true}};
  const pageNames={agenda:"Agenda",pazienti:"Pazienti",disponibilita:"Disponibilità",videocitofono:"Videocitofono"};
@@ -153,6 +202,37 @@ main{max-width:1200px;margin:0 auto;padding:30px clamp(16px,4vw,43px) 70px}.titl
  get("isPresent").addEventListener("change",e=>{actor().present=e.target.checked;render()});
  get("isAllowed").addEventListener("change",e=>{actor().allowed=e.target.checked;render()});
  render();
+})();
+</script>
+
+<script>
+(function(){
+ "use strict";
+ if(document.documentElement.dataset.previewEmbed==="1")return;
+ const stage=document.getElementById("previewStage");
+ const frame=document.getElementById("previewFrame");
+ const desktop=document.getElementById("previewDesktop");
+ const mobile=document.getElementById("previewMobile");
+ const preset=document.getElementById("devicePreset");
+ const presetGroup=document.getElementById("devicePresetGroup");
+ const childUrl=new URL(location.href);
+ childUrl.searchParams.set("embed","1");
+ frame.src=childUrl.href;
+ function setView(view){
+  stage.dataset.view=view;
+  desktop.setAttribute("aria-pressed",String(view==="desktop"));
+  mobile.setAttribute("aria-pressed",String(view==="mobile"));
+  presetGroup.style.display=view==="mobile"?"flex":"none";
+  // Mantiene lo stesso iframe: cambiare visuale non azzera la chiamata simulata.
+ }
+ desktop.addEventListener("click",()=>setView("desktop"));
+ mobile.addEventListener("click",()=>setView("mobile"));
+ preset.addEventListener("change",()=>{
+   const allowed=["375","390","412"];
+   if(allowed.includes(preset.value))stage.style.setProperty("--phone-width",preset.value+"px");
+ });
+ stage.style.setProperty("--phone-width",preset.value+"px");
+ setView("desktop");
 })();
 </script>
 </body>
