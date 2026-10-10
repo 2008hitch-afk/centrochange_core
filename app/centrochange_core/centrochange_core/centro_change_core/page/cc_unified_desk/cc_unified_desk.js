@@ -16,8 +16,23 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
   const canOperate=['CC Manager','CC Secretariat','CC Professional'].some(x=>roles.has(x));
   const canFinance=['CC Manager','CC Secretariat','CC Finance','CC Accountant'].some(x=>roles.has(x));
   const canAudit=roles.has('CC Manager');
+  const canManage=roles.has('CC Manager');
   const allowed={agenda:canOperate,finance:canFinance,professional:canFinance,patient:canFinance,audit:canAudit};
   const items=[['agenda','Agenda'],['finance','Finanza'],['professional','Professionisti'],['patient','Pazienti'],['audit','Registro modifiche']];
+  // These are actual Desk List routes. The server's DocPerm and row guards remain
+  // authoritative; a navigation link never confers document access.
+  const nativeMenus=[
+    {label:'Anagrafiche',show:canManage,links:[['Pazienti','/app/patient'],['Professionisti','/app/healthcare-practitioner']]},
+    {label:'Catalogo',show:canManage,links:[['Servizi','/app/item'],['Tariffe','/app/item-price'],['Tipi di seduta','/app/appointment-type'],['Servizi del centro','/app/cc-center-service'],['Modelli pacchetto','/app/cc-package-template']]},
+    {label:'Documenti contabili',show:canFinance,links:[['Fatture pazienti','/app/sales-invoice'],['Fatture professionisti','/app/purchase-invoice'],['Incassi e pagamenti','/app/payment-entry'],['Movimenti bancari','/app/bank-transaction']]},
+    {label:'Audit',show:canAudit,links:[['Registro modifiche','/app/cc-audit-event']]}
+  ];
+  function nativeNavigation(){
+    return nativeMenus.filter(group=>group.show).map(group=>{
+      const links=group.links.map(([label,href])=>`<a href="${href}">${label}</a>`).join('');
+      return `<details class="cc-desk-catalog"><summary>${group.label}</summary><div>${links}</div></details>`;
+    }).join('');
+  }
   let generation=0,active=null;
   if(!document.querySelector('meta[name="csrf-token"]')){
     const meta=document.createElement('meta');meta.name='csrf-token';meta.content=frappe.csrf_token;document.head.append(meta);
@@ -58,7 +73,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       const section=document.createElement('section');section.className='cc-desk-surface '+(doc.body.className||'');
       shell.querySelector('.sidebar')?.remove();
       let links=items.filter(([id])=>allowed[id]).map(([id,text])=>`<a href="${surfaces[id].path}" class="cc-desk-route ${id===view?'active':''}">${text}</a>`).join('');
-      if(roles.has('CC Manager'))links+='<details class="cc-desk-catalog"><summary>Catalogo</summary><div><a href="/app/item">Servizi</a><a href="/app/item-price">Tariffe</a><a href="/app/appointment-type">Tipi di seduta</a><a href="/app/cc-center-service">Servizi del centro</a><a href="/app/cc-package-template">Modelli pacchetto</a></div></details>';
+      links+=nativeNavigation();
       const routebar=document.createElement('nav');routebar.className='cc-desk-routebar';routebar.setAttribute('aria-label','Aree Centro Change');routebar.innerHTML=links;
       const nav=document.createElement('header');nav.className='cc-desk-topnav';
       nav.innerHTML='<nav id="navigation" aria-label="Funzioni della sezione"></nav><button type="button" id="logout">Esci</button>';
