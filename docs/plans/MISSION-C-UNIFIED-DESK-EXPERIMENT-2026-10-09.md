@@ -228,3 +228,22 @@ Continue on preserved synthetic C109 clone and named final product image; run th
 ### 9.4 Deliverables and evidence
 
 Append-only R4 activation, images/source/hash proof, test matrix 24/24 with per-scenario true outcomes, anonymized screenshots, runtime/QAcgroup limit verification, PSI/OOM/memory/disk, protected-container/RC22 diff and controlled stopping/recovery details in new **DRAFT evidence PR** stacked on #115 or clearly linked; update [#109](https://github.com/2008hitch-afk/centrochange_core/issues/109), product **DRAFT #112** and evidence DRAFT #111/#115 references. Avoid importing private logs, dumps or credentials to GitHub. **No merge/cutover**.
+
+
+---
+
+## 10. Owner requested P0 — alleggerimento e inventario sicuro server prima della ripresa C (2026-10-10)
+
+**Priorità corrente su §7–§9:** l'Owner ha richiesto esplicitamente una **pre-fase P0 di razionalizzazione server**, per trovare ed eventualmente dismettere vecchi container, duplicati, bench/sites Frappe e laboratori obsoleti, prima di riprendere diagnosi del watchdog, prove browser o Missione C.
+
+**Tracking dedicato:** [Issue #117 — FASE 0 Inventario/alleggerimento server](https://github.com/2008hitch-afk/centrochange_core/issues/117). **Stato corrente: `P0_AUDIT_REQUESTED / NO_DELETIONS_AUTHORIZED`.** Questa priorità non modifica i risultati storici R1–R4 (R4 rimane BLOCKED) né crea una nuova autorizzazione C/R5. Non alterare GOAL-02/HITCH, DECISION-004 o produzione.
+
+### Sequenza vincolante e risultati
+
+1. **P0-A SOLO READ-ONLY** — Codex/Sysadmin rileva inventario attuale Docker/Compose/container accesi/spenti, immagini/caches/volumi/reti, progetti, siti/bench, dipendenze, spazio recuperabile reale, uso RAM *effettivo* e cgroup/PSI/OOM; distingue risorse condivise, Centro Change e altri progetti. I 137 container dell'ultima prova sono la popolazione protetta, **non** 137 container necessariamente accesi né 137 duplicati.
+2. **P0-B RETENTION E BACKUP** — classificare `KEEP_CRITICAL` RC22 attualmente funzionante e i suoi dati/config, `KEEP_TEMPORARY` minimo codice/ambiente sintetico Mission C e compatibilità TARGET per riprendere, `CANDIDATE_DELETE_AFTER_OWNER_GATE` solo risorse realmente inutilizzate e ricostruibili, `OUT_OF_SCOPE` progetti estranei. Prima della dismissione di un checkpoint/volume/bench verificare backup con checksum e **ripristino pratico**, preferibilmente in posizione indipendente dal disco che si pulisce. GitHub conserva il codice, non sostituisce database, file, secret o runtime.
+3. **P0-C UNICO OWNER DELETE GATE** — preparare l'elenco nominativo di oggetti/digest/volumi/sites/bench esatti, ownership, bytes realmente recuperabili senza doppio conteggio, impatto, backup e rollback. Richiedere **una sola approvazione esplicita dell'Owner per il bundle prima di cancellare**. Nessuna delete implicita da «alleggerire». Non usare prune globali o wildcard; non toccare RC22/dati clienti, C109 indispensabile o servizi di altri progetti.
+4. **P0-D CLEANUP AUTORIZZATO E MISURATO** — solo dopo gate, rimozioni puntuali per lotti a basso rischio e successiva verifica di `df/docker system df`, RAM, OOM e UAT RC22; confronto prima/dopo e rollback. Non assumere che la riduzione del disco risolva il watchdog; R3/R4 hanno `CAP_NOT_ENFORCED` senza nuovi OOM e con >5GiB di RAM host disponibile. I primi OOM erano reali nel cgroup QA512MiB.
+5. **HANDOFF** — con P0 chiusa e verificata, fare diagnosi **mirata prima di un nuovo avvio del laboratorio C**: Docker HostConfig vs `memory.max`/cgroup path e sequenza transitoria worker R4/QA R3. Nessun R5 e nessun test runtime senza nuova attivazione/policy decision; preservare il limite aggregato runtime+QA **2.5GiB** e guardrail.
+
+**Consegna iniziale:** inventario e proposta in PR DRAFT, senza cancellare nulla. **Fine P0:** server alleggerito per quanto autorizzato, un solo UAT corrente funzionante + il minimo necessario per concludere Unified Desk, backup/ripristino provati e misure live del beneficio. **Risultato principale del programma:** `MISSION-C: READY_FOR_OWNER_UAT` dopo i test mancanti, non anticipato dall'alleggerimento.
