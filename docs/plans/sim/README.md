@@ -6,13 +6,18 @@
 
 La nuova demo mostra all'apertura una barra di anteprima con **Computer** e **Smartphone**. In modalità Smartphone si può selezionare la larghezza tra **390 px (iPhone)**, **412 px (Android)** e **375 px (compatto)**. È utilizzato un **iframe dello stesso documento** con parametro `?embed=1`: questa tecnica assegna realmente al contenuto una viewport delle dimensioni scelte, così le media query responsive entrano in funzione anche sul browser desktop.
 
-Cambiare la visuale ridimensiona **lo stesso iframe**, mantenendo in memoria la chiamata simulata e il profilo selezionato. Non è un'emulazione hardware completa come il device mode di Chrome DevTools: non replica touch nativo, user agent iOS/Android, notch reale, notifiche push, blocco schermo o comportamento dei permessi. Per verificare tali aspetti servono telefoni veri. Da file HTML offline l'iframe deve poter aprire lo stesso percorso con un parametro query; usare un browser moderno. Nessuna pubblicazione GitHub Pages è stata eseguita.
+Cambiare la visuale ridimensiona **lo stesso iframe**, mantenendo in memoria lo stato della chiamata simulata. Non è un'emulazione hardware completa come il device mode di Chrome DevTools: non replica touch nativo, user agent iOS/Android, notch reale, notifiche push, blocco schermo o comportamento dei permessi. Per verificare tali aspetti servono telefoni veri. Da file HTML offline l'iframe deve poter aprire lo stesso percorso con un parametro query; usare un browser moderno. Nessuna pubblicazione GitHub Pages è stata eseguita.
 
-## Presentazione cliente — interazione aggiornata
+## Presentazione cliente — flusso semplificato
 
-La demo mostra un pannello **Simula la chiamata** con citofono illustrato Centro Change e pulsante campanello. Il nuovo modulo Videocitofono si riconosce dal badge **NEW** (menu e scheda); quando suona, la voce cambia colore e pulsa, appare una notifica, la pagina apre la scheda Videocitofono e nel video dimostrativo compare il ritratto SVG di un visitatore **inventato**. Si può **Rispondere e parlare** (solo stato audio fittizio), attivare/disattivare **Audio (demo)** e premere **Apri porta**: compare **Porta aperta**. La risposta dal citofono fisico, la scelta di un secondo professionista e l'azzeramento sono simulati. I box esplicativi `Come funzionerebbe nella V1` e `Possibili sviluppi futuri` sono stati rimossi dalla UI cliente per mantenere l'attenzione sul flusso.
+La nuova demo integra la sezione **Videocitofono** (badge **NEW** nella navigazione e sulla scheda) nella vista professionista. Il precedente **pannello separato del campanello è stato eliminato**: la scheda presenta solo tre azioni:
+- **Simula chiamata**: fa comparire la notifica, anima il tab, mostra il visitatore SVG fittizio nello schermo e abilita le altre azioni;
+- **Rispondi e parla**: cambia lo stato in conversazione (nessun audio reale);
+- **Apri porta**: conferma visivamente **Porta aperta** (nessun comando inviato).
+ 
+Per ricominciare basta ripremere **Simula chiamata**, senza una schermata di reset. Il pulsante separato **Audio (demo)**, quello **Termina**, il cambio professionista e i controlli tecnici del pannello sono stati rimossi dalla presentazione: servono solo a confondere il walkthrough cliente. Le regole reali sul primo rispondente, sui permessi degli altri professionisti e sul fallback Comelit restano registrate nei documenti di Discovery, **non vengono negate dalla semplificazione della demo**.
 
-L'immagine del visitatore è un'illustrazione **SVG inclusa nel file**, senza rete, foto reali, autorizzazioni, telecamera o riconoscimento persone. Nessun audio viene effettivamente registrato, riprodotto o trasmesso. Animazioni e controlli rappresentano solo gli stati della UI. Il tester può selezionare Computer o Smartphone dalla barra iniziale, mantenendo lo stato del mock.
+L'illustrazione della persona è un SVG fittizio incluso nell'HTML, non una foto o un flusso di videocamera. Nessuna registrazione e nessuna comunicazione reale. Il selettore **Computer / Smartphone** rimane in alto.
 
 ## Nuova demo — vista professionista e citofonata
 
@@ -22,15 +27,13 @@ L'interfaccia è un mock coerente con il sistema grafico Centro Change approvato
 
 ### Walkthrough suggerito
 
-1. In **Agenda** selezionare un professionista demo e osservare l'area di lavoro.
-2. Cliccare **Simula campanello**: il citofono fisico risulta in squillo, la webapp mostra un avviso ai professionisti marcati presenti.
-3. Cliccare **Visualizza** e **Rispondi e parla** dal profilo Alfa; lo squillo del citofono fisico si interrompe nel mock.
-4. Cambiare profilo in Beta: l'audio è assegnato ad Alfa, ma Beta può comunque azionare **Apri porta** se presente e autorizzato. L'apertura è simulata.
-5. Premere **Azzera scenario**, simulare il campanello e quindi **Risposta da citofono fisico**: la segnalazione sui telefoni scompare e la conversazione mobile non viene attivata.
-6. Disattivare Wi-Fi/presenza o autorizzazione per vedere i controlli abilitati/disabilitati nella sola demo.
-7. Su mobile verificare navigazione e layout responsive. Nessuna notifica nativa/Web Push è realmente inviata.
+1. Aprire la demo e scegliere **Computer** o **Smartphone**.
+2. Aprire **Videocitofono** nella navigazione: appare la nuova scheda con il badge NEW.
+3. Premere **Simula chiamata**: notifica visibile, scheda evidenziata, ritratto del visitatore simulato.
+4. Premere **Rispondi e parla**, poi **Apri porta**: compare **Porta aperta**.
+5. Ripremere **Simula chiamata** per ripetere la prova.
 
-**Regole funzionali rappresentate:** primo professionista che risponde ha audio esclusivo; tutti i presenti e autorizzati possono aprire manualmente; il citofono fisico mantiene fallback; risposta sul dispositivo fisico interrompe gli avvisi cellulari; risposta mobile interrompe squillo fisico. Tutti questi comportamenti sono **richiesti**, non verificati su Comelit o garantiti su sistemi operativi reali.
+**Nota:** qui viene dimostrata una sola interazione professionista per semplificare il concept. Non sono simulati Web Push nativi, audio, permessi Wi-Fi, risposta da citofono fisico o concorrenza tra più professionisti. Questi requisiti restano in scope tecnico V1 solo dove verificati/approvati, soggetti ai rispettivi test.
 
 ## Vecchia simulazione
 
