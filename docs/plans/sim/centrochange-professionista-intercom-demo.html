@@ -43,6 +43,62 @@ html[data-preview-embed="1"] #previewShell{display:none}
 #devicePresetGroup{display:none;align-items:center;gap:7px}
 .preview-stage[data-view="mobile"]~*{}
 @media(max-width:550px){.preview-toolbar{gap:10px;justify-content:center}.preview-title{width:100%;text-align:center}.preview-stage[data-view="mobile"]{padding:12px 0 20px}.preview-stage[data-view="mobile"] .preview-device{max-width:calc(100vw - 10px);height:calc(100dvh - 194px);min-height:490px}.preview-choices{justify-content:center}.preview-choices .button{padding:9px 11px}.preview-choices select{min-width:133px}}
+
+/* Nuovo modulo videocitofono: badge, citofono fisico e video illustrato. */
+.card{position:relative}
+.new-corner{position:absolute;top:0;right:0;z-index:3;background:#12665f;color:#fff;font-size:9px;letter-spacing:.11em;font-weight:900;padding:5px 9px;border-radius:0 11px 0 9px}
+.intercom-link{position:relative!important;border:1px solid #c0ddd5!important;background:#e7f3ef!important;color:#12665f!important;font-weight:800!important;padding-right:54px!important}
+.intercom-link .nav-new{position:absolute;right:9px;top:8px;background:#12665f;color:#fff;padding:3px 5px;font-size:9px;font-weight:900;border-radius:4px;letter-spacing:.05em}
+.intercom-link.active{background:#12665f!important;color:#fff!important}
+.intercom-link.active .nav-new{background:#fff;color:#12665f}
+.intercom-link.ringing{background:#fff0d8!important;color:#864f13!important;border-color:#e9bb66!important;animation:navRing 1.5s ease-in-out infinite}
+.intercom-link.ringing .nav-new{background:#df8020;color:#fff}
+.mobile-intercom-link{position:relative;background:#e7f3ef!important;color:#12665f!important;border-color:#bcd9d0!important;padding-right:35px!important;font-weight:800!important}
+.mobile-intercom-link:after{content:"NEW";position:absolute;right:5px;top:2px;font-size:8px;font-weight:900}
+.mobile-intercom-link.ringing{background:#fff0d8!important;color:#864f13!important}
+.intercom-card.ringing{border:2px solid #e4a947;animation:cardRing 1.5s ease-in-out infinite}
+.demo-simulator{background:linear-gradient(180deg,#ffffff,#f3f9f7);border-color:#bcd8cf}
+.demo-simulator .cardhead{padding-right:35px}
+.sim-head{color:#12665f}
+.intercom-unit{position:relative;max-width:238px;margin:15px auto 17px;padding:16px 22px 18px;border:3px solid #aebec0;border-radius:22px;background:linear-gradient(125deg,#dfe7e9,#f9fcfc 45%,#bccbd0);box-shadow:inset 0 2px 3px #fff,inset 0 -4px 9px #a6b9bd,0 12px 18px rgba(24,66,68,.13);text-align:center;color:#24464a}
+.intercom-brand{font-size:14px;font-weight:850;letter-spacing:-.04em}
+.intercom-label{font-size:9px;font-weight:750;letter-spacing:.17em;color:#5b777b;margin:4px 0 12px}
+.intercom-lens{width:34px;height:34px;margin:0 auto 13px;border:7px solid #78969e;background:radial-gradient(circle at 36% 30%,#7497a5 0 10%,#243c4d 18%,#091a27 63%);border-radius:50%;box-shadow:0 1px 5px #799298}
+.intercom-slits{display:flex;justify-content:center;gap:5px;margin-bottom:14px}
+.intercom-slits i{height:3px;width:20px;border-radius:3px;background:#83999e}
+.doorbell-button{width:71px;height:71px;padding:0;display:grid;place-items:center;border:4px solid #9cacae;border-radius:50%;background:linear-gradient(#fff,#e1eeee);color:#12665f;box-shadow:0 3px 1px #9fb1b5,0 8px 12px rgba(25,65,70,.15);margin:0 auto 9px;transition:transform .13s,box-shadow .13s}
+.doorbell-button:hover:not(:disabled){filter:brightness(1.04);transform:translateY(-2px)}
+.doorbell-button:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 2px #97a9ad}
+.doorbell-button svg{width:32px;height:32px}
+.doorbell-unit-label{font-size:11px;color:#4d6d70;font-weight:750}
+.doorbell-unit-label.live{color:#a34c16;animation:navRing 1.1s ease-in-out infinite}
+.doorbell-caption{color:#12665f;font-weight:750;text-align:center;font-size:12px;margin-bottom:15px}
+.doorbell-caption small{display:block;color:#657b80;font-weight:400;font-size:11px;margin-top:5px}
+.simulator-actions{display:flex;gap:8px;flex-wrap:wrap}
+.simulator-actions .button{flex:1 1 130px}
+.screen{isolation:isolate}
+.screen .door{transition:opacity .25s ease}
+.visitor-portrait{position:absolute;inset:0;z-index:1;display:grid;place-items:center;opacity:0;visibility:hidden;transform:scale(.96);transition:opacity .4s ease,transform .4s ease,visibility .4s;background:linear-gradient(155deg,#5c7879,#263a45)}
+.visitor-portrait svg{height:100%;max-width:100%;width:100%;object-fit:cover}
+.screen.visitor-visible .door{opacity:0}
+.screen.visitor-visible .visitor-portrait{opacity:1;visibility:visible;transform:scale(1)}
+.screen.visitor-visible .screen-label{z-index:2;background:rgba(13,37,39,.65);border-radius:7px;padding:9px}
+.screen.ring-animation{animation:cardRing 1.7s ease-in-out infinite}
+.screen.opened:before{z-index:2;background:linear-gradient(180deg,transparent 50%,rgba(17,70,55,.65))}
+.open-overlay{display:none;position:absolute;inset:0;z-index:5;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(13,79,60,.86);color:#fff;text-align:center;font-size:23px;font-weight:800;letter-spacing:-.02em}
+.open-overlay .checkmark{font-size:48px;line-height:1}
+.open-overlay small{font-size:12px;font-weight:500}
+.screen.opened .open-overlay{display:flex;animation:fadeDoor .26s ease-out both}
+#ringAlert.show{animation:fadeDoor .33s ease-out}
+#topDot.show{animation:navRing 1.1s infinite}
+.call-audio{border-color:#aed6ca;color:#12665f}
+.call-audio.on{background:#e4f4ed;color:#116449;border-color:#b9ddcd}
+.call-audio.off{background:#fff7ee;color:#8c5a29;border-color:#ead0b8}
+@keyframes fadeDoor{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+@keyframes navRing{0%,100%{box-shadow:0 0 0 0 rgba(222,153,54,.18)}50%{box-shadow:0 0 0 5px rgba(222,153,54,.16)}}
+@keyframes cardRing{0%,100%{box-shadow:0 0 0 0 rgba(222,153,54,.12)}50%{box-shadow:0 0 0 5px rgba(222,153,54,.17)}}
+@media(prefers-reduced-motion:reduce){.intercom-link.ringing,.mobile-intercom-link.ringing,.intercom-card.ringing,.screen.ring-animation,.doorbell-unit-label.live,#topDot.show{animation:none!important}.visitor-portrait,.doorbell-button{transition:none}}
+
 </style>
 </head>
 <body>
@@ -73,7 +129,7 @@ html[data-preview-embed="1"] #previewShell{display:none}
     <button data-page="agenda" class="active"><span class="mark">▦</span> Agenda</button>
     <button data-page="pazienti"><span class="mark">♙</span> Pazienti</button>
     <button data-page="disponibilita"><span class="mark">◷</span> Disponibilità</button>
-    <button data-page="videocitofono"><span class="mark">▣</span> Videocitofono <span id="navDot" class="ping"></span></button>
+    <button data-page="videocitofono" class="intercom-link"><span class="mark">▣</span> Videocitofono <span class="nav-new">NEW</span><span id="navDot" class="ping"></span></button>
   </nav></div>
   <div class="aside-bottom">Anteprima statica · nessun accesso a pazienti, citofono o server.</div>
 </aside>
@@ -86,7 +142,7 @@ html[data-preview-embed="1"] #previewShell{display:none}
  <div class="title-line"><div><div class="eyebrow">Area professionista</div><h1 id="pageTitle">La tua giornata</h1><div class="sub">Vista dimostrativa del gestionale Centro Change, con modulo videocitofono.</div></div><span class="pill ok" id="presenceBadge">Presente in studio · demo</span></div>
  <div class="demo-banner"><strong>DEMO INTERATTIVA CON DATI INVENTATI.</strong> Non è il gestionale collegato al server. Non usa telecamera, microfono, Web Push reale, Wi-Fi o videocitofono Comelit. Nessuna porta si apre e nessuna informazione viene salvata. La possibilità di ricevere notifiche con schermo bloccato richiederà una PWA con servizio push e test su iOS/Android.</div>
  <nav class="nav-overview" aria-label="Navigazione mobile">
-  <button data-page="agenda" class="button secondary sm">Agenda</button><button data-page="pazienti" class="button sm">Pazienti</button><button data-page="disponibilita" class="button sm">Disponibilità</button><button data-page="videocitofono" class="button sm">Videocitofono</button>
+  <button data-page="agenda" class="button secondary sm">Agenda</button><button data-page="pazienti" class="button sm">Pazienti</button><button data-page="disponibilita" class="button sm">Disponibilità</button><button data-page="videocitofono" class="button sm mobile-intercom-link">Videocitofono</button>
  </nav>
  <div id="ringAlert" class="banner-ring" role="status" aria-live="polite"><strong>◉ Qualcuno sta suonando all'ingresso.</strong> <span id="ringMessage">Avviso per i professionisti presenti.</span> <button class="button sm secondary" id="viewCall" style="margin-left:8px">Visualizza</button></div>
  <div class="layout" style="margin-top:18px">
@@ -106,12 +162,32 @@ html[data-preview-embed="1"] #previewShell{display:none}
    <section class="page-only" id="page-pazienti" aria-label="Pazienti"><div class="card"><h2>Pazienti</h2><p class="muted">Sezione esemplificativa. Nessun elenco o dato paziente reale è incluso nel prototipo.</p><div class="hint">Nel gestionale effettivo il professionista vede solo le informazioni autorizzate.</div></div></section>
    <section class="page-only" id="page-disponibilita" aria-label="Disponibilità"><div class="card"><h2>Disponibilità</h2><p class="muted">Vista abbozzata coerente con la navigazione del gestionale. Nessuna modifica agli orari è possibile dalla demo.</p></div></section>
    <section class="page-only" id="page-videocitofono" aria-label="Videocitofono">
-    <div class="card intercom-card">
+    <div class="card intercom-card" id="intercomCard"><span class="new-corner">NEW</span>
      <div class="cardhead"><div><h2>Videocitofono</h2><div class="sub">Ingresso principale · prova d'interazione</div></div><span id="callBadge" class="pill">In attesa</span></div>
-     <div id="camera" class="screen"><div class="door" aria-hidden="true"></div><div class="screen-label" id="screenCaption">Nessuna chiamata · immagine fittizia</div></div>
+     <div id="camera" class="screen"><div class="door" aria-hidden="true"></div><div class="visitor-portrait" aria-hidden="true">
+      <svg viewBox="0 0 520 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustrazione fittizia di una persona davanti all'ingresso">
+       <defs><linearGradient id="visitorBackdrop" x2="1" y2="1"><stop stop-color="#819b9b"/><stop offset=".7" stop-color="#365b61"/><stop offset="1" stop-color="#183840"/></linearGradient><linearGradient id="visitorCoat" x2="1" y2="1"><stop stop-color="#27353d"/><stop offset="1" stop-color="#111c24"/></linearGradient></defs>
+       <rect width="520" height="300" fill="url(#visitorBackdrop)"/>
+       <rect x="25" y="-15" width="85" height="330" fill="#738d8e" opacity=".5"/><rect x="405" y="-15" width="90" height="330" fill="#8ba4a1" opacity=".45"/>
+       <path d="M115 306 Q135 214 200 214 L320 214 Q388 215 409 306" fill="url(#visitorCoat)"/>
+       <path d="M232 206h57v53l-29 18-28-18z" fill="#bb8671"/>
+       <path d="M206 222 258 286 223 299 188 241zM312 222 258 286 297 299 333 241z" fill="#e3e9e8"/>
+       <ellipse cx="260" cy="133" rx="66" ry="84" fill="#c99277"/>
+       <ellipse cx="196" cy="148" rx="9" ry="17" fill="#c48d74"/><ellipse cx="325" cy="148" rx="9" ry="17" fill="#c48d74"/>
+       <path d="M194 128 Q187 60 234 47 Q289 28 323 73 Q338 94 329 138 L318 109 Q312 72 276 78 Q222 91 204 82 Z" fill="#283239"/>
+       <path d="M201 97 Q239 59 287 60 Q308 61 322 90" fill="none" stroke="#283239" stroke-width="20" stroke-linecap="round"/>
+       <path d="M222 135q12-9 24-2m30 0q14-8 26 1" fill="none" stroke="#594337" stroke-width="3.4" stroke-linecap="round"/>
+       <ellipse cx="235" cy="139" rx="4.6" ry="5.3" fill="#2d2928"/><ellipse cx="287" cy="139" rx="4.6" ry="5.3" fill="#2d2928"/>
+       <path d="M263 145q-8 26-1 31h10" fill="none" stroke="#a66e58" stroke-width="3" stroke-linecap="round"/>
+       <path d="M238 187q21 11 45-1" stroke="#8c514b" fill="none" stroke-width="3" stroke-linecap="round"/>
+       <path d="M211 194q18 33 48 35 33-1 53-34" fill="none" stroke="#b77960" stroke-width="3" opacity=".5"/>
+       <rect x="0" y="0" width="520" height="300" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="18"/>
+      </svg>
+     </div><div class="screen-label" id="screenCaption">Nessuna chiamata · immagine fittizia</div><div class="open-overlay" id="openOverlay" role="status" aria-live="polite"><span class="checkmark">✓</span><span>Porta aperta</span><small>Apertura simulata · nessuna porta reale azionata</small></div></div>
      <div class="call-status"><span id="statusLight" class="light"></span><span id="callDetail">In attesa di una persona all'ingresso.</span></div>
      <div class="actions" style="margin-top:17px">
       <button id="answer" class="button primary" disabled>Rispondi e parla</button>
+      <button id="audioToggle" class="button call-audio" disabled>Audio (demo)</button>
       <button id="openDoor" class="button secondary" disabled>Apri porta</button>
       <button id="endCall" class="button danger" disabled>Termina</button>
      </div>
@@ -121,19 +197,31 @@ html[data-preview-embed="1"] #previewShell{display:none}
    <div class="card"><div class="cardhead"><h2>Avvisi della giornata</h2><span class="pill">Dimostrazione</span></div><div class="sub">L'eventuale chiamata al videocitofono comparirà qui e nella sezione dedicata.</div><p id="eventFeed" class="hint">Nessuna chiamata simulata in corso.</p></div>
   </div>
   <aside class="stack">
-   <div class="card">
-    <div class="cardhead"><h2>Scenario dimostrativo</h2><span class="pill warn">COMANDI DEMO</span></div>
-    <label class="select-label" for="actor">Visualizza il telefono di</label>
-    <select id="actor"><option value="alfa">Professionista Alfa</option><option value="beta">Professionista Beta</option><option value="gamma">Professionista Gamma</option></select>
-    <label class="flag"><input id="isPresent" type="checkbox" checked> Presente sul Wi-Fi dello studio (simulato)</label>
-    <label class="flag"><input id="isAllowed" type="checkbox" checked> Autorizzato a usare Apri (simulato)</label>
-    <div class="demo-controls"><p class="helper">Simula eventi dal pulsante al portone o dal citofono fisico. Sono azioni fittizie, senza accesso a dispositivi.</p>
-      <div class="actions"><button id="ringButton" class="button primary">Simula campanello</button><button id="physicalAnswer" class="button" disabled>Risposta da citofono fisico</button><button id="reset" class="button">Azzera scenario</button></div>
+   <div class="card demo-simulator" id="simulatorPanel"><span class="new-corner">NEW</span>
+    <div class="cardhead"><h2 class="sim-head">Simula la chiamata</h2></div>
+    <p class="sub">Premi il campanello del videocitofono per vedere la nuova funzione nel gestionale.</p>
+    <div class="intercom-unit" id="doorbellIllustration">
+      <div class="intercom-brand">Centro Change</div>
+      <div class="intercom-label">VIDEOCITOFONO · INGRESSO</div>
+      <div class="intercom-lens"></div>
+      <div class="intercom-slits"><i></i><i></i><i></i></div>
+      <button type="button" id="ringButton" class="doorbell-button" aria-label="Suona il campanello Centro Change" title="Suona il campanello">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4m-2-20v1"/></svg>
+      </button>
+      <div id="doorbellLight" class="doorbell-unit-label">Premi per suonare</div>
+    </div>
+    <div class="doorbell-caption">Suona il campanello<small>Tutti gli eventi sono simulati.</small></div>
+    <div class="demo-controls">
+     <label class="select-label" for="actor">Visualizza il telefono di</label>
+     <select id="actor"><option value="alfa">Professionista Alfa</option><option value="beta">Professionista Beta</option><option value="gamma">Professionista Gamma</option></select>
+     <details style="margin:11px 0 13px"><summary class="helper" style="cursor:pointer">Opzioni della simulazione</summary>
+      <label class="flag"><input id="isPresent" type="checkbox" checked> Presente sul Wi-Fi dello studio (simulato)</label>
+      <label class="flag"><input id="isAllowed" type="checkbox" checked> Autorizzato ad aprire (simulato)</label>
+     </details>
+     <div class="simulator-actions"><button id="physicalAnswer" class="button sm" disabled>Risposta dal citofono fisico</button><button id="reset" class="button sm">Ricomincia</button></div>
     </div>
     <div id="physicalStatus" class="hint">Citofono fisico: in attesa</div>
    </div>
-   <div class="card"><h2>Come funzionerebbe nella V1</h2><p class="sub">Notifica a tutti i presenti. Il primo a rispondere usa l'audio. Tutti i presenti autorizzati possono aprire manualmente. Il citofono fisico continua a funzionare come alternativa.</p><p class="helper">Le notifiche vere a schermo bloccato richiedono un backend Web Push, HTTPS, service worker e installazione della webapp su iPhone.</p></div>
-   <div class="card"><h2>Possibili sviluppi futuri</h2><p class="sub"><strong>QR appuntamento, filtro vocale e assistente AI</strong> sono optional da validare. Una <strong>app nativa</strong> potrebbe aggiungere una gestione più avanzata della chiamata, ma non è inclusa nella V1.</p><span class="pill">Fuori perimetro attuale</span></div>
   </aside>
  </div>
  <p class="helper" style="margin-top:22px">EMPV · Centro Change · prototipo di concept playback, non collaudato e non pubblicabile come sistema operativo. La compatibilità con Comelit, inclusa la sincronizzazione delle chiamate e l'audio bidirezionale, deve ancora essere dimostrata.</p>
