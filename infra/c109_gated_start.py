@@ -90,6 +90,8 @@ def main(root):
     project = activation.get("target")
     if project not in (PROJECT, RETRY_PROJECT):
         raise RuntimeError("unapproved isolated project")
+    if now() < dt.datetime.fromisoformat(activation["start_utc"]):
+        raise RuntimeError("activation window has not opened")
     if now() >= dt.datetime.fromisoformat(activation["mutation_end_utc"]):
         raise RuntimeError("mutation window expired")
     if (state / "app-attempted").exists():
