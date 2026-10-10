@@ -101,6 +101,11 @@ html[data-preview-embed="1"] #previewShell{display:none}
 @keyframes cardRing{0%,100%{box-shadow:0 0 0 0 rgba(222,153,54,.12)}50%{box-shadow:0 0 0 5px rgba(222,153,54,.17)}}
 @media(prefers-reduced-motion:reduce){.intercom-link.ringing,.mobile-intercom-link.ringing,.intercom-card.ringing,.screen.ring-animation,.doorbell-unit-label.live,#topDot.show{animation:none!important}.visitor-portrait,.doorbell-button{transition:none}}
 
+
+/* Semplificazione cliente: nessun pannello separato per il campanello. */
+.layout{grid-template-columns:minmax(0,1fr)}
+.layout>.stack{max-width:920px;width:100%}
+@media(max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
@@ -188,43 +193,15 @@ html[data-preview-embed="1"] #previewShell{display:none}
      </div><div class="screen-label" id="screenCaption">Nessuna chiamata · immagine fittizia</div><div class="open-overlay" id="openOverlay" role="status" aria-live="polite"><span class="checkmark">✓</span><span>Porta aperta</span><small>Apertura simulata · nessuna porta reale azionata</small></div></div>
      <div class="call-status"><span id="statusLight" class="light"></span><span id="callDetail">In attesa di una persona all'ingresso.</span></div>
      <div class="actions" style="margin-top:17px">
-      <button id="answer" class="button primary" disabled>Rispondi e parla</button>
-      <button id="audioToggle" class="button call-audio" disabled>Audio (demo)</button>
-      <button id="openDoor" class="button secondary" disabled>Apri porta</button>
-      <button id="endCall" class="button danger" disabled>Termina</button>
+      <button type="button" id="ringButton" class="button secondary">Simula chiamata</button>
+      <button type="button" id="answer" class="button primary" disabled>Rispondi e parla</button>
+      <button type="button" id="openDoor" class="button secondary" disabled>Apri porta</button>
      </div>
      <div id="activity" class="hint" role="status" aria-live="polite">Il primo professionista che risponde assume l'audio. Gli altri presenti e autorizzati possono comunque aprire.</div>
     </div>
    </section>
    <div class="card"><div class="cardhead"><h2>Avvisi della giornata</h2><span class="pill">Dimostrazione</span></div><div class="sub">L'eventuale chiamata al videocitofono comparirà qui e nella sezione dedicata.</div><p id="eventFeed" class="hint">Nessuna chiamata simulata in corso.</p></div>
   </div>
-  <aside class="stack">
-   <div class="card demo-simulator" id="simulatorPanel"><span class="new-corner">NEW</span>
-    <div class="cardhead"><h2 class="sim-head">Simula la chiamata</h2></div>
-    <p class="sub">Premi il campanello del videocitofono per vedere la nuova funzione nel gestionale.</p>
-    <div class="intercom-unit" id="doorbellIllustration">
-      <div class="intercom-brand">Centro Change</div>
-      <div class="intercom-label">VIDEOCITOFONO · INGRESSO</div>
-      <div class="intercom-lens"></div>
-      <div class="intercom-slits"><i></i><i></i><i></i></div>
-      <button type="button" id="ringButton" class="doorbell-button" aria-label="Suona il campanello Centro Change" title="Suona il campanello">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4m-2-20v1"/></svg>
-      </button>
-      <div id="doorbellLight" class="doorbell-unit-label">Premi per suonare</div>
-    </div>
-    <div class="doorbell-caption">Suona il campanello<small>Tutti gli eventi sono simulati.</small></div>
-    <div class="demo-controls">
-     <label class="select-label" for="actor">Visualizza il telefono di</label>
-     <select id="actor"><option value="alfa">Professionista Alfa</option><option value="beta">Professionista Beta</option><option value="gamma">Professionista Gamma</option></select>
-     <details style="margin:11px 0 13px"><summary class="helper" style="cursor:pointer">Opzioni della simulazione</summary>
-      <label class="flag"><input id="isPresent" type="checkbox" checked> Presente sul Wi-Fi dello studio (simulato)</label>
-      <label class="flag"><input id="isAllowed" type="checkbox" checked> Autorizzato ad aprire (simulato)</label>
-     </details>
-     <div class="simulator-actions"><button id="physicalAnswer" class="button sm" disabled>Risposta dal citofono fisico</button><button id="reset" class="button sm">Ricomincia</button></div>
-    </div>
-    <div id="physicalStatus" class="hint">Citofono fisico: in attesa</div>
-   </div>
-  </aside>
  </div>
  <p class="helper" style="margin-top:22px">EMPV · Centro Change · prototipo di concept playback, non collaudato e non pubblicabile come sistema operativo. La compatibilità con Comelit, inclusa la sincronizzazione delle chiamate e l'audio bidirezionale, deve ancora essere dimostrata.</p>
 </main>
@@ -235,85 +212,70 @@ html[data-preview-embed="1"] #previewShell{display:none}
  "use strict";
  if(document.documentElement.dataset.previewEmbed!=="1")return;
  const get=id=>document.getElementById(id);
- const actors={alfa:{name:"Professionista Alfa",present:true,allowed:true},beta:{name:"Professionista Beta",present:true,allowed:true},gamma:{name:"Professionista Gamma",present:false,allowed:true}};
  const pageNames={agenda:"Agenda",pazienti:"Pazienti",disponibilita:"Disponibilità",videocitofono:"Videocitofono"};
- let selected="alfa",page="agenda",call=null,seq=0,history="Nessuna chiamata simulata in corso.";
- function actor(){return actors[selected]}
- function showPage(p){page=p;Object.keys(pageNames).forEach(k=>get("page-"+k).classList.toggle("active",k===p));document.querySelectorAll("[data-page]").forEach(b=>{b.classList.toggle("active",b.dataset.page===p);b.classList.toggle("secondary",b.dataset.page===p)});get("topPage").textContent=pageNames[p];get("pageTitle").textContent=p==="agenda"?"La tua giornata":pageNames[p]}
- function say(t){history=t;get("activity").textContent=t;get("eventFeed").textContent=t}
+ let callState="idle",opened=false,history="Nessuna chiamata simulata in corso.";
+ function showPage(p){
+  Object.keys(pageNames).forEach(k=>get("page-"+k).classList.toggle("active",k===p));
+  document.querySelectorAll("[data-page]").forEach(b=>{
+   b.classList.toggle("active",b.dataset.page===p);
+   b.classList.toggle("secondary",b.dataset.page===p);
+  });
+  get("topPage").textContent=pageNames[p];
+  get("pageTitle").textContent=p==="agenda"?"La tua giornata":pageNames[p];
+ }
+ function announce(message){
+  history=message;
+  get("activity").textContent=message;
+  get("eventFeed").textContent=message;
+ }
  function render(){
-  const a=actor(),ring=call&&call.status==="ringing",active=call&&call.status==="mobile",physical=call&&call.status==="physical";
-  get("isPresent").checked=a.present;get("isAllowed").checked=a.allowed;
-  get("presenceBadge").textContent=a.present?"Presente in studio · demo":"Non presente in studio · demo";
-  get("presenceBadge").className=a.present?"pill ok":"pill warn";
-  get("avatar").textContent=selected.toUpperCase().slice(0,2);get("agendaActor").textContent=a.name;
-  const notify=!!(ring&&a.present);
-  get("ringAlert").classList.toggle("show",notify);get("topDot").classList.toggle("show",notify);get("navDot").classList.toggle("show",notify);
-  document.querySelectorAll('[data-page="videocitofono"]').forEach(el=>el.classList.toggle("ringing",!!ring));
-  get("intercomCard").classList.toggle("ringing",!!ring);
-  get("doorbellLight").classList.toggle("live",!!ring);
-  get("doorbellLight").textContent=ring?"Chiamata in corso…":active?"Risposta da smartphone":physical?"Risposta dal citofono":"Premi per suonare";
-  get("ringButton").disabled=!!(ring||active);
-  get("bellTop").setAttribute("aria-label",notify?"Chiamata al videocitofono":"Apri videocitofono");
-  get("answer").disabled=!(ring&&a.present);
-  get("openDoor").disabled=!((ring||active)&&a.present&&a.allowed&&!call.opened);
-  get("endCall").disabled=!(ring||active);
-  get("physicalAnswer").disabled=!ring;
-  get("audioToggle").disabled=!(active&&call.owner===selected);
-  get("audioToggle").textContent=active&&call.owner===selected?(call.muted?"Audio spento · demo":"Audio acceso · demo"):"Audio (demo)";
-  get("audioToggle").className=active&&call.owner===selected?(call.muted?"button call-audio off":"button call-audio on"):"button call-audio";
-  get("camera").classList.toggle("visitor-visible",!!(ring||active));
-  get("camera").classList.toggle("ring-animation",!!ring);
-  get("camera").classList.toggle("opened",!!(call&&call.opened));
-  get("camera").classList.toggle("active",!!(ring||active||physical));
-  get("callBadge").textContent=call&&call.opened?"Porta aperta":ring?"Sta suonando":active?"In gestione":physical?"Risposta fisica":"In attesa";
-  get("callBadge").className=call&&call.opened?"pill ok":ring?"pill warn":(active||physical)?"pill ok":"pill";
-  get("statusLight").className=ring?"light ringing":(active||physical)?"light live":"light";
-  let description="In attesa di una persona all'ingresso.",caption="Nessuna chiamata · immagine fittizia";
-  if(ring){description="Chiamata in arrivo: tutti i professionisti presenti ricevono l'avviso.";caption="Visitante all'ingresso · video simulato"}
-  if(active){description=actors[call.owner].name+" sta gestendo la conversazione audio.";caption="In conversazione · video simulato"}
-  if(physical){description="La chiamata è stata presa in carico dal videocitofono fisico.";caption="Risposta da citofono fisico"}
-  get("callDetail").textContent=description;
-  get("screenCaption").textContent=caption;
-  get("physicalStatus").textContent="Citofono fisico: "+(ring?"sta suonando":active?"squillo interrotto (simulato)":physical?"chiamata gestita fisicamente":"in attesa");
-  get("ringMessage").textContent=notify?"Notifica ricevuta dal tuo profilo.":"";
-  if(active&&call.owner===selected)get("answer").textContent="Stai parlando (demo)";
-  else if(active)get("answer").textContent="Audio occupato";
-  else get("answer").textContent="Rispondi e parla";
-  if(call&&call.opened)get("openDoor").textContent="Apertura simulata";
-  else get("openDoor").textContent="Apri porta";
+  const ringing=callState==="ringing",talking=callState==="talking",live=ringing||talking;
+  get("ringAlert").classList.toggle("show",ringing);
+  get("topDot").classList.toggle("show",ringing);
+  get("navDot").classList.toggle("show",ringing);
+  document.querySelectorAll('[data-page="videocitofono"]').forEach(el=>el.classList.toggle("ringing",ringing));
+  get("intercomCard").classList.toggle("ringing",ringing);
+  get("bellTop").setAttribute("aria-label",ringing?"Chiamata in arrivo al videocitofono":"Apri videocitofono");
+  get("ringMessage").textContent=ringing?"Notifica simulata per il professionista presente.":"";
+  get("camera").classList.toggle("visitor-visible",live);
+  get("camera").classList.toggle("ring-animation",ringing);
+  get("camera").classList.toggle("opened",opened);
+  get("camera").classList.toggle("active",live);
+  get("callBadge").textContent=opened?"Porta aperta":ringing?"Sta suonando":talking?"In conversazione":"In attesa";
+  get("callBadge").className=opened?"pill ok":ringing?"pill warn":talking?"pill ok":"pill";
+  get("statusLight").className=ringing?"light ringing":talking?"light live":"light";
+  get("callDetail").textContent=opened?"Apertura simulata confermata.":ringing?"Qualcuno sta suonando all'ingresso.":talking?"Conversazione attiva (solo simulazione).":"In attesa di una persona all'ingresso.";
+  get("screenCaption").textContent=opened?"":ringing?"Visitatore all'ingresso · immagine simulata":talking?"In conversazione · immagine simulata":"Nessuna chiamata · immagine fittizia";
+  get("ringButton").disabled=false;
+  get("answer").disabled=!ringing;
+  get("openDoor").disabled=!live||opened;
+  get("answer").textContent="Rispondi e parla";
+  get("openDoor").textContent="Apri porta";
   get("eventFeed").textContent=history;
  }
- function ringing(){
-   if(call&&(call.status==="ringing"||call.status==="mobile"))return;
-   seq++;call={id:seq,status:"ringing",owner:null,opened:false,muted:false};
-   say("Chiamata in arrivo. È comparsa la notifica ai presenti; guarda il visitatore sullo schermo.");
-   showPage("videocitofono");render();
-   get("page-videocitofono").scrollIntoView({behavior:"smooth",block:"start"});
+ function simulateCall(){
+  callState="ringing";opened=false;
+  announce("Chiamata in arrivo: notifica simulata e visitatore visibile sullo schermo.");
+  showPage("videocitofono");render();
  }
- function answer(){if(!call||call.status!=="ringing"||!actor().present)return;call.status="mobile";call.owner=selected;call.muted=false;say(actors[selected].name+" ha risposto. Audio attivo (simulato), il citofono fisico smette di suonare.");showPage("videocitofono");render()}
- function open(){if(!call||!["ringing","mobile"].includes(call.status)||!actor().present||!actor().allowed||call.opened)return;call.opened=true;say("Porta aperta (simulazione) da "+actors[selected].name+". Nessun comando è stato inviato a un dispositivo.");render()}
- function answerPhysical(){if(!call||call.status!=="ringing")return;call.status="physical";say("Risposta simulata dal citofono fisico: le notifiche sui telefoni si chiudono e nessuna conversazione mobile può iniziare.");render()}
- function end(){if(!call||!["ringing","mobile"].includes(call.status))return;call=null;say("Chiamata conclusa nella simulazione. Nessun dato è stato salvato.");render()}
- function reset(){call=null;selected="alfa";get("actor").value="alfa";actors.alfa.present=true;actors.beta.present=true;actors.gamma.present=false;actors.alfa.allowed=true;actors.beta.allowed=true;actors.gamma.allowed=true;say("Simulazione azzerata, nessun dato persistente.");showPage("agenda");render()}
+ function answer(){
+  if(callState!=="ringing")return;
+  callState="talking";
+  announce("Risposta avvenuta: conversazione audio rappresentata graficamente, senza microfono o altoparlanti reali.");
+  render();
+ }
+ function openDoor(){
+  if(!["ringing","talking"].includes(callState)||opened)return;
+  opened=true;
+  announce("Porta aperta — solo simulazione. Nessun comando inviato all'impianto.");
+  render();
+ }
  document.querySelectorAll("[data-page]").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
  get("bellTop").addEventListener("click",()=>showPage("videocitofono"));
  get("viewCall").addEventListener("click",()=>showPage("videocitofono"));
- get("ringButton").addEventListener("click",ringing);
+ get("ringButton").addEventListener("click",simulateCall);
  get("answer").addEventListener("click",answer);
- get("openDoor").addEventListener("click",open);
- get("audioToggle").addEventListener("click",()=>{
-  if(!call||call.status!=="mobile"||call.owner!==selected)return;
-  call.muted=!call.muted;
-  say(call.muted?"Audio disattivato (demo).":"Audio attivato (demo).");
-  render();
- });
- get("physicalAnswer").addEventListener("click",answerPhysical);
- get("endCall").addEventListener("click",end);
- get("reset").addEventListener("click",reset);
- get("actor").addEventListener("change",e=>{selected=e.target.value;render()});
- get("isPresent").addEventListener("change",e=>{actor().present=e.target.checked;render()});
- get("isAllowed").addEventListener("change",e=>{actor().allowed=e.target.checked;render()});
+ get("openDoor").addEventListener("click",openDoor);
  render();
 })();
 </script>
