@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Centro Change — Professionista · Videocitofono DEMO</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f6f8;color:#1d2935;--primary:#12665f;--border:#dfe6e8;--muted:#657380;--surface:#fff;--shadow:0 8px 26px rgba(16,43,48,.045)}
+*{box-sizing:border-box}body{margin:0}button,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.42;cursor:not-allowed}button:focus-visible,select:focus-visible{outline:3px solid #4cb9ac;outline-offset:2px}
+.shell{display:grid;grid-template-columns:225px minmax(0,1fr);min-height:100vh}.sidebar{background:#fff;border-right:1px solid var(--border);padding:22px 15px;display:flex;flex-direction:column;gap:23px}.brand{font-size:22px;font-weight:800;letter-spacing:-.06em;color:var(--primary);padding:3px 10px 15px;border-bottom:1px solid var(--border)}.brand small{display:block;font-size:11px;font-weight:600;letter-spacing:.03em;color:var(--muted);margin-top:4px}.navgroup{font-size:10px;font-weight:800;letter-spacing:.12em;color:#87939c;padding:0 11px}.nav{display:grid;gap:5px}.nav button{border:0;background:transparent;color:#46545f;display:flex;align-items:center;gap:11px;text-align:left;padding:12px;border-radius:9px;font-size:14px}.nav button.active{background:#e6f3f0;color:var(--primary);font-weight:750}.nav button:hover{background:#f0f5f4}.mark{font-size:17px;width:23px;text-align:center}.aside-bottom{margin-top:auto;border-top:1px solid var(--border);padding:17px 10px 0;font-size:12px;color:var(--muted)}
+.content{min-width:0}.topbar{background:#fff;border-bottom:1px solid var(--border);min-height:69px;display:flex;align-items:center;justify-content:space-between;gap:15px;padding:12px clamp(16px,4vw,43px)}.crumb{font-size:13px;color:var(--muted)}.top-actions{display:flex;gap:10px;align-items:center}.bell{position:relative;border:1px solid var(--border);background:white;border-radius:9px;padding:10px 13px}.ping{width:9px;height:9px;border-radius:50%;background:#d64d36;position:absolute;top:5px;right:6px;display:none}.ping.show{display:block}.avatar{width:33px;height:33px;display:grid;place-items:center;border-radius:9px;background:#e5efef;color:#135c56;font-weight:800;font-size:12px}
+main{max-width:1200px;margin:0 auto;padding:30px clamp(16px,4vw,43px) 70px}.title-line{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--primary)}h1{font-size:clamp(23px,3vw,32px);line-height:1.1;letter-spacing:-.045em;margin:7px 0}h2{font-size:17px;margin:0;letter-spacing:-.025em}h3{font-size:14px;margin:0 0 8px}.muted{color:var(--muted)}p{line-height:1.5}.sub{font-size:13px;color:var(--muted);margin:8px 0 0}.pill{display:inline-block;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:750;background:#ecf1f2;color:#4c6068;white-space:nowrap}.pill.ok{background:#e6f4ee;color:#146548}.pill.warn{background:#fff3db;color:#8b5717}.pill.alert{background:#fff0ed;color:#a83929}
+.demo-banner{background:#fff9e7;border:1px solid #eadcad;color:#745c1f;border-radius:10px;padding:12px 15px;font-size:12px;line-height:1.5;margin:20px 0}.layout{display:grid;grid-template-columns:minmax(0,1fr) 325px;gap:19px}.stack{display:grid;gap:17px;align-content:start}.card{background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:21px;min-width:0}.cardhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:19px}.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.kpi{background:#f5f8f8;border:1px solid #e9eeee;border-radius:10px;padding:14px}.kpi span{font-size:12px;color:var(--muted)}.kpi b{display:block;font-size:22px;margin-top:6px}.kpi b.little{font-size:16px;color:var(--primary)}.appointment{display:grid;grid-template-columns:55px minmax(0,1fr) auto;align-items:center;gap:10px;border-top:1px solid #e9eff0;padding:15px 0}.appointment:last-child{padding-bottom:0}.appointment strong{font-size:13px}.appointment small{display:block;color:var(--muted);margin-top:3px;font-size:11px}.apptTime{font-weight:750;color:#45535d;font-size:13px}.button{border:1px solid var(--border);border-radius:9px;background:#fff;color:#24353c;padding:10px 13px;font-size:13px;font-weight:700;min-height:41px}.button.primary{background:var(--primary);border-color:var(--primary);color:white}.button.secondary{background:#ebf4f1;border-color:#c8e5dc;color:#165d53}.button.danger{color:#963f34;border-color:#efcfc8;background:#fff8f5}.button.sm{font-size:12px;padding:8px 10px;min-height:35px}.actions{display:flex;flex-wrap:wrap;gap:9px}
+.intercom-card{border-color:#bbd8d3;box-shadow:0 0 0 1px #c6e6df, var(--shadow)}.screen{background:#162b33;border-radius:12px;min-height:235px;display:grid;place-items:center;overflow:hidden;position:relative;color:#e9f2f4;margin:15px 0}.screen:before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(70,100,101,.2) 1px,transparent 1px),linear-gradient(rgba(70,100,101,.18) 1px,transparent 1px);background-size:39px 39px}.screen:after{content:"SIMULAZIONE VIDEO";position:absolute;top:13px;left:14px;letter-spacing:.08em;font-size:10px;font-weight:800;color:#cddde0}.door{width:115px;height:158px;border:8px solid #617b83;border-bottom:0;background:linear-gradient(130deg,#29464c,#1b3339);border-radius:9px 9px 0 0;position:relative;margin:14px auto -60px}.door:after{content:"";width:10px;height:10px;border-radius:50%;background:#d8bd79;position:absolute;top:88px;right:10px;box-shadow:0 0 20px #e5bd67}.screen-label{position:absolute;bottom:20px;left:15px;right:15px;font-size:12px;text-align:center;color:#d5e6e7}.screen.active{outline:2px solid #3fba9c;outline-offset:-2px}.call-status{font-size:12px;color:#536773}.light{display:inline-block;height:8px;width:8px;background:#9ca9ad;border-radius:50%;margin-right:5px}.light.live{background:#20ad78;box-shadow:0 0 0 4px #ddf5e9}.light.ringing{background:#e88d1b;box-shadow:0 0 0 4px #fff2df}.hint{background:#f2f7f7;border-radius:9px;padding:12px;font-size:12px;color:#3e5860;margin-top:12px;line-height:1.5;min-height:41px}.select-label{display:block;font-size:12px;font-weight:750;color:#4c5b64;margin-bottom:8px}select{width:100%;min-height:43px;padding:9px 10px;border:1px solid var(--border);background:white;border-radius:8px;font-size:13px;color:#2f414c}.flag{display:flex;align-items:start;gap:9px;color:#43575f;font-size:12px;line-height:1.5;margin:11px 0}.flag input{margin-top:2px;accent-color:var(--primary)}.helper{font-size:11px;color:#6e7d88;line-height:1.5}.banner-ring{display:none;background:#e5f6ee;border:1px solid #b0dfc8;color:#136b48;padding:14px;border-radius:12px;margin-top:15px;font-size:13px}.banner-ring.show{display:block}.demo-controls{border-top:1px solid var(--border);padding-top:14px;margin-top:16px}.nav-overview{display:none}.page-only{display:none}.page-only.active{display:block}#activity{color:#435560;font-size:12px;min-height:48px}.date{font-size:12px;color:#72818a}.unavailable{color:var(--muted);font-size:12px}
+@media(max-width:1000px){.layout{grid-template-columns:minmax(0,1fr) 295px}.sidebar{width:185px;padding:15px 8px}.shell{grid-template-columns:185px minmax(0,1fr)}.brand{font-size:18px}}
+@media(max-width:740px){.shell{display:block}.sidebar{display:none}.topbar{padding:12px 16px}.top-actions{gap:7px}main{padding:20px 13px 80px}.layout{grid-template-columns:1fr}.card{padding:16px}.kpis{gap:7px}.kpi{padding:12px 8px}.kpi b{font-size:19px}.nav-overview{display:flex;gap:7px;overflow:auto;margin:16px 0}.nav-overview button{flex:0 0 auto}.screen{min-height:215px}.appointment{grid-template-columns:45px minmax(0,1fr) auto;gap:6px}.pill{font-size:10px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar" aria-label="Navigazione demo">
+  <div class="brand">Centro Change <small>Gestionale · anteprima</small></div>
+  <div><div class="navgroup">OPERATIVITÀ</div><nav class="nav" style="margin-top:9px">
+    <button data-page="agenda" class="active"><span class="mark">▦</span> Agenda</button>
+    <button data-page="pazienti"><span class="mark">♙</span> Pazienti</button>
+    <button data-page="disponibilita"><span class="mark">◷</span> Disponibilità</button>
+    <button data-page="videocitofono"><span class="mark">▣</span> Videocitofono <span id="navDot" class="ping"></span></button>
+  </nav></div>
+  <div class="aside-bottom">Anteprima statica · nessun accesso a pazienti, citofono o server.</div>
+</aside>
+<div class="content">
+<header class="topbar">
+ <div class="crumb">Centro Change / <strong id="topPage">Agenda</strong></div>
+ <div class="top-actions"><span class="pill">PROTOTIPO</span><button class="bell" id="bellTop" aria-label="Apri videocitofono">♧ <span id="topDot" class="ping"></span></button><span id="avatar" class="avatar">PA</span></div>
+</header>
+<main>
+ <div class="title-line"><div><div class="eyebrow">Area professionista</div><h1 id="pageTitle">La tua giornata</h1><div class="sub">Vista dimostrativa del gestionale Centro Change, con modulo videocitofono.</div></div><span class="pill ok" id="presenceBadge">Presente in studio · demo</span></div>
+ <div class="demo-banner"><strong>DEMO INTERATTIVA CON DATI INVENTATI.</strong> Non è il gestionale collegato al server. Non usa telecamera, microfono, Web Push reale, Wi-Fi o videocitofono Comelit. Nessuna porta si apre e nessuna informazione viene salvata. La possibilità di ricevere notifiche con schermo bloccato richiederà una PWA con servizio push e test su iOS/Android.</div>
+ <nav class="nav-overview" aria-label="Navigazione mobile">
+  <button data-page="agenda" class="button secondary sm">Agenda</button><button data-page="pazienti" class="button sm">Pazienti</button><button data-page="disponibilita" class="button sm">Disponibilità</button><button data-page="videocitofono" class="button sm">Videocitofono</button>
+ </nav>
+ <div id="ringAlert" class="banner-ring" role="status" aria-live="polite"><strong>◉ Qualcuno sta suonando all'ingresso.</strong> <span id="ringMessage">Avviso per i professionisti presenti.</span> <button class="button sm secondary" id="viewCall" style="margin-left:8px">Visualizza</button></div>
+ <div class="layout" style="margin-top:18px">
+  <div class="stack">
+   <section class="page-only active" id="page-agenda" aria-label="Agenda">
+    <div class="card">
+     <div class="cardhead"><div><h2>Agenda · oggi</h2><div class="sub">Appuntamenti esclusivamente dimostrativi</div></div><span class="pill">Professionista Alfa</span></div>
+     <div class="kpis"><div class="kpi"><span>Sedute previste</span><b>6</b></div><div class="kpi"><span>Da chiudere</span><b>2</b></div><div class="kpi"><span>Prossima seduta</span><b class="little">15:45</b></div></div>
+     <div style="margin-top:15px">
+      <div class="appointment"><div class="apptTime">15:00</div><div><strong>Appuntamento dimostrativo A</strong><small>45 minuti · Sala 1</small></div><span class="pill ok">In corso</span></div>
+      <div class="appointment"><div class="apptTime">15:45</div><div><strong>Appuntamento dimostrativo B</strong><small>45 minuti · Sala 1</small></div><span class="pill">Prenotata</span></div>
+      <div class="appointment"><div class="apptTime">16:30</div><div><strong>Appuntamento dimostrativo C</strong><small>45 minuti · Sala 1</small></div><span class="pill">Prenotata</span></div>
+      <div class="appointment"><div class="apptTime">17:15</div><div><strong>Appuntamento dimostrativo D</strong><small>45 minuti · Sala 1</small></div><span class="pill">Prenotata</span></div>
+     </div>
+    </div>
+   </section>
+   <section class="page-only" id="page-pazienti" aria-label="Pazienti"><div class="card"><h2>Pazienti</h2><p class="muted">Sezione esemplificativa. Nessun elenco o dato paziente reale è incluso nel prototipo.</p><div class="hint">Nel gestionale effettivo il professionista vede solo le informazioni autorizzate.</div></div></section>
+   <section class="page-only" id="page-disponibilita" aria-label="Disponibilità"><div class="card"><h2>Disponibilità</h2><p class="muted">Vista abbozzata coerente con la navigazione del gestionale. Nessuna modifica agli orari è possibile dalla demo.</p></div></section>
+   <section class="page-only" id="page-videocitofono" aria-label="Videocitofono">
+    <div class="card intercom-card">
+     <div class="cardhead"><div><h2>Videocitofono</h2><div class="sub">Ingresso principale · prova d'interazione</div></div><span id="callBadge" class="pill">In attesa</span></div>
+     <div id="camera" class="screen"><div class="door" aria-hidden="true"></div><div class="screen-label" id="screenCaption">Nessuna chiamata · immagine fittizia</div></div>
+     <div class="call-status"><span id="statusLight" class="light"></span><span id="callDetail">In attesa di una persona all'ingresso.</span></div>
+     <div class="actions" style="margin-top:17px">
+      <button id="answer" class="button primary" disabled>Rispondi e parla</button>
+      <button id="openDoor" class="button secondary" disabled>Apri porta</button>
+      <button id="endCall" class="button danger" disabled>Termina</button>
+     </div>
+     <div id="activity" class="hint" role="status" aria-live="polite">Il primo professionista che risponde assume l'audio. Gli altri presenti e autorizzati possono comunque aprire.</div>
+    </div>
+   </section>
+   <div class="card"><div class="cardhead"><h2>Avvisi della giornata</h2><span class="pill">Dimostrazione</span></div><div class="sub">L'eventuale chiamata al videocitofono comparirà qui e nella sezione dedicata.</div><p id="eventFeed" class="hint">Nessuna chiamata simulata in corso.</p></div>
+  </div>
+  <aside class="stack">
+   <div class="card">
+    <div class="cardhead"><h2>Scenario dimostrativo</h2><span class="pill warn">COMANDI DEMO</span></div>
+    <label class="select-label" for="actor">Visualizza il telefono di</label>
+    <select id="actor"><option value="alfa">Professionista Alfa</option><option value="beta">Professionista Beta</option><option value="gamma">Professionista Gamma</option></select>
+    <label class="flag"><input id="isPresent" type="checkbox" checked> Presente sul Wi-Fi dello studio (simulato)</label>
+    <label class="flag"><input id="isAllowed" type="checkbox" checked> Autorizzato a usare Apri (simulato)</label>
+    <div class="demo-controls"><p class="helper">Simula eventi dal pulsante al portone o dal citofono fisico. Sono azioni fittizie, senza accesso a dispositivi.</p>
+      <div class="actions"><button id="ringButton" class="button primary">Simula campanello</button><button id="physicalAnswer" class="button" disabled>Risposta da citofono fisico</button><button id="reset" class="button">Azzera scenario</button></div>
+    </div>
+    <div id="physicalStatus" class="hint">Citofono fisico: in attesa</div>
+   </div>
+   <div class="card"><h2>Come funzionerebbe nella V1</h2><p class="sub">Notifica a tutti i presenti. Il primo a rispondere usa l'audio. Tutti i presenti autorizzati possono aprire manualmente. Il citofono fisico continua a funzionare come alternativa.</p><p class="helper">Le notifiche vere a schermo bloccato richiedono un backend Web Push, HTTPS, service worker e installazione della webapp su iPhone.</p></div>
+   <div class="card"><h2>Possibili sviluppi futuri</h2><p class="sub"><strong>QR appuntamento, filtro vocale e assistente AI</strong> sono optional da validare. Una <strong>app nativa</strong> potrebbe aggiungere una gestione più avanzata della chiamata, ma non è inclusa nella V1.</p><span class="pill">Fuori perimetro attuale</span></div>
+  </aside>
+ </div>
+ <p class="helper" style="margin-top:22px">EMPV · Centro Change · prototipo di concept playback, non collaudato e non pubblicabile come sistema operativo. La compatibilità con Comelit, inclusa la sincronizzazione delle chiamate e l'audio bidirezionale, deve ancora essere dimostrata.</p>
+</main>
+</div>
+</div>
+<script>
+(function(){
+ "use strict";
+ const get=id=>document.getElementById(id);
+ const actors={alfa:{name:"Professionista Alfa",present:true,allowed:true},beta:{name:"Professionista Beta",present:true,allowed:true},gamma:{name:"Professionista Gamma",present:false,allowed:true}};
+ const pageNames={agenda:"Agenda",pazienti:"Pazienti",disponibilita:"Disponibilità",videocitofono:"Videocitofono"};
+ let selected="alfa",page="agenda",call=null,seq=0,history="Nessuna chiamata simulata in corso.";
+ function actor(){return actors[selected]}
+ function showPage(p){page=p;Object.keys(pageNames).forEach(k=>get("page-"+k).classList.toggle("active",k===p));document.querySelectorAll("[data-page]").forEach(b=>{b.classList.toggle("active",b.dataset.page===p);b.classList.toggle("secondary",b.dataset.page===p)});get("topPage").textContent=pageNames[p];get("pageTitle").textContent=p==="agenda"?"La tua giornata":pageNames[p]}
+ function say(t){history=t;get("activity").textContent=t;get("eventFeed").textContent=t}
+ function render(){
+  const a=actor(),ring=call&&call.status==="ringing",active=call&&call.status==="mobile",physical=call&&call.status==="physical";
+  get("isPresent").checked=a.present;get("isAllowed").checked=a.allowed;
+  get("presenceBadge").textContent=a.present?"Presente in studio · demo":"Non presente in studio · demo";
+  get("presenceBadge").className=a.present?"pill ok":"pill warn";
+  get("avatar").textContent=selected.toUpperCase().slice(0,2);
+  const notify=!!(ring&&a.present);
+  get("ringAlert").classList.toggle("show",notify);get("topDot").classList.toggle("show",notify);get("navDot").classList.toggle("show",notify);
+  get("bellTop").setAttribute("aria-label",notify?"Chiamata al videocitofono":"Apri videocitofono");
+  get("answer").disabled=!(ring&&a.present);
+  get("openDoor").disabled=!((ring||active)&&a.present&&a.allowed&&!call.opened);
+  get("endCall").disabled=!(ring||active);
+  get("physicalAnswer").disabled=!ring;
+  get("camera").classList.toggle("active",!!(ring||active||physical));
+  get("callBadge").textContent=ring?"Sta suonando":active?"In gestione":physical?"Risposta fisica":"In attesa";
+  get("callBadge").className=ring?"pill warn":(active||physical)?"pill ok":"pill";
+  get("statusLight").className=ring?"light ringing":(active||physical)?"light live":"light";
+  let description="In attesa di una persona all'ingresso.",caption="Nessuna chiamata · immagine fittizia";
+  if(ring){description="Chiamata in arrivo: tutti i professionisti presenti ricevono l'avviso.";caption="Visitante all'ingresso · video simulato"}
+  if(active){description=actors[call.owner].name+" sta gestendo la conversazione audio.";caption="In conversazione · video simulato"}
+  if(physical){description="La chiamata è stata presa in carico dal videocitofono fisico.";caption="Risposta da citofono fisico"}
+  get("callDetail").textContent=description;
+  get("screenCaption").textContent=caption;
+  get("physicalStatus").textContent="Citofono fisico: "+(ring?"sta suonando":active?"squillo interrotto (simulato)":physical?"chiamata gestita fisicamente":"in attesa");
+  get("ringMessage").textContent=notify?"Notifica ricevuta dal tuo profilo.":"";
+  if(active&&call.owner===selected)get("answer").textContent="Stai parlando (demo)";
+  else if(active)get("answer").textContent="Audio occupato";
+  else get("answer").textContent="Rispondi e parla";
+  if(call&&call.opened)get("openDoor").textContent="Apertura simulata";
+  else get("openDoor").textContent="Apri porta";
+  get("eventFeed").textContent=history;
+ }
+ function ringing(){seq++;call={id:seq,status:"ringing",owner:null,opened:false};say("È stato premuto il campanello. Avviso simulato ai presenti; squilla anche il dispositivo fisico.");render()}
+ function answer(){if(!call||call.status!=="ringing"||!actor().present)return;call.status="mobile";call.owner=selected;say(actors[selected].name+" ha risposto: audio assegnato esclusivamente a questo professionista. Il citofono fisico smette di suonare (demo).");showPage("videocitofono");render()}
+ function open(){if(!call||!["ringing","mobile"].includes(call.status)||!actor().present||!actor().allowed||call.opened)return;call.opened=true;say("Apertura porta SIMULATA da "+actors[selected].name+". Nessun comando è stato inviato a un dispositivo.");render()}
+ function answerPhysical(){if(!call||call.status!=="ringing")return;call.status="physical";say("Risposta simulata dal citofono fisico: le notifiche sui telefoni si chiudono e nessuna conversazione mobile può iniziare.");render()}
+ function end(){if(!call||!["ringing","mobile"].includes(call.status))return;call=null;say("Chiamata conclusa nella simulazione. Nessun dato è stato salvato.");render()}
+ function reset(){call=null;selected="alfa";get("actor").value="alfa";actors.alfa.present=true;actors.beta.present=true;actors.gamma.present=false;actors.alfa.allowed=true;actors.beta.allowed=true;actors.gamma.allowed=true;say("Simulazione azzerata, nessun dato persistente.");showPage("agenda");render()}
+ document.querySelectorAll("[data-page]").forEach(b=>b.addEventListener("click",()=>showPage(b.dataset.page)));
+ get("bellTop").addEventListener("click",()=>showPage("videocitofono"));
+ get("viewCall").addEventListener("click",()=>showPage("videocitofono"));
+ get("ringButton").addEventListener("click",ringing);
+ get("answer").addEventListener("click",answer);
+ get("openDoor").addEventListener("click",open);
+ get("physicalAnswer").addEventListener("click",answerPhysical);
+ get("endCall").addEventListener("click",end);
+ get("reset").addEventListener("click",reset);
+ get("actor").addEventListener("change",e=>{selected=e.target.value;render()});
+ get("isPresent").addEventListener("change",e=>{actor().present=e.target.checked;render()});
+ get("isAllowed").addEventListener("change",e=>{actor().allowed=e.target.checked;render()});
+ render();
+})();
+</script>
+</body>
+</html>
