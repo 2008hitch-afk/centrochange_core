@@ -138,6 +138,7 @@ function scheduleModal(){
     return scheduling('availability.set_schedule',{practitioner:data.practitioner,center:$('#center').value,time_slots,reason:data.reason},true);
   });
   const slots=$('#schedule-slots');
+  const addButton=$('#add-schedule-slot');
   const addSlot=(slot={day:'Monday',from_time:'09:00',to_time:'17:00'})=>{
     const row=document.createElement('div');row.className='schedule-slot-row';row.dataset.scheduleRow='';
     row.innerHTML=label('Giorno',`<select name="slot-day" required>${options(days.map(name=>({name,label:readable(name)})),'label')}</select>`)+label('Dalle',input('slot-from','time',slot.from_time.slice(0,5)))+label('Alle',input('slot-to','time',slot.to_time.slice(0,5)))+'<button type="button" aria-label="Rimuovi fascia" data-remove-slot>Rimuovi</button>';
@@ -146,13 +147,15 @@ function scheduleModal(){
   const loadSlots=()=>{
     slots.replaceChildren();
     const practitioner=$('#modal [name=practitioner]').value;
+    addButton.disabled=!practitioner;
+    if(!practitioner){slots.innerHTML='<p class="empty">Seleziona un professionista per vedere le fasce settimanali.</p>';return;}
     for(const slot of state.schedules.find(row=>row.practitioner===practitioner)?.time_slots||[])addSlot(slot);
     if(!slots.childElementCount)addSlot();
   };
   $('#modal [name=practitioner]').addEventListener('change',loadSlots);
-  $('#add-schedule-slot').onclick=()=>addSlot();
+  addButton.onclick=()=>addSlot();
   slots.onclick=event=>event.target.closest('[data-remove-slot]')?.closest('[data-schedule-row]')?.remove();
-  if(state.boot.practitioners.length){$('#modal [name=practitioner]').value=state.boot.practitioners[0].name;loadSlots();}
+  loadSlots();
 }
 function absenceModal(){modal('Registra assenza',label('Professionista',select('practitioner',state.boot.practitioners,'practitioner_name'))+label('Dal',input('start_date','date',$('#start').value))+label('Al',input('end_date','date',$('#start').value))+label('Dalle',input('start_time','time','09:00'))+label('Alle',input('end_time','time','12:00'))+reason(),data=>scheduling('availability.create_absence',{...data,practitioner:data.practitioner,center:$('#center').value},true));}
 async function init(){
