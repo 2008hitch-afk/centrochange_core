@@ -189,7 +189,7 @@ def main(root):
                 raise RuntimeError(f"service health timeout: {service}")
         guard(state, original, initial_oom)
         (state / "app-bootstrap-green").write_text(now().isoformat())
-    except Exception:
+    except BaseException:
         stop_only_ours(state)
         raise
 
