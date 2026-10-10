@@ -1,0 +1,28 @@
+{
+  "status": "BLOCKED_SAFETY_STOP",
+  "time_utc": "2026-10-10T12:34:59.271417+00:00",
+  "trigger": [
+    "CAP_NOT_ENFORCED"
+  ],
+  "source_commit": "d9c09e1d44795b068b4869c013263531dc53a936",
+  "image": "sha256:6855661acef0f98978cc969e3f12e418b68ff2744d5b47f625bc8afde5acdbae",
+  "host_oom_kill_initial": 7,
+  "host_oom_kill_final": 7,
+  "qa_hostconfig_memory_bytes": 536870912,
+  "qa_observed_cgroup_memory_max_at_stop": "max",
+  "qa_observed_current_bytes": 1282048,
+  "qa_oom_killed": false,
+  "qa_exit_code": 137,
+  "runtime_cap_bytes": 2147483648,
+  "max_runtime_usage_bytes": 1076744192,
+  "max_qa_peak_bytes": 303878144,
+  "min_host_mem_available_bytes": 4752039936,
+  "max_memory_psi_full_percent": 0.53,
+  "max_io_psi_full_percent": 3.52,
+  "min_disk_available_bytes": 36793401344,
+  "protected_containers_total": 137,
+  "protected_containers_unchanged": 137,
+  "rc22_http_after": 200,
+  "c109_http_after": null,
+  "conclusion": "QA startup cap enforcement race is likely; the precise Docker/cgroup transition was not instrumented. The mandatory watchdog stopped C109. No retry under this R3 activation."
+}

@@ -1,0 +1,1 @@
+{"status":"PASS","appointment":"HLC-APP-2026-00008","events":[{"method":"lifecycle.reopen","status":200},{"method":"lifecycle.close","status":200},{"method":"notes.add_note","status":200}],"errors":[]}
