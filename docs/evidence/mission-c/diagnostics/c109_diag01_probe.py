@@ -85,8 +85,10 @@ def hierarchy(cg):
     paths = [root]
     for part in parts:
         paths.append(paths[-1] / part)
+    # The cgroup v2 root need not expose memory.max or memory.swap.max.
     return [{"path": str(path), "inode": path.stat().st_ino,
-             "memory_max": one(path / "memory.max"), "swap_max": one(path / "memory.swap.max")}
+             "memory_max": one(path / "memory.max") if (path / "memory.max").exists() else None,
+             "swap_max": one(path / "memory.swap.max") if (path / "memory.swap.max").exists() else None}
             for path in paths]
 
 
