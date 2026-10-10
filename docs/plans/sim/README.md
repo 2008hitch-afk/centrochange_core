@@ -8,6 +8,12 @@ La nuova demo mostra all'apertura una barra di anteprima con **Computer** e **Sm
 
 Cambiare la visuale ridimensiona **lo stesso iframe**, mantenendo in memoria la chiamata simulata e il profilo selezionato. Non è un'emulazione hardware completa come il device mode di Chrome DevTools: non replica touch nativo, user agent iOS/Android, notch reale, notifiche push, blocco schermo o comportamento dei permessi. Per verificare tali aspetti servono telefoni veri. Da file HTML offline l'iframe deve poter aprire lo stesso percorso con un parametro query; usare un browser moderno. Nessuna pubblicazione GitHub Pages è stata eseguita.
 
+## Presentazione cliente — interazione aggiornata
+
+La demo mostra un pannello **Simula la chiamata** con citofono illustrato Centro Change e pulsante campanello. Il nuovo modulo Videocitofono si riconosce dal badge **NEW** (menu e scheda); quando suona, la voce cambia colore e pulsa, appare una notifica, la pagina apre la scheda Videocitofono e nel video dimostrativo compare il ritratto SVG di un visitatore **inventato**. Si può **Rispondere e parlare** (solo stato audio fittizio), attivare/disattivare **Audio (demo)** e premere **Apri porta**: compare **Porta aperta**. La risposta dal citofono fisico, la scelta di un secondo professionista e l'azzeramento sono simulati. I box esplicativi `Come funzionerebbe nella V1` e `Possibili sviluppi futuri` sono stati rimossi dalla UI cliente per mantenere l'attenzione sul flusso.
+
+L'immagine del visitatore è un'illustrazione **SVG inclusa nel file**, senza rete, foto reali, autorizzazioni, telecamera o riconoscimento persone. Nessun audio viene effettivamente registrato, riprodotto o trasmesso. Animazioni e controlli rappresentano solo gli stati della UI. Il tester può selezionare Computer o Smartphone dalla barra iniziale, mantenendo lo stato del mock.
+
 ## Nuova demo — vista professionista e citofonata
 
 Aprire [centrochange-professionista-intercom-demo.html](centrochange-professionista-intercom-demo.html) dal branch `plan/intercom-software-simulation-20261009`, usare **Download raw file** e aprire il file HTML sul PC o sullo smartphone. Su GitHub privato è necessario essere autenticati per scaricarlo. La demo **non è pubblicata su GitHub Pages**; non condividere una URL pubblica prima della review e dell'autorizzazione alla pubblicazione.
