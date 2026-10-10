@@ -1,0 +1,6 @@
+{
+  "image": "sha256:6855661acef0f98978cc969e3f12e418b68ff2744d5b47f625bc8afde5acdbae",
+  "config": "sha256:7411877f280781b80725480a7ff15cc46c8a4e4992d7b7a256bc6c012b39dcb4",
+  "revision": "d9c09e1d44795b068b4869c013263531dc53a936",
+  "delta_bytes": 71680
+}
