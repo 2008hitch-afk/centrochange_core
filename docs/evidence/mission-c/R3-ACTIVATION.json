@@ -1,0 +1,38 @@
+{
+  "mission": "C109-R3-FULL-UI",
+  "authority": "https://github.com/2008hitch-afk/centrochange_core/issues/109#issuecomment-6097338101",
+  "plan": "PR110 section8 commit36067959f3762ac9bcaa1d3a68b044e0f8bf46bf",
+  "status": "ACTIVE",
+  "start_utc": "2026-10-10T12:12:07.711987+00:00",
+  "validation_stop_utc": "2026-10-10T17:12:07.711987+00:00",
+  "hard_stop_utc": "2026-10-10T18:12:07.711987+00:00",
+  "source_sha": "0c85d72d589c7eb59eca8ef949d18c87b9af2bc5",
+  "image": "sha256:1beab705b2511464212740a5fd2f87bc42ea64aff2b71058c35736392756c21e",
+  "project": "centrochange-c109",
+  "site": "b99.local (C-only volume)",
+  "port": "127.0.0.1:8109",
+  "runtime_cap_bytes": 2147483648,
+  "qa_cap_bytes": 536870912,
+  "aggregate_cap_bytes": 2684354560,
+  "qa_mode": "one fresh Chromium process/container per native page and suite; no overlap",
+  "disk_free_bytes": 36873089024,
+  "disk_hard_reserve_bytes": 4294967296,
+  "host_mem_available_bytes": 5724164096,
+  "swap_bytes": 0,
+  "protected_count": 137,
+  "host_oom_kill_initial": 7,
+  "stop": [
+    "any host/container OOM",
+    "mem PSI full>=1 or some>=5 for3 samples",
+    "MemAvailable<768MiB immediate or<1GiB3 samples",
+    "RC22 HTTP/event anomaly",
+    "disk<4GiB",
+    "deadline",
+    "resource isolation anomaly"
+  ],
+  "recovery": "stop C109 containers only, preserve all volumes/images/checkpoints; RC22 unchanged",
+  "prior_stops": [
+    "C109 R1 OOM",
+    "C109 R2 OOM"
+  ]
+}
