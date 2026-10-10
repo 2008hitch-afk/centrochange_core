@@ -16,7 +16,7 @@ import threading
 import time
 import urllib.request
 
-from c109_cgroup_gate import CgroupGateError, read_snapshot
+from c109_cgroup_gate import CgroupGateError, InertBootstrapObservation, read_snapshot
 
 
 IMAGE = "centrochange-g2d-browser:e85fce588de6-pw1582"
@@ -99,8 +99,7 @@ def probe(container, records, stop, error):
     host_path = pathlib.Path("/sys/fs/cgroup") / expected.lstrip("/")
     last = None
     started = time.monotonic()
-    populated_at = None
-    capped_at = None
+    observation = InertBootstrapObservation(LIMIT)
     while not stop.is_set() and time.monotonic() - started < 12:
         stamp = now()
         if host_path.exists():
@@ -116,14 +115,12 @@ def probe(container, records, stop, error):
                     records.append(item)
                     last = state_key
                 if populated:
-                    populated_at = populated_at or time.monotonic()
-                    if cap == str(LIMIT) and swap == "0":
-                        capped_at = capped_at or time.monotonic()
-                    elif capped_at is not None or time.monotonic() - populated_at >= 2:
+                    try:
+                        observation.observe(populated, cap, swap, time.monotonic_ns())
+                    except CgroupGateError as exc:
                         # Bounded observation is permitted only while PID1 is inert.
-                        # A regression after a numeric cap, or max persisting for
-                        # two seconds, stops immediately; no workload is released.
-                        error.append("CAP_NOT_ENFORCED_BOOTSTRAP")
+                        # No workload is ever released by this script.
+                        error.append("CAP_NOT_ENFORCED_BOOTSTRAP: " + str(exc))
                         stop.set()
                         return
             except FileNotFoundError:

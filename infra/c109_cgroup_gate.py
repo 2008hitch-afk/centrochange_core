@@ -16,6 +16,30 @@ class CgroupGateError(RuntimeError):
     pass
 
 
+class InertBootstrapObservation:
+    """Bounded observation of a *known inert* PID1; never releases workload."""
+
+    def __init__(self, expected_memory: int, max_wait_ns: int = 2_000_000_000):
+        self.expected_memory = expected_memory
+        self.max_wait_ns = max_wait_ns
+        self.first_populated_ns = None
+        self.seen_valid_cap = False
+
+    def observe(self, populated: bool, memory_max: str, swap_max: str, sampled_ns: int) -> str:
+        if not populated:
+            return "EMPTY"
+        if self.first_populated_ns is None:
+            self.first_populated_ns = sampled_ns
+        if memory_max == str(self.expected_memory) and swap_max == "0":
+            self.seen_valid_cap = True
+            return "CAPPED"
+        if self.seen_valid_cap:
+            raise CgroupGateError("cap regressed after enforcement")
+        if sampled_ns - self.first_populated_ns >= self.max_wait_ns:
+            raise CgroupGateError("cap not enforced during inert bootstrap")
+        return "INERT_WAIT"
+
+
 @dataclass(frozen=True)
 class Snapshot:
     sampled_ns: int

@@ -12,7 +12,7 @@
 
 ## Verifiche offline
 
-`python3 infra/test_c109_cgroup_gate.py`: 8/8 PASS su fixture temporanee senza Docker: radice priva di `memory.max`, PID assente, scope errato, `max`, swap nonzero, OOM, gruppo non popolato, antenato mancante. `python3 -m compileall` e `node --check` della Page modificata PASS. La lettura live read-only del parser DIAG-01 corretto su un PID RC22 ha confermato la forma root → system.slice → docker scope; quel container è senza cap e **non** prova l'enforcement del futuro QA.
+`python3 infra/test_c109_cgroup_gate.py`: 11/11 PASS su fixture temporanee senza Docker: radice priva di `memory.max`, PID assente, scope errato, `max`, swap nonzero, OOM, gruppo non popolato, antenato mancante, `max→cap` durante sola fase inerte, `max` persistente e regressione del cap. `python3 -m compileall` e `node --check` della Page modificata PASS. La lettura live read-only del parser DIAG-01 corretto su un PID RC22 ha confermato la forma root → system.slice → docker scope; quel container è senza cap e **non** prova l'enforcement del futuro QA.
 
 ## Attivazione prevista
 

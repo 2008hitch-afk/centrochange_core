@@ -4,7 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from c109_cgroup_gate import CgroupGateError, read_snapshot
+from c109_cgroup_gate import CgroupGateError, InertBootstrapObservation, read_snapshot
 
 
 CONTAINER = "a" * 64
@@ -72,6 +72,24 @@ class GateTest(unittest.TestCase):
         (self.cgroup / "system.slice" / "memory.max").unlink()
         with self.assertRaises(CgroupGateError):
             self.snapshot()
+
+    def test_inert_max_then_cap(self):
+        observer = InertBootstrapObservation(LIMIT)
+        self.assertEqual(observer.observe(False, "max", "max", 0), "EMPTY")
+        self.assertEqual(observer.observe(True, "max", "max", 100), "INERT_WAIT")
+        self.assertEqual(observer.observe(True, str(LIMIT), "0", 900_000_000), "CAPPED")
+
+    def test_inert_max_persistent_fails(self):
+        observer = InertBootstrapObservation(LIMIT)
+        observer.observe(True, "max", "max", 100)
+        with self.assertRaises(CgroupGateError):
+            observer.observe(True, "max", "max", 2_000_000_100)
+
+    def test_cap_regression_fails_immediately(self):
+        observer = InertBootstrapObservation(LIMIT)
+        observer.observe(True, str(LIMIT), "0", 100)
+        with self.assertRaises(CgroupGateError):
+            observer.observe(True, "max", "max", 101)
 
 
 if __name__ == "__main__":
