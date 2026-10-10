@@ -75,6 +75,7 @@ async function refresh(){
     $('#main-content').onclick=async event=>{const patient=event.target.closest('[data-patient]');if(!patient)return;try{const history=await operations('workspace.patient_history',{patient:patient.dataset.patient,center:$('#center').value});if(!current())return;modal('Storico operativo',historyHtml(history),async()=>{});$('#modal-submit').hidden=true;}catch(error){notify(error.message,true);}};
   }else if(state.view==='Disponibilità'){
     const schedules=await operations('workspace.schedules',{center});if(!current())return;
+    state.schedules=schedules;
     $('#main-content').innerHTML='<div class="report-list">'+schedules.map(row=>`<section><h2>${esc(displayLabel(state.boot.practitioners.find(prac=>prac.name===row.practitioner)?.practitioner_name||row.practitioner,true))}</h2><p>${row.time_slots.map(slot=>esc(readable(slot.day)+' '+slot.from_time.slice(0,5)+' – '+slot.to_time.slice(0,5))).join('<br>')}</p></section>`).join('')+'</div><div class="split"><button id="edit-schedule">Modifica disponibilità</button><button id="absence">Registra assenza</button></div>';
     $('#edit-schedule').onclick=()=>scheduleModal();$('#absence').onclick=()=>absenceModal();
   }else if(state.view==='Gestione accessi'){
@@ -128,7 +129,31 @@ $('#new-booking').onclick=()=>{
   const packageOptions=()=>{const patient=$('#modal [name=patient]').value;const service=$('#modal [name=service]').value;const practitioner=$('#modal [name=practitioner]').value;const item=state.boot.services.find(row=>row.name===service)?.cc_service_item;$('#modal [name=package]').innerHTML='<option value="">Nessun pacchetto</option>'+options((state.boot.packages||[]).filter(row=>row.patient===patient&&row.service_item===item&&(!row.practitioner||row.practitioner===practitioner)&&row.available>0).map(row=>({...row,label:row.label+' · '+row.available+' disponibili'})),'label');};
   for(const name of ['patient','service','practitioner'])$('#modal [name='+name+']').onchange=packageOptions;
 };
-function scheduleModal(){const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];modal('Disponibilità ricorrente',label('Professionista',select('practitioner',state.boot.practitioners,'practitioner_name'))+label('Giorno',select('day',days.map(name=>({name,label:readable(name)})),'label'))+label('Dalle',input('from','time','09:00'))+label('Alle',input('to','time','12:00'))+'<p>La conferma sostituisce la disponibilità ricorrente del professionista in questo centro.</p>'+reason(),data=>scheduling('availability.set_schedule',{practitioner:data.practitioner,center:$('#center').value,time_slots:[{day:data.day,from_time:data.from,to_time:data.to}],reason:data.reason},true));}
+function scheduleModal(){
+  const days=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  modal('Disponibilità settimanale',label('Professionista',select('practitioner',state.boot.practitioners,'practitioner_name'))+'<div id="schedule-slots"></div><button type="button" id="add-schedule-slot">Aggiungi fascia</button><p>Il salvataggio sostituisce tutte le fasce settimanali di questo professionista. Le assenze restano separate.</p>'+reason(),data=>{
+    const time_slots=Array.from($('#schedule-slots').querySelectorAll('[data-schedule-row]'),row=>({day:row.querySelector('[name=slot-day]').value,from_time:row.querySelector('[name=slot-from]').value,to_time:row.querySelector('[name=slot-to]').value}));
+    if(!time_slots.length)throw new Error('Aggiungi almeno una fascia settimanale.');
+    if(time_slots.some(slot=>!slot.day||!slot.from_time||!slot.to_time||slot.from_time>=slot.to_time))throw new Error('Controlla giorni e orari delle fasce.');
+    return scheduling('availability.set_schedule',{practitioner:data.practitioner,center:$('#center').value,time_slots,reason:data.reason},true);
+  });
+  const slots=$('#schedule-slots');
+  const addSlot=(slot={day:'Monday',from_time:'09:00',to_time:'17:00'})=>{
+    const row=document.createElement('div');row.className='schedule-slot-row';row.dataset.scheduleRow='';
+    row.innerHTML=label('Giorno',`<select name="slot-day" required>${options(days.map(name=>({name,label:readable(name)})),'label')}</select>`)+label('Dalle',input('slot-from','time',slot.from_time.slice(0,5)))+label('Alle',input('slot-to','time',slot.to_time.slice(0,5)))+'<button type="button" aria-label="Rimuovi fascia" data-remove-slot>Rimuovi</button>';
+    row.querySelector('[name=slot-day]').value=slot.day;slots.append(row);
+  };
+  const loadSlots=()=>{
+    slots.replaceChildren();
+    const practitioner=$('#modal [name=practitioner]').value;
+    for(const slot of state.schedules.find(row=>row.practitioner===practitioner)?.time_slots||[])addSlot(slot);
+    if(!slots.childElementCount)addSlot();
+  };
+  $('#modal [name=practitioner]').addEventListener('change',loadSlots);
+  $('#add-schedule-slot').onclick=()=>addSlot();
+  slots.onclick=event=>event.target.closest('[data-remove-slot]')?.closest('[data-schedule-row]')?.remove();
+  if(state.boot.practitioners.length){$('#modal [name=practitioner]').value=state.boot.practitioners[0].name;loadSlots();}
+}
 function absenceModal(){modal('Registra assenza',label('Professionista',select('practitioner',state.boot.practitioners,'practitioner_name'))+label('Dal',input('start_date','date',$('#start').value))+label('Al',input('end_date','date',$('#start').value))+label('Dalle',input('start_time','time','09:00'))+label('Alle',input('end_time','time','12:00'))+reason(),data=>scheduling('availability.create_absence',{...data,practitioner:data.practitioner,center:$('#center').value},true));}
 async function init(){
   $('#modal').addEventListener('close',()=>{$('#modal-submit').hidden=false;});

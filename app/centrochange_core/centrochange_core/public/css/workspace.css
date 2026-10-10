@@ -73,3 +73,4 @@
 
 /* Shared calendar tracks; scoped grid wins over Tabler native calendar-header flex. */
 @media(max-width:900px){.calendar-shell{--cc-calendar-professional-track:100px}}
+.schedule-slot-row{display:grid;grid-template-columns:minmax(100px,1.5fr) minmax(90px,1fr) minmax(90px,1fr) auto;align-items:end;gap:8px;margin:8px 0}.schedule-slot-row label{min-width:0}.schedule-slot-row button{padding:10px}.schedule-slot-row input,.schedule-slot-row select{width:100%}@media(max-width:600px){.schedule-slot-row{grid-template-columns:1fr 1fr}.schedule-slot-row label:first-child{grid-column:1/-1}.schedule-slot-row button{grid-column:1/-1}}
