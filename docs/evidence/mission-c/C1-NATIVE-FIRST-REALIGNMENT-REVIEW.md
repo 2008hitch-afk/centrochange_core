@@ -1,0 +1,52 @@
+# C1 — riallineamento ERPNext-native-first delle 24 aree
+
+**Mandato:** #109, piano #110 §§11–12. **Base del prodotto:** PR draft #112, commit `d9c09e1d44795b068b4869c013263531dc53a936`, stacked su PR draft #107. **Stato:** `ARCHITECTURE_CONFORMANCE: PARTIAL`; analisi statica, non UAT o prova runtime della revisione. RC22 resta la webapp primaria secondo HC-0005 DECISION-004.
+
+## Criterio e prova disponibile
+
+La Page `cc-unified-desk` oggi usa `frappe.ui.make_app_page`, poi `fetch` di cinque pagine web, `DOMParser` e import dinamico dei loro controller (`cc_unified_desk.js`). Le schermate Agenda, Finance, Professionisti, Pazienti e Audit così ottenute sono `WEBAPP_WRAPPED_TEMPORARY`. I cinque link Catalogo sono invece vere route Desk List/Form, ma il solo link non prova l'autorizzazione né la conformità. Il report C1 precedente e le prove R1–R4 rimangono storici; i loro PASS non vengono attribuiti al refactor futuro.
+
+Le API ufficiali [Page](https://docs.frappe.io/framework/user/en/api/page), [List](https://docs.frappe.io/framework/user/en/api/list), [Form Scripts](https://docs.frappe.io/framework/user/en/api/form), [DocType customization](https://docs.frappe.io/framework/user/en/basics/doctypes/customize), [Printing](https://docs.frappe.io/framework/user/en/desk/printing) e i componenti pinned Frappe `f20f92d29706510551b4438cc196b0323a7f1a92` ([Page](https://github.com/frappe/frappe/blob/f20f92d29706510551b4438cc196b0323a7f1a92/frappe/core/doctype/page/page.py), [UI page](https://github.com/frappe/frappe/blob/f20f92d29706510551b4438cc196b0323a7f1a92/frappe/public/js/frappe/ui/page.js)) sono il contratto di estensione da verificare sul clone TARGET. ERPNext `7474d9e786277383de1242ab882f16856d17a9c9`, Healthcare `dda107b26e3a0fe1dbd65c7257371235de054a04`, Builder `37e958bc4f801d06d0438c21b97b42c45c4eaa51` restano pin sperimentali, non promossi in RC22.
+
+**Regola di sicurezza:** una route List/Form è candidata soltanto se DocPerm **e** guard server-side/row scope autorizzano quel ruolo. In particolare `security/install.py` concede `Patient` read/write native al Manager, sola create alla Segreteria e nessun read al Professionista tramite DocPerm; `security/permissions.py` restringe inoltre la visibilità per assegnazione. `Healthcare Practitioner` ha read nativo per Manager e Professional, non per Segreteria. I guard Finance impediscono query report native ai non Manager; le mutazioni contabili sono vincolate a servizi CC. Non si aggiungono grant per far funzionare il Desk.
+
+## Matrice di riallineamento
+
+| # | Area | Nativo pinned / adattamento supportato | Stato #112 → destinazione motivata | Verifica discriminante |
+| --- | --- | --- | --- | --- |
+| 1 | Agenda settimanale | Healthcare Patient Appointment List/Form non rende griglia 1+7 con scope; `get_events` Marley è bloccato dai guard CC | `WEBAPP_WRAPPED_TEMPORARY` → `DESK_CUSTOM_JUSTIFIED`, Page Desk diretta che usa gli endpoint Agenda CC; mantenere griglia approvata | sette giorni, A/B/C, click seduta e professionista, resize, negative API |
+| 2 | Prenota/sposta/cancella | Form Patient Appointment ha semantica nativa incompatibile con snapshot, motivo e idempotenza CC; Dialog Frappe supportato | wrapper → `DESK_CUSTOM_JUSTIFIED` per dialog che chiama `scheduling.booking`, nessun save diretto | tre mutazioni, collisione, prezzo snapshot, audit, direct-write denied |
+| 3 | Seduta/storico/note | Form nativo non separa note private per assegnazione | wrapper → `DESK_CUSTOM_JUSTIFIED`, dettaglio e servizi CC esistenti | note A/B/C/Segreteria, storico, lifecycle, payload negativo |
+| 4 | Pazienti | `Patient` List/Form nativo per Manager; customizzazione supportata di lista/form; Segreteria e Professionisti non hanno read nativo generale | wrapper → `SUPPORTED_NATIVE_ADAPTATION` **solo Manager**; ricerca/dettaglio CC scoped per gli altri, senza grant | list/form/direct/query/export/print per tutti i ruoli e cross-center |
+| 5 | Professionisti | `Healthcare Practitioner` List/Form nativo Manager, self read Professional; lifecycle CC per assegnazione | wrapper → `SUPPORTED_NATIVE_ADAPTATION` per ruoli ammessi; selettore scoped CC per Segreteria | Manager/self/Segreteria, C senza assegnazione, direct negative |
+| 6 | Disponibilità | Practitioner Schedule/Availability native per lettura; scritture protette da `scheduling.availability` | wrapper Agenda → `DESK_CUSTOM_JUSTIFIED` per editor CC; Form native solo read autorizzato | settimana, assenze, update parziale, centro/autore, direct-write denied |
+| 7 | Servizi/prezzi/pacchetti | Item, Item Price, Appointment Type List/Form nativi Manager già linkati; CC Center Service e Package Template DocType; ledger pacchetti CC | `NATIVE_ACTUAL` Catalogo Manager + `DESK_CUSTOM_JUSTIFIED` solo consumo/credito | prezzo su data prenotazione, package ledger, Manager-only, route negative |
+| 8 | Contabilità/registri | GL Entry/Payment Ledger Entry List/Form nativi dove DocPerm/row guard consentono; query reports generici bloccati | Finance wrapper → `SUPPORTED_NATIVE_ADAPTATION` read scoped, azioni CC separate | query/list/direct/export/print cross-center e non Manager |
+| 9 | Fatture paziente/fornitore | Sales/Purchase Invoice List/Form nativi per lettura; hook CC proteggono validate/submit/cancel | Finance wrapper → `SUPPORTED_NATIVE_ADAPTATION` per documenti; `DESK_CUSTOM_JUSTIFIED` per emetti/paga/annulla tramite servizi CC | actor effettivo, submit/cancel positivi e negativi, links |
+| 10 | Incassi/pagamenti | Payment Entry List/Form nativi, unico ledger ERPNext; creazione CC via `native_adapter` | Finance wrapper → nativo read + Page/Dialog CC per creazione riconciliata | Payment Entry, residuo, audit, accesso non autorizzato |
+| 11 | Banca/riconciliazione | Bank Transaction/Account List/Form nativi per record; tool generale non è centro-scoped | Finance wrapper → nativo read + Page CC per candidati/allocazioni | reconcile/undo, idempotenza, cross-center |
+| 12 | Report Centro/Professionisti/Pazienti | Report Builder/Query Report generici non preservano payer condiviso e permessi CC; proiezioni CC già canoniche | wrapper → `DESK_CUSTOM_JUSTIFIED` con proiezioni/drill-down CC | KPI=record, date contabili vs sedute, shared payer, negative export |
+| 13 | Report contabili ERPNext generici | Query Report nativo esiste, ma `finance.request_guard` lo nega ai non Manager | `BLOCKED_BY_OWNER_DECISION`; mantenere 403 e offrire report CC scoped | 403 server-side list/query/export non Manager |
+| 14 | SdI simulato | `CC Fiscal Transaction/Attempt` List/Form possibili per lettura; protocollo a stati e payload richiedono servizio CC | Finance wrapper → nativo read se sicuro, Page/Dialog CC per simulazione | append-only, payload privato, nessun provider |
+| 15 | TS simulato | `CC TS Input Review` List/Form possibili per lettura; versione/review via CC | Finance wrapper → nativo read se sicuro, Page/Dialog CC per review/simulazione | opposizione, correction chain, no real submission |
+| 16 | Audit/registro | `CC Audit Event` List/Form read-only con query/permission hook | wrapper → `SUPPORTED_NATIVE_ADAPTATION` se form non espone dati extra; altrimenti Page scoped | append-only, before/after, motivo, role/direct/export negative |
+| 17 | Accessi/centri | User/Role/Branch nativi; modifiche membership/assignment protette da lifecycle CC | wrapper → `DESK_CUSTOM_JUSTIFIED` per workflow; nativo solo master read autorizzato | revoca immediata, nessun User/Role grant generico |
+| 18 | Coda/compensi | CC Expectation/Comparison/Threshold DocType nativi read dove ammessi; override CC è controllato | Finance wrapper → nativo read sicuro + Page/Dialog CC per compare/override | sospeso, precedente, Manager-only, Finance denied |
+| 19 | Notifiche/job | Desk Notification non rappresenta retry/idempotenza della coda CC | wrapper → `DESK_CUSTOM_JUSTIFIED` per coda e retry | stato, destinatario, idempotenza, no delivery reale |
+| 20 | Login/logout | Frappe auth/Desk nativi, branding supportato dalla PR #107 | `SUPPORTED_NATIVE_ADAPTATION` già; preservare session lifecycle | login/logout/Guest/403 e sette ruoli |
+| 21 | Pubblico/primo incontro | Desk non è superficie Guest; sito web Frappe già separato | `KEEP_PUBLIC`, nessun bridge Desk | Guest bounded, no dato interno |
+| 22 | Stampa/export | Print Format/List export nativi dove il guard consente; export CC scoped per report | wrapper → `SUPPORTED_NATIVE_ADAPTATION` documenti autorizzati + export CC | print/CSV cross-center, injection, no private note |
+| 23 | Validazione DEV | pagina tecnica non cliente | `KEEP_PUBLIC_DEV`, esclusa dalla UI finale | endpoint solo DEV |
+| 24 | Cutover/identità Desk | Workspace/Sidebar nativi candidati; adozione definitiva è C4 | `BLOCKED_BY_OWNER_DECISION`; sperimentazione soltanto | confronto C3 e nuova decisione Owner |
+
+## Migration map dei cinque wrapper
+
+1. **Agenda:** rimuovere `fetch('/centrochange')`/`DOMParser` dalla Page; preservare controller/servizi solo dopo estrazione in moduli Desk, con griglia e Dialog propri. Nessun uso del Marley calendar bloccato.
+2. **Finance:** sostituire i record read-only con route native autorizzate a Invoice/Payment/Bank/ledger. Conservare CC Page per allocazioni, simulazioni e reporting non esprimibili nei Form nativi. Non cambiare policy contabile.
+3. **Professionisti:** route native Healthcare Practitioner per Manager/self dove autorizzate; Professional View per periodo resta proiezione CC con economics gated. Segreteria usa ricerca CC autorizzata.
+4. **Pazienti:** route native Patient per Manager, ma non esporre List/Form generici agli altri ruoli; Patient/Customer View rimane CC per saldo condiviso e drill-down.
+5. **Audit:** tentare `CC Audit Event` List/Form read-only e verificarne i campi via sette ruoli; mantenere proiezione CC se il nativo eccede il boundary.
+
+## Gate di implementazione
+
+La mappa è una **ipotesi architetturale controllata**, non prova di accesso sicuro o parità. Il passaggio di una specifica area a nativo richiede: verifica sorgente pinned, DocPerm + hook + REST/list/direct/query/export/print sul clone, regressioni dei servizi CC, browser desktop/mobile e confronto con RC22 sullo stesso scenario sintetico. Il catalogo nativo è già presente ma non vale come PASS delle altre aree. Il laboratorio C109 rimane fermo dopo DIAG-01; nessuna conferma runtime del codice modificato è stata acquisita in questa review.
