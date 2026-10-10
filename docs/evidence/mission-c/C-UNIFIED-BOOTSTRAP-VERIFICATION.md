@@ -1,6 +1,6 @@
 # C-UNIFIED — verifica bootstrap fail-closed
 
-**Mandato:** #109 / piano #110 §§11–12. **Stato prima della nuova attivazione:** `STATIC_PASS / RUNTIME_PENDING`. DIAG-01 #122 rimane `INCONCLUSIVE` e consumata; questa è una nuova attivazione distinta, non un retry implicito.
+**Mandato:** #109 / piano #110 §§11–12. **Stato della prova inerte:** `CONFIRMED_TRANSITION` **solo per il QA diagnostico**; il gate dei servizi applicativi resta `NOT_VERIFIED`. DIAG-01 #122 rimane `INCONCLUSIVE` e consumata; questa è una nuova attivazione distinta, non un retry implicito.
 
 ## Contratto del gate
 
@@ -20,4 +20,14 @@ Finestra UTC **10 ottobre 2026, 15:20–16:20**; hard stop **16:30**, dieci minu
 
 ## Risultato live
 
-`PENDING`: nessuna attribuzione di PASS runtime finché non viene eseguita e verificata l'unica prova.
+La prova unica è partita alle **15:20:11 UTC**, marker single-use scritto prima di Docker create. `Docker StartedAt=15:20:11.316674759`; `HostConfig.Memory=MemorySwap=536870912`. I campioni host dello **stesso scope/inode 223805** sono:
+
+| UTC | Dopo StartedAt | `populated` | `memory.max` | `memory.swap.max` |
+| --- | ---: | ---: | ---: | ---: |
+| 15:20:11.338253 | 21,6 ms | 0 | `max` | `max` |
+| 15:20:11.345234 | 28,6 ms | 1 | `max` | `max` |
+| 15:20:11.357443 | 40,8 ms | 1 | `536870912` | `0` |
+
+Il cap è quindi diventato numerico **12,2 ms** dopo il campione popolato/illimitato, senza cambiare inode. Il PID host verificato **2472685** puntava esattamente a `/system.slice/docker-<ID>.scope`; gerarchia root senza file limite, `system.slice` con `max`, scope effettivo con 512 MiB/swap zero. Nuova verifica alle **15:20:13.439177**: cap 512 MiB, swap 0, `oom=0`, `oom_kill=0`. Non è stata rilasciata alcuna applicazione; il solo `sleep` inerte è stato fermato e conservato (exit 137 da stop, `OOMKilled=false`). Watchdog R3/monitor eventi protetti erano attivi, nessun safety stop né alert.
+
+RC22 HTTP200 con gli stessi nove ID; C109 runtime running0; host `oom_kill 7→7`; MemAvailable **5.851.430.912→5.857.726.464 byte**; disco libero ~46,68 GB; volumi/reti/immagini invariati. La transizione è **confermata su questo QA**, non automaticamente su worker, DB o browser futuri. I servizi C109 esistenti hanno entrypoint applicativi immediati e rimangono spenti. La fase successiva richiede gate PID1 inerte per ogni servizio e nuova verifica del cap **prima** del rilascio, sotto la stessa finestra e gli stessi guardrail; nessuna Full UI suite è stata eseguita in questo sottopasso.
