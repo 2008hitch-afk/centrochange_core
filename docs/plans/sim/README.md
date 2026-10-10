@@ -2,6 +2,12 @@
 
 **Stato: solo design / demo statica.** Nessun accesso a dispositivi fisici, dati del gestionale, pazienti, registrazioni, Wi-Fi, microfono o notifiche di sistema.
 
+## Scelta della visuale Computer / Smartphone
+
+La nuova demo mostra all'apertura una barra di anteprima con **Computer** e **Smartphone**. In modalità Smartphone si può selezionare la larghezza tra **390 px (iPhone)**, **412 px (Android)** e **375 px (compatto)**. È utilizzato un **iframe dello stesso documento** con parametro `?embed=1`: questa tecnica assegna realmente al contenuto una viewport delle dimensioni scelte, così le media query responsive entrano in funzione anche sul browser desktop.
+
+Cambiare la visuale ridimensiona **lo stesso iframe**, mantenendo in memoria la chiamata simulata e il profilo selezionato. Non è un'emulazione hardware completa come il device mode di Chrome DevTools: non replica touch nativo, user agent iOS/Android, notch reale, notifiche push, blocco schermo o comportamento dei permessi. Per verificare tali aspetti servono telefoni veri. Da file HTML offline l'iframe deve poter aprire lo stesso percorso con un parametro query; usare un browser moderno. Nessuna pubblicazione GitHub Pages è stata eseguita.
+
 ## Nuova demo — vista professionista e citofonata
 
 Aprire [centrochange-professionista-intercom-demo.html](centrochange-professionista-intercom-demo.html) dal branch `plan/intercom-software-simulation-20261009`, usare **Download raw file** e aprire il file HTML sul PC o sullo smartphone. Su GitHub privato è necessario essere autenticati per scaricarlo. La demo **non è pubblicata su GitHub Pages**; non condividere una URL pubblica prima della review e dell'autorizzazione alla pubblicazione.
