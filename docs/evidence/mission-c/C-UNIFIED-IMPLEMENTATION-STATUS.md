@@ -30,3 +30,5 @@
 | 24 | Cutover/identità globale | Decision-004 webapp primaria | `BLOCKED_BY_OWNER_DECISION`; confronto C3 e nuova scelta Owner |
 
 Il codice nuovo nella #112 include soltanto navigazione verso List native per ruoli già ammessi, senza mutare permessi o servizi. Tutti gli altri controller incorporati restano transitori. Il piano tecnico è nella review `C1-NATIVE-FIRST-REALIGNMENT-REVIEW.md`; non chiamare l'interfaccia finale completa finché le aree PARTIAL e il gate cgroup non sono chiusi con evidenza sulla stessa immagine.
+
+**Aggiornamento 2026-10-10, candidata `12a19f5`:** il bootstrap isolato e il primo smoke/browser nativo sono passati, ma il collaudo è stato fermato alle 15:38 UTC da PSI I/O full ≥1% (picco 1,36%). Le sette List native osservate dimostrano navigazione, non la chiusura funzionale delle aree 4–10. Le righe `PARTIAL`, `NON VERIFICATO` e `BLOCKED_BY_OWNER_DECISION` qui sopra restano tali. Il dettaglio è in `C-UNIFIED-FINAL-ACCEPTANCE.md`; `READY_FOR_OWNER_UAT` rimane **NO**.
