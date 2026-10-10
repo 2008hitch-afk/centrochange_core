@@ -20,16 +20,19 @@ KINDS = {
     "c-fit-redis-queue": "redis",
 }
 PROJECT = "centrochange-c109-gated"
+RETRY_PROJECT = "centrochange-c109-gated-r2"
 
 
-def override(base: dict, gate_root: Path, script: Path) -> dict:
+def override(base: dict, gate_root: Path, script: Path, project: str = PROJECT) -> dict:
     if set(base["services"]) != set(KINDS):
         raise ValueError("unexpected C109 service inventory")
     if base.get("name") != "centrochange-c109":
         raise ValueError("wrong source Compose project")
+    if project not in (PROJECT, RETRY_PROJECT):
+        raise ValueError("unapproved isolated project")
     if not script.is_file() or not gate_root.is_dir():
         raise ValueError("missing versioned bootstrap script or private gate root")
-    result = {"name": PROJECT, "services": {}, "networks": {}, "volumes": {}}
+    result = {"name": project, "services": {}, "networks": {}, "volumes": {}}
     for name, kind in KINDS.items():
         if not (gate_root / name).is_dir():
             raise ValueError(f"missing gate directory: {name}")
@@ -43,6 +46,16 @@ def override(base: dict, gate_root: Path, script: Path) -> dict:
                 {"type": "bind", "source": str((gate_root / name).resolve()), "target": "/cc-bootstrap", "read_only": True},
             ],
         }
+        # Compose drops the image CMD when replacing ENTRYPOINT. Restore the
+        # immutable pinned image defaults where the base service has no CMD.
+        # Without this Redis's entrypoint exits 0 and the backend never starts.
+        if source.get("command") is None:
+            if name == "c-fit-backend":
+                result["services"][name]["command"] = ["start.sh"]
+            elif kind == "redis":
+                result["services"][name]["command"] = ["redis-server"]
+            else:
+                raise ValueError(f"missing original command: {name}")
     for kind in ("networks", "volumes"):
         for key, definition in base[kind].items():
             resource_name = definition.get("name")
@@ -53,10 +66,10 @@ def override(base: dict, gate_root: Path, script: Path) -> dict:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        raise SystemExit("usage: c109_compose_gate.py BASE_COMPOSE_JSON GATE_ROOT BOOTSTRAP_SH OUT_JSON")
+    if len(sys.argv) not in (5, 6):
+        raise SystemExit("usage: c109_compose_gate.py BASE_COMPOSE_JSON GATE_ROOT BOOTSTRAP_SH OUT_JSON [PROJECT]")
     base = json.loads(Path(sys.argv[1]).read_text())
-    result = override(base, Path(sys.argv[2]), Path(sys.argv[3]))
+    result = override(base, Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[5] if len(sys.argv) == 6 else PROJECT)
     output = Path(sys.argv[4])
     if output.exists():
         raise SystemExit("output already exists; no overwrite")

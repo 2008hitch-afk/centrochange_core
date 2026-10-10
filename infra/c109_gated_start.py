@@ -14,12 +14,11 @@ import time
 import urllib.request
 
 from c109_cgroup_gate import CgroupGateError, read_snapshot
-from c109_compose_gate import KINDS
+from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT
 
 
 ORDER = ["c-fit-db", "c-fit-redis-cache", "c-fit-redis-queue", "c-fit-backend",
          "c-fit-websocket", "c-fit-queue-long", "c-fit-scheduler", "c-fit-frontend"]
-PROJECT = "centrochange-c109-gated"
 EXPECTED_MAX = {
     "c-fit-db": 536870912, "c-fit-redis-cache": 67108864,
     "c-fit-redis-queue": 67108864, "c-fit-backend": 671088640,
@@ -73,8 +72,8 @@ def inspect(container):
             "memory": int(parts[3]), "swap": int(parts[4])}
 
 
-def stop_only_ours(state):
-    ids = run("docker", "ps", "-q", "--filter", f"label=com.docker.compose.project={PROJECT}").split()
+def stop_only_ours(state, project):
+    ids = run("docker", "ps", "-q", "--filter", f"label=com.docker.compose.project={project}").split()
     if ids:
         subprocess.run(["docker", "stop", "--time", "10", *ids], timeout=60, check=True,
                        stdout=subprocess.DEVNULL)
@@ -88,6 +87,9 @@ def main(root):
         raise RuntimeError("wrong activation")
     if activation.get("workload_release_allowed") is not True:
         raise RuntimeError("application workload release is not active")
+    project = activation.get("target")
+    if project not in (PROJECT, RETRY_PROJECT):
+        raise RuntimeError("unapproved isolated project")
     if now() >= dt.datetime.fromisoformat(activation["mutation_end_utc"]):
         raise RuntimeError("mutation window expired")
     if (state / "app-attempted").exists():
@@ -99,14 +101,14 @@ def main(root):
         raise RuntimeError("RC22 baseline count changed")
     initial_oom = oom_count()
     guard(state, original, initial_oom)
-    if run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={PROJECT}"):
+    if run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={project}"):
         raise RuntimeError("gated project already exists")
     if run("docker", "ps", "-q", "--filter", "label=centrochange.mission=C109"):
         raise RuntimeError("other C109 workload running")
     base = state / "compose-final-private.json"
     override = root / "compose-gated.override.json"
     config = json.loads((state / "compose-final.merged-private.json").read_text())
-    if config["name"] != PROJECT or sum(int(s["mem_limit"]) for s in config["services"].values()) != 2 * 1024**3:
+    if config["name"] != project or sum(int(s["mem_limit"]) for s in config["services"].values()) != 2 * 1024**3:
         raise RuntimeError("resource budget mismatch")
     if set(config["services"]) != set(ORDER):
         raise RuntimeError("gated service set changed")
@@ -117,19 +119,19 @@ def main(root):
         if item.get("entrypoint") != ["/bin/sh", "/opt/cc-bootstrap.sh", KINDS[service]]:
             raise RuntimeError(f"inert PID1 gate missing: {service}")
     compose = ["docker", "compose", "--env-file", "/home/empv26/.local/state/centrochange-c109/runtime.env",
-               "-f", str(base), "-f", str(override), "--project-name", PROJECT]
+               "-f", str(base), "-f", str(override), "--project-name", project]
     (state / "app-attempted").write_text(now().isoformat())
     records = []
     try:
         with open(state / "compose-create.log", "w") as log:
             subprocess.run(compose + ["up", "--no-start", "--no-build", "--pull", "never"],
                            stdout=log, stderr=log, timeout=120, check=True)
-        ids = run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={PROJECT}").split()
+        ids = run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={project}").split()
         if len(ids) != 8:
             raise RuntimeError("expected exactly eight gated containers")
         for service in ORDER:
             guard(state, original, initial_oom)
-            short = run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={PROJECT}",
+            short = run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={project}",
                         "--filter", f"label=com.docker.compose.service={service}")
             if len(short.split()) != 1:
                 raise RuntimeError(f"service count mismatch: {service}")
@@ -190,7 +192,7 @@ def main(root):
         guard(state, original, initial_oom)
         (state / "app-bootstrap-green").write_text(now().isoformat())
     except BaseException:
-        stop_only_ours(state)
+        stop_only_ours(state, project)
         raise
 
 
