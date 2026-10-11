@@ -1,5 +1,7 @@
 # Missione C #109 — gate tecnico corrente (2026-10-10)
 
+**Aggiornamento 2026-10-11:** l'unica attivazione Owner autorizzata per la candidata `d213371` è stata arrestata dal guard PSI I/O durante il checkpoint dei volumi C109, prima dell'import dell'immagine e di qualunque servizio applicativo/browser. Il collaudo delle 24 aree sulla nuova HEAD è `NOT TESTED`; RC22 resta HTTP200/nove ID invariati. Esito attuale `MISSION-C: PARTIAL / READY_FOR_OWNER_UAT: NO`. Dettaglio e unica proposta correttiva in `C-UNIFIED-FINAL-ACTIVATION-2026-10-11.md`. Le sezioni sotto conservano le evidenze storiche del 10 ottobre senza attribuirle alla candidata finale.
+
 **Esito: `PARTIAL / READY_FOR_OWNER_UAT: NO`.** Questo non è un collaudo finale: il laboratorio isolato è stato fermato al superamento del guard PSI I/O e non viene riavviato nella stessa attivazione. Nessun merge, cutover o intervento su RC22.
 
 ## Sorgente e perimetro
