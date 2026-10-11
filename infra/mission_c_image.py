@@ -10,10 +10,20 @@ with tarfile.open(a.base_archive,'r:') as src:
  assert desc['digest'] in {
   'sha256:342dd48b649aae93fe2e9cc080e44b1ff622b11c900bd084b636af3f2e4624a7',
   'sha256:b70ee0995bd0d8d8445db1a2167173c57559d3c5ccaf8eed8b02b0e68ce79a16',
+  # Verified visual-demo OCI base, revision 6c83704262e0. Its existing
+  # layers remain in Docker; this archive carries only the new COPY layer.
+  'sha256:cc97a65c8fdd4d2cb8fd9c15fb861123bb0d3201cbbb204b4acd2352a84ada25',
  },'unexpected parent image; do not package against an unverified runtime'
  manifest=json.load(src.extractfile('blobs/sha256/'+desc['digest'].split(':')[1]));config=json.load(src.extractfile('blobs/sha256/'+manifest['config']['digest'].split(':')[1]))
 raw=io.BytesIO();folder='app/centrochange_core/centrochange_core/centro_change_core/page'
 files=[root/folder/'__init__.py',*sorted((root/folder/'cc_unified_desk').glob('*')),*sorted((root/'app/centrochange_core/centrochange_core/centro_change_core/sidebar').rglob('*.json')),*[root/'app/centrochange_core/centrochange_core/public/js'/name for name in ('workspace.js','finance_workspace.js','patient_report.js','professional_view.js','audit_view.js','cc_desk_fragments.js')],root/'app/centrochange_core/centrochange_core/public/css/workspace.css',root/'app/centrochange_core/centrochange_core/security/dev_acceptance.py']
+required=[root/'app/centrochange_core/centrochange_core'/name for name in (
+ 'hooks.py', 'public/js/cc_desk_client.js', 'public/css/cc_desk_client.css',
+ 'security/desk_boundary_acceptance.py',
+)]
+if any(not f.is_file() for f in required):
+ raise RuntimeError('required Desk shell file missing from source')
+files.extend(required)
 with tarfile.open(fileobj=raw,mode='w') as t:
  for f in files:
   if not f.is_file() or f.suffix not in ('.py','.json','.css','.js'):continue
