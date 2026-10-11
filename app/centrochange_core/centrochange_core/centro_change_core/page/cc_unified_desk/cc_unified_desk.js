@@ -1,5 +1,6 @@
-/* Unified Desk host: mount the existing authorized Centro Change controllers in one Desk Page.
- * No second backend, patient master, ledger, permission path or website navigation is created.
+/* Unified Desk host: native document routes plus custom CC workflows where
+ * native forms cannot preserve scheduling, scoped reports or accounting rules.
+ * Presentation fragments are generated at build time from shared templates.
  */
 frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
   const page=frappe.ui.make_app_page({parent:wrapper,title:'Centro Change',single_column:true,hide_sidebar:false});
@@ -8,24 +9,22 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     agenda:{path:'/centrochange',script:'workspace.js',css:['workspace.css']},
     finance:{path:'/finanza',script:'finance_workspace.js',css:['workspace.css']},
     professional:{path:'/professionista',script:'professional_view.js',css:['workspace.css','professional_view.css']},
-    patient:{path:'/pazienti_report',script:'patient_report.js',css:['workspace.css','professional_view.css','patient_report.css']},
-    audit:{path:'/registro_modifiche',script:'audit_view.js',css:['workspace.css']}
+    patient:{path:'/pazienti_report',script:'patient_report.js',css:['workspace.css','professional_view.css','patient_report.css']}
   };
   const routeByPath=Object.fromEntries(Object.entries(surfaces).map(([name,s])=>[s.path,name]));
   const roles=new Set(frappe.user_roles||[]);
   const canOperate=['CC Manager','CC Secretariat','CC Professional'].some(x=>roles.has(x));
   const canFinance=['CC Manager','CC Secretariat','CC Finance','CC Accountant'].some(x=>roles.has(x));
-  const canAudit=roles.has('CC Manager');
   const canManage=roles.has('CC Manager');
-  const allowed={agenda:canOperate,finance:canFinance,professional:canFinance,patient:canFinance,audit:canAudit};
-  const items=[['agenda','Agenda'],['finance','Finanza'],['professional','Professionisti'],['patient','Pazienti'],['audit','Registro modifiche']];
+  const allowed={agenda:canOperate,finance:canFinance,professional:canFinance,patient:canFinance};
+  const items=[['agenda','Agenda'],['finance','Finanza'],['professional','Report professionisti'],['patient','Report pazienti']];
   // These are actual Desk List routes. The server's DocPerm and row guards remain
   // authoritative; a navigation link never confers document access.
   const nativeMenus=[
     {label:'Anagrafiche',show:canManage,links:[['Pazienti','/app/patient'],['Professionisti','/app/healthcare-practitioner']]},
     {label:'Catalogo',show:canManage,links:[['Servizi','/app/item'],['Tariffe','/app/item-price'],['Tipi di seduta','/app/appointment-type'],['Servizi del centro','/app/cc-center-service'],['Modelli pacchetto','/app/cc-package-template']]},
     {label:'Documenti contabili',show:canFinance,links:[['Fatture pazienti','/app/sales-invoice'],['Fatture professionisti','/app/purchase-invoice'],['Incassi e pagamenti','/app/payment-entry'],['Movimenti bancari','/app/bank-transaction']]},
-    {label:'Audit',show:canAudit,links:[['Registro modifiche','/app/cc-audit-event']]}
+    {label:'Audit',show:canManage,links:[['Registro modifiche','/app/cc-audit-event']]}
   ];
   function nativeNavigation(){
     return nativeMenus.filter(group=>group.show).map(group=>{
@@ -33,7 +32,8 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       return `<details class="cc-desk-catalog"><summary>${group.label}</summary><div>${links}</div></details>`;
     }).join('');
   }
-  let generation=0,active=null;
+  let generation=0;
+  const fragments=import('/assets/centrochange_core/js/cc_desk_fragments.js');
   if(!document.querySelector('meta[name="csrf-token"]')){
     const meta=document.createElement('meta');meta.name='csrf-token';meta.content=frappe.csrf_token;document.head.append(meta);
   }
@@ -59,26 +59,26 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     const u=new URL(path,location.origin),view=routeByPath[u.pathname];
     if(!view){if(u.pathname.startsWith('/login'))location.href=u.href;return;}
     if(!allowed[view]){root.textContent='Accesso non autorizzato.';return;}
-    const token=++generation;active=view;root.textContent='Caricamento…';
+    const token=++generation;root.textContent='Caricamento…';
     if(replace)history.replaceState(null,'',routeUrl(view,u.search));
     try{
       const surface=surfaces[view];
-      const response=await fetch(surface.path+u.search,{credentials:'same-origin',redirect:'follow'});
-      if(!response.ok||new URL(response.url).pathname.startsWith('/login'))throw new Error('Accesso non autorizzato nel contesto richiesto.');
-      const doc=new DOMParser().parseFromString(await response.text(),'text/html');
-      const shell=doc.querySelector('.app-shell'),main=doc.querySelector('#cc-main');
-      if(!shell||!main)throw new Error('Vista Centro Change non disponibile.');
+      const {deskFragments}=await fragments;
+      const fragment=deskFragments[view];
+      if(!fragment)throw new Error('Vista Centro Change non disponibile.');
       for(const file of surface.css)await css(file);
       if(token!==generation)return;
-      const section=document.createElement('section');section.className='cc-desk-surface '+(doc.body.className||'');
-      shell.querySelector('.sidebar')?.remove();
+      const section=document.createElement('section');section.className='cc-desk-surface '+fragment.bodyClass;
+      const shell=document.createElement('div');shell.className='app-shell page';
       let links=items.filter(([id])=>allowed[id]).map(([id,text])=>`<a href="${surfaces[id].path}" class="cc-desk-route ${id===view?'active':''}">${text}</a>`).join('');
       links+=nativeNavigation();
       const routebar=document.createElement('nav');routebar.className='cc-desk-routebar';routebar.setAttribute('aria-label','Aree Centro Change');routebar.innerHTML=links;
       const nav=document.createElement('header');nav.className='cc-desk-topnav';
       nav.innerHTML='<nav id="navigation" aria-label="Funzioni della sezione"></nav><button type="button" id="logout">Esci</button>';
-      shell.prepend(nav);section.append(routebar,shell);
-      const dialog=doc.querySelector('#modal');if(dialog)section.append(dialog);
+      shell.append(nav);
+      const pageBody=document.createElement('div');pageBody.innerHTML=fragment.page;
+      shell.append(...pageBody.children);section.append(routebar,shell);
+      if(fragment.modal){const modal=document.createElement('div');modal.innerHTML=fragment.modal;section.append(...modal.children);}
       root.replaceChildren(section);
       window.ccDeskSurfaceRoot=section;
       window.ccDeskNavigate=path=>navigate(path);

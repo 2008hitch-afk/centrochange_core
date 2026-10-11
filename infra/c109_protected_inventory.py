@@ -20,6 +20,18 @@ def records(output: str) -> list[dict[str, str]]:
     return [{"id": item} for item in ids]
 
 
+def validate_existing(content: str, current_ids: str) -> None:
+    """Fail closed before using the private Docker event monitor."""
+    saved = json.loads(content)
+    if not isinstance(saved, list) or any(set(item) != {"id"} for item in saved if isinstance(item, dict)):
+        raise ValueError("invalid protected inventory shape")
+    if any(not isinstance(item, dict) for item in saved):
+        raise ValueError("invalid protected inventory record")
+    expected = {item["id"] for item in records(current_ids)}
+    if len(saved) != len(expected) or {item["id"] for item in saved} != expected:
+        raise ValueError("protected inventory differs from complete current Docker IDs")
+
+
 def main(output: Path) -> None:
     if output.exists():
         raise ValueError("protected inventory already exists")

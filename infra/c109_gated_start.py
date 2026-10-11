@@ -15,6 +15,7 @@ import urllib.request
 
 from c109_cgroup_gate import CgroupGateError, read_snapshot
 from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT
+from c109_protected_inventory import validate_existing
 
 
 ORDER = ["c-fit-db", "c-fit-redis-cache", "c-fit-redis-queue", "c-fit-backend",
@@ -102,6 +103,7 @@ def main(root):
     if len(original) != 9:
         raise RuntimeError("RC22 baseline count changed")
     initial_oom = oom_count()
+    validate_existing((state / "protected-before.json").read_text(), run("docker", "ps", "-aq", "--no-trunc"))
     guard(state, original, initial_oom)
     if run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={project}"):
         raise RuntimeError("gated project already exists")
