@@ -1,5 +1,7 @@
 # Missione C #109 — parità GOAL-02 e confine Desk cliente
 
+> Aggiornamento pre-r10: la candidata offline `eb3cf092d258448ddc74a5902b7063fb9b95feb0` e i test discriminanti per tutte le 24 aree sono descritti in [C109-PRE-R10-OFFLINE-2026-10-11.md](C109-PRE-R10-OFFLINE-2026-10-11.md). I risultati r8/r9 qui riportati sono storici: la nuova presentazione native List/Form e i workflow r10 sono **NOT TESTED sul runtime**. Nessuna riga diventa PASS sulla sola base della preparazione offline.
+
 **Stato:** `MISSION-C: PARTIAL`, `READY_FOR_OWNER_UAT: NO`. Prodotto PR DRAFT #112, stacked sulla PR DRAFT #107. La demo C109 già attiva usa la revisione UI precedente `6c837042`; il delta di questo rapporto è **offline** e non va attribuito alla sua immagine. RC22 rimane il riferimento GOAL-02 e non è stato modificato.
 
 La matrice C1 in `C1-NATIVE-FIRST-REALIGNMENT-REVIEW.md` documenta il fit dei componenti ufficiali Frappe/ERPNext/Healthcare pinned. Questa tabella registra la parità applicativa, la scelta Desk e la prova ancora richiesta. `PARTIAL` significa che codice o risultati storici esistono, ma la versione finale non è stata collaudata integralmente.
