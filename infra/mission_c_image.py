@@ -7,7 +7,10 @@ root=pathlib.Path(a.source);revision=subprocess.check_output(['git','-C',str(roo
 sha=lambda b:hashlib.sha256(b).hexdigest();serial=lambda d:json.dumps(d,separators=(',',':')).encode()
 with tarfile.open(a.base_archive,'r:') as src:
  index=json.load(src.extractfile('index.json'));desc=index['manifests'][0]
- assert desc['digest']=='sha256:342dd48b649aae93fe2e9cc080e44b1ff622b11c900bd084b636af3f2e4624a7'
+ assert desc['digest'] in {
+  'sha256:342dd48b649aae93fe2e9cc080e44b1ff622b11c900bd084b636af3f2e4624a7',
+  'sha256:b70ee0995bd0d8d8445db1a2167173c57559d3c5ccaf8eed8b02b0e68ce79a16',
+ },'unexpected parent image; do not package against an unverified runtime'
  manifest=json.load(src.extractfile('blobs/sha256/'+desc['digest'].split(':')[1]));config=json.load(src.extractfile('blobs/sha256/'+manifest['config']['digest'].split(':')[1]))
 raw=io.BytesIO();folder='app/centrochange_core/centrochange_core/centro_change_core/page'
 files=[root/folder/'__init__.py',*sorted((root/folder/'cc_unified_desk').glob('*')),*sorted((root/'app/centrochange_core/centrochange_core/centro_change_core/sidebar').rglob('*.json')),*[root/'app/centrochange_core/centrochange_core/public/js'/name for name in ('workspace.js','finance_workspace.js','patient_report.js','professional_view.js','audit_view.js','cc_desk_fragments.js')],root/'app/centrochange_core/centrochange_core/public/css/workspace.css',root/'app/centrochange_core/centrochange_core/security/dev_acceptance.py']
