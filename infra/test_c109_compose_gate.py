@@ -4,7 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, override
+from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, LIGHT_QA_PROJECT, override
 
 
 class ComposeGateTest(unittest.TestCase):
@@ -61,6 +61,11 @@ class ComposeGateTest(unittest.TestCase):
         self.assertEqual(result["name"], RETRY_PROJECT)
         with self.assertRaises(ValueError):
             override(self.base, self.gates, self.script, "centrochange-dev")
+
+    def test_light_qa_attempt_has_distinct_project_and_same_external_resources(self):
+        result = override(self.base, self.gates, self.script, LIGHT_QA_PROJECT)
+        self.assertEqual(result["name"], LIGHT_QA_PROJECT)
+        self.assertEqual(result["volumes"]["site"]["name"], "centrochange-c109-site")
 
 
 if __name__ == "__main__":

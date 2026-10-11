@@ -13,6 +13,7 @@ import stat
 import subprocess
 import sys
 import time
+from c109_compose_gate import LIGHT_QA_PROJECT
 
 
 SOCKET = Path("/var/run/docker.sock")
@@ -91,7 +92,7 @@ def launch_scopes(root):
     """Start only guard scopes, after proving their actual inherited credentials."""
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
-    if (activation.get("issue") != 109 or activation.get("target") != "centrochange-c109-gated-r4"
+    if (activation.get("issue") != 109 or activation.get("target") != LIGHT_QA_PROJECT
             or activation.get("status") != "OWNER_AUTHORIZED_C_UNIFIED_BOOTSTRAP"):
         raise RuntimeError("wrong C109 demo activation")
     if dt.datetime.now(dt.timezone.utc) >= dt.datetime.fromisoformat(activation["hard_stop_utc"]):

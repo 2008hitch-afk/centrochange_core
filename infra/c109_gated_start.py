@@ -14,7 +14,7 @@ import time
 import urllib.request
 
 from c109_cgroup_gate import CgroupGateError, read_snapshot
-from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT
+from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT
 from c109_guard_access import require_live_guards
 from c109_protected_inventory import validate_existing
 
@@ -91,7 +91,7 @@ def main(root):
     if activation.get("workload_release_allowed") is not True:
         raise RuntimeError("application workload release is not active")
     project = activation.get("target")
-    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT):
+    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT):
         raise RuntimeError("unapproved isolated project")
     if now() < dt.datetime.fromisoformat(activation["start_utc"]):
         raise RuntimeError("activation window has not opened")

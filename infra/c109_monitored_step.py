@@ -12,14 +12,14 @@ import sys
 import time
 
 from c109_gated_start import guard, oom_count, run, stop_only_ours
-from c109_compose_gate import FINAL_PROJECT, DEMO_PROJECT
+from c109_compose_gate import FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT
 
 
 def main(root: Path, timeout: int, command: list[str]) -> None:
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
     project = activation["target"]
-    if project not in (FINAL_PROJECT, DEMO_PROJECT) or not command or command[0] != "docker":
+    if project not in (FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT) or not command or command[0] != "docker":
         raise RuntimeError("wrong isolated activation or command")
     now = dt.datetime.now(dt.timezone.utc)
     if not (dt.datetime.fromisoformat(activation["start_utc"]) <= now < dt.datetime.fromisoformat(activation["mutation_end_utc"])):

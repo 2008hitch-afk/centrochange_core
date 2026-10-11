@@ -14,7 +14,12 @@ const slug = `${role}-${route.split('/').pop()}`;
 
 (async () => {
   const browser = await chromium.launch({headless: true,
-    args: ['--host-resolver-rules=MAP centrochange.local 127.0.0.1', '--no-proxy-server']});
+    args: [
+      '--host-resolver-rules=MAP centrochange.local 127.0.0.1', '--no-proxy-server',
+      '--no-first-run', '--disable-background-networking', '--disable-component-update',
+      '--disable-default-apps', '--disable-sync', '--disable-extensions',
+      '--disk-cache-size=0', '--media-cache-size=0',
+    ]});
   const context = await browser.newContext({viewport: {width: 1440, height: 900}, locale: 'it-IT'});
   const page = await context.newPage();
   const errors = [];
@@ -40,7 +45,9 @@ const slug = `${role}-${route.split('/').pop()}`;
     result.requested = route;
     result.errors = errors;
     fs.writeFileSync(`/qa-results/native-${slug}.json`, JSON.stringify(result, null, 2));
-    await page.screenshot({path: `/qa-results/native-${slug}.png`, fullPage: false});
+    if (process.env.SCREENSHOT === '1') {
+      await page.screenshot({path: `/qa-results/native-${slug}.png`, fullPage: false});
+    }
     console.log(JSON.stringify({role, route, url: result.url, title: result.title,
       overflow: result.overflow, pageErrors: errors.length,
       clientDesk: result.clientDesk, clientNav: result.clientNav.map(link => link.text),

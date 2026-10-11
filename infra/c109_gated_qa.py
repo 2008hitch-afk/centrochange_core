@@ -16,8 +16,8 @@ from c109_gated_start import guard, inspect, oom_count, run
 
 
 QA_IMAGE = "sha256:f970b8eb4b0bd2186df380e6dffb1607f9fd8a75f67c04ba5f3c9d87d36e72d3"
-QA_NAME = "centrochange-c109-gated-r3-qa"
-PROJECT = "centrochange-c109-gated-r3"
+QA_NAME = "centrochange-c109-gated-r5-qa"
+PROJECT = "centrochange-c109-gated-r5"
 LIMIT = 512 * 1024**2
 
 
@@ -56,6 +56,7 @@ def main(root: Path):
                         "--label", "centrochange.mission=C109", "--label", "centrochange.phase=lab",
                         "--label", f"com.docker.compose.project={PROJECT}",
                         "--memory", "512m", "--memory-swap", "512m",
+                        "--tmpfs", "/tmp:rw,nosuid,nodev,size=64m",
                         "--network", f"container:{frontend[0]}",
                         "--mount", f"type=bind,source={fixture},target=/qa-fixture.json,readonly",
                         "--mount", f"type=bind,source={results},target=/qa-results",

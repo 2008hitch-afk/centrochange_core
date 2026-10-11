@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import time
 
-from c109_compose_gate import DEMO_PROJECT
+from c109_compose_gate import LIGHT_QA_PROJECT
 from c109_guard_access import require_live_guards
 from c109_gated_start import stop_only_ours
 
@@ -14,12 +14,12 @@ from c109_gated_start import stop_only_ours
 def expire(root: Path) -> None:
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
-    if activation.get("target") != DEMO_PROJECT or activation.get("issue") != 109:
+    if activation.get("target") != LIGHT_QA_PROJECT or activation.get("issue") != 109:
         raise RuntimeError("unexpected demo activation")
     deadline = dt.datetime.fromisoformat(activation["hard_stop_utc"])
     if dt.datetime.now(dt.timezone.utc) < deadline:
         raise RuntimeError("demo deadline has not arrived")
-    stop_only_ours(state, DEMO_PROJECT)
+    stop_only_ours(state, LIGHT_QA_PROJECT)
     (state / "expired-utc").write_text(dt.datetime.now(dt.timezone.utc).isoformat())
 
 
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 3 and sys.argv[1] == "--wait":
         root = Path(sys.argv[2])
         activation = json.loads((root / "app-run" / "activation.json").read_text())
-        if activation.get("target") != DEMO_PROJECT or activation.get("issue") != 109:
+        if activation.get("target") != LIGHT_QA_PROJECT or activation.get("issue") != 109:
             raise RuntimeError("unexpected demo activation")
         deadline = dt.datetime.fromisoformat(activation["hard_stop_utc"])
         while not (root / "app-run" / "monitor-finish").exists():
@@ -35,7 +35,7 @@ if __name__ == "__main__":
                 require_live_guards(root / "app-run")
             except (OSError, ValueError, KeyError, RuntimeError):
                 (root / "app-run" / "expiry-guard-alert").write_text("GUARD_SCOPE_LOST\n")
-                stop_only_ours(root / "app-run", DEMO_PROJECT)
+                stop_only_ours(root / "app-run", LIGHT_QA_PROJECT)
                 raise RuntimeError("C109 guard scope lost; demo stopped")
             remaining = (deadline - dt.datetime.now(dt.timezone.utc)).total_seconds()
             if remaining <= 0:
