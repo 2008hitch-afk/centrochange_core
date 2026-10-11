@@ -9,7 +9,7 @@ from c109_rc22_identity import baseline
 
 
 FILES = (
-    "c109_r12_preflight.py", "c109_r12_contract.py", "c109_gated_start.py",
+    "c109_r12_preflight.py", "c109_r12_resources.py", "c109_r12_contract.py", "c109_gated_start.py",
     "c109_guard_access.py", "c109_rc22_identity.py", "c109_rc22_monitor.py",
     "c109_compose_gate.py", "c109_demo_expiry.py", "c109_gated_qa.py",
     "c109_monitored_step.py", "c109_protected_inventory.py",

@@ -1,8 +1,4 @@
-"""Single R12 entrypoint: verify, launch four guards, prove renewal, then gate.
-
-No Docker resources are created before every check is GREEN. Offline tests
-inject only the host boundary; they exercise this same sequence and gate.
-"""
+"""Single R12 entrypoint: verify, guard, clone resources, gate, then release."""
 
 import datetime as dt
 import fcntl
@@ -17,6 +13,7 @@ from c109_guard_access import ROLES, launch_scopes, marker_path, require_live_gu
 from c109_gated_start import main as start_gated, precreate_gate, run
 from c109_gated_start import stop_only_ours
 from c109_r12_contract import attest, digest
+from c109_r12_resources import prepare as prepare_resources
 from c109_rc22_identity import verify as verify_rc22
 from c109_protected_inventory import validate_existing
 
@@ -26,7 +23,7 @@ REVISION = "e2fd728ecf6acdb0e0ab26379820df6905dd5521"
 
 
 def preflight(root, *, launch=launch_scopes, sleep=time.sleep, host_run=run,
-              gate=precreate_gate):
+              gate=precreate_gate, prepare=prepare_resources):
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
     now = dt.datetime.now(dt.timezone.utc)
@@ -73,6 +70,9 @@ def preflight(root, *, launch=launch_scopes, sleep=time.sleep, host_run=run,
     for role in ROLES:
         if json.loads(marker_path(state, role).read_text())["checked_at"] <= first[role]:
             raise RuntimeError(f"R12 {role} Docker proof did not renew")
+    # The same four guards continue running through the serial, capped copy.
+    # A partial preparation is single-use and cannot be resumed automatically.
+    prepare(root, image=IMAGE)
     gate(root, attested=False)
     attest(root)
     # Same gate as the real launcher, now requiring the verified attestation.

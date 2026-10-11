@@ -8,11 +8,148 @@ import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 import c109_guard_access as access
 import c109_gated_start as start
 import c109_r12_preflight as r12
+import c109_r12_resources as resources
 from c109_gated_start import EXPECTED_MAX, ORDER
+
+
+class FakeProcess:
+    def __init__(self, output="", fail=False):
+        self.output = output
+        self.returncode = None
+        self.remaining = 2
+        self.fail = fail
+
+    def poll(self):
+        if self.remaining:
+            self.remaining -= 1
+            return None
+        self.returncode = 1 if self.fail else 0
+        return self.returncode
+
+    def communicate(self, timeout=None):
+        return self.output, ""
+
+    def terminate(self):
+        self.returncode = -15
+
+    def wait(self, timeout=None):
+        return self.returncode
+
+
+class FakeResourceHost:
+    """Stateful Docker boundary: the real resource module performs the sequence."""
+
+    def __init__(self, test):
+        self.test = test
+        self.calls = []
+        self.volumes = {resources.SOURCE_PREFIX + suffix for suffix in resources.SUFFIXES}
+        self.networks = set()
+        self.helpers = {}
+        self.next_id = 100
+        self.missing_source = False
+        self.bad_digest = False
+        self.bad_cap = False
+        self.copy_failure = False
+        self.long_copy = False
+        self.active_source = False
+        self.bad_network = False
+        self.extra_mount = False
+
+    def run(self, *args, **kwargs):
+        self.calls.append(args)
+        if args[:3] == ("docker", "volume", "ls"):
+            values = self.volumes.copy()
+            if self.missing_source:
+                values.remove(resources.SOURCE_PREFIX + resources.SUFFIXES[0])
+            return "\n".join(sorted(values))
+        if args[:3] == ("docker", "network", "ls"):
+            return "\n".join(sorted(self.networks))
+        if args[:3] == ("docker", "ps", "-q") and "--no-trunc" in args and any(str(x).startswith("volume=") for x in args):
+            users = [ident for ident, item in self.helpers.items() if item["running"]]
+            if self.active_source:
+                users.append("a" * 64)
+            return "\n".join(users)
+        if args[:3] in (("docker", "ps", "-aq"), ("docker", "ps", "-q")):
+            if self.active_source and any(str(x).startswith("volume=") for x in args):
+                return "a" * 64
+            return ""
+        if args[:3] == ("docker", "network", "create"):
+            name = args[-1]
+            self.networks.add(name)
+            return "a" * 64
+        if args[:3] == ("docker", "volume", "create"):
+            self.volumes.add(args[-1])
+            return args[-1]
+        if args[:3] == ("docker", "network", "inspect"):
+            name = args[-1]
+            return json.dumps([{"Name": name, "Driver": "bridge", "Internal":
+                                (name == resources.NETWORKS[0][0]) and not self.bad_network, "Containers": {},
+                                "Labels": {"com.docker.compose.project": r12.R12_PROJECT}}])
+        if args[:3] == ("docker", "volume", "inspect"):
+            name = args[-1]
+            return json.dumps([{"Name": name, "Driver": "local", "Mountpoint": "/docker/" + name,
+                                "Labels": {"com.docker.compose.project": r12.R12_PROJECT,
+                                           "centrochange.mission": "C109"}}])
+        if args[:2] == ("docker", "create"):
+            self.next_id += 1
+            ident = format(self.next_id, "064x")
+            mounts = [x for x in args if isinstance(x, str) and x.startswith("type=volume,")]
+            self.helpers[ident] = {"source": mounts[0].split("source=")[1].split(",")[0],
+                                   "dest": mounts[1].split("source=")[1].split(",")[0],
+                                   "running": False}
+            return ident
+        if args[:2] == ("docker", "start"):
+            self.helpers[args[-1]]["running"] = True
+            return args[-1]
+        if args[:2] == ("docker", "stop"):
+            self.helpers[args[-1]]["running"] = False
+            return args[-1]
+        if args[:2] == ("docker", "rm"):
+            self.helpers.pop(args[-1])
+            return args[-1]
+        if args[:2] == ("docker", "inspect"):
+            ident = args[-1]
+            item = self.helpers[ident]
+            mounts = [{"Destination": "/source", "Name": item["source"],
+                       "RW": False, "Type": "volume"},
+                      {"Destination": "/dest", "Name": item["dest"],
+                       "RW": True, "Type": "volume"},
+                      {"Destination": "/home/frappe/frappe-bench/logs",
+                       "RW": True, "Type": "tmpfs"},
+                      {"Destination": "/home/frappe/frappe-bench/sites",
+                       "RW": True, "Type": "tmpfs"}]
+            if self.extra_mount:
+                mounts.append({"Destination": "/unexpected", "RW": True, "Type": "volume"})
+            return json.dumps([{"Id": ident, "State": {"Running": item["running"], "Pid": 1234},
+                                "Config": {"User": "0:0", "Labels": {"com.docker.compose.project": r12.R12_PROJECT}},
+                                "HostConfig": {"Memory": resources.MEMORY - int(self.bad_cap),
+                                               "MemorySwap": resources.MEMORY, "NetworkMode": "none"},
+                                "Mounts": mounts}])
+        raise AssertionError(f"unexpected resource command {args}")
+
+    def process(self, args):
+        self.calls.append(tuple(args))
+        if "cp" in args:
+            result = FakeProcess(fail=self.copy_failure)
+            result.remaining = 150 if self.long_copy else 2
+            return result
+        if "python3" in args:
+            return FakeProcess("b" * 64 if self.bad_digest and args[-1] == "/dest" else "a" * 64)
+        raise AssertionError(args)
+
+    def sleep(self, seconds):
+        self.test.sleep(seconds)
+
+    def snapshot(self, pid, container_id):
+        return SimpleNamespace(pid=pid, inode=42, memory_current=1024)
+
+    def safety(self, state, initial_oom):
+        start.guard(state, initial_oom)
 
 
 class IntegratedR12Test(unittest.TestCase):
@@ -43,12 +180,15 @@ class IntegratedR12Test(unittest.TestCase):
                            "entrypoint": ["/bin/sh", "/opt/cc-bootstrap.sh", start.KINDS[name]]}
                     for name, size in EXPECTED_MAX.items()}
         self.config = {"name": r12.R12_PROJECT, "services": services,
-                       "volumes": {f"v{i}": {"name": f"centrochange-c109-r12-v{i}"} for i in range(5)},
-                       "networks": {f"n{i}": {"name": f"centrochange-c109-r12-n{i}"} for i in range(2)}}
+                       "volumes": {f"v{i}": {"name": resources.DEST_PREFIX + suffix}
+                                   for i, suffix in enumerate(resources.SUFFIXES)},
+                       "networks": {f"n{i}": {"name": name}
+                                    for i, (name, _) in enumerate(resources.NETWORKS)}}
         self.write_config()
         (self.state / "compose-final-private.json").write_text("{}")
         (self.root / "compose-gated.override.json").write_text("{}")
         self.calls = []
+        self.resource_host = FakeResourceHost(self)
 
     def write_activation(self):
         (self.state / "activation.json").write_text(json.dumps(self.activation))
@@ -113,17 +253,104 @@ class IntegratedR12Test(unittest.TestCase):
              patch.object(start, "oom_count", return_value=7), \
              patch.object(start, "mem_available", return_value=5 * 1024**3), \
              patch.object(start, "psi_full", return_value=0.0), \
-             patch.object(start.urllib.request, "urlopen", return_value=Reply()):
-            r12.preflight(self.root, launch=self.launch, sleep=self.sleep, host_run=self.host)
+             patch.object(start.urllib.request, "urlopen", return_value=Reply()), \
+             patch.object(resources, "oom_count", return_value=7):
+            r12.preflight(self.root, launch=self.launch, sleep=self.sleep, host_run=self.host,
+                          prepare=lambda root, image: resources.prepare(root, host=self.resource_host, image=image))
 
     def test_green_sequence_reaches_exact_precreation_gate(self):
         self.exercise()
         self.assertTrue((self.state / "r12-preflight-attestation.json").is_file())
         self.assertFalse((self.state / "app-attempted").exists())
         self.assertGreaterEqual(min(self.renewals.values()), 3)
-        self.assertFalse(any("create" in call or "up" in call for call in self.calls))
+        self.assertEqual(len([c for c in self.resource_host.calls if c[:2] == ("docker", "create")]), 5)
+        self.assertFalse(any("up" in call for call in self.calls))
+        self.assertEqual(len(json.loads((self.state / "r12-resource-integrity.json").read_text())), 5)
         self.assertIn(("docker", "ps", "-q", "--no-trunc", "--filter",
                        "label=com.docker.compose.project=centrochange-dev"), self.calls)
+
+    def test_long_serial_copy_keeps_all_four_guards_renewing(self):
+        self.resource_host.long_copy = True
+        self.exercise()
+        self.assertGreater(self.clock[0] - dt.datetime.fromisoformat(self.activation["start_utc"]).timestamp(), 60)
+        self.assertGreaterEqual(min(self.renewals.values()), 5)
+
+    def test_incomplete_copy_stops_before_application(self):
+        self.resource_host.copy_failure = True
+        with self.assertRaisesRegex(RuntimeError, "volume operation failed"):
+            self.exercise()
+        self.assertTrue((self.state / "r12-resources-attempted").exists())
+        self.assertFalse((self.state / "r12-resource-integrity.json").exists())
+        self.assertFalse((self.state / "r12-preflight-attestation.json").exists())
+
+    def test_integrity_error_stops_before_application(self):
+        self.resource_host.bad_digest = True
+        with self.assertRaisesRegex(RuntimeError, "integrity mismatch"):
+            self.exercise()
+        self.assertFalse((self.state / "r12-preflight-attestation.json").exists())
+
+    def test_helper_cap_violation_stops_before_copy(self):
+        self.resource_host.bad_cap = True
+        with self.assertRaisesRegex(RuntimeError, "cap mismatch"):
+            self.exercise()
+        self.assertFalse(any("exec" in call for call in self.resource_host.calls))
+
+    def test_unexpected_helper_mount_stops_before_copy(self):
+        self.resource_host.extra_mount = True
+        with self.assertRaisesRegex(RuntimeError, "helper identity or cap mismatch"):
+            self.exercise()
+        self.assertFalse(any("exec" in call for call in self.resource_host.calls))
+
+    def test_preexisting_destination_stops_without_creation(self):
+        self.resource_host.volumes.add(resources.DEST_PREFIX + resources.SUFFIXES[0])
+        with self.assertRaisesRegex(RuntimeError, "already exist"):
+            self.exercise()
+        self.assertFalse(any("create" in call for call in self.resource_host.calls))
+
+    def test_active_source_stops_without_creation(self):
+        self.resource_host.active_source = True
+        with self.assertRaisesRegex(RuntimeError, "mounted by a running container"):
+            self.exercise()
+        self.assertFalse(any("create" in call for call in self.resource_host.calls))
+
+    def test_network_isolation_mismatch_stops_before_volume_copy(self):
+        self.resource_host.bad_network = True
+        with self.assertRaisesRegex(RuntimeError, "network isolation mismatch"):
+            self.exercise()
+        self.assertFalse(any(c[:3] == ("docker", "volume", "create") for c in self.resource_host.calls))
+
+    def test_guard_loss_during_copy_stops(self):
+        original = self.resource_host.sleep
+        def loss(seconds):
+            original(seconds)
+            if any("exec" in call for call in self.resource_host.calls):
+                (self.state / "safety-stop.json").write_text("{}")
+        self.resource_host.sleep = loss
+        with self.assertRaisesRegex(RuntimeError, "watchdog"):
+            self.exercise()
+        self.assertFalse((self.state / "r12-preflight-attestation.json").exists())
+
+    def test_docker_access_loss_during_copy_stops(self):
+        original = self.resource_host.sleep
+        def loss(seconds):
+            original(seconds)
+            if any("exec" in call for call in self.resource_host.calls):
+                access.atomic_json(self.state / "guard-access-alert.json", {"reason": "Docker API unavailable"})
+        self.resource_host.sleep = loss
+        with self.assertRaisesRegex(RuntimeError, "guard renewal failed"):
+            self.exercise()
+        self.assertFalse((self.state / "r12-preflight-attestation.json").exists())
+
+    def test_rc22_identity_change_during_copy_stops(self):
+        original = self.resource_host.sleep
+        def change(seconds):
+            original(seconds)
+            if any("exec" in call for call in self.resource_host.calls):
+                self.live_ids[0] = format(99, "064x")
+        self.resource_host.sleep = change
+        with self.assertRaisesRegex(RuntimeError, "RC22 container identity changed"):
+            self.exercise()
+        self.assertFalse((self.state / "r12-preflight-attestation.json").exists())
 
     def test_real_identity_change_stops(self):
         self.live_ids[0] = format(99, "064x")
@@ -146,6 +373,13 @@ class IntegratedR12Test(unittest.TestCase):
     def test_swap_memory_and_isolation_fail_closed(self):
         for change in ("memory", "swap", "network"):
             with self.subTest(change=change):
+                # Independent activation snapshots; a real failed preparation
+                # remains single-use and cannot be retried.
+                (self.state / "r12-resources-attempted").unlink(missing_ok=True)
+                self.resource_host.volumes = {resources.SOURCE_PREFIX + s for s in resources.SUFFIXES}
+                self.resource_host.networks.clear()
+                self.clock[0] = dt.datetime.now(dt.timezone.utc).timestamp()
+                self.tick[0] = 100.0
                 if change == "memory":
                     self.config["services"][ORDER[0]]["mem_limit"] -= 1
                 elif change == "swap":
@@ -153,11 +387,11 @@ class IntegratedR12Test(unittest.TestCase):
                 else:
                     self.config["networks"]["n0"]["name"] = "centrochange-dev_default"
                 self.write_config()
-                with self.assertRaisesRegex(RuntimeError, "budget|RAM/swap|non-isolated"):
+                with self.assertRaisesRegex(RuntimeError, "budget|RAM/swap|network mapping"):
                     self.exercise()
                 self.config["services"][ORDER[0]]["mem_limit"] = EXPECTED_MAX[ORDER[0]]
                 self.config["services"][ORDER[0]]["memswap_limit"] = EXPECTED_MAX[ORDER[0]]
-                self.config["networks"]["n0"]["name"] = "centrochange-c109-r12-n0"
+                self.config["networks"]["n0"]["name"] = resources.NETWORKS[0][0]
 
     def test_missing_config_and_expiry_stop(self):
         (self.state / "compose-final.merged-private.json").unlink()
@@ -181,15 +415,11 @@ class IntegratedR12Test(unittest.TestCase):
             self.exercise()
 
     def test_missing_isolated_volume_and_wrong_harness_revision_stop(self):
-        original = self.host
-        def missing_volume(*args, **kwargs):
-            if args[:3] == ("docker", "volume", "inspect"):
-                return "unexpected-volume"
-            return original(*args, **kwargs)
-        self.host = missing_volume
-        with self.assertRaisesRegex(RuntimeError, "isolated volumes resource"):
+        self.resource_host.missing_source = True
+        with self.assertRaisesRegex(RuntimeError, "source volume missing"):
             self.exercise()
-        self.host = original
+        self.resource_host.missing_source = False
+        original = self.host
         self.activation["harness_commit"] = "0" * 40
         self.write_activation()
         # A fake host that returns the real revision must reject the changed authorization.
