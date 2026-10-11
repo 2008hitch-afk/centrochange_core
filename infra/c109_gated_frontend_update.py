@@ -8,6 +8,7 @@ guard event; never touch the nine protected RC22 containers.
 import datetime as dt
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import time
@@ -18,6 +19,15 @@ from c109_gated_start import guard, inspect, oom_count, run, stop_only_ours
 
 SERVICE = "c-fit-frontend"
 LIMIT = 32 * 1024**2
+
+
+def service_container_id(service: str, query=run) -> str:
+    value = query("docker", "ps", "-aq", "--no-trunc",
+                  "--filter", f"label=com.docker.compose.project={IO_WAIVER_PROJECT}",
+                  "--filter", f"label=com.docker.compose.service={service}")
+    if not re.fullmatch(r"[0-9a-f]{64}", value):
+        raise RuntimeError("service container ID must be one exact full Docker ID")
+    return value
 
 
 def main(root: Path, image: str, expected_asset_hash: str):
@@ -61,10 +71,7 @@ def main(root: Path, image: str, expected_asset_hash: str):
     gate = root / "gates" / SERVICE / "release"
     if not gate.is_file():
         raise RuntimeError("original frontend release gate missing")
-    old = run("docker", "ps", "-q", "--filter", f"label=com.docker.compose.project={IO_WAIVER_PROJECT}",
-              "--filter", f"label=com.docker.compose.service={SERVICE}")
-    if len(old.split()) != 1:
-        raise RuntimeError("original frontend count invalid")
+    old = service_container_id(SERVICE)
     try:
         qa = run("docker", "ps", "-q", "--filter", "name=^centrochange-c109-gated-r7-qa$")
         if qa:
@@ -76,9 +83,8 @@ def main(root: Path, image: str, expected_asset_hash: str):
             subprocess.run(compose + ["up", "--no-start", "--no-deps", "--force-recreate",
                                       "--pull", "never", SERVICE],
                            stdout=log, stderr=log, check=True, timeout=90)
-        new = run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={IO_WAIVER_PROJECT}",
-                  "--filter", f"label=com.docker.compose.service={SERVICE}")
-        if len(new.split()) != 1 or new == old:
+        new = service_container_id(SERVICE)
+        if new == old:
             raise RuntimeError("frontend replacement identity invalid")
         row = inspect(new)
         if row["running"] or row["memory"] != LIMIT or row["swap"] != LIMIT:
