@@ -22,6 +22,7 @@ KINDS = {
 PROJECT = "centrochange-c109-gated"
 RETRY_PROJECT = "centrochange-c109-gated-r2"
 FINAL_PROJECT = "centrochange-c109-gated-r3"
+DEMO_PROJECT = "centrochange-c109-gated-r4"
 
 
 def override(base: dict, gate_root: Path, script: Path, project: str = PROJECT) -> dict:
@@ -29,7 +30,7 @@ def override(base: dict, gate_root: Path, script: Path, project: str = PROJECT) 
         raise ValueError("unexpected C109 service inventory")
     if base.get("name") != "centrochange-c109":
         raise ValueError("wrong source Compose project")
-    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT):
+    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT):
         raise ValueError("unapproved isolated project")
     if not script.is_file() or not gate_root.is_dir():
         raise ValueError("missing versioned bootstrap script or private gate root")
