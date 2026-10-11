@@ -67,7 +67,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       }).join('');
       return `<section class="cc-desk-home-group"><div class="cc-desk-home-group-heading"><h2>${group.title}</h2><p>${group.description}</p></div><div class="cc-desk-home-grid">${cards}</div></section>`;
     }).join('');
-    return `<div class="cc-desk-home"><header class="cc-desk-home-heading"><p class="cc-desk-eyebrow">Centro Change · Desk</p><h1>Buon lavoro</h1><p>Scegli un’area per iniziare. Vedrai soltanto le funzioni previste per il tuo ruolo.</p></header>${groups}</div>`;
+    return `<div class="cc-desk-home"><header class="cc-desk-home-heading"><p class="cc-desk-eyebrow">Centro Change · Desk</p><h1>Buon lavoro</h1><p>Scegli un’area per iniziare. Ogni operazione rispetta le autorizzazioni del tuo ruolo.</p></header>${groups}</div>`;
   }
   let generation=0;
   let fragments;
