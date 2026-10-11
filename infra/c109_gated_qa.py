@@ -16,8 +16,8 @@ from c109_gated_start import guard, inspect, oom_count, run
 
 
 QA_IMAGE = "sha256:f970b8eb4b0bd2186df380e6dffb1607f9fd8a75f67c04ba5f3c9d87d36e72d3"
-QA_NAME = "centrochange-c109-gated-r2-qa"
-PROJECT = "centrochange-c109-gated-r2"
+QA_NAME = "centrochange-c109-gated-r3-qa"
+PROJECT = "centrochange-c109-gated-r3"
 LIMIT = 512 * 1024**2
 
 
