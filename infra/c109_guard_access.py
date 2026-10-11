@@ -13,7 +13,7 @@ import stat
 import subprocess
 import sys
 import time
-from c109_compose_gate import IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT
+from c109_compose_gate import IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT
 
 
 SOCKET = Path("/var/run/docker.sock")
@@ -64,7 +64,7 @@ def marker_path(state, role):
 def require_live_guards(state, max_proof_age=None):
     roles = ("events", "watchdog", "expiry")
     if ((state / "activation.json").exists()
-            and json.loads((state / "activation.json").read_text()).get("target") in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT)):
+            and json.loads((state / "activation.json").read_text()).get("target") in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT)):
         roles += ("rc22",)
     for role in roles:
         marker = json.loads(marker_path(state, role).read_text())
@@ -99,7 +99,7 @@ def launch_scopes(root):
     """Start only guard scopes, after proving their actual inherited credentials."""
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
-    if (activation.get("issue") != 109 or activation.get("target") not in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT)
+    if (activation.get("issue") != 109 or activation.get("target") not in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT)
             or activation.get("status") != "OWNER_AUTHORIZED_C_UNIFIED_BOOTSTRAP"):
         raise RuntimeError("wrong C109 demo activation")
     if dt.datetime.now(dt.timezone.utc) >= dt.datetime.fromisoformat(activation["hard_stop_utc"]):
@@ -107,7 +107,7 @@ def launch_scopes(root):
     if ((state / "app-attempted").exists() or (state / "monitor-finish").exists()
             or any(marker_path(state, role).exists() for role in ROLES)):
         raise RuntimeError("activation or guard launch already attempted")
-    roles = ("rc22", "events", "watchdog", "expiry") if activation["target"] in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT) else ("events", "watchdog", "expiry")
+    roles = ("rc22", "events", "watchdog", "expiry") if activation["target"] in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT) else ("events", "watchdog", "expiry")
     for role in roles:
         scope_probe(role)
     launched = []

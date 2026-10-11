@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import time
 
-from c109_compose_gate import IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT
+from c109_compose_gate import IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT
 from c109_guard_access import require_live_guards
 from c109_gated_start import stop_only_ours
 
@@ -14,7 +14,7 @@ from c109_gated_start import stop_only_ours
 def expire(root: Path) -> None:
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
-    if activation.get("target") not in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT) or activation.get("issue") != 109:
+    if activation.get("target") not in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT) or activation.get("issue") != 109:
         raise RuntimeError("unexpected demo activation")
     deadline = dt.datetime.fromisoformat(activation["hard_stop_utc"])
     if dt.datetime.now(dt.timezone.utc) < deadline:
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 3 and sys.argv[1] == "--wait":
         root = Path(sys.argv[2])
         activation = json.loads((root / "app-run" / "activation.json").read_text())
-        if activation.get("target") not in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT) or activation.get("issue") != 109:
+        if activation.get("target") not in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT) or activation.get("issue") != 109:
             raise RuntimeError("unexpected demo activation")
         deadline = dt.datetime.fromisoformat(activation["hard_stop_utc"])
         while not (root / "app-run" / "monitor-finish").exists():

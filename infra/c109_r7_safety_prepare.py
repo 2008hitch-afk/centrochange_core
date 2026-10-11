@@ -8,11 +8,11 @@ from pathlib import Path
 import hashlib
 import json
 
-from c109_compose_gate import IO_WAIVER_PROJECT, FINAL_UI_PROJECT
+from c109_compose_gate import IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT
 
 
 def prepare(source: Path, destination: Path, activation: dict) -> str:
-    if activation.get("target") not in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT) or activation.get("io_waiver") is not True or activation.get("issue") != 109:
+    if activation.get("target") not in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT) or activation.get("io_waiver") is not True or activation.get("issue") != 109:
         raise ValueError("not an authorized isolated I/O waiver")
     if destination.exists():
         raise ValueError("refusing to overwrite watchdog")

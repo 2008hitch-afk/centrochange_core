@@ -12,7 +12,7 @@ import sys
 import time
 
 from c109_gated_start import guard, oom_count, run, stop_only_ours
-from c109_compose_gate import FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT
+from c109_compose_gate import FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT
 
 
 class TestCommandFailed(RuntimeError):
@@ -23,7 +23,7 @@ def main(root: Path, timeout: int, command: list[str], *, test_command: bool = F
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
     project = activation["target"]
-    if project not in (FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT) or not command or command[0] != "docker":
+    if project not in (FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT) or not command or command[0] != "docker":
         raise RuntimeError("wrong isolated activation or command")
     if test_command and (command[:2] != ["docker", "exec"] or not any(
             arg.startswith(project + "-") for arg in command[2:])):
