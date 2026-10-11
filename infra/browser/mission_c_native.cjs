@@ -31,6 +31,10 @@ const slug = `${role}-${route.split('/').pop()}`;
       bodyText: document.body.innerText.slice(0, 1400),
       overflow: document.documentElement.scrollWidth > innerWidth,
       route: window.frappe?.get_route?.() || null,
+      clientDesk: document.body.classList.contains('cc-client-desk'),
+      clientNav: [...document.querySelectorAll('#cc-desk-global-nav a')].map(link => ({
+        text: link.textContent.trim(), href: link.getAttribute('href'), visible: !!link.getClientRects().length,
+      })),
     }));
     result.role = role;
     result.requested = route;
@@ -39,6 +43,7 @@ const slug = `${role}-${route.split('/').pop()}`;
     await page.screenshot({path: `/qa-results/native-${slug}.png`, fullPage: false});
     console.log(JSON.stringify({role, route, url: result.url, title: result.title,
       overflow: result.overflow, pageErrors: errors.length,
+      clientDesk: result.clientDesk, clientNav: result.clientNav.map(link => link.text),
       accessDenied: /not permitted|permission|access denied|non autorizzato|non hai/i.test(result.bodyText)}));
   } finally {
     await browser.close();

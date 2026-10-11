@@ -148,6 +148,10 @@ for dt in ("Payment Entry", "Sales Invoice"):
 # Supported website hooks, presentation only; native login/auth remains pinned upstream.
 update_website_context = ["centrochange_core.operations.website_brand.context"]
 web_include_css = ["/assets/centrochange_core/vendor/tabler-core-1.6.1/tabler.min.css", "/assets/centrochange_core/css/client_brand.css", "/assets/centrochange_core/css/ui_v1.css"]
+# Desk presentation is loaded through Frappe's supported asset hooks. These
+# assets never grant access; native DocPerm and CC server guards remain decisive.
+app_include_js = ["/assets/centrochange_core/js/cc_desk_client.js"]
+app_include_css = ["/assets/centrochange_core/css/cc_desk_client.css"]
 # Append presentation after the original request guards; never replace security hooks.
 before_request.append("centrochange_core.operations.website_brand.client_language")
 get_print_format_template = "centrochange_core.operations.website_brand.print_template_locale"
