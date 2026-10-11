@@ -126,7 +126,8 @@ class FakeResourceHost:
             if self.extra_mount:
                 mounts.append({"Destination": "/unexpected", "RW": True, "Type": "volume"})
             return json.dumps([{"Id": ident, "State": {"Running": item["running"], "Pid": 1234},
-                                "Config": {"User": "0:0", "Labels": {"com.docker.compose.project": r12.R12_PROJECT}},
+                                "Config": {"User": "0:0", "Labels": {"com.docker.compose.project": r12.R12_PROJECT,
+                                                                    "centrochange.mission": "C109"}},
                                 "HostConfig": {"Memory": resources.MEMORY - int(self.bad_cap),
                                                "MemorySwap": resources.MEMORY, "NetworkMode": "none"},
                                 "Mounts": mounts}])
@@ -158,7 +159,7 @@ class IntegratedR12Test(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.state = self.root / "app-run"
-        self.state.mkdir()
+        self.state.mkdir(mode=0o700)
         self.ids = [format(i, "064x") for i in range(1, 10)]
         self.live_ids = self.ids[:]
         self.clock = [dt.datetime.now(dt.timezone.utc).timestamp()]
@@ -177,6 +178,7 @@ class IntegratedR12Test(unittest.TestCase):
         (self.state / "rc22-before.json").write_text(json.dumps({"ids": self.ids}))
         (self.state / "protected-before.json").write_text(json.dumps([{"id": i} for i in self.ids]))
         services = {name: {"mem_limit": size, "memswap_limit": size,
+                           "labels": {"centrochange.mission": "C109"},
                            "entrypoint": ["/bin/sh", "/opt/cc-bootstrap.sh", start.KINDS[name]]}
                     for name, size in EXPECTED_MAX.items()}
         self.config = {"name": r12.R12_PROJECT, "services": services,
@@ -253,6 +255,8 @@ class IntegratedR12Test(unittest.TestCase):
              patch.object(start, "oom_count", return_value=7), \
              patch.object(start, "mem_available", return_value=5 * 1024**3), \
              patch.object(start, "psi_full", return_value=0.0), \
+             patch.object(start, "require_writer_lease"), \
+             patch.object(r12, "require_writer_lease"), \
              patch.object(start.urllib.request, "urlopen", return_value=Reply()), \
              patch.object(resources, "oom_count", return_value=7):
             r12.preflight(self.root, launch=self.launch, sleep=self.sleep, host_run=self.host,
@@ -264,6 +268,8 @@ class IntegratedR12Test(unittest.TestCase):
         self.assertFalse((self.state / "app-attempted").exists())
         self.assertGreaterEqual(min(self.renewals.values()), 3)
         self.assertEqual(len([c for c in self.resource_host.calls if c[:2] == ("docker", "create")]), 5)
+        self.assertTrue(all("centrochange.mission=C109" in c for c in self.resource_host.calls
+                            if c[:2] == ("docker", "create")))
         self.assertFalse(any("up" in call for call in self.calls))
         self.assertEqual(len(json.loads((self.state / "r12-resource-integrity.json").read_text())), 5)
         self.assertIn(("docker", "ps", "-q", "--no-trunc", "--filter",
@@ -294,6 +300,13 @@ class IntegratedR12Test(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "cap mismatch"):
             self.exercise()
         self.assertFalse(any("exec" in call for call in self.resource_host.calls))
+
+    def test_unstoppable_application_service_is_rejected(self):
+        self.config["services"][ORDER[0]]["labels"] = {}
+        self.write_config()
+        with self.assertRaisesRegex(RuntimeError, "lacks exact stop ownership"):
+            self.exercise()
+        self.assertFalse((self.state / "r12-preflight-attestation.json").exists())
 
     def test_unexpected_helper_mount_stops_before_copy(self):
         self.resource_host.extra_mount = True

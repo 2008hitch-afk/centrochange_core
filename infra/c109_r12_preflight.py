@@ -1,9 +1,7 @@
 """Single R12 entrypoint: verify, guard, clone resources, gate, then release."""
 
 import datetime as dt
-import fcntl
 import json
-import os
 from pathlib import Path
 import sys
 import time
@@ -14,6 +12,8 @@ from c109_gated_start import main as start_gated, precreate_gate, run
 from c109_gated_start import stop_only_ours
 from c109_r12_contract import attest, digest
 from c109_r12_resources import prepare as prepare_resources
+from c109_r12_safety_prepare import install_private_safety
+from c109_r12_writer import probe_writer_available, require_writer_lease
 from c109_rc22_identity import verify as verify_rc22
 from c109_protected_inventory import validate_existing
 
@@ -57,16 +57,20 @@ def preflight(root, *, launch=launch_scopes, sleep=time.sleep, host_run=run,
     verify_rc22(state, host_run)
     validate_existing((state / "protected-before.json").read_text(),
                       host_run("docker", "ps", "-aq", "--no-trunc"))
+    install_private_safety(state)
     launch(root)
     require_live_guards(state, max_proof_age=30)
+    require_writer_lease(state)
     first = {role: json.loads(marker_path(state, role).read_text())["checked_at"] for role in ROLES}
     # This intentional 34-second preparation probe makes renewal observable.
     # The expiry scope remains active; no workload is released during the wait.
     deadline = time.monotonic() + 34
     while time.monotonic() < deadline:
         require_live_guards(state, max_proof_age=30)
+        require_writer_lease(state)
         sleep(min(2, deadline - time.monotonic()))
     require_live_guards(state, max_proof_age=30)
+    require_writer_lease(state)
     for role in ROLES:
         if json.loads(marker_path(state, role).read_text())["checked_at"] <= first[role]:
             raise RuntimeError(f"R12 {role} Docker proof did not renew")
@@ -80,19 +84,16 @@ def preflight(root, *, launch=launch_scopes, sleep=time.sleep, host_run=run,
 
 
 def main(root, *, lock_file=None):
-    lock = lock_file or Path(f"/run/user/{os.getuid()}/centrochange-docker-writer.lock")
-    with lock.open("a") as stream:
-        try:
-            fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as exc:
-            raise RuntimeError("another Docker writer holds the C109 lock") from exc
-        try:
-            preflight(root)
-            start_gated(root)
-        except BaseException:
-            # A failed gate consumes this activation and ends all four scopes.
-            stop_only_ours(root / "app-run", R12_PROJECT)
-            raise
+    # Probe exclusivity before launching; the independent watchdog then takes
+    # and retains this same writer lease. No Docker mutation precedes its proof.
+    probe_writer_available(lock_file)
+    try:
+        preflight(root)
+        start_gated(root)
+    except BaseException:
+        # A failed gate consumes this activation and ends all four scopes.
+        stop_only_ours(root / "app-run", R12_PROJECT)
+        raise
 
 
 if __name__ == "__main__":

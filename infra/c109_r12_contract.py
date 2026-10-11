@@ -9,12 +9,14 @@ from c109_rc22_identity import baseline
 
 
 FILES = (
-    "c109_r12_preflight.py", "c109_r12_resources.py", "c109_r12_contract.py", "c109_gated_start.py",
+    "c109_r12_preflight.py", "c109_r12_resources.py", "c109_r12_contract.py",
+    "c109_r12_writer.py", "c109_r12_safety.py", "c109_r12_safety_prepare.py",
+    "c109_gated_start.py",
     "c109_guard_access.py", "c109_rc22_identity.py", "c109_rc22_monitor.py",
     "c109_compose_gate.py", "c109_demo_expiry.py", "c109_gated_qa.py",
     "c109_monitored_step.py", "c109_protected_inventory.py",
     "c109_r7_safety_prepare.py", "c109_cgroup_gate.py", "c109_io_gate.py",
-    "test_c109_r12_preflight.py",
+    "test_c109_r12_preflight.py", "test_c109_r12_security.py",
 )
 MANIFEST = Path(__file__).with_name("c109_r12_verified.json")
 

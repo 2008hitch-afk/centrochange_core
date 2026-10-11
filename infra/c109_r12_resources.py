@@ -125,6 +125,7 @@ def _helper_verified(host, container_id, source, dest):
             or config["MemorySwap"] != MEMORY or config["NetworkMode"] != "none"
             or item["Config"].get("User") != "0:0"
             or item["Config"]["Labels"].get("com.docker.compose.project") != R12_PROJECT
+            or item["Config"]["Labels"].get("centrochange.mission") != "C109"
             or len(mounts) != 4):
         raise RuntimeError("R12 copy helper identity or cap mismatch")
     expected = {("/source", source, False), ("/dest", dest, True)}
@@ -148,6 +149,7 @@ def _copy_one(host, state, activation, initial_oom, source, dest, image):
     try:
         check()
         helper = host.run("docker", "create", "--label", f"com.docker.compose.project={R12_PROJECT}",
+                          "--label", "centrochange.mission=C109",
                           "--network", "none", "--memory", str(MEMORY),
                           "--memory-swap", str(MEMORY), "--user", "0:0",
                           "--mount", f"type=volume,source={source},target=/source,readonly",

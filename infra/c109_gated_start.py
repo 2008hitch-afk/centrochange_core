@@ -21,6 +21,7 @@ from c109_io_gate import (IOGateError, resolve_device, verify_cgroup,
 from c109_protected_inventory import validate_existing
 from c109_rc22_identity import verify as verify_rc22
 from c109_r12_contract import require_attestation
+from c109_r12_writer import require_writer_lease, stop_exact_r12
 
 
 ORDER = ["c-fit-db", "c-fit-redis-cache", "c-fit-redis-queue", "c-fit-backend",
@@ -55,6 +56,8 @@ def psi_full(kind):
 
 def guard(state, initial_oom):
     require_live_guards(state)
+    if json.loads((state / "activation.json").read_text()).get("target") == R12_PROJECT:
+        require_writer_lease(state)
     if (state / "safety-stop.json").exists() or (state / "protected-event-alert.json").exists():
         raise RuntimeError("host watchdog/protected event alert")
     for name in ("events-heartbeat", "monitor-heartbeat"):
@@ -84,10 +87,13 @@ def inspect(container):
 
 
 def stop_only_ours(state, project):
-    ids = run("docker", "ps", "-q", "--filter", f"label=com.docker.compose.project={project}").split()
-    if ids:
-        subprocess.run(["docker", "stop", "--time", "10", *ids], timeout=60, check=True,
-                       stdout=subprocess.DEVNULL)
+    if project == R12_PROJECT:
+        stop_exact_r12(run)
+    else:
+        ids = run("docker", "ps", "-q", "--filter", f"label=com.docker.compose.project={project}").split()
+        if ids:
+            subprocess.run(["docker", "stop", "--time", "10", *ids], timeout=60, check=True,
+                           stdout=subprocess.DEVNULL)
     (state / "monitor-finish").write_text(now().isoformat())
 
 
@@ -153,6 +159,8 @@ def precreate_gate(root, *, attested=True):
                 raise RuntimeError(f"C109 isolated {kind} resource missing or changed")
     for service, expected in EXPECTED_MAX.items():
         item = config["services"][service]
+        if project == R12_PROJECT and item.get("labels", {}).get("centrochange.mission") != "C109":
+            raise RuntimeError(f"R12 service lacks exact stop ownership: {service}")
         if int(item["mem_limit"]) != expected or int(item["memswap_limit"]) != expected:
             raise RuntimeError(f"service RAM/swap cap changed: {service}")
         if item.get("entrypoint") != ["/bin/sh", "/opt/cc-bootstrap.sh", KINDS[service]]:
