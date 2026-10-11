@@ -22,20 +22,26 @@ function check(user, roles, expected, absent, route = '/app/cc-unified-desk?cc_v
   const classes = new Set();
   const mainSection = new Element('main');
   const nativeHeading = new Element('span');
-  nativeHeading.textContent = route.includes('/patient') ? 'Patient' : 'Item';
+  const patientForm = route.startsWith('/app/patient/');
+  nativeHeading.textContent = patientForm ? 'CC-HTTP-UAT0000001 Gamma' : route.includes('/patient') ? 'Patient' : 'Item';
+  const nativeField = new Element('span');
+  nativeField.textContent = route.includes('/patient') ? 'Middle Name (optional)' : 'Posting Date';
+  const nativeSection = new Element('span');
+  nativeSection.textContent = route.includes('/patient') ? 'Patient Demographics' : 'Customer Details';
   const document = {
     readyState: 'complete',
     body: new Element('body'),
     createElement: tag => new Element(tag),
     getElementById: id => registry.get(id),
     querySelector: selector => selector === 'body > .main-section' ? mainSection : null,
-    querySelectorAll: () => [nativeHeading],
+    querySelectorAll: selector => selector.includes('page-head') ? [nativeHeading] : [nativeField, nativeSection],
     addEventListener: () => {},
     title: '',
   };
   document.body.classList = {add: value => classes.add(value), remove: value => classes.delete(value)};
   const [pathname, search = ''] = route.split('?');
-  vm.runInNewContext(source, {window: {frappe: {session: {user}, user_roles: roles}}, document, location: {pathname, search: search ? '?' + search : ''}, MutationObserver: class { observe() {} }, requestAnimationFrame: () => {}});
+  const cur_frm = patientForm ? {doctype:'Patient',doc:{name:'CC-HTTP-UAT0000001 Gamma',patient_name:'CC-HTTP-UAT0000001 Gamma'}} : undefined;
+  vm.runInNewContext(source, {window: {frappe: {session: {user}, user_roles: roles},cur_frm}, document, location: {pathname, search: search ? '?' + search : ''}, MutationObserver: class { observe() {} }, requestAnimationFrame: () => {}});
   const nav = registry.get('cc-desk-global-nav');
   if (expected === null) {
     assert.equal(nav, undefined);
@@ -50,8 +56,10 @@ function check(user, roles, expected, absent, route = '/app/cc-unified-desk?cc_v
   for (const label of absent) assert(!links.includes(label), `${user}: unexpected ${label}`);
   assert(!links.some(label => /Builder|Frappe|ERPNext|Sviluppatore/i.test(label)));
   if (route.includes('/patient')) {
-    assert.equal(nativeHeading.textContent, 'Pazienti');
-    assert.equal(document.title, 'Pazienti · Centro Change');
+    assert.equal(nativeHeading.textContent, patientForm ? 'Gamma' : 'Pazienti');
+    assert.equal(nativeField.textContent, 'Secondo nome (facoltativo)');
+    assert.equal(nativeSection.textContent, 'Dati del paziente');
+    assert.equal(document.title, `${patientForm ? 'Gamma' : 'Pazienti'} · Centro Change`);
     assert.equal(nav.children.at(-1).textContent, 'Pazienti');
   }
 }
@@ -62,6 +70,7 @@ check('finance@example.invalid', ['CC Finance'], ['Finanza', 'Report'], ['Agenda
 check('accountant@example.invalid', ['CC Accountant'], ['Finanza', 'Report'], ['Agenda', 'Catalogo']);
 check('professional@example.invalid', ['CC Professional'], ['Agenda', 'Pazienti', 'Disponibilità'], ['Finanza', 'Report', 'Catalogo']);
 check('manager@example.invalid', ['CC Manager'], ['Pazienti', 'Esci'], [], '/desk/healthcare/patient');
+check('manager@example.invalid', ['CC Manager'], ['Pazienti', 'Esci'], [], '/app/patient/CC-HTTP-UAT0000001%20Gamma');
 check('Administrator', ['System Manager', 'CC Manager'], null, []);
 check('guest', [], null, []);
 console.log('C109 Desk shell offline role/menu checks: PASS (7 profiles)');

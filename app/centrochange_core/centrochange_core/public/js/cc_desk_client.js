@@ -25,13 +25,23 @@
   };
   const nativeFieldLabels = {
     "Patient Name": "Nome paziente", patient_name: "Nome paziente",
+    "Patient Demographics": "Dati del paziente", "Medical History": "Storia clinica",
+    "Middle Name (optional)": "Secondo nome (facoltativo)",
+    "Date of birth": "Data di nascita", "Identification Number (UID)": "Identificativo",
+    "Report Preference": "Preferenza referto", "Customer Details": "Dati del soggetto fiscale",
     "Healthcare Practitioner": "Professionista", practitioner_name: "Nome professionista",
     "Mobile": "Cellulare", mobile: "Cellulare", "E-mail": "Email",
     "Item Name": "Servizio", item_name: "Servizio", "Item Code": "Codice servizio",
     "Posting Date": "Data contabile", "Due Date": "Scadenza",
     "Grand Total": "Totale", "Outstanding Amount": "Residuo",
     "Customer": "Soggetto fiscale", "Supplier": "Fornitore",
-    "Status": "Stato", "Modified": "Modificato", "Owner": "Creato da"
+    "Status": "Stato", "Modified": "Modificato", "Owner": "Creato da",
+    "DEV Fiscal Profile": "Profilo fiscale di prova", "Centro Change Center": "Centro",
+    "Company Tax ID": "Partita IVA aziendale", "Posting Time": "Ora di registrazione",
+    "Dashboard": "Riepilogo", "Address & Contact": "Indirizzo e contatti",
+    "Medical": "Dati sanitari", "Payments": "Pagamenti", "Terms": "Condizioni",
+    "More Info": "Altre informazioni", "Save": "Salva", "New": "Nuovo",
+    "Use scoped Centro Change accounting reports": "Usa i report contabili autorizzati di Centro Change"
   };
   function nativeRoute() {
     const parts = location.pathname.split("/").filter(Boolean);
@@ -59,17 +69,26 @@
     if (!route) return;
     const label = nativeLabels[route];
     const english = nativeEnglish[route];
+    const parts = location.pathname.split("/").filter(Boolean);
+    const form = parts.length > parts.indexOf(route) + 1 ? window.cur_frm : null;
+    const personField = route === "patient" ? "patient_name" : route === "healthcare-practitioner" ? "practitioner_name" : null;
+    const name = personField && form?.doc?.[personField];
+    const personTitle = typeof name === "string" ? name.replace(/^CC-HTTP-UAT\d+\s+/, "").trim() : "";
     for (const node of document.querySelectorAll(".page-head .title-text, .page-head .page-title, .page-head .breadcrumb-item")) {
       // Never replace a document name, field value or user-entered text.
       if (node.children.length === 0 && [english, route, route.replaceAll("-", " ")].includes(node.textContent.trim())) node.textContent = label;
+      else if (personTitle && form?.doctype === english && node.children.length === 0 && node.textContent.trim() === form.doc.name) {
+        node.title = form.doc.name; // canonical identity remains available for traceability
+        node.textContent = personTitle;
+      }
     }
-    for (const node of document.querySelectorAll(".list-row-head .list-row-col, .form-page .control-label")) {
+    for (const node of document.querySelectorAll(".list-row-head .list-row-col, .form-page .control-label, .form-page .section-head, .form-page .nav-link, .form-page .form-section .section-head")) {
       if (node.children.length === 0) {
         const translation = nativeFieldLabels[node.textContent.trim()];
         if (translation) node.textContent = translation;
       }
     }
-    document.title = `${label} · Centro Change`;
+    document.title = `${personTitle || label} · Centro Change`;
   }
   function render() {
     const user = window.frappe?.session?.user;

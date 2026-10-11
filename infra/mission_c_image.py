@@ -22,6 +22,7 @@ files=[root/folder/'__init__.py',*sorted((root/folder/'cc_unified_desk').glob('*
 required=[root/'app/centrochange_core/centrochange_core'/name for name in (
  'hooks.py', 'public/js/cc_desk_client.js', 'public/css/cc_desk_client.css',
  'translations/it.csv',
+ 'finance/request_guard.py',
  'security/desk_boundary_acceptance.py',
 )]
 if any(not f.is_file() for f in required):
