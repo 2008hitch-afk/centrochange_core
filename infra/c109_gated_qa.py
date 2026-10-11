@@ -54,11 +54,13 @@ def main(root: Path):
     try:
         container = run("docker", "create", "--name", QA_NAME,
                         "--label", "centrochange.mission=C109", "--label", "centrochange.phase=lab",
+                        "--label", f"com.docker.compose.project={PROJECT}",
                         "--memory", "512m", "--memory-swap", "512m",
                         "--network", f"container:{frontend[0]}",
                         "--mount", f"type=bind,source={fixture},target=/qa-fixture.json,readonly",
                         "--mount", f"type=bind,source={results},target=/qa-results",
                         "--mount", "type=bind,source=/home/empv26/.local/state/centrochange-c109/qa-smoke.cjs,target=/qa/qa-smoke.cjs,readonly",
+                        "--mount", f"type=bind,source={root / 'qa-tests'},target=/qa/tests,readonly",
                         "--entrypoint", "sleep", QA_IMAGE, "infinity", timeout=30)
         row = inspect(container)
         if row["running"] or row["memory"] != LIMIT or row["swap"] != LIMIT:
