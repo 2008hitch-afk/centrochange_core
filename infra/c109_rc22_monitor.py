@@ -12,7 +12,8 @@ import sys
 import time
 import urllib.request
 
-from c109_compose_gate import IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT
+from c109_compose_gate import IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT
+from c109_rc22_identity import full_ids, baseline
 
 PING = "http://127.0.0.1:8082/api/method/ping"
 WEB = "http://127.0.0.1:8082/centrochange"
@@ -22,9 +23,9 @@ INTERVAL_SECONDS = 2.0
 
 
 def rc22_ids(run=subprocess.check_output):
-    return sorted(run(["docker", "ps", "-q", "--no-trunc",
+    return full_ids(run(["docker", "ps", "-q", "--no-trunc",
                        "--filter", "label=com.docker.compose.project=centrochange-dev"],
-                      text=True, timeout=8).split())
+                      text=True, timeout=8))
 
 
 def c109_ids(run=subprocess.check_output, project=IO_WAIVER_PROJECT):
@@ -80,10 +81,10 @@ def require_rc22_monitor(state):
 def main(root):
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
-    if activation.get("issue") != 109 or activation.get("target") not in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT) or activation.get("io_waiver") is not True:
+    if activation.get("issue") != 109 or activation.get("target") not in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT) or activation.get("io_waiver") is not True:
         raise RuntimeError("wrong isolated activation")
-    expected = json.loads((state / "rc22-before.json").read_text())["ids"]
-    if len(expected) != 9 or rc22_ids() != expected:
+    expected = baseline(state)
+    if rc22_ids() != expected:
         raise RuntimeError("RC22 baseline identity mismatch")
     slow = 0
     while not (state / "monitor-finish").exists():

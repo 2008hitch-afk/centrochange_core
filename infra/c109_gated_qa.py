@@ -13,12 +13,12 @@ import time
 
 from c109_cgroup_gate import CgroupGateError, read_snapshot
 from c109_gated_start import guard, inspect, oom_count, run, stop_only_ours
-from c109_compose_gate import R11_PROJECT
+from c109_compose_gate import R12_PROJECT
 
 
 QA_IMAGE = "sha256:f970b8eb4b0bd2186df380e6dffb1607f9fd8a75f67c04ba5f3c9d87d36e72d3"
-QA_NAME = "centrochange-c109-gated-r11-qa"
-PROJECT = R11_PROJECT
+QA_NAME = "centrochange-c109-gated-r12-qa"
+PROJECT = R12_PROJECT
 LIMIT = 512 * 1024**2
 
 
@@ -36,11 +36,8 @@ def main(root: Path):
     app_ids = run("docker", "ps", "-q", "--filter", f"label=com.docker.compose.project={PROJECT}").split()
     if len(app_ids) != 8:
         raise RuntimeError("application service count changed")
-    rc22 = sorted(run("docker", "ps", "-q", "--filter", "label=com.docker.compose.project=centrochange-dev").split())
-    if len(rc22) != 9:
-        raise RuntimeError("RC22 service count changed")
     initial_oom = oom_count()
-    guard(state, rc22, initial_oom)
+    guard(state, initial_oom)
     frontend = run("docker", "ps", "-q", "--filter", f"label=com.docker.compose.project={PROJECT}",
                    "--filter", "label=com.docker.compose.service=c-fit-frontend").split()
     if len(frontend) != 1:
@@ -70,13 +67,13 @@ def main(root: Path):
         host_config = json.loads(run("docker", "inspect", "-f", "{{json .HostConfig}}", container))
         if host_config.get("BlkioDeviceReadBps") or host_config.get("BlkioDeviceWriteBps"):
             raise RuntimeError("r7 QA unexpectedly I/O capped")
-        guard(state, rc22, initial_oom)
+        guard(state, initial_oom)
         run("docker", "start", container)
         first = None
         seen = None
         deadline = time.monotonic() + 2
         while time.monotonic() < deadline:
-            guard(state, rc22, initial_oom)
+            guard(state, initial_oom)
             row = inspect(container)
             if not row["running"] or row["pid"] <= 0:
                 raise RuntimeError("QA inert process exited")

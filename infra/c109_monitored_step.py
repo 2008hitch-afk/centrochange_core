@@ -12,7 +12,7 @@ import sys
 import time
 
 from c109_gated_start import guard, oom_count, run, stop_only_ours
-from c109_compose_gate import FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT
+from c109_compose_gate import FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT
 
 
 class TestCommandFailed(RuntimeError):
@@ -23,7 +23,7 @@ def main(root: Path, timeout: int, command: list[str], *, test_command: bool = F
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
     project = activation["target"]
-    if project not in (FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT) or not command or command[0] != "docker":
+    if project not in (FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT) or not command or command[0] != "docker":
         raise RuntimeError("wrong isolated activation or command")
     if test_command and (command[:2] != ["docker", "exec"] or not any(
             arg.startswith(project + "-") for arg in command[2:])):
@@ -31,21 +31,18 @@ def main(root: Path, timeout: int, command: list[str], *, test_command: bool = F
     now = dt.datetime.now(dt.timezone.utc)
     if not (dt.datetime.fromisoformat(activation["start_utc"]) <= now < dt.datetime.fromisoformat(activation["mutation_end_utc"])):
         raise RuntimeError("outside mutation window")
-    rc22 = sorted(run("docker", "ps", "-q", "--filter", "label=com.docker.compose.project=centrochange-dev").split())
-    if len(rc22) != 9:
-        raise RuntimeError("RC22 identity count changed")
     initial_oom = oom_count()
-    guard(state, rc22, initial_oom)
+    guard(state, initial_oom)
     with open(state / "bounded-step.log", "a") as log:
         process = subprocess.Popen(command, stdout=log, stderr=log)
         deadline = time.monotonic() + timeout
         try:
             while process.poll() is None:
-                guard(state, rc22, initial_oom)
+                guard(state, initial_oom)
                 if time.monotonic() >= deadline:
                     raise TimeoutError("bounded step deadline")
                 time.sleep(0.25)
-            guard(state, rc22, initial_oom)
+            guard(state, initial_oom)
             if process.returncode:
                 if test_command:
                     with (state / "test-failures.jsonl").open("a") as stream:

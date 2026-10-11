@@ -14,11 +14,13 @@ import time
 import urllib.request
 
 from c109_cgroup_gate import CgroupGateError, read_snapshot
-from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT
+from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT
 from c109_guard_access import require_live_guards
 from c109_io_gate import (IOGateError, resolve_device, verify_cgroup,
                           verify_compose_config, verify_host_config)
 from c109_protected_inventory import validate_existing
+from c109_rc22_identity import verify as verify_rc22
+from c109_r12_contract import require_attestation
 
 
 ORDER = ["c-fit-db", "c-fit-redis-cache", "c-fit-redis-queue", "c-fit-backend",
@@ -51,7 +53,7 @@ def psi_full(kind):
     return float(next(line.split()[1].split("=")[1] for line in open(f"/proc/pressure/{kind}") if line.startswith("full ")))
 
 
-def guard(state, rc22_ids, initial_oom):
+def guard(state, initial_oom):
     require_live_guards(state)
     if (state / "safety-stop.json").exists() or (state / "protected-event-alert.json").exists():
         raise RuntimeError("host watchdog/protected event alert")
@@ -62,7 +64,7 @@ def guard(state, rc22_ids, initial_oom):
     if oom_count() != initial_oom or mem_available() < 768 * 1024**2:
         raise RuntimeError("OOM or host memory reserve")
     activation = json.loads((state / "activation.json").read_text())
-    io_waiver = activation.get("target") in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT) and activation.get("io_waiver") is True
+    io_waiver = activation.get("target") in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT) and activation.get("io_waiver") is True
     if psi_full("memory") >= 1 or (not io_waiver and psi_full("io") >= 1):
         raise RuntimeError("host PSI full")
     if io_waiver:
@@ -70,8 +72,7 @@ def guard(state, rc22_ids, initial_oom):
         require_rc22_monitor(state)
     if os.statvfs("/").f_bavail * os.statvfs("/").f_frsize < 4 * 1024**3:
         raise RuntimeError("disk reserve")
-    if sorted(run("docker", "ps", "-q", "--filter", "label=com.docker.compose.project=centrochange-dev").split()) != rc22_ids:
-        raise RuntimeError("RC22 container identity changed")
+    verify_rc22(state, run)
     if urllib.request.urlopen("http://127.0.0.1:8082/api/method/ping", timeout=5).status != 200:
         raise RuntimeError("RC22 HTTP changed")
 
@@ -90,7 +91,7 @@ def stop_only_ours(state, project):
     (state / "monitor-finish").write_text(now().isoformat())
 
 
-def main(root):
+def precreate_gate(root, *, attested=True):
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
     if activation["issue"] != 109 or activation["status"] != "OWNER_AUTHORIZED_C_UNIFIED_BOOTSTRAP":
@@ -98,8 +99,10 @@ def main(root):
     if activation.get("workload_release_allowed") is not True:
         raise RuntimeError("application workload release is not active")
     project = activation.get("target")
-    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT):
+    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT):
         raise RuntimeError("unapproved isolated project")
+    if project == R12_PROJECT and attested:
+        require_attestation(root)
     if now() < dt.datetime.fromisoformat(activation["start_utc"]):
         raise RuntimeError("activation window has not opened")
     if now() >= dt.datetime.fromisoformat(activation["mutation_end_utc"]):
@@ -108,13 +111,11 @@ def main(root):
         raise RuntimeError("app bootstrap attempt already consumed")
     if set(ORDER) != set(KINDS):
         raise RuntimeError("service inventory changed")
-    original = sorted(run("docker", "ps", "-q", "--filter", "label=com.docker.compose.project=centrochange-dev").split())
-    if len(original) != 9:
-        raise RuntimeError("RC22 baseline count changed")
+    verify_rc22(state, run)
     initial_oom = oom_count()
     require_live_guards(state, max_proof_age=30)
     validate_existing((state / "protected-before.json").read_text(), run("docker", "ps", "-aq", "--no-trunc"))
-    guard(state, original, initial_oom)
+    guard(state, initial_oom)
     if run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={project}"):
         raise RuntimeError("gated project already exists")
     if run("docker", "ps", "-q", "--filter", "label=centrochange.mission=C109"):
@@ -126,11 +127,30 @@ def main(root):
             raise RuntimeError("authorized I/O device differs from live device")
     base = state / "compose-final-private.json"
     override = root / "compose-gated.override.json"
+    if not base.is_file() or not override.is_file():
+        raise RuntimeError("private R12 Compose input missing")
     config = json.loads((state / "compose-final.merged-private.json").read_text())
     if config["name"] != project or sum(int(s["mem_limit"]) for s in config["services"].values()) != 2 * 1024**3:
         raise RuntimeError("resource budget mismatch")
     if set(config["services"]) != set(ORDER):
         raise RuntimeError("gated service set changed")
+    if (len(config.get("volumes", {})), len(config.get("networks", {}))) != (5, 2):
+        raise RuntimeError("C109 volume/network inventory changed")
+    for kind in ("volumes", "networks"):
+        for item in config.get(kind, {}).values():
+            if not isinstance(item, dict) or not item.get("name", "").startswith("centrochange-c109-"):
+                raise RuntimeError(f"non-isolated C109 {kind} resource")
+    normalized = json.loads(run("docker", "compose", "--env-file",
+        "/home/empv26/.local/state/centrochange-c109/runtime.env", "-f", str(base),
+        "-f", str(override), "--project-name", project, "config", "--format", "json"))
+    if normalized != config:
+        raise RuntimeError("C109 Compose inputs differ from approved merged config")
+    for kind in ("volumes", "networks"):
+        docker_kind = "volume" if kind == "volumes" else "network"
+        for item in config[kind].values():
+            name = item["name"]
+            if run("docker", docker_kind, "inspect", "-f", "{{.Name}}", name) != name:
+                raise RuntimeError(f"C109 isolated {kind} resource missing or changed")
     for service, expected in EXPECTED_MAX.items():
         item = config["services"][service]
         if int(item["mem_limit"]) != expected or int(item["memswap_limit"]) != expected:
@@ -139,8 +159,17 @@ def main(root):
             raise RuntimeError(f"inert PID1 gate missing: {service}")
         if project == IO_CAPPED_PROJECT:
             verify_compose_config(item.get("blkio_config") or {}, io_device)
-        if project in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT) and item.get("blkio_config"):
+        if project in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT) and item.get("blkio_config"):
             raise RuntimeError("I/O waiver project still has artificial I/O cap")
+    return state, activation, project, base, override
+
+
+def main(root):
+    state, activation, project, base, override = precreate_gate(root)
+    initial_oom = oom_count()
+    guard(state, initial_oom)
+    if project == R12_PROJECT:
+        require_attestation(root)
     compose = ["docker", "compose", "--env-file", "/home/empv26/.local/state/centrochange-c109/runtime.env",
                "-f", str(base), "-f", str(override), "--project-name", project]
     (state / "app-attempted").write_text(now().isoformat())
@@ -153,7 +182,7 @@ def main(root):
         if len(ids) != 8:
             raise RuntimeError("expected exactly eight gated containers")
         for service in ORDER:
-            guard(state, original, initial_oom)
+            guard(state, initial_oom)
             short = run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={project}",
                         "--filter", f"label=com.docker.compose.service={service}")
             if len(short.split()) != 1:
@@ -165,7 +194,7 @@ def main(root):
             if project == IO_CAPPED_PROJECT:
                 verify_host_config(json.loads(run("docker", "inspect", "-f", "{{json .HostConfig}}", container["id"])),
                                    io_device)
-            if project in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT):
+            if project in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT):
                 host_config = json.loads(run("docker", "inspect", "-f", "{{json .HostConfig}}", container["id"]))
                 if host_config.get("BlkioDeviceReadBps") or host_config.get("BlkioDeviceWriteBps"):
                     raise RuntimeError(f"r7 HostConfig still I/O capped: {service}")
@@ -179,7 +208,7 @@ def main(root):
             last = None
             seen_valid = None
             while time.monotonic() < deadline:
-                guard(state, original, initial_oom)
+                guard(state, initial_oom)
                 current = inspect(container["id"])
                 if not current["running"] or current["pid"] <= 0:
                     raise RuntimeError(f"inert PID exited: {service}")
@@ -202,7 +231,7 @@ def main(root):
                 time.sleep(0.01)
             else:
                 raise RuntimeError(f"cap did not stabilize before deadline: {service}")
-            guard(state, original, initial_oom)
+            guard(state, initial_oom)
             gate.write_text(container["id"] + "\n")
             records.append({"service": service, "start_requested": start_requested, "released": now().isoformat(),
                             "container": container["id"], "pid": last.pid, "inode": last.inode,
@@ -214,7 +243,7 @@ def main(root):
             health_deadline = time.monotonic() + (120 if project == IO_CAPPED_PROJECT else
                                                    90 if service in ("c-fit-db", "c-fit-redis-cache", "c-fit-redis-queue") else 15)
             while time.monotonic() < health_deadline:
-                guard(state, original, initial_oom)
+                guard(state, initial_oom)
                 status = run("docker", "inspect", "-f", "{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}", container["id"]).split()
                 if status[0] != "running":
                     raise RuntimeError(f"service exited after release: {service}")
@@ -223,19 +252,19 @@ def main(root):
                 time.sleep(0.5)
             else:
                 raise RuntimeError(f"service health timeout: {service}")
-            if project in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT):
+            if project in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT):
                 # Do not overlap the next cold-start read with a previous
                 # service's I/O pressure. The host watchdog remains active.
                 stable = 0
-                settle_deadline = time.monotonic() + (180 if project in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT) else 90)
+                settle_deadline = time.monotonic() + (180 if project in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT) else 90)
                 while stable < 3:
-                    guard(state, original, initial_oom)
-                    threshold = 5 if project in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT) else 0.1
+                    guard(state, initial_oom)
+                    threshold = 5 if project in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT) else 0.1
                     stable = stable + 1 if psi_full("io") < threshold else 0
                     if time.monotonic() >= settle_deadline:
                         raise RuntimeError("host I/O did not settle before next service")
                     time.sleep(5)
-        guard(state, original, initial_oom)
+        guard(state, initial_oom)
         (state / "app-bootstrap-green").write_text(now().isoformat())
     except BaseException:
         stop_only_ours(state, project)
@@ -254,7 +283,7 @@ if __name__ == "__main__":
         state = root / "app-run"
         try:
             activation = json.loads((state / "activation.json").read_text())
-            if activation.get("target") in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT) and not (state / "monitor-finish").exists():
+            if activation.get("target") in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT) and not (state / "monitor-finish").exists():
                 stop_only_ours(state, activation["target"])
         except (OSError, ValueError):
             pass

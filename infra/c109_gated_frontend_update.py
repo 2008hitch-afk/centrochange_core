@@ -43,11 +43,8 @@ def main(root: Path, image: str, expected_asset_hash: str):
         raise RuntimeError("invalid immutable image or asset hash")
     if run("docker", "image", "inspect", "-f", "{{index .Config.Labels \"org.opencontainers.image.revision\"}}", image) != activation.get("frontend_revision"):
         raise RuntimeError("image revision differs from source activation")
-    original = sorted(run("docker", "ps", "-q", "--filter", "label=com.docker.compose.project=centrochange-dev").split())
-    if len(original) != 9:
-        raise RuntimeError("RC22 identity changed")
     initial_oom = oom_count()
-    guard(state, original, initial_oom)
+    guard(state, initial_oom)
     base = json.loads((state / "compose-final-private.json").read_text())
     prior = base["services"][SERVICE]["image"]
     if prior != activation["image_manifest"]:
@@ -77,7 +74,7 @@ def main(root: Path, image: str, expected_asset_hash: str):
         if qa:
             subprocess.run(["docker", "stop", "--time", "10", qa], check=True, timeout=30,
                            stdout=subprocess.DEVNULL)
-        guard(state, original, initial_oom)
+        guard(state, initial_oom)
         gate.unlink()
         with (state / "frontend-update.log").open("w") as log:
             subprocess.run(compose + ["up", "--no-start", "--no-deps", "--force-recreate",
@@ -91,12 +88,12 @@ def main(root: Path, image: str, expected_asset_hash: str):
             raise RuntimeError("frontend HostConfig memory/swap invalid")
         if run("docker", "inspect", "-f", "{{.Image}}", new) != run("docker", "image", "inspect", "-f", "{{.Id}}", image):
             raise RuntimeError("frontend did not use verified image")
-        guard(state, original, initial_oom)
+        guard(state, initial_oom)
         run("docker", "start", new)
         deadline = time.monotonic() + 3
         first = None
         while time.monotonic() < deadline:
-            guard(state, original, initial_oom)
+            guard(state, initial_oom)
             row = inspect(new)
             if not row["running"] or row["pid"] <= 0:
                 raise RuntimeError("new frontend inert PID exited")
@@ -114,7 +111,7 @@ def main(root: Path, image: str, expected_asset_hash: str):
         gate.write_text(new + "\n")
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
-            guard(state, original, initial_oom)
+            guard(state, initial_oom)
             if inspect(new)["running"]:
                 try:
                     asset = run("docker", "exec", new, "sha256sum",

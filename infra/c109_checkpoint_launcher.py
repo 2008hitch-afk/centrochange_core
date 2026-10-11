@@ -22,6 +22,7 @@ import time
 from c109_cgroup_gate import read_snapshot
 from c109_gated_start import guard, oom_count, stop_only_ours
 from c109_protected_inventory import validate_existing
+from c109_rc22_identity import baseline as rc22_baseline, full_ids
 
 
 VOLUMES = (
@@ -126,7 +127,9 @@ class Host:
         return read_snapshot(pid, container_id, HELPER_MEMORY)
 
     def safety(self, state: Path, rc22_ids: list[str], initial_oom: int) -> None:
-        guard(state, rc22_ids, initial_oom)
+        if full_ids(rc22_ids) != rc22_baseline(state):
+            raise CheckpointError("RC22 checkpoint identity differs from baseline")
+        guard(state, initial_oom)
 
     def oom(self) -> int:
         return oom_count()
