@@ -15,6 +15,7 @@ import urllib.request
 
 from c109_cgroup_gate import CgroupGateError, read_snapshot
 from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT
+from c109_guard_access import require_live_guards
 from c109_protected_inventory import validate_existing
 
 
@@ -49,6 +50,7 @@ def psi_full(kind):
 
 
 def guard(state, rc22_ids, initial_oom):
+    require_live_guards(state)
     if (state / "safety-stop.json").exists() or (state / "protected-event-alert.json").exists():
         raise RuntimeError("host watchdog/protected event alert")
     for name in ("events-heartbeat", "monitor-heartbeat"):
@@ -103,6 +105,7 @@ def main(root):
     if len(original) != 9:
         raise RuntimeError("RC22 baseline count changed")
     initial_oom = oom_count()
+    require_live_guards(state, max_proof_age=30)
     validate_existing((state / "protected-before.json").read_text(), run("docker", "ps", "-aq", "--no-trunc"))
     guard(state, original, initial_oom)
     if run("docker", "ps", "-aq", "--filter", f"label=com.docker.compose.project={project}"):

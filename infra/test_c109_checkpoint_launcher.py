@@ -164,21 +164,25 @@ class CheckpointLauncherTest(unittest.TestCase):
             for name in ("events-heartbeat", "monitor-heartbeat"):
                 (state / name).write_text(str(time.time()))
             ids = [str(i)*64 for i in range(1, 10)]
-            with patch("c109_gated_start.oom_count", return_value=7), \
+            with patch("c109_gated_start.require_live_guards"), \
+                 patch("c109_gated_start.oom_count", return_value=7), \
                  patch("c109_gated_start.mem_available", return_value=5*1024**3), \
                  patch("c109_gated_start.psi_full", return_value=0.0), \
                  patch("c109_gated_start.run", return_value="\n".join(ids)), \
                  patch("c109_gated_start.urllib.request.urlopen", return_value=Reply()):
                 guard(state, sorted(ids), 7)
-            with patch("c109_gated_start.oom_count", return_value=8):
+            with patch("c109_gated_start.require_live_guards"), \
+                 patch("c109_gated_start.oom_count", return_value=8):
                 with self.assertRaisesRegex(RuntimeError, "OOM"):
                     guard(state, sorted(ids), 7)
-            with patch("c109_gated_start.oom_count", return_value=7), \
+            with patch("c109_gated_start.require_live_guards"), \
+                 patch("c109_gated_start.oom_count", return_value=7), \
                  patch("c109_gated_start.mem_available", return_value=5*1024**3), \
                  patch("c109_gated_start.psi_full", side_effect=lambda kind: 1.0 if kind == "io" else 0.0):
                 with self.assertRaisesRegex(RuntimeError, "PSI"):
                     guard(state, sorted(ids), 7)
-            with patch("c109_gated_start.oom_count", return_value=7), \
+            with patch("c109_gated_start.require_live_guards"), \
+                 patch("c109_gated_start.oom_count", return_value=7), \
                  patch("c109_gated_start.mem_available", return_value=5*1024**3), \
                  patch("c109_gated_start.psi_full", return_value=0.0), \
                  patch("c109_gated_start.run", return_value="\n".join(ids[:-1])):

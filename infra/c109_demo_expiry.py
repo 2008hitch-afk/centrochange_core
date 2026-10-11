@@ -4,6 +4,7 @@ import datetime as dt
 import json
 from pathlib import Path
 import sys
+import time
 
 from c109_compose_gate import DEMO_PROJECT
 from c109_gated_start import stop_only_ours
@@ -22,6 +23,19 @@ def expire(root: Path) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit("usage: c109_demo_expiry.py PRIVATE_ACTIVATION_ROOT")
-    expire(Path(sys.argv[1]))
+    if len(sys.argv) == 3 and sys.argv[1] == "--wait":
+        root = Path(sys.argv[2])
+        activation = json.loads((root / "app-run" / "activation.json").read_text())
+        if activation.get("target") != DEMO_PROJECT or activation.get("issue") != 109:
+            raise RuntimeError("unexpected demo activation")
+        deadline = dt.datetime.fromisoformat(activation["hard_stop_utc"])
+        while not (root / "app-run" / "monitor-finish").exists():
+            remaining = (deadline - dt.datetime.now(dt.timezone.utc)).total_seconds()
+            if remaining <= 0:
+                expire(root)
+                break
+            time.sleep(min(remaining, 2))
+    elif len(sys.argv) == 2:
+        expire(Path(sys.argv[1]))
+    else:
+        raise SystemExit("usage: c109_demo_expiry.py [--wait] PRIVATE_ACTIVATION_ROOT")
