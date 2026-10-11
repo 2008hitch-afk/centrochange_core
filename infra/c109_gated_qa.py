@@ -13,12 +13,12 @@ import time
 
 from c109_cgroup_gate import CgroupGateError, read_snapshot
 from c109_gated_start import guard, inspect, oom_count, run, stop_only_ours
-from c109_compose_gate import R10_PROJECT
+from c109_compose_gate import R11_PROJECT
 
 
 QA_IMAGE = "sha256:f970b8eb4b0bd2186df380e6dffb1607f9fd8a75f67c04ba5f3c9d87d36e72d3"
-QA_NAME = "centrochange-c109-gated-r10-qa"
-PROJECT = R10_PROJECT
+QA_NAME = "centrochange-c109-gated-r11-qa"
+PROJECT = R11_PROJECT
 LIMIT = 512 * 1024**2
 
 

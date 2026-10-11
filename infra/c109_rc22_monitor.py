@@ -12,7 +12,7 @@ import sys
 import time
 import urllib.request
 
-from c109_compose_gate import IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT
+from c109_compose_gate import IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT
 
 PING = "http://127.0.0.1:8082/api/method/ping"
 WEB = "http://127.0.0.1:8082/centrochange"
@@ -80,7 +80,7 @@ def require_rc22_monitor(state):
 def main(root):
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
-    if activation.get("issue") != 109 or activation.get("target") not in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT) or activation.get("io_waiver") is not True:
+    if activation.get("issue") != 109 or activation.get("target") not in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT) or activation.get("io_waiver") is not True:
         raise RuntimeError("wrong isolated activation")
     expected = json.loads((state / "rc22-before.json").read_text())["ids"]
     if len(expected) != 9 or rc22_ids() != expected:
