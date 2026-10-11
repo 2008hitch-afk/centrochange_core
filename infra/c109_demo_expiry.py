@@ -7,6 +7,7 @@ import sys
 import time
 
 from c109_compose_gate import DEMO_PROJECT
+from c109_guard_access import require_live_guards
 from c109_gated_start import stop_only_ours
 
 
@@ -30,6 +31,12 @@ if __name__ == "__main__":
             raise RuntimeError("unexpected demo activation")
         deadline = dt.datetime.fromisoformat(activation["hard_stop_utc"])
         while not (root / "app-run" / "monitor-finish").exists():
+            try:
+                require_live_guards(root / "app-run")
+            except (OSError, ValueError, KeyError, RuntimeError):
+                (root / "app-run" / "expiry-guard-alert").write_text("GUARD_SCOPE_LOST\n")
+                stop_only_ours(root / "app-run", DEMO_PROJECT)
+                raise RuntimeError("C109 guard scope lost; demo stopped")
             remaining = (deadline - dt.datetime.now(dt.timezone.utc)).total_seconds()
             if remaining <= 0:
                 expire(root)
