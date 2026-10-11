@@ -35,11 +35,17 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
   const homeGroups=[
     {title:'Lavoro quotidiano',description:'Sedute, persone e disponibilità.',links:[
       {view:'agenda',label:'Agenda',description:'Settimana, prenotazioni e sedute',roles:canOperate},
+      {view:'agenda',params:{cc_ops_view:'Pazienti'},label:'Pazienti',description:'Ricerca e schede autorizzate',roles:canOperate},
+      {view:'agenda',params:{cc_ops_view:'Disponibilità'},label:'Disponibilità',description:'Orari e assenze dei professionisti',roles:canOperate},
+      {view:'agenda',params:{cc_ops_view:'Notifiche'},label:'Notifiche',description:'Avvisi e attività operative',roles:canOperate},
       {view:'professional',label:'Professionisti',description:'Sedute e posizione per periodo',roles:canFinance},
-      {view:'patient',label:'Pazienti',description:'Sedute e posizione del soggetto fiscale',roles:canFinance}
+      {view:'patient',label:'Report pazienti',description:'Saldo e scadenze del soggetto fiscale',roles:canFinance}
     ]},
     {title:'Amministrazione',description:'Documenti e flussi economici autorizzati.',links:[
       {view:'finance',label:'Finanza',description:'Fatture, incassi e riconciliazioni',roles:canFinance},
+      {view:'finance',params:{cc_fin_view:'Banca'},label:'Banca',description:'Movimenti e riconciliazioni',roles:canFinance},
+      {view:'finance',params:{cc_fin_view:'SdI'},label:'SdI simulato',description:'Documenti e tentativi di prova',roles:canFinance},
+      {view:'finance',params:{cc_fin_view:'TS'},label:'TS simulato',description:'Revisioni e versioni di prova',roles:canFinance},
       {href:'/app/sales-invoice',label:'Fatture pazienti',description:'Documenti ERPNext',roles:canFinance},
       {href:'/app/payment-entry',label:'Incassi e pagamenti',description:'Movimenti ERPNext',roles:canFinance}
     ]},
@@ -47,6 +53,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       {href:'/app/patient',label:'Anagrafiche pazienti',description:'Schede Patient',roles:canManage},
       {href:'/app/healthcare-practitioner',label:'Anagrafiche professionisti',description:'Schede Practitioner',roles:canManage},
       {href:'/app/item',label:'Servizi',description:'Catalogo ERPNext',roles:canManage},
+      {view:'agenda',params:{cc_ops_view:'Gestione accessi'},label:'Gestione accessi',description:'Ruoli e centri autorizzati',roles:canManage},
       {href:'/app/cc-audit-event',label:'Registro modifiche',description:'Tracciamento delle operazioni',roles:canManage}
     ]}
   ];
@@ -55,7 +62,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       const links=group.links.filter(link=>link.roles);
       if(!links.length)return '';
       const cards=links.map(link=>{
-        const href=link.view?routeUrl(link.view):link.href;
+        const href=link.view?routeUrl(link.view,link.params):link.href;
         return `<a class="cc-desk-home-card" href="${href}"><strong>${link.label}</strong><span>${link.description}</span><span class="cc-desk-home-arrow" aria-hidden="true">›</span></a>`;
       }).join('');
       return `<section class="cc-desk-home-group"><div class="cc-desk-home-group-heading"><h2>${group.title}</h2><p>${group.description}</p></div><div class="cc-desk-home-grid">${cards}</div></section>`;

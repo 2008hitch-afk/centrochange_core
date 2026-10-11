@@ -46,6 +46,7 @@ function entry(roles, search = '') {
 
 const professional = entry(['CC Professional']);
 assert.match(professional.home, /Agenda/);
+assert.match(professional.home, /cc_ops_view=Disponibilit%C3%A0/);
 assert.doesNotMatch(professional.home, /Fatture pazienti|Registro modifiche/);
 assert.match(professional.url, /cc_view=home/);
 assert.match(professional.title, /Centro Change · Inizio/);
@@ -55,6 +56,7 @@ const manager = entry(['CC Manager']);
 assert.match(manager.home, /Anagrafiche pazienti/);
 assert.match(manager.home, /Finanza/);
 assert.match(manager.home, /Registro modifiche/);
+assert.match(manager.home, /cc_fin_view=Banca/);
 assert.match(manager.nav, /aria-current="page"/);
 
 const unknown = entry(['CC Finance'], '?cc_view=__proto__');
