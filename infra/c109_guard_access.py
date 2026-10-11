@@ -13,12 +13,12 @@ import stat
 import subprocess
 import sys
 import time
-from c109_compose_gate import IO_CAPPED_PROJECT
+from c109_compose_gate import IO_CAPPED_PROJECT, IO_WAIVER_PROJECT
 
 
 SOCKET = Path("/var/run/docker.sock")
 ROLES = {"events": "protected-events.py", "watchdog": "safety.py",
-         "expiry": "c109_demo_expiry.py"}
+         "expiry": "c109_demo_expiry.py", "rc22": "c109_rc22_monitor.py"}
 
 
 def command(*args, timeout=8):
@@ -62,7 +62,11 @@ def marker_path(state, role):
 
 
 def require_live_guards(state, max_proof_age=None):
-    for role in ("events", "watchdog", "expiry"):
+    roles = ("events", "watchdog", "expiry")
+    if ((state / "activation.json").exists()
+            and json.loads((state / "activation.json").read_text()).get("target") == IO_WAIVER_PROJECT):
+        roles += ("rc22",)
+    for role in roles:
         marker = json.loads(marker_path(state, role).read_text())
         if marker["pid"] <= 0 or marker["start_ticks"] != process_start_ticks(marker["pid"]):
             raise RuntimeError(f"C109 {role} guard is not the verified live process")
@@ -79,6 +83,9 @@ def serve(role, root):
     if role == "expiry":
         os.execv(sys.executable, [sys.executable, str(Path(__file__).with_name(ROLES[role])),
                                    "--wait", str(root)])
+    if role == "rc22":
+        os.execv(sys.executable, [sys.executable, str(Path(__file__).with_name(ROLES[role])),
+                                   str(root)])
     os.execv(sys.executable, [sys.executable, str(state / ROLES[role])])
 
 
@@ -92,7 +99,7 @@ def launch_scopes(root):
     """Start only guard scopes, after proving their actual inherited credentials."""
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
-    if (activation.get("issue") != 109 or activation.get("target") != IO_CAPPED_PROJECT
+    if (activation.get("issue") != 109 or activation.get("target") not in (IO_CAPPED_PROJECT, IO_WAIVER_PROJECT)
             or activation.get("status") != "OWNER_AUTHORIZED_C_UNIFIED_BOOTSTRAP"):
         raise RuntimeError("wrong C109 demo activation")
     if dt.datetime.now(dt.timezone.utc) >= dt.datetime.fromisoformat(activation["hard_stop_utc"]):
@@ -100,11 +107,12 @@ def launch_scopes(root):
     if ((state / "app-attempted").exists() or (state / "monitor-finish").exists()
             or any(marker_path(state, role).exists() for role in ROLES)):
         raise RuntimeError("activation or guard launch already attempted")
-    for role in ROLES:
+    roles = ("rc22", "events", "watchdog", "expiry") if activation["target"] == IO_WAIVER_PROJECT else ("events", "watchdog", "expiry")
+    for role in roles:
         scope_probe(role)
     launched = []
     try:
-        for role in ROLES:
+        for role in roles:
             unit = f"centrochange-c109-{role}-{os.getpid()}"
             with open(state / f"{role}-scope.log", "w") as log:
                 process = subprocess.Popen(["systemd-run", "--user", "--scope", "--collect",
@@ -113,7 +121,7 @@ def launch_scopes(root):
                                            stdout=log, stderr=log, start_new_session=True)
             launched.append((unit, process))
             deadline = time.monotonic() + 10
-            heartbeat = state / ("events-heartbeat" if role == "events" else "monitor-heartbeat")
+            heartbeat = state / ("events-heartbeat" if role == "events" else "rc22-heartbeat" if role == "rc22" else "monitor-heartbeat")
             while time.monotonic() < deadline:
                 if process.poll() is not None:
                     raise RuntimeError(f"C109 {role} scope exited before readiness")
