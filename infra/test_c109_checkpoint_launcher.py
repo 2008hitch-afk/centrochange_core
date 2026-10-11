@@ -49,10 +49,14 @@ class FakeProcess:
 
 
 class FakeHost:
-    def __init__(self, output="/private/checkpoint", wrong_mount=False, wrong_cap=False):
+    def __init__(self, output="/private/checkpoint", wrong_mount=False, wrong_cap=False, nested_mount=False):
         self.output = output
         self.wrong_mount = wrong_mount
         self.wrong_cap = wrong_cap
+        self.nested_mount = nested_mount
+
+    def mountpoints(self):
+        return [Path("/"), Path("/var/lib/docker/volumes/" + VOLUMES[0])] if self.nested_mount else [Path("/")]
 
     def run(self, *args, **kwargs):
         if args[:3] == ("docker", "volume", "inspect"):
@@ -108,6 +112,8 @@ class CheckpointLauncherTest(unittest.TestCase):
                          ("/dev/sda", "8:0"))
         with self.assertRaises(CheckpointError):
             device_for(FakeHost(wrong_mount=True), Path("/var/lib/docker"), Path("/private/checkpoint"), VOLUMES)
+        with self.assertRaisesRegex(CheckpointError, "nested"):
+            device_for(FakeHost(nested_mount=True), Path("/var/lib/docker"), Path("/private/checkpoint"), VOLUMES)
         with self.assertRaises(CheckpointError):
             parse_mount("overlay 0:1")
 

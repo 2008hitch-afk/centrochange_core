@@ -131,15 +131,31 @@ class Host:
     def oom(self) -> int:
         return oom_count()
 
+    def mountpoints(self) -> list[Path]:
+        """Kernel mount table; no traversal of protected Docker volume paths."""
+        points = []
+        for line in Path("/proc/self/mountinfo").read_text().splitlines():
+            fields = line.split(" - ", 1)[0].split()
+            if len(fields) < 5:
+                raise CheckpointError("malformed host mount table")
+            points.append(Path(re.sub(r"\\([0-7]{3})", lambda match: chr(int(match.group(1), 8)), fields[4])))
+        return points
+
 
 def device_for(host: Host, docker_root: Path, output: Path, volumes: tuple[str, ...]) -> tuple[str, str]:
     """Resolve the real parent block device for both Docker and the archive."""
+    mountpoints = host.mountpoints()
     roots = [docker_root, output]
     for volume in volumes:
         mountpoint = host.run("docker", "volume", "inspect", "-f", "{{.Mountpoint}}", volume)
         if not mountpoint.startswith(str(docker_root / "volumes") + "/"):
             raise CheckpointError("volume mountpoint outside Docker root")
-        roots.append(Path(mountpoint))
+        volume_path = Path(mountpoint)
+        # The local volume directory may be inaccessible to this Unix user.
+        # Fail closed if any mount below Docker root changes its filesystem.
+        if any(point != docker_root and point.is_relative_to(docker_root)
+               and volume_path.is_relative_to(point) for point in mountpoints):
+            raise CheckpointError("volume has a nested host mount")
     mounts = [parse_mount(host.run("findmnt", "-n", "-o", "SOURCE,MAJ:MIN", "-T", str(path))) for path in roots]
     if len(set(mounts)) != 1:
         raise CheckpointError("Docker volumes and archive do not share the verified filesystem")
