@@ -36,9 +36,15 @@ class MonitorTest(unittest.TestCase):
         def fake_run(args, **kwargs):
             calls.append(args)
             return type("Result", (), {"returncode": 0})()
-        with patch.object(m, "c109_ids", lambda: fake_check(
+        with patch.object(m, "c109_ids", lambda project=m.IO_WAIVER_PROJECT: fake_check(
                 ["docker", "ps", "-q", "--no-trunc", "--filter",
-                 f"label=com.docker.compose.project={m.IO_WAIVER_PROJECT}"])):
+                 f"label=com.docker.compose.project={project}"])):
             m.stop_c109(fake_run)
         self.assertEqual(calls[-1], ["docker", "stop", "--time", "10", "c109-only"])
         self.assertIn("centrochange-c109-gated-r7", calls[0][-1])
+        calls.clear()
+        with patch.object(m, "c109_ids", lambda project=m.IO_WAIVER_PROJECT: fake_check(
+                ["docker", "ps", "-q", "--no-trunc", "--filter",
+                 f"label=com.docker.compose.project={project}"])):
+            m.stop_c109(fake_run, project=m.FINAL_UI_PROJECT)
+        self.assertIn("centrochange-c109-gated-r8", calls[0][-1])

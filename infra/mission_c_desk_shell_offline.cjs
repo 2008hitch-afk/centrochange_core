@@ -4,6 +4,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '../app/centrochange_core/centrochange_core/public/js/cc_desk_client.js'), 'utf8');
+const css = fs.readFileSync(path.join(__dirname, '../app/centrochange_core/centrochange_core/public/css/cc_desk_client.css'), 'utf8');
+assert(css.includes('body.cc-client-desk>.body-sidebar-container{display:none!important}'));
+assert(css.includes('body.cc-client-desk>.main-section{flex:1 1 auto!important;width:100%;min-width:0}'));
+assert(!css.includes('body>.body-sidebar-container{display:none'));
 
 function check(user, roles, expected, absent, route = '/app/cc-unified-desk?cc_view=home') {
   const registry = new Map();
@@ -17,16 +21,21 @@ function check(user, roles, expected, absent, route = '/app/cc-unified-desk?cc_v
   }
   const classes = new Set();
   const mainSection = new Element('main');
+  const nativeHeading = new Element('span');
+  nativeHeading.textContent = route.includes('/patient') ? 'Patient' : 'Item';
   const document = {
     readyState: 'complete',
     body: new Element('body'),
     createElement: tag => new Element(tag),
     getElementById: id => registry.get(id),
     querySelector: selector => selector === 'body > .main-section' ? mainSection : null,
+    querySelectorAll: () => [nativeHeading],
+    addEventListener: () => {},
+    title: '',
   };
   document.body.classList = {add: value => classes.add(value), remove: value => classes.delete(value)};
   const [pathname, search = ''] = route.split('?');
-  vm.runInNewContext(source, {window: {frappe: {session: {user}, user_roles: roles}}, document, location: {pathname, search: search ? '?' + search : ''}});
+  vm.runInNewContext(source, {window: {frappe: {session: {user}, user_roles: roles}}, document, location: {pathname, search: search ? '?' + search : ''}, MutationObserver: class { observe() {} }, requestAnimationFrame: () => {}});
   const nav = registry.get('cc-desk-global-nav');
   if (expected === null) {
     assert.equal(nav, undefined);
@@ -40,6 +49,11 @@ function check(user, roles, expected, absent, route = '/app/cc-unified-desk?cc_v
   for (const label of expected) assert(links.includes(label), `${user}: missing ${label}`);
   for (const label of absent) assert(!links.includes(label), `${user}: unexpected ${label}`);
   assert(!links.some(label => /Builder|Frappe|ERPNext|Sviluppatore/i.test(label)));
+  if (route.includes('/patient')) {
+    assert.equal(nativeHeading.textContent, 'Pazienti');
+    assert.equal(document.title, 'Pazienti · Centro Change');
+    assert.equal(nav.children.at(-1).textContent, 'Pazienti');
+  }
 }
 
 check('manager@example.invalid', ['CC Manager'], ['Inizio', 'Agenda', 'Pazienti', 'Professionisti', 'Finanza', 'Report', 'Catalogo', 'Registro modifiche'], []);
@@ -47,6 +61,7 @@ check('secretary@example.invalid', ['CC Secretariat'], ['Agenda', 'Pazienti', 'D
 check('finance@example.invalid', ['CC Finance'], ['Finanza', 'Report'], ['Agenda', 'Catalogo', 'Pazienti']);
 check('accountant@example.invalid', ['CC Accountant'], ['Finanza', 'Report'], ['Agenda', 'Catalogo']);
 check('professional@example.invalid', ['CC Professional'], ['Agenda', 'Pazienti', 'Disponibilità'], ['Finanza', 'Report', 'Catalogo']);
+check('manager@example.invalid', ['CC Manager'], ['Pazienti', 'Esci'], [], '/desk/healthcare/patient');
 check('Administrator', ['System Manager', 'CC Manager'], null, []);
 check('guest', [], null, []);
 console.log('C109 Desk shell offline role/menu checks: PASS (7 profiles)');

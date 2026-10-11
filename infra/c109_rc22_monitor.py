@@ -12,7 +12,7 @@ import sys
 import time
 import urllib.request
 
-from c109_compose_gate import IO_WAIVER_PROJECT
+from c109_compose_gate import IO_WAIVER_PROJECT, FINAL_UI_PROJECT
 
 PING = "http://127.0.0.1:8082/api/method/ping"
 WEB = "http://127.0.0.1:8082/centrochange"
@@ -27,14 +27,14 @@ def rc22_ids(run=subprocess.check_output):
                       text=True, timeout=8).split())
 
 
-def c109_ids(run=subprocess.check_output):
+def c109_ids(run=subprocess.check_output, project=IO_WAIVER_PROJECT):
     return run(["docker", "ps", "-q", "--no-trunc",
-                "--filter", f"label=com.docker.compose.project={IO_WAIVER_PROJECT}"],
+                "--filter", f"label=com.docker.compose.project={project}"],
                text=True, timeout=8).split()
 
 
-def stop_c109(run=subprocess.run):
-    ids = c109_ids()
+def stop_c109(run=subprocess.run, project=IO_WAIVER_PROJECT):
+    ids = c109_ids(project=project)
     if ids:
         result = run(["docker", "stop", "--time", "10", *ids],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -80,7 +80,7 @@ def require_rc22_monitor(state):
 def main(root):
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
-    if (activation.get("issue"), activation.get("target"), activation.get("io_waiver")) != (109, IO_WAIVER_PROJECT, True):
+    if activation.get("issue") != 109 or activation.get("target") not in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT) or activation.get("io_waiver") is not True:
         raise RuntimeError("wrong isolated activation")
     expected = json.loads((state / "rc22-before.json").read_text())["ids"]
     if len(expected) != 9 or rc22_ids() != expected:
@@ -101,7 +101,7 @@ def main(root):
         (state / "rc22-heartbeat.tmp").replace(state / "rc22-heartbeat")
         if alert:
             (state / "rc22-alert.json").write_text(json.dumps(sample))
-            stop_c109()
+            stop_c109(project=activation["target"])
             return 2
         time.sleep(INTERVAL_SECONDS)
     return 0

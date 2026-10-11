@@ -161,6 +161,7 @@ class CheckpointLauncherTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as temp:
             state = Path(temp)
+            (state / "activation.json").write_text(json.dumps({"target": "centrochange-c109-gated-r6", "io_waiver": False}))
             for name in ("events-heartbeat", "monitor-heartbeat"):
                 (state / name).write_text(str(time.time()))
             ids = [str(i)*64 for i in range(1, 10)]

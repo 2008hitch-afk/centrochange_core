@@ -5,6 +5,39 @@
   const technicalRoles = ["System Manager", "Website Manager"];
   const home = "/app/cc-unified-desk?cc_view=home";
   const desk = view => `/app/cc-unified-desk?cc_view=${view}`;
+  // These labels change presentation only. Native DocPerm and the CC guards
+  // remain authoritative for every direct route and API request.
+  const nativeLabels = {
+    patient: "Pazienti", "healthcare-practitioner": "Professionisti",
+    item: "Servizi", "item-price": "Tariffe", "appointment-type": "Tipi di seduta",
+    "cc-center-service": "Servizi del centro", "cc-package-template": "Modelli pacchetto",
+    "sales-invoice": "Fatture pazienti", "purchase-invoice": "Fatture professionisti",
+    "payment-entry": "Incassi e pagamenti", "bank-transaction": "Movimenti bancari",
+    "cc-audit-event": "Registro modifiche"
+  };
+  const nativeEnglish = {
+    patient: "Patient", "healthcare-practitioner": "Healthcare Practitioner",
+    item: "Item", "item-price": "Item Price", "appointment-type": "Appointment Type",
+    "cc-center-service": "CC Center Service", "cc-package-template": "CC Package Template",
+    "sales-invoice": "Sales Invoice", "purchase-invoice": "Purchase Invoice",
+    "payment-entry": "Payment Entry", "bank-transaction": "Bank Transaction",
+    "cc-audit-event": "CC Audit Event"
+  };
+  const nativeFieldLabels = {
+    "Patient Name": "Nome paziente", patient_name: "Nome paziente",
+    "Healthcare Practitioner": "Professionista", practitioner_name: "Nome professionista",
+    "Mobile": "Cellulare", mobile: "Cellulare", "E-mail": "Email",
+    "Item Name": "Servizio", item_name: "Servizio", "Item Code": "Codice servizio",
+    "Posting Date": "Data contabile", "Due Date": "Scadenza",
+    "Grand Total": "Totale", "Outstanding Amount": "Residuo",
+    "Customer": "Soggetto fiscale", "Supplier": "Fornitore",
+    "Status": "Stato", "Modified": "Modificato", "Owner": "Creato da"
+  };
+  function nativeRoute() {
+    const parts = location.pathname.split("/").filter(Boolean);
+    if (!parts.includes("app") && !parts.includes("desk")) return null;
+    return parts.find(part => Object.hasOwn(nativeLabels, part)) || null;
+  }
   const entries = roles => {
     const operate = ["CC Manager", "CC Secretariat", "CC Professional"].some(role => roles.has(role));
     const finance = ["CC Manager", "CC Secretariat", "CC Finance", "CC Accountant"].some(role => roles.has(role));
@@ -16,10 +49,28 @@
       [manager ? "Professionisti" : "Disponibilità", manager ? "/app/healthcare-practitioner" : `${desk("agenda")}&cc_ops_view=Disponibilità`, operate],
       ["Finanza", desk("finance"), finance],
       ["Report", desk("professional"), finance],
+      ["Notifiche", `${desk("agenda")}&cc_ops_view=Notifiche`, operate],
       ["Catalogo", "/app/item", manager],
-      ["Registro modifiche", "/app/cc-audit-event", manager]
+      ["Registro modifiche", "/app/cc-audit-event", manager],
+      ["Esci", "/api/method/logout", true]
     ].filter(([, , visible]) => visible);
   };
+  function presentNativeTitle(route) {
+    if (!route) return;
+    const label = nativeLabels[route];
+    const english = nativeEnglish[route];
+    for (const node of document.querySelectorAll(".page-head .title-text, .page-head .page-title, .page-head .breadcrumb-item")) {
+      // Never replace a document name, field value or user-entered text.
+      if (node.children.length === 0 && [english, route, route.replaceAll("-", " ")].includes(node.textContent.trim())) node.textContent = label;
+    }
+    for (const node of document.querySelectorAll(".list-row-head .list-row-col, .form-page .control-label")) {
+      if (node.children.length === 0) {
+        const translation = nativeFieldLabels[node.textContent.trim()];
+        if (translation) node.textContent = translation;
+      }
+    }
+    document.title = `${label} · Centro Change`;
+  }
   function render() {
     const user = window.frappe?.session?.user;
     const roles = new Set(window.frappe?.user_roles || []);
@@ -57,8 +108,35 @@
       links.append(anchor);
     }
     nav.append(links);
+    const route = nativeRoute();
+    if (route) {
+      const context = document.createElement("span");
+      context.className = "cc-desk-context";
+      context.textContent = nativeLabels[route];
+      nav.append(context);
+      presentNativeTitle(route);
+    }
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", render, {once: true});
   else render();
   if (window.jQuery) window.jQuery(document).on("toolbar_setup page-change", render);
+  document.addEventListener("click", async event => {
+    const link = event.target.closest?.("#cc-desk-global-nav a[href='/api/method/logout']");
+    if (!link) return;
+    event.preventDefault();
+    try {
+      const response = await fetch(link.href, {method: "POST", credentials: "same-origin", headers: {"X-Frappe-CSRF-Token": window.frappe?.csrf_token || ""}});
+      if (!response.ok) throw new Error("logout failed");
+      location.href = "/login?redirect-to=/app/cc-unified-desk";
+    } catch (_) { window.frappe?.msgprint?.("Impossibile uscire. Riprova."); }
+  });
+  // Native List/Form headings are mounted after Desk's route event. A bounded
+  // observer updates only known heading nodes, never record content.
+  let pending = false;
+  const observer = new MutationObserver(() => {
+    if (pending || !document.body.classList.contains("cc-client-desk")) return;
+    pending = true;
+    requestAnimationFrame(() => { pending = false; presentNativeTitle(nativeRoute()); });
+  });
+  observer.observe(document.body, {childList: true, subtree: true});
 })();
