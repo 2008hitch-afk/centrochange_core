@@ -109,7 +109,7 @@ def launch_scopes(root):
                 process = subprocess.Popen(["systemd-run", "--user", "--scope", "--collect",
                                             f"--unit={unit}", sys.executable, str(Path(__file__)),
                                             "serve", role, str(root)], stdin=subprocess.DEVNULL,
-                                           stdout=log, stderr=log)
+                                           stdout=log, stderr=log, start_new_session=True)
             launched.append((unit, process))
             deadline = time.monotonic() + 10
             heartbeat = state / ("events-heartbeat" if role == "events" else "monitor-heartbeat")
