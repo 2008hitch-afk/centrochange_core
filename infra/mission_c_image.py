@@ -13,6 +13,8 @@ with tarfile.open(a.base_archive,'r:') as src:
   # Verified visual-demo OCI base, revision 6c83704262e0. Its existing
   # layers remain in Docker; this archive carries only the new COPY layer.
   'sha256:cc97a65c8fdd4d2cb8fd9c15fb861123bb0d3201cbbb204b4acd2352a84ada25',
+  # Verified C109 Desk image already running in the isolated r7 lab.
+  'sha256:602b7a1930a918dce5b957602e645a34fb4947092b6fbd55fd60e62b5694f1c1',
  },'unexpected parent image; do not package against an unverified runtime'
  manifest=json.load(src.extractfile('blobs/sha256/'+desc['digest'].split(':')[1]));config=json.load(src.extractfile('blobs/sha256/'+manifest['config']['digest'].split(':')[1]))
 raw=io.BytesIO();folder='app/centrochange_core/centrochange_core/centro_change_core/page'

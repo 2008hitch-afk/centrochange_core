@@ -16,11 +16,13 @@ function check(user, roles, expected, absent, route = '/app/cc-unified-desk?cc_v
     remove() { if (this.id) registry.delete(this.id); }
   }
   const classes = new Set();
+  const mainSection = new Element('main');
   const document = {
     readyState: 'complete',
     body: new Element('body'),
     createElement: tag => new Element(tag),
     getElementById: id => registry.get(id),
+    querySelector: selector => selector === 'body > .main-section' ? mainSection : null,
   };
   document.body.classList = {add: value => classes.add(value), remove: value => classes.delete(value)};
   const [pathname, search = ''] = route.split('?');
@@ -32,6 +34,8 @@ function check(user, roles, expected, absent, route = '/app/cc-unified-desk?cc_v
     return;
   }
   assert(nav && classes.has('cc-client-desk'));
+  assert.equal(mainSection.children[0], nav);
+  assert.equal(document.body.children.length, 0);
   const links = nav.children[1].children.map(node => node.textContent);
   for (const label of expected) assert(links.includes(label), `${user}: missing ${label}`);
   for (const label of absent) assert(!links.includes(label), `${user}: unexpected ${label}`);

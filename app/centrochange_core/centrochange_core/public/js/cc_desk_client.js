@@ -31,10 +31,14 @@
     document.body.classList.add("cc-client-desk");
     let nav = document.getElementById("cc-desk-global-nav");
     if (!nav) {
+      // Frappe v16 Desk uses a flex body. A direct body child consumes a
+      // horizontal flex track and compresses every native Page/List/Form.
+      const host = document.querySelector("body > .main-section");
+      if (!host) return;
       nav = document.createElement("nav");
       nav.id = "cc-desk-global-nav";
       nav.setAttribute("aria-label", "Navigazione Centro Change");
-      document.body.prepend(nav);
+      host.prepend(nav);
     }
     const current = location.pathname + location.search;
     nav.replaceChildren();
