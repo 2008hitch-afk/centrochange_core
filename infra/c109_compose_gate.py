@@ -31,6 +31,7 @@ IO_CAPPED_PROJECT = "centrochange-c109-gated-r6"
 IO_WAIVER_PROJECT = "centrochange-c109-gated-r7"
 FINAL_UI_PROJECT = "centrochange-c109-gated-r8"
 R9_PROJECT = "centrochange-c109-gated-r9"
+R10_PROJECT = "centrochange-c109-gated-r10"
 
 
 def override(base: dict, gate_root: Path, script: Path, project: str = PROJECT,
@@ -39,7 +40,7 @@ def override(base: dict, gate_root: Path, script: Path, project: str = PROJECT,
         raise ValueError("unexpected C109 service inventory")
     if base.get("name") != "centrochange-c109":
         raise ValueError("wrong source Compose project")
-    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT):
+    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT):
         raise ValueError("unapproved isolated project")
     if project == IO_CAPPED_PROJECT and not (io_device and re.fullmatch(r"/dev/[A-Za-z0-9._-]+", io_device)):
         raise ValueError("I/O-capped project requires verified host block-device path")
