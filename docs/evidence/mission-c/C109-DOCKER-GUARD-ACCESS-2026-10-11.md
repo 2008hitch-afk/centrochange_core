@@ -18,6 +18,6 @@ Nella futura finestra **separatamente autorizzata**, il percorso è `python3 inf
 
 ## Verifica e limiti
 
-- Test offline C109: **43/43 PASS**, inclusi override di `DOCKER_HOST`/contesto non consentiti, ruolo sconosciuto, marker stantio/PID riutilizzato e rifiuto di una attivazione già consumata. Sintassi Python e `git diff --check`: PASS.
+- Test offline C109: **44/44 PASS**, inclusi override di `DOCKER_HOST`/contesto non consentiti, stream eventi non disponibile, ruolo sconosciuto, marker stantio/PID riutilizzato e rifiuto di una attivazione già consumata. Sintassi Python e `git diff --check`: PASS.
 - Prove read-only effettive: `.service` DENIED, `.scope` Docker API/event stream ALLOWED, due `serve` inerti ALLOWED. Il launcher completo con i guard storici, il timer a scadenza e la demo non sono stati avviati: rimangono da verificare nella prossima singola attivazione autorizzata, senza chiamarli PASS ora.
 - Stato finale read-only: progetto C109 R4 **0** container attivi; RC22 **9/9** container e HTTP **200**. Nessuna modifica a RC22, UAT o ai dati.
