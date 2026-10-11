@@ -73,7 +73,7 @@ class DockerGuardAccessTest(unittest.TestCase):
             state = root / "app-run"
             state.mkdir()
             (state / "activation.json").write_text(json.dumps({
-                "issue": 109, "target": "centrochange-c109-gated-r5",
+                "issue": 109, "target": "centrochange-c109-gated-r6",
                 "status": "OWNER_AUTHORIZED_C_UNIFIED_BOOTSTRAP",
                 "hard_stop_utc": "2099-01-01T00:00:00+00:00"}))
             (state / "app-attempted").write_text("used")

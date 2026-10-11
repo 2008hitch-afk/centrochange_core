@@ -4,7 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, LIGHT_QA_PROJECT, override
+from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT, override
 
 
 class ComposeGateTest(unittest.TestCase):
@@ -66,6 +66,19 @@ class ComposeGateTest(unittest.TestCase):
         result = override(self.base, self.gates, self.script, LIGHT_QA_PROJECT)
         self.assertEqual(result["name"], LIGHT_QA_PROJECT)
         self.assertEqual(result["volumes"]["site"]["name"], "centrochange-c109-site")
+
+    def test_io_capped_attempt_requires_device_for_every_service(self):
+        with self.assertRaises(ValueError):
+            override(self.base, self.gates, self.script, IO_CAPPED_PROJECT)
+        result = override(self.base, self.gates, self.script, IO_CAPPED_PROJECT, "/dev/sda")
+        self.assertEqual(result["name"], IO_CAPPED_PROJECT)
+        for service in result["services"].values():
+            self.assertEqual(service["blkio_config"]["device_read_bps"],
+                             [{"path": "/dev/sda", "rate": 4*1024**2}])
+            self.assertEqual(service["blkio_config"]["device_write_bps"],
+                             [{"path": "/dev/sda", "rate": 2*1024**2}])
+        with self.assertRaises(ValueError):
+            override(self.base, self.gates, self.script, LIGHT_QA_PROJECT, "/dev/sda")
 
 
 if __name__ == "__main__":

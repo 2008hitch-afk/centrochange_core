@@ -14,8 +14,10 @@ import time
 import urllib.request
 
 from c109_cgroup_gate import CgroupGateError, read_snapshot
-from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT
+from c109_compose_gate import KINDS, PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT
 from c109_guard_access import require_live_guards
+from c109_io_gate import (IOGateError, resolve_device, verify_cgroup,
+                          verify_compose_config, verify_host_config)
 from c109_protected_inventory import validate_existing
 
 
@@ -91,7 +93,7 @@ def main(root):
     if activation.get("workload_release_allowed") is not True:
         raise RuntimeError("application workload release is not active")
     project = activation.get("target")
-    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT):
+    if project not in (PROJECT, RETRY_PROJECT, FINAL_PROJECT, DEMO_PROJECT, LIGHT_QA_PROJECT, IO_CAPPED_PROJECT):
         raise RuntimeError("unapproved isolated project")
     if now() < dt.datetime.fromisoformat(activation["start_utc"]):
         raise RuntimeError("activation window has not opened")
@@ -112,6 +114,11 @@ def main(root):
         raise RuntimeError("gated project already exists")
     if run("docker", "ps", "-q", "--filter", "label=centrochange.mission=C109"):
         raise RuntimeError("other C109 workload running")
+    io_device = io_device_id = None
+    if project == IO_CAPPED_PROJECT:
+        io_device, io_device_id = resolve_device(state)
+        if (activation.get("io_device"), activation.get("io_device_id")) != (io_device, io_device_id):
+            raise RuntimeError("authorized I/O device differs from live device")
     base = state / "compose-final-private.json"
     override = root / "compose-gated.override.json"
     config = json.loads((state / "compose-final.merged-private.json").read_text())
@@ -125,6 +132,8 @@ def main(root):
             raise RuntimeError(f"service RAM/swap cap changed: {service}")
         if item.get("entrypoint") != ["/bin/sh", "/opt/cc-bootstrap.sh", KINDS[service]]:
             raise RuntimeError(f"inert PID1 gate missing: {service}")
+        if project == IO_CAPPED_PROJECT:
+            verify_compose_config(item.get("blkio_config") or {}, io_device)
     compose = ["docker", "compose", "--env-file", "/home/empv26/.local/state/centrochange-c109/runtime.env",
                "-f", str(base), "-f", str(override), "--project-name", project]
     (state / "app-attempted").write_text(now().isoformat())
@@ -146,6 +155,9 @@ def main(root):
             expected = EXPECTED_MAX[service]
             if container["running"] or container["memory"] != expected or container["swap"] != expected:
                 raise RuntimeError(f"HostConfig mismatch before start: {service}")
+            if project == IO_CAPPED_PROJECT:
+                verify_host_config(json.loads(run("docker", "inspect", "-f", "{{json .HostConfig}}", container["id"])),
+                                   io_device)
             gate = root / "gates" / service / "release"
             if gate.exists():
                 raise RuntimeError(f"stale release gate: {service}")
@@ -162,6 +174,8 @@ def main(root):
                     raise RuntimeError(f"inert PID exited: {service}")
                 try:
                     snapshot = read_snapshot(current["pid"], container["id"], expected)
+                    if project == IO_CAPPED_PROJECT:
+                        verify_cgroup(snapshot.relative_path, io_device_id)
                     if first is None:
                         first = snapshot
                         seen_valid = time.monotonic()
@@ -170,8 +184,9 @@ def main(root):
                     last = snapshot
                     if time.monotonic() - seen_valid >= 0.2:
                         break
-                except CgroupGateError as exc:
-                    if first is not None or str(exc) not in ("memory.max is max", "swap.max is max"):
+                except (CgroupGateError, IOGateError) as exc:
+                    if first is not None or (isinstance(exc, CgroupGateError)
+                                             and str(exc) not in ("memory.max is max", "swap.max is max")):
                         raise RuntimeError(f"invalid cgroup after start: {service}: {exc}") from exc
                 time.sleep(0.01)
             else:
@@ -185,7 +200,8 @@ def main(root):
             (state / "released-services.json").write_text(json.dumps(records, indent=2))
             # Dependency services have native healthchecks; do not start their users
             # until Docker reports healthy. Other services must remain running.
-            health_deadline = time.monotonic() + (90 if service in ("c-fit-db", "c-fit-redis-cache", "c-fit-redis-queue") else 15)
+            health_deadline = time.monotonic() + (120 if project == IO_CAPPED_PROJECT else
+                                                   90 if service in ("c-fit-db", "c-fit-redis-cache", "c-fit-redis-queue") else 15)
             while time.monotonic() < health_deadline:
                 guard(state, original, initial_oom)
                 status = run("docker", "inspect", "-f", "{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}", container["id"]).split()
@@ -196,6 +212,17 @@ def main(root):
                 time.sleep(0.5)
             else:
                 raise RuntimeError(f"service health timeout: {service}")
+            if project == IO_CAPPED_PROJECT:
+                # Do not overlap the next cold-start read with a previous
+                # service's I/O pressure. The host watchdog remains active.
+                stable = 0
+                settle_deadline = time.monotonic() + 90
+                while stable < 3:
+                    guard(state, original, initial_oom)
+                    stable = stable + 1 if psi_full("io") < 0.1 else 0
+                    if time.monotonic() >= settle_deadline:
+                        raise RuntimeError("host I/O did not settle before next service")
+                    time.sleep(5)
         guard(state, original, initial_oom)
         (state / "app-bootstrap-green").write_text(now().isoformat())
     except BaseException:
@@ -206,4 +233,17 @@ def main(root):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise SystemExit("usage: c109_gated_start.py PRIVATE_ACTIVATION_ROOT")
-    main(Path(sys.argv[1]))
+    root = Path(sys.argv[1])
+    try:
+        main(root)
+    except BaseException:
+        # The new I/O-capped activation is single-use even when a gate fails
+        # before Compose creates its first container.
+        state = root / "app-run"
+        try:
+            activation = json.loads((state / "activation.json").read_text())
+            if activation.get("target") == IO_CAPPED_PROJECT and not (state / "monitor-finish").exists():
+                stop_only_ours(state, IO_CAPPED_PROJECT)
+        except (OSError, ValueError):
+            pass
+        raise

@@ -12,12 +12,13 @@ import sys
 import time
 
 from c109_cgroup_gate import CgroupGateError, read_snapshot
-from c109_gated_start import guard, inspect, oom_count, run
+from c109_gated_start import guard, inspect, oom_count, run, stop_only_ours
+from c109_io_gate import IOGateError, READ_BPS, WRITE_BPS, resolve_device, verify_cgroup, verify_host_config
 
 
 QA_IMAGE = "sha256:f970b8eb4b0bd2186df380e6dffb1607f9fd8a75f67c04ba5f3c9d87d36e72d3"
-QA_NAME = "centrochange-c109-gated-r5-qa"
-PROJECT = "centrochange-c109-gated-r5"
+QA_NAME = "centrochange-c109-gated-r6-qa"
+PROJECT = "centrochange-c109-gated-r6"
 LIMIT = 512 * 1024**2
 
 
@@ -35,6 +36,9 @@ def main(root: Path):
     app_ids = run("docker", "ps", "-q", "--filter", f"label=com.docker.compose.project={PROJECT}").split()
     if len(app_ids) != 8:
         raise RuntimeError("application service count changed")
+    io_device, io_device_id = resolve_device(state)
+    if (activation.get("io_device"), activation.get("io_device_id")) != (io_device, io_device_id):
+        raise RuntimeError("authorized QA I/O device differs from live device")
     rc22 = sorted(run("docker", "ps", "-q", "--filter", "label=com.docker.compose.project=centrochange-dev").split())
     if len(rc22) != 9:
         raise RuntimeError("RC22 service count changed")
@@ -56,6 +60,8 @@ def main(root: Path):
                         "--label", "centrochange.mission=C109", "--label", "centrochange.phase=lab",
                         "--label", f"com.docker.compose.project={PROJECT}",
                         "--memory", "512m", "--memory-swap", "512m",
+                        "--device-read-bps", f"{io_device}:{READ_BPS}",
+                        "--device-write-bps", f"{io_device}:{WRITE_BPS}",
                         "--tmpfs", "/tmp:rw,nosuid,nodev,size=64m",
                         "--network", f"container:{frontend[0]}",
                         "--mount", f"type=bind,source={fixture},target=/qa-fixture.json,readonly",
@@ -66,6 +72,7 @@ def main(root: Path):
         row = inspect(container)
         if row["running"] or row["memory"] != LIMIT or row["swap"] != LIMIT:
             raise RuntimeError("QA HostConfig cap mismatch")
+        verify_host_config(json.loads(run("docker", "inspect", "-f", "{{json .HostConfig}}", container)), io_device)
         guard(state, rc22, initial_oom)
         run("docker", "start", container)
         first = None
@@ -78,6 +85,7 @@ def main(root: Path):
                 raise RuntimeError("QA inert process exited")
             try:
                 snapshot = read_snapshot(row["pid"], container, LIMIT)
+                verify_cgroup(snapshot.relative_path, io_device_id)
                 if first is None:
                     first = snapshot
                     seen = time.monotonic()
@@ -90,8 +98,9 @@ def main(root: Path):
                         "verified_utc": dt.datetime.now(dt.timezone.utc).isoformat()
                     }, indent=2))
                     return
-            except CgroupGateError as exc:
-                if first is not None or str(exc) not in ("memory.max is max", "swap.max is max"):
+            except (CgroupGateError, IOGateError) as exc:
+                if first is not None or (isinstance(exc, CgroupGateError)
+                                         and str(exc) not in ("memory.max is max", "swap.max is max")):
                     raise RuntimeError(f"QA cap invalid: {exc}") from exc
             time.sleep(0.01)
         raise RuntimeError("QA cap did not stabilize before deadline")
@@ -105,4 +114,15 @@ def main(root: Path):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         raise SystemExit("usage: c109_gated_qa.py PRIVATE_ACTIVATION_ROOT")
-    main(Path(sys.argv[1]))
+    root = Path(sys.argv[1])
+    try:
+        main(root)
+    except BaseException:
+        state = root / "app-run"
+        try:
+            activation = json.loads((state / "activation.json").read_text())
+            if activation.get("target") == PROJECT and (state / "app-bootstrap-green").exists():
+                stop_only_ours(state, PROJECT)
+        except (OSError, ValueError):
+            pass
+        raise

@@ -13,7 +13,7 @@ const base = 'http://centrochange.local:8080';
 const slug = `${role}-${route.split('/').pop()}`;
 
 (async () => {
-  const browser = await chromium.launch({headless: true,
+  const browser = await chromium.launch({headless: true, timeout: 90000,
     args: [
       '--host-resolver-rules=MAP centrochange.local 127.0.0.1', '--no-proxy-server',
       '--no-first-run', '--disable-background-networking', '--disable-component-update',
@@ -22,6 +22,8 @@ const slug = `${role}-${route.split('/').pop()}`;
     ]});
   const context = await browser.newContext({viewport: {width: 1440, height: 900}, locale: 'it-IT'});
   const page = await context.newPage();
+  page.setDefaultTimeout(90000);
+  page.setDefaultNavigationTimeout(90000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   try {
@@ -29,7 +31,8 @@ const slug = `${role}-${route.split('/').pop()}`;
     await page.locator('#login_email').fill(fixture.users[role].name);
     await page.locator('#login_password').fill(fixture.users[role].password);
     await page.locator('.form-login button[type="submit"]').click();
-    await page.waitForTimeout(4500);
+    await page.waitForFunction(() => location.pathname.startsWith('/app') && !!window.frappe,
+      null, {timeout: 90000});
     const result = await page.evaluate(() => ({
       url: location.pathname + location.search,
       title: document.title,
