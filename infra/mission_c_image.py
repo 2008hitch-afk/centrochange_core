@@ -21,6 +21,7 @@ raw=io.BytesIO();folder='app/centrochange_core/centrochange_core/centro_change_c
 files=[root/folder/'__init__.py',*sorted((root/folder/'cc_unified_desk').glob('*')),*sorted((root/'app/centrochange_core/centrochange_core/centro_change_core/sidebar').rglob('*.json')),*[root/'app/centrochange_core/centrochange_core/public/js'/name for name in ('workspace.js','finance_workspace.js','patient_report.js','professional_view.js','audit_view.js','cc_desk_fragments.js')],root/'app/centrochange_core/centrochange_core/public/css/workspace.css',root/'app/centrochange_core/centrochange_core/security/dev_acceptance.py']
 required=[root/'app/centrochange_core/centrochange_core'/name for name in (
  'hooks.py', 'public/js/cc_desk_client.js', 'public/css/cc_desk_client.css',
+ 'translations/it.csv',
  'security/desk_boundary_acceptance.py',
 )]
 if any(not f.is_file() for f in required):
@@ -28,7 +29,7 @@ if any(not f.is_file() for f in required):
 files.extend(required)
 with tarfile.open(fileobj=raw,mode='w') as t:
  for f in files:
-  if not f.is_file() or f.suffix not in ('.py','.json','.css','.js'):continue
+  if not f.is_file() or f.suffix not in ('.py','.json','.css','.js','.csv'):continue
   b=f.read_bytes();x=tarfile.TarInfo('home/frappe/frappe-bench/apps/centrochange_core/'+str(f.relative_to(root/'app/centrochange_core')));x.size=len(b);x.uid=x.gid=1000;x.mode=0o644;x.mtime=0;t.addfile(x,io.BytesIO(b))
 blob=raw.getvalue();layer=gzip.compress(blob,mtime=0);config['rootfs']['diff_ids'].append('sha256:'+sha(blob));config['history'].append({'created_by':'versioned Mission C COPY '+revision});config['config']['Labels']['org.opencontainers.image.revision']=revision
 cb=serial(config);manifest['config'].update(digest='sha256:'+sha(cb),size=len(cb));manifest['layers'].append({'mediaType':'application/vnd.oci.image.layer.v1.tar+gzip','digest':'sha256:'+sha(layer),'size':len(layer)});mb=serial(manifest);desc.update(digest='sha256:'+sha(mb),size=len(mb));desc['annotations']={'org.opencontainers.image.ref.name':'centrochange-c109:prototype-'+revision[:12]}

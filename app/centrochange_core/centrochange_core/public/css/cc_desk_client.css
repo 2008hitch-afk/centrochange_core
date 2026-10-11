@@ -21,4 +21,8 @@ body.cc-client-desk #cc-desk-global-nav a[href='/api/method/logout']{margin-left
 /* The native List/Form content remains intact. Only non-client Desk chrome is
    removed from the ordinary client view; this is not an authorization guard. */
 body.cc-client-desk .navbar-brand,body.cc-client-desk .dropdown-help,body.cc-client-desk .app-switcher{display:none!important}
+/* Native accounting metadata remains on the canonical document and in HITCH
+   technical Desk. It is secondary implementation detail for client roles. */
+body.cc-client-desk .frappe-control[data-fieldname="cc_request_hash"],
+body.cc-client-desk .frappe-control[data-fieldname="cc_request_key"]{display:none!important}
 @media(max-width:700px){body.cc-client-desk #cc-desk-global-nav{display:block;padding:6px 10px}body.cc-client-desk .cc-desk-brand{display:block;margin-bottom:2px}body.cc-client-desk .cc-desk-global-links a{font-size:.82rem}body.cc-client-desk .cc-desk-context{display:block;margin:4px 0 0;padding:0;border:0}body.cc-client-desk .page-head{padding-inline:12px}}

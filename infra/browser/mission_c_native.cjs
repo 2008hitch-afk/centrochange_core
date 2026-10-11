@@ -6,7 +6,7 @@ const fs = require('fs');
 const fixture = JSON.parse(fs.readFileSync('/qa-fixture.json')).fixture;
 const role = process.env.ROLE;
 const route = process.env.ROUTE;
-if (!role || !route || !/^\/app\/[a-z0-9-]+(?:\?[a-z0-9_=&%-]+)?$/.test(route) || !fixture.users[role]) {
+if (!role || !route || !/^\/app\/[a-z0-9-]+(?:\/[a-z0-9%-]+)?(?:\?[a-z0-9_=&%-]+)?$/i.test(route) || !fixture.users[role]) {
   throw new Error('Invalid synthetic QA role or route');
 }
 const base = 'http://centrochange.local:8080';
@@ -20,7 +20,8 @@ const slug = `${role}-${route.split('/').pop().replace(/[^a-z0-9-]/gi, '-')}`;
       '--disable-default-apps', '--disable-sync', '--disable-extensions',
       '--disk-cache-size=0', '--media-cache-size=0',
     ]});
-  const context = await browser.newContext({viewport: {width: 1440, height: 900}, locale: 'it-IT'});
+  const context = await browser.newContext({viewport: process.env.MOBILE === '1'
+    ? {width: 390, height: 844} : {width: 1440, height: 900}, locale: 'it-IT'});
   const page = await context.newPage();
   page.setDefaultTimeout(90000);
   page.setDefaultNavigationTimeout(90000);
