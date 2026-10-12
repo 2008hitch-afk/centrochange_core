@@ -7,6 +7,9 @@ WORKDIR /home/frappe/frappe-bench
 
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_desk_client.js apps/centrochange_core/centrochange_core/public/js/cc_desk_client.js
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/css/cc_desk_client.css apps/centrochange_core/centrochange_core/public/css/cc_desk_client.css
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/css/cc_premium_nexus.css apps/centrochange_core/centrochange_core/public/css/cc_premium_nexus.css
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/images/centrochange-wordmark.svg apps/centrochange_core/centrochange_core/public/images/centrochange-wordmark.svg
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/operations/website_brand.py apps/centrochange_core/centrochange_core/operations/website_brand.py
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.js apps/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.js
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.css apps/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.css
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_desk_fragments.js apps/centrochange_core/centrochange_core/public/js/cc_desk_fragments.js
@@ -19,6 +22,10 @@ COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_practitioner_form.js apps/centrochange_core/centrochange_core/public/js/cc_practitioner_form.js
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_patient_form.js apps/centrochange_core/centrochange_core/public/js/cc_patient_form.js
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_catalog_finance_list.js apps/centrochange_core/centrochange_core/public/js/cc_catalog_finance_list.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_item_form.js apps/centrochange_core/centrochange_core/public/js/cc_item_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_item_price_form.js apps/centrochange_core/centrochange_core/public/js/cc_item_price_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_operational_form.js apps/centrochange_core/centrochange_core/public/js/cc_operational_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_finance_form.js apps/centrochange_core/centrochange_core/public/js/cc_finance_form.js
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/translations/it.csv apps/centrochange_core/centrochange_core/translations/it.csv
 
 RUN bench build --force && cp -a sites/assets/. assets/

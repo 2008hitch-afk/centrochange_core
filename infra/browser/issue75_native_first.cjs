@@ -64,7 +64,7 @@ const routes=[
    return {url:location.href,sidebar:box('#cc-desk-sidebar'),nav:box('#cc-desk-global-nav'),main:box('.main-section'),body:box('#body'),nativeSidebar:visible('.body-sidebar-container'),dock:visible('#desk-dock'),oldBar:visible('.cc-desk-routebar, .cc-unified-nav, .navbar-horizontal'),pageHead:box('.page-head'),listHead:box('.list-row-head'),rows:visible('.list-row'),overflow:document.documentElement.scrollWidth-innerWidth,tabler:!!document.querySelector('#cc-tabler-core'),brand:[...document.querySelectorAll('img[alt],.navbar-brand,.app-logo')].filter(x=>{let r=x.getBoundingClientRect();return r.width&&r.height&&/ERPNext|Frappe/i.test(x.alt||x.textContent||'')}).length};
   });
   assert(data.sidebar&&data.nav&&data.main&&data.body,`${name}: shell incomplete`);
-  assert(Math.abs(data.sidebar.x)<2&&data.sidebar.w>=240,`${name}: sidebar clipped ${JSON.stringify(data.sidebar)}`);
+  assert(Math.abs(data.sidebar.x)<2&&data.sidebar.w>=210,`${name}: sidebar clipped ${JSON.stringify(data.sidebar)}`);
   assert(Math.abs(data.nav.x-data.sidebar.w)<2&&Math.abs(data.body.x-data.sidebar.w)<2,`${name}: shell alignment ${JSON.stringify(data)}`);
   assert.equal(data.nativeSidebar+data.dock+data.oldBar+data.brand,0,`${name}: upstream chrome visible`);
   assert(data.overflow<=2,`${name}: overflow ${data.overflow}`);

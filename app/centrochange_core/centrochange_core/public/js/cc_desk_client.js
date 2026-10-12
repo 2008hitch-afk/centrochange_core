@@ -92,6 +92,8 @@
     const roles = new Set(window.frappe?.user_roles || []);
     if (!user || user === "Guest" || user === "Administrator" || !clientRoles.some(role => roles.has(role)) || technicalRoles.some(role => roles.has(role))) {
       document.body.classList.remove("cc-client-desk");
+      delete document.body.dataset.ccFormType;
+      delete document.body.dataset.ccTechnical;
       document.getElementById("cc-desk-global-nav")?.remove();
       document.getElementById("cc-desk-sidebar")?.remove();
       return;
@@ -216,6 +218,10 @@
     };
     const route = nativeRoute();
     document.body.classList.toggle("cc-native-view", Boolean(route));
+    const pathParts = location.pathname.split("/").filter(Boolean);
+    const routeIndex = pathParts.indexOf(route);
+    document.body.dataset.ccFormType = routeIndex >= 0 && pathParts[routeIndex + 1] ? route : "";
+    if (route !== "item") delete document.body.dataset.ccTechnical;
     if (route) document.title = `${nativeLabels[route]} · Centro Change`;
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", render, {once: true});

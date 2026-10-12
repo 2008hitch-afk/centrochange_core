@@ -151,7 +151,7 @@ web_include_css = ["/assets/centrochange_core/vendor/tabler-core-1.6.1/tabler.mi
 # Desk presentation is loaded through Frappe's supported asset hooks. These
 # assets never grant access; native DocPerm and CC server guards remain decisive.
 app_include_js = ["/assets/centrochange_core/js/cc_desk_client.js"]
-app_include_css = ["/assets/centrochange_core/css/cc_desk_client.css"]
+app_include_css = ["/assets/centrochange_core/css/cc_desk_client.css", "/assets/centrochange_core/css/cc_premium_nexus.css"]
 # Native List/Form extensions keep the upstream lifecycle and permissions.
 doctype_list_js = {
     "Patient": "public/js/cc_patient_list.js",
@@ -161,10 +161,20 @@ doctype_list_js = {
     "Sales Invoice": "public/js/cc_catalog_finance_list.js",
     "Purchase Invoice": "public/js/cc_catalog_finance_list.js",
     "Bank Transaction": "public/js/cc_catalog_finance_list.js",
+    "Payment Entry": "public/js/cc_catalog_finance_list.js",
 }
 doctype_js = {
     "Patient": "public/js/cc_patient_form.js",
     "Healthcare Practitioner": "public/js/cc_practitioner_form.js",
+    "Item": "public/js/cc_item_form.js",
+    "Item Price": "public/js/cc_item_price_form.js",
+    "Appointment Type": "public/js/cc_operational_form.js",
+    "CC Center Service": "public/js/cc_operational_form.js",
+    "CC Package Template": "public/js/cc_operational_form.js",
+    "Sales Invoice": "public/js/cc_finance_form.js",
+    "Purchase Invoice": "public/js/cc_finance_form.js",
+    "Payment Entry": "public/js/cc_finance_form.js",
+    "Bank Transaction": "public/js/cc_finance_form.js",
 }
 # Append presentation after the original request guards; never replace security hooks.
 before_request.append("centrochange_core.operations.website_brand.client_language")

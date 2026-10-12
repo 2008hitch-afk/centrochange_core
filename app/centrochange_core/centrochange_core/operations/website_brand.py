@@ -5,6 +5,15 @@ import frappe
 def context(values):
     values.update(app_name='Centro Change', brand_html='Centro Change', footer_powered='Centro Change',
                   base_template_path='templates/cc_web_base.html')
+    # Frappe 16.50 renders this image in desk.html before app_include_js runs,
+    # and in login.js immediately after successful authentication. A client
+    # CSS or post-render DOM fix cannot prevent the upstream splash flash.
+    roles = set(frappe.get_roles(frappe.session.user)) if frappe.session.user != 'Guest' else set()
+    if getattr(frappe.local, 'path', None) == 'login' or roles.intersection(
+        {'CC Manager', 'CC Secretariat', 'CC Professional', 'CC Finance', 'CC Accountant'}
+    ):
+        values.splash_image = '/assets/centrochange_core/images/centrochange-wordmark.svg'
+        values.favicon = '/assets/centrochange_core/images/centrochange-wordmark.svg'
     if frappe.session.user != 'Guest':
         from frappe.sessions import get_csrf_token
         values.csrf_token = get_csrf_token()

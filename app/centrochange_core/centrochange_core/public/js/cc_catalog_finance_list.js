@@ -37,4 +37,5 @@
     bank_account:bank,
     description:value=>String(value??"").replace(/^SYNTHETIC UAT\s+/i,"")
   });
+  apply("Payment Entry","Incassi e pagamenti",{party:demo});
 })();

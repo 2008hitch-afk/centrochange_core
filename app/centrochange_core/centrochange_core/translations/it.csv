@@ -69,6 +69,27 @@ Item Price,Tariffa
 Purchase Invoice,Fattura professionista
 Payment Entry,Incasso o pagamento
 Bank Transaction,Movimento bancario
+Item,Servizio
+Include Payment (POS),Includi pagamento POS
+Is Return (Credit Note),Nota di credito
+Is Rate Adjustment Entry (Debit Note),Nota di debito
+Edit Posting Date and Time,Modifica data e ora contabile
+Consider for Tax Withholding,Applica ritenuta
+Currency and Price List,Valuta e listino
+Update Stock,Aggiorna magazzino
+Packing Unit,Unità confezione
+Quantity that must be bought or sold per UOM,Quantità per unità di misura
+Batch No,Numero lotto
+Buy,Acquisto
+Sell,Vendita
+Lead Time in days,Tempi di approvvigionamento (giorni)
+Employee and User Details,Collegamenti professionali
+Practitioner Type,Tipo professionista
+Hospital,Struttura
+Medical Codes,Codifiche mediche
+Appointments,Sedute
+Centro Change First Meeting,Primo incontro Centro Change
+Centro Change Service Item,Servizio Centro Change
 CC Audit Event,Registro modifiche
 Dashboard,Riepilogo
 Address & Contact,Indirizzo e contatti
@@ -137,3 +158,29 @@ Last Edited By,Ultima modifica di
 Female,Femminile
 Male,Maschile
 Other,Altro
+Pricing,Tariffe
+Connections,Collegamenti
+Accounting,Contabilità
+Purchasing,Acquisti
+Quality,Qualità
+Sales,Vendite
+Tax,Imposte
+Inventory,Magazzino
+Variants,Varianti
+Manufacturing,Produzione
+Appointment Type,Tipo di seduta
+Appointment Types,Tipi di seduta
+Allow Booking For,Prenotabile per
+Default Duration (In Minutes),Durata predefinita (minuti)
+Practitioner,Professionista
+Service Unit,Unità operativa
+Department,Reparto
+Color,Colore
+Description,Descrizione
+Item Attributes,Informazioni principali
+Stock UOM,Unità di misura predefinita
+Available for Sale,Disponibile per la vendita
+Sales Invoice,Fattura paziente
+Purchase Invoice,Fattura professionista
+Payment Entry,Incasso o pagamento
+Bank Transaction,Movimento bancario
