@@ -45,11 +45,26 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     const target=section.querySelector('.cc-desk-home-summary');
     if(!target)return;
     try{
-      const response=await fetch('/api/method/centrochange_core.operations.workspace.bootstrap',{credentials:'same-origin'});
-      if(!response.ok)throw new Error('Dati non disponibili');
-      const data=(await response.json()).message;
+      const request=async(method,params={})=>{
+        const url=new URL('/api/method/centrochange_core.operations.workspace.'+method,location.origin);
+        Object.entries(params).forEach(([key,value])=>url.searchParams.set(key,value));
+        const response=await fetch(url,{credentials:'same-origin'});
+        if(!response.ok)throw new Error('Dati non disponibili');
+        return (await response.json()).message;
+      };
+      const initial=await request('bootstrap');
+      const centers=initial.centers||[];
+      const today=new Date(),end=new Date(today);
+      end.setDate(today.getDate()+6);
+      const iso=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+      const data=await Promise.all(centers.map(center=>Promise.all([
+        center.name===initial.center?initial:request('bootstrap',{center:center.name}),
+        request('agenda',{center:center.name,start:iso(today),end:iso(end)})
+      ])));
       if(!section.isConnected)return;
-      const values=[['Pazienti visibili',data.patients.length],['Professionisti disponibili',data.practitioners.length],['Servizi attivi',data.services.length]];
+      const patients=new Set(data.flatMap(([boot])=>boot.patients.map(row=>row.name)));
+      const appointments=data.reduce((count,[,agenda])=>count+agenda.appointments.length,0);
+      const values=[['Centri accessibili',centers.length],['Pazienti visibili',patients.size],['Sedute nei prossimi 7 giorni',appointments]];
       target.innerHTML=values.map(([label,value])=>`<div><strong>${value}</strong><span>${label}</span></div>`).join('');
     }catch(_){if(section.isConnected)target.textContent='Consulta Agenda e Pazienti per i dati aggiornati.';}
   }
