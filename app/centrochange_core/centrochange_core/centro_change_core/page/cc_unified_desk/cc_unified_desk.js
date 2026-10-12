@@ -9,15 +9,16 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     agenda:{path:'/centrochange',script:'workspace.js',css:['workspace.css']},
     finance:{path:'/finanza',script:'finance_workspace.js',css:['workspace.css']},
     professional:{path:'/professionista',script:'professional_view.js',css:['workspace.css','professional_view.css']},
-    patient:{path:'/pazienti_report',script:'patient_report.js',css:['workspace.css','professional_view.css','patient_report.css']}
+    patient:{path:'/pazienti_report',script:'patient_report.js',css:['workspace.css','professional_view.css','patient_report.css']},
+    audit:{path:'/registro_modifiche',script:'audit_view.js',css:['workspace.css']}
   };
   const routeByPath=Object.fromEntries(Object.entries(surfaces).map(([name,s])=>[s.path,name]));
   const roles=new Set(frappe.user_roles||[]);
   const canOperate=['CC Manager','CC Secretariat','CC Professional'].some(x=>roles.has(x));
   const canFinance=['CC Manager','CC Secretariat','CC Finance','CC Accountant'].some(x=>roles.has(x));
   const canManage=roles.has('CC Manager');
-  const allowed={home:true,agenda:canOperate,finance:canFinance,professional:canFinance,patient:canFinance};
-  const items=[['home','Inizio'],['agenda','Agenda'],['finance','Finanza'],['professional','Report professionisti'],['patient','Report economico pazienti']];
+  const allowed={home:true,agenda:canOperate,finance:canFinance,professional:canFinance,patient:canFinance,audit:canManage};
+  const items=[['home','Inizio'],['agenda','Agenda'],['finance','Finanza'],['professional','Report professionisti'],['patient','Report economico pazienti'],['audit','Registro modifiche']];
   const homeByRole=canManage?{
     heading:'Panoramica del Centro',intro:'Le attività quotidiane e i dati economici aggiornati sono nelle rispettive sezioni.',
     links:[{view:'agenda',label:'Apri Agenda',description:'Sedute e prenotazioni'}, {view:'finance',label:'Apri Finanza',description:'Contabilità e posizioni'}, {view:'professional',label:'Report professionisti',description:'Sedute e compensi per periodo'}]

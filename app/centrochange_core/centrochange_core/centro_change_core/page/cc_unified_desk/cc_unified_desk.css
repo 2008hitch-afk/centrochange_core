@@ -53,4 +53,13 @@
 .cc-client .cc-desk-surface.professional-page #professional-filters,.cc-client .cc-desk-surface.professional-page #patient-filters{display:flex;flex-wrap:wrap;gap:.75rem;align-items:end;margin-bottom:1rem;padding:.8rem;background:#f6faf9;border:1px solid #d7e7e3;border-radius:var(--tblr-border-radius,.4rem)}
 .cc-client .cc-desk-surface.professional-page #professional-filters label,.cc-client .cc-desk-surface.professional-page #patient-filters label{min-width:8rem}
 .cc-client .cc-desk-surface.professional-page #professional-filters button,.cc-client .cc-desk-surface.professional-page #patient-filters button{background:#12665f;color:#fff;border-color:#12665f}
+.cc-client .cc-desk-surface.audit-page #cc-main>nav{display:none}
+.cc-client .cc-desk-surface.audit-page #cc-main{padding:1.25rem clamp(1rem,2vw,1.75rem)}
+.cc-client .cc-desk-surface.audit-page #cc-main>h1{font-size:1.5rem;margin:0 0 .3rem}
+.cc-client .cc-desk-surface.audit-page #cc-main>p{color:#536d69;font-size:.85rem}
+.cc-client .cc-desk-surface.audit-page #audit-filters{display:flex;flex-wrap:wrap;gap:.7rem;align-items:end;margin:1rem 0;padding:.75rem;background:#fff;border:1px solid #d7e7e3;border-radius:.5rem}
+.cc-client .cc-desk-surface.audit-page #audit-filters label{min-width:9rem;flex:1 1 10rem}
+.cc-client .cc-desk-surface.audit-page #audit-filters button{background:#12665f;color:#fff;border-color:#12665f}
+.cc-client .cc-desk-surface.audit-page #audit-content{padding:1rem;background:#fff;border:1px solid #d7e7e3;border-radius:.5rem}
+.cc-client .cc-desk-surface.audit-page #audit-content table td{vertical-align:top}
 @media(max-width:700px){.cc-client .cc-desk-surface .page-body{padding:.75rem}.cc-client .cc-desk-surface .primary-region,.cc-client .cc-desk-surface .detail{padding:.75rem}.cc-client .cc-desk-surface.professional-page .page-body{margin:.65rem;padding:.75rem}.cc-client .cc-desk-surface .workspace{display:block}.cc-client .cc-desk-surface .detail{margin-top:.75rem}.cc-client .cc-desk-surface .action-buttons button{flex:1 1 auto}}

@@ -57,7 +57,7 @@
         ["Tipi di seduta", "/app/appointment-type", "calendar-week", manager],
         ["Servizi del centro", "/app/cc-center-service", "list-check", manager],
         ["Modelli pacchetto", "/app/cc-package-template", "list-check", manager],
-        ["Registro modifiche", "/app/cc-audit-event", "history", manager]
+        ["Registro modifiche", desk("audit"), "history", manager]
       ]}
     ].map(group => ({...group, links: group.links.filter(([, , , visible]) => visible)}))
       .filter(group => group.links.length && !(professional && ["Amministrazione", "Report", "Gestione"].includes(group.title)));

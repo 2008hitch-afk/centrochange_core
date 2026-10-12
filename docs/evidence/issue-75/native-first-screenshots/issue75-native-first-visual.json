@@ -1,0 +1,599 @@
+{
+  "results": [
+    {
+      "name": "home",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=home",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 788,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": null,
+      "rows": 0,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    },
+    {
+      "name": "agenda",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=agenda",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 926,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": null,
+      "rows": 0,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    },
+    {
+      "name": "ricerca-pazienti",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 1225.78125,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": null,
+      "rows": 0,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    },
+    {
+      "name": "pazienti",
+      "url": "http://centrochange.local:8080/desk/healthcare/patient",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 888.5,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 276,
+        "y": 84,
+        "w": 1126,
+        "h": 63.375,
+        "display": "flex",
+        "background": "rgb(246, 250, 249)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": {
+        "x": 312,
+        "y": 256.5,
+        "w": 1054,
+        "h": 44,
+        "display": "flex",
+        "background": "rgb(234, 243, 241)",
+        "border": "rgb(215, 231, 227)"
+      },
+      "rows": 8,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    },
+    {
+      "name": "professionisti",
+      "url": "http://centrochange.local:8080/desk/healthcare/healthcare-practitioner",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 888.5,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 276,
+        "y": 84,
+        "w": 1126,
+        "h": 63.375,
+        "display": "flex",
+        "background": "rgb(246, 250, 249)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": {
+        "x": 312,
+        "y": 256.5,
+        "w": 1054,
+        "h": 44,
+        "display": "flex",
+        "background": "rgb(234, 243, 241)",
+        "border": "rgb(215, 231, 227)"
+      },
+      "rows": 2,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    },
+    {
+      "name": "catalogo",
+      "url": "http://centrochange.local:8080/desk/stock/item?disabled=0",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 888.5,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 276,
+        "y": 84,
+        "w": 1126,
+        "h": 63.375,
+        "display": "flex",
+        "background": "rgb(246, 250, 249)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": {
+        "x": 312,
+        "y": 256.5,
+        "w": 1054,
+        "h": 44,
+        "display": "flex",
+        "background": "rgb(234, 243, 241)",
+        "border": "rgb(215, 231, 227)"
+      },
+      "rows": 1,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    },
+    {
+      "name": "finanza",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=finance",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 1229.765625,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": null,
+      "rows": 0,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    },
+    {
+      "name": "report",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=professional",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 1308.671875,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": null,
+      "rows": 0,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    },
+    {
+      "name": "registro",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=audit",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 11230.5,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": null,
+      "rows": 0,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    },
+    {
+      "name": "home-ritorno",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=home",
+      "sidebar": {
+        "x": 0,
+        "y": 0,
+        "w": 248,
+        "h": 900,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nav": {
+        "x": 248,
+        "y": 0,
+        "w": 1182,
+        "h": 64,
+        "display": "flex",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "main": {
+        "x": 0,
+        "y": 0,
+        "w": 1440,
+        "h": 900,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "body": {
+        "x": 248,
+        "y": 64,
+        "w": 1182,
+        "h": 788,
+        "display": "block",
+        "background": "rgba(0, 0, 0, 0)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "nativeSidebar": 0,
+      "dock": 0,
+      "oldBar": 0,
+      "pageHead": {
+        "x": 0,
+        "y": 0,
+        "w": 0,
+        "h": 0,
+        "display": "none",
+        "background": "rgb(255, 255, 255)",
+        "border": "rgb(82, 82, 82)"
+      },
+      "listHead": null,
+      "rows": 0,
+      "overflow": 0,
+      "tabler": false,
+      "brand": 0
+    }
+  ],
+  "errors": []
+}

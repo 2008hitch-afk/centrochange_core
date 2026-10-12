@@ -28,6 +28,10 @@ def main():
         finance_status, _ = get('centrochange_core.finance.patient_reporting.patient_view', center=center, start='2026-09-28', end='2026-10-31')
         invoice_status, _ = request(opener, base + '/api/resource/Sales%20Invoice/' + urllib.parse.quote(demo['invoices']['Theta insoluto scaduto']))
         audit_status, _ = get('centrochange_core.security.audit_view.events', start='2026-10-06', end='2026-10-07')
+        if role == 'm':
+            department_status, _ = get('frappe.desk.search.search_link', txt='', doctype='Medical Department',
+                                       reference_doctype='Healthcare Practitioner', ignore_user_permissions=1)
+            assert department_status == 403, department_status
         if role in expected_patients:
             assert operational_status == 200
             count = len(json.loads(operational_body)['message']['patients'])
@@ -50,7 +54,8 @@ def main():
         if own:
             assert history(own) == 200
         assert history(other) == 403
-    print(json.dumps({'status': 'PASS', 'roles': results, 'assignment_direct_http': 'PASS', 'mutations': 'NONE'}))
+    print(json.dumps({'status': 'PASS', 'roles': results, 'assignment_direct_http': 'PASS',
+                      'medical_department_direct_denied': 403, 'mutations': 'NONE'}))
 
 
 if __name__ == '__main__':

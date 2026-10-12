@@ -156,8 +156,14 @@ app_include_css = ["/assets/centrochange_core/css/cc_desk_client.css"]
 doctype_list_js = {
     "Patient": "public/js/cc_patient_list.js",
     "Healthcare Practitioner": "public/js/cc_practitioner_list.js",
+    "Item": "public/js/cc_catalog_finance_list.js",
+    "Item Price": "public/js/cc_catalog_finance_list.js",
+    "Sales Invoice": "public/js/cc_catalog_finance_list.js",
+    "Purchase Invoice": "public/js/cc_catalog_finance_list.js",
+    "Bank Transaction": "public/js/cc_catalog_finance_list.js",
 }
 doctype_js = {
+    "Patient": "public/js/cc_patient_form.js",
     "Healthcare Practitioner": "public/js/cc_practitioner_form.js",
 }
 # Append presentation after the original request guards; never replace security hooks.

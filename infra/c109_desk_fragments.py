@@ -19,6 +19,7 @@ PAGES = {
     "finance": "finanza",
     "professional": "professionista",
     "patient": "pazienti_report",
+    "audit": "registro_modifiche",
 }
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 

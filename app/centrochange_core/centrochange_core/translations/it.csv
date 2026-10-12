@@ -118,3 +118,22 @@ Modified,Modificato
 Owner,Creato da
 Customer,Soggetto fiscale
 Supplier,Fornitore
+Paid,Pagata
+Unpaid,Da pagare
+Price List,Listino
+Item Type,Tipo servizio
+Brand,Marchio
+Reference,Riferimento
+Filters {0},Filtri {0}
+Apply Filters,Applica filtri
+Clear Filters,Cancella filtri
+Select Filters,Seleziona filtri
+Consultations,Sedute
+Basic Details,Dati principali
+This is based on transactions against this Healthcare Practitioner.,Attività registrate per questo professionista.
+Assign,Assegna
+Tag,Etichette
+Last Edited By,Ultima modifica di
+Female,Femminile
+Male,Maschile
+Other,Altro
