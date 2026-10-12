@@ -1,0 +1,28 @@
+body.cc-client-desk{--cc-desk-accent:#12665f;--cc-desk-border:#d7e7e3}
+body.cc-client-desk #cc-desk-global-nav{position:sticky;top:0;z-index:1100;display:flex;align-items:center;gap:18px;min-height:48px;padding:5px clamp(12px,2vw,28px);background:#fff;border-bottom:1px solid var(--cc-desk-border);box-shadow:0 2px 10px #102b380a}
+body.cc-client-desk .cc-desk-brand{flex:none;color:#173d3a;font-size:1rem;font-weight:750;text-decoration:none;white-space:nowrap}
+body.cc-client-desk .cc-desk-global-links{display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:thin;min-width:0}
+body.cc-client-desk .cc-desk-global-links a{display:inline-flex;align-items:center;min-height:34px;padding:6px 10px;border-radius:7px;color:#365555;text-decoration:none;white-space:nowrap;font-size:.87rem}
+body.cc-client-desk .cc-desk-global-links a:hover,body.cc-client-desk .cc-desk-global-links a[aria-current=page]{background:#e2f5f2;color:var(--cc-desk-accent)}
+body.cc-client-desk #cc-desk-global-nav a:focus-visible{outline:2px solid var(--cc-desk-accent);outline-offset:2px}
+body.cc-client-desk{--primary:var(--cc-desk-accent);--primary-color:var(--cc-desk-accent);--font-stack:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+/* Frappe v16 renders its module switcher as a sibling of .main-section.
+   Client navigation lives inside .main-section; native List/Form and actions
+   remain untouched. Administrator retains the complete technical Desk. */
+body.cc-client-desk>.body-sidebar-container{display:none!important}
+body.cc-client-desk>.main-section{flex:1 1 auto!important;width:100%;min-width:0}
+body.cc-client-desk .page-container{min-width:0}
+body.cc-client-desk .page-head{border-bottom-color:var(--cc-desk-border)}
+body.cc-client-desk .page-head .title-text{color:#173d3a}
+body.cc-client-desk .btn-primary{background:var(--cc-desk-accent);border-color:var(--cc-desk-accent)}
+body.cc-client-desk .btn-primary:focus-visible{outline:2px solid var(--cc-desk-accent);outline-offset:2px}
+body.cc-client-desk .cc-desk-context{margin-left:auto;padding-left:12px;border-left:1px solid var(--cc-desk-border);font-size:.84rem;color:#56716e;white-space:nowrap}
+body.cc-client-desk #cc-desk-global-nav a[href='/api/method/logout']{margin-left:auto}
+/* The native List/Form content remains intact. Only non-client Desk chrome is
+   removed from the ordinary client view; this is not an authorization guard. */
+body.cc-client-desk .navbar-brand,body.cc-client-desk .dropdown-help,body.cc-client-desk .app-switcher{display:none!important}
+/* Native accounting metadata remains on the canonical document and in HITCH
+   technical Desk. It is secondary implementation detail for client roles. */
+body.cc-client-desk .frappe-control[data-fieldname="cc_request_hash"],
+body.cc-client-desk .frappe-control[data-fieldname="cc_request_key"]{display:none!important}
+@media(max-width:700px){body.cc-client-desk #cc-desk-global-nav{display:block;padding:6px 10px}body.cc-client-desk .cc-desk-brand{display:block;margin-bottom:2px}body.cc-client-desk .cc-desk-global-links a{font-size:.82rem}body.cc-client-desk .cc-desk-context{display:block;margin:4px 0 0;padding:0;border:0}body.cc-client-desk .page-head{padding-inline:12px}}

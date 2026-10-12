@@ -1,0 +1,16 @@
+{
+  "doctype": "Sidebar",
+  "name": "Centro Change",
+  "title": "Centro Change",
+  "module": "Centro Change Core",
+  "standard": 1,
+  "items": [
+    {
+      "type": "Link",
+      "label": "Centro Change",
+      "link_type": "Page",
+      "link_to": "cc-unified-desk",
+      "icon": "calendar"
+    }
+  ]
+}

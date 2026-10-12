@@ -137,7 +137,7 @@ def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None
 	for label, role in identities:
 		name = tag.lower() + '-' + label + '@example.invalid'
 		frappe.get_doc({'doctype':'User','email':name,'first_name':tag+' '+label,
-			'enabled':1,'send_welcome_email':0,'roles':[{'role':role}]}).insert(ignore_permissions=True)
+			'enabled':1,'language':'it','send_welcome_email':0,'roles':[{'role':role}]}).insert(ignore_permissions=True)
 		password = frappe.generate_hash(length=32)
 		update_password(name,password)
 		result['users'][label]={'name':name,'password':password}

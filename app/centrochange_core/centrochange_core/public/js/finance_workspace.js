@@ -3,7 +3,7 @@ import {accountLabel,documentState,italianDate} from './accounting_labels.js';
 import {api,escapeHtml as esc,requestKey} from './api.js';
 import {enhanceSelectors} from './search_select.js';
 import {clean,person,userLabel} from './report_ui.js';
-const $=s=>document.querySelector(s),finance=(method,args={},post=false)=>api('centrochange_core.finance.'+method,args,post);
+const ccSurface=window.ccDeskSurfaceRoot||document,$=s=>ccSurface.querySelector(s),finance=(method,args={},post=false)=>api('centrochange_core.finance.'+method,args,post);
 const state={boot:null,view:'Riepilogo',rows:[],selected:null,renderGeneration:0,detailGeneration:0};
 const views=['Riepilogo','Fatture pazienti','XML ricevuti','Fatture fornitori','Banca','Professionisti','Coda amministrativa','SdI','TS'];
 const money=v=>v===null||v===undefined?'Da definire':new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(v);
@@ -20,8 +20,8 @@ const display=value=>displayLabels[value]??value;
 function expectationLabel(row){const practitioner=state.boot.practitioners.find(p=>p.name===row.practitioner);const appointment=clean(row.appointment_label||row.appointment).replace(/CC-HTTP-[A-Za-z0-9]+\s+/g,'').replace(/^(\d{4})-(\d{2})-(\d{2})/,'$3/$2/$1');return appointment+' · '+person(practitioner?.practitioner_name||row.practitioner)+' · '+(row.amount_known?money(row.amount):'Importo da verificare')+' · '+display(row.state);}
 function modal(title,fields,action){$('#modal-title').textContent=title;$('#modal-fields').innerHTML=fields;$('#modal-error').textContent='';$('#modal-submit').hidden=!action;$('#modal-submit').disabled=false;$('#modal-form').onsubmit=async e=>{e.preventDefault();if(!action)return;$('#modal-submit').disabled=true;try{await action(Object.fromEntries(new FormData(e.currentTarget)));$('#modal').close();await refresh();notice('Operazione registrata.');}catch(error){$('#modal-error').textContent=error.message;}finally{$('#modal-submit').disabled=false;}};enhanceDates($('#modal-fields'));enhanceSelectors($('#modal-fields'));$('#modal').showModal();}
 $('#modal-dismiss').onclick=()=>$('#modal').close();
-$('#logout').onclick=async()=>{await api('logout',{},true);location.href='/login?redirect-to=/finanza';};
-$('#navigation').innerHTML='<a class="nav-button" href="/centrochange">Agenda</a>'+views.map(v=>`<button class="nav-button" data-view="${esc(v)}">${esc(v)}</button>`).join('');
+$('#logout').onclick=async()=>{await api('logout',{},true);location.href='/login?redirect-to='+(window.ccDeskNavigate?'/app/cc-unified-desk':'/finanza');};
+if(window.ccDeskNavigate)$('#navigation').insertAdjacentHTML('beforeend',views.map(v=>`<button class="nav-button" data-view="${esc(v)}">${esc(v)}</button>`).join(''));else $('#navigation').innerHTML='<a class="nav-button" href="/centrochange">Agenda</a>'+views.map(v=>`<button class="nav-button" data-view="${esc(v)}">${esc(v)}</button>`).join('');
 $('#navigation').onclick=e=>{const b=e.target.closest('[data-view]');if(!b)return;state.view=b.dataset.view;refresh().catch(e=>notice(e.message,true));};
 $('#filters').onsubmit=e=>{e.preventDefault();refresh().catch(e=>notice(e.message,true));};
 $('#center').onchange=async()=>{const center=$('#center').value;try{const boot=await finance('reporting.bootstrap',{center});if(center!==$('#center').value)return;state.boot=boot;await refresh();}catch(e){if(center===$('#center').value)notice(e.message,true);}};
@@ -38,7 +38,7 @@ function showRows(rows,columns,choose){state.rows=rows;$('#finance-content').inn
 async function refresh(){
  const generation=++state.renderGeneration,view=state.view,center=$('#center').value;++state.detailGeneration;
  const current=()=>generation===state.renderGeneration&&view===state.view&&center===$('#center').value;
- $('#page-title').textContent=state.view;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));$('#detail').hidden=true;$('.workspace').style.gridTemplateColumns='1fr';$('#finance-content').onclick=null;
+ $('#page-title').textContent=state.view;ccSurface.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));$('#detail').hidden=true;$('.workspace').style.gridTemplateColumns='1fr';$('#finance-content').onclick=null;
  $('#finance-action').hidden=!state.boot?.can_write||!['Fatture pazienti','XML ricevuti','Banca','Professionisti','Coda amministrativa','SdI','TS'].includes(state.view);
  $('#finance-action').textContent=({'Fatture pazienti':'Crea fattura','XML ricevuti':'Importa XML','Banca':'Importa movimenti','Professionisti':'Registra atteso','Coda amministrativa':'Rileva condizioni','SdI':'Prepara SdI simulato','TS':'Prepara TS simulato'})[state.view]||'Nuova operazione';
  if(!state.boot?.center){$('#finance-content').innerHTML='<p class="empty">Nessun centro assegnato.</p>';return;}
@@ -139,5 +139,5 @@ $('#finance-action').onclick=async()=>{try{
   modal('Registra atteso professionista',label('Fonte seduta',select('source',sources))+label('Regola esplicita (facoltativa)',select('rule',rules,'name',false))+reason(),d=>finance('professional_economics.capture',{source:d.source,rule:d.rule||null,reason:d.reason},true));
  }
  }catch(e){notice(e.message,true);}};
-async function init(){const today=new Date().toISOString().slice(0,10);$('#start').value=today.slice(0,4)+'-01-01';$('#end').value=today;state.boot=await finance('reporting.bootstrap');if(state.boot.is_manager)$('#navigation').insertAdjacentHTML('beforeend','<a class="nav-button" href="/registro_modifiche">Registro modifiche</a>');$('#center').innerHTML=options(state.boot.centers,'name','branch');if(state.boot.center)$('#center').value=state.boot.center;await refresh();}
+async function init(){const today=new Date().toISOString().slice(0,10);$('#start').value=today.slice(0,4)+'-01-01';$('#end').value=today;state.boot=await finance('reporting.bootstrap');if(state.boot.is_manager&&!window.ccDeskNavigate)$('#navigation').insertAdjacentHTML('beforeend','<a class="nav-button" href="/registro_modifiche">Registro modifiche</a>');$('#center').innerHTML=options(state.boot.centers,'name','branch');if(state.boot.center)$('#center').value=state.boot.center;const requested=new URLSearchParams(location.search).get('cc_fin_view');if(window.ccDeskNavigate&&views.includes(requested))state.view=requested;await refresh();}
 init().catch(e=>notice(e.message,true));

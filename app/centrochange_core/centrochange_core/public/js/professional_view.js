@@ -3,7 +3,7 @@ import {italianDate} from './accounting_labels.js';
 import {readable} from './report_ui.js';
 import {api,escapeHtml as esc} from './api.js';
 import {enhanceSelect} from './search_select.js';
-const $=s=>document.querySelector(s),params=new URLSearchParams(location.search);let generation=0,bootGeneration=0,boot;
+const ccSurface=window.ccDeskSurfaceRoot||document,$=s=>ccSurface.querySelector(s),params=new URLSearchParams(location.search);let generation=0,bootGeneration=0,boot;
 const labels={performed:'Svolta',cancelled:'Cancellata',future:'Prenotata / futura',pending:'Da chiudere',closed_not_performed:'Chiusa non svolta',OK:'Maturato',SUSPENDED:'Sospeso',REVIEW:'Da verificare'};
 function args(){return {center:$('#professional-center').value,practitioner:$('#professional-person').value,start:$('#professional-start').value,end:$('#professional-end').value};}
 async function refresh(){const id=++generation,a=args();$('#professional-error').textContent='';$('#professional-content').innerHTML='<p>Caricamento…</p>';$('#professional-period').textContent='';if(!a.practitioner){$('#professional-content').textContent='Nessun professionista autorizzato nel centro.';return;}try{const data=await api('centrochange_core.finance.reporting.professional_view',a);if(id!==generation)return;$('#professional-period').textContent=person(data.practitioner_name)+' · '+new Date(data.start+'T12:00:00').toLocaleDateString('it-IT')+' – '+new Date(data.end+'T12:00:00').toLocaleDateString('it-IT');

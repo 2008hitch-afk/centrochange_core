@@ -1,6 +1,6 @@
 import {api,escapeHtml as esc} from './api.js';
 import {clean,money,preset,table,metric} from './report_ui.js';
-const $=s=>document.querySelector(s),params=new URLSearchParams(location.search),method='centrochange_core.finance.patient_reporting.patient_view';
+const ccSurface=window.ccDeskSurfaceRoot||document,$=s=>ccSurface.querySelector(s),params=new URLSearchParams(location.search),method='centrochange_core.finance.patient_reporting.patient_view';
 let lastListing=null;
 let generation=0,bootGeneration=0,selected=params.get('key'),patient=params.get('patient');
 const date=v=>v?new Date(v+'T12:00:00').toLocaleDateString('it-IT'):'—';

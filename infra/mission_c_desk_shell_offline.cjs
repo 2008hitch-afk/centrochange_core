@@ -1,0 +1,76 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const source = fs.readFileSync(path.join(__dirname, '../app/centrochange_core/centrochange_core/public/js/cc_desk_client.js'), 'utf8');
+const css = fs.readFileSync(path.join(__dirname, '../app/centrochange_core/centrochange_core/public/css/cc_desk_client.css'), 'utf8');
+assert(css.includes('body.cc-client-desk>.body-sidebar-container{display:none!important}'));
+assert(css.includes('body.cc-client-desk>.main-section{flex:1 1 auto!important;width:100%;min-width:0}'));
+assert(!css.includes('body>.body-sidebar-container{display:none'));
+
+function check(user, roles, expected, absent, route = '/app/cc-unified-desk?cc_view=home') {
+  const registry = new Map();
+  class Element {
+    constructor(tag) { this.tagName = tag; this.children = []; this.attributes = {}; this.className = ''; this.textContent = ''; }
+    append(...nodes) { this.children.push(...nodes); for (const node of nodes) if (node.id) registry.set(node.id, node); }
+    prepend(node) { this.children.unshift(node); if (node.id) registry.set(node.id, node); }
+    replaceChildren(...nodes) { this.children = nodes; }
+    setAttribute(name, value) { this.attributes[name] = value; }
+    remove() { if (this.id) registry.delete(this.id); }
+  }
+  const classes = new Set();
+  const mainSection = new Element('main');
+  const nativeHeading = new Element('span');
+  const patientForm = route.startsWith('/app/patient/');
+  nativeHeading.textContent = patientForm ? 'CC-HTTP-UAT0000001 Gamma' : route.includes('/patient') ? 'Patient' : 'Item';
+  const nativeField = new Element('span');
+  nativeField.textContent = route.includes('/patient') ? 'Middle Name (optional)' : 'Posting Date';
+  const nativeSection = new Element('span');
+  nativeSection.textContent = route.includes('/patient') ? 'Patient Demographics' : 'Customer Details';
+  const document = {
+    readyState: 'complete',
+    body: new Element('body'),
+    createElement: tag => new Element(tag),
+    getElementById: id => registry.get(id),
+    querySelector: selector => selector === 'body > .main-section' ? mainSection : null,
+    querySelectorAll: selector => selector.includes('page-head') ? [nativeHeading] : [nativeField, nativeSection],
+    addEventListener: () => {},
+    title: '',
+  };
+  document.body.classList = {add: value => classes.add(value), remove: value => classes.delete(value)};
+  const [pathname, search = ''] = route.split('?');
+  const cur_frm = patientForm ? {doctype:'Patient',doc:{name:'CC-HTTP-UAT0000001 Gamma',patient_name:'CC-HTTP-UAT0000001 Gamma'}} : undefined;
+  vm.runInNewContext(source, {window: {frappe: {session: {user}, user_roles: roles},cur_frm}, document, location: {pathname, search: search ? '?' + search : ''}, MutationObserver: class { observe() {} }, requestAnimationFrame: () => {}});
+  const nav = registry.get('cc-desk-global-nav');
+  if (expected === null) {
+    assert.equal(nav, undefined);
+    assert(!classes.has('cc-client-desk'));
+    return;
+  }
+  assert(nav && classes.has('cc-client-desk'));
+  assert.equal(mainSection.children[0], nav);
+  assert.equal(document.body.children.length, 0);
+  const links = nav.children[1].children.map(node => node.textContent);
+  for (const label of expected) assert(links.includes(label), `${user}: missing ${label}`);
+  for (const label of absent) assert(!links.includes(label), `${user}: unexpected ${label}`);
+  assert(!links.some(label => /Builder|Frappe|ERPNext|Sviluppatore/i.test(label)));
+  if (route.includes('/patient')) {
+    assert.equal(nativeHeading.textContent, patientForm ? 'Gamma' : 'Pazienti');
+    assert.equal(nativeField.textContent, 'Secondo nome (facoltativo)');
+    assert.equal(nativeSection.textContent, 'Dati del paziente');
+    assert.equal(document.title, `${patientForm ? 'Gamma' : 'Pazienti'} · Centro Change`);
+    assert.equal(nav.children.at(-1).textContent, 'Pazienti');
+  }
+}
+
+check('manager@example.invalid', ['CC Manager'], ['Inizio', 'Agenda', 'Pazienti', 'Professionisti', 'Finanza', 'Report', 'Catalogo', 'Registro modifiche'], []);
+check('secretary@example.invalid', ['CC Secretariat'], ['Agenda', 'Pazienti', 'Disponibilità', 'Finanza'], ['Catalogo', 'Registro modifiche']);
+check('finance@example.invalid', ['CC Finance'], ['Finanza', 'Report'], ['Agenda', 'Catalogo', 'Pazienti']);
+check('accountant@example.invalid', ['CC Accountant'], ['Finanza', 'Report'], ['Agenda', 'Catalogo']);
+check('professional@example.invalid', ['CC Professional'], ['Agenda', 'Pazienti', 'Disponibilità'], ['Finanza', 'Report', 'Catalogo']);
+check('manager@example.invalid', ['CC Manager'], ['Pazienti', 'Esci'], [], '/desk/healthcare/patient');
+check('manager@example.invalid', ['CC Manager'], ['Pazienti', 'Esci'], [], '/app/patient/CC-HTTP-UAT0000001%20Gamma');
+check('Administrator', ['System Manager', 'CC Manager'], null, []);
+check('guest', [], null, []);
+console.log('C109 Desk shell offline role/menu checks: PASS (7 profiles)');

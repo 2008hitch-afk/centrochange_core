@@ -40,3 +40,47 @@ Sign Up,Registrazione
 Signup Disabled,Registrazione non disponibile
 Home,Pagina iniziale
 Invalid login credentials,Credenziali non valide
+Patient,Paziente
+Add Patient,Aggiungi paziente
+Patient Demographics,Dati del paziente
+Medical History,Storia clinica
+Middle Name (optional),Secondo nome (facoltativo)
+Date of birth,Data di nascita
+Identification Number (UID),Identificativo
+Report Preference,Preferenza referto
+Customer Details,Dati del soggetto fiscale
+Invite as User,Invita come utente
+Payments,Pagamenti
+Terms,Condizioni
+More Info,Altre informazioni
+Posting Time,Ora di registrazione
+DEV Fiscal Profile,Profilo fiscale di prova
+Request Fingerprint,Impronta della richiesta
+Idempotency Key,Chiave della richiesta
+Centro Change Center,Centro
+Company Tax ID,Partita IVA aziendale
+Use scoped Centro Change accounting reports,Usa i report contabili autorizzati di Centro Change
+Patient Name,Nome paziente
+Healthcare Practitioner,Professionista
+Practitioner Name,Nome professionista
+Patient Appointment,Seduta
+Appointment Type,Tipo di seduta
+Item Price,Tariffa
+Purchase Invoice,Fattura professionista
+Payment Entry,Incasso o pagamento
+Bank Transaction,Movimento bancario
+CC Audit Event,Registro modifiche
+Dashboard,Riepilogo
+Address & Contact,Indirizzo e contatti
+Medical,Dati sanitari
+Save,Salva
+New,Nuovo
+Submit,Contabilizza
+Cancel,Annulla
+Draft,Bozza
+Submitted,Contabilizzato
+Cancelled,Annullato
+Required,Obbligatorio
+Mandatory,Obbligatorio
+Please fill in the mandatory fields,Compila i campi obbligatori
+You are not permitted to access this page,Non hai accesso a questa pagina
