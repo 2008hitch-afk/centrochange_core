@@ -1,0 +1,15 @@
+# Presentation-only derivative of the verified issue #124 single-stack image.
+# The local base tag is asserted against its immutable ID before build.
+FROM centrochange-single:issue124-runtime
+
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_desk_client.js apps/centrochange_core/centrochange_core/public/js/cc_desk_client.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/css/cc_desk_client.css apps/centrochange_core/centrochange_core/public/css/cc_desk_client.css
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.js apps/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.css apps/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.css
+
+RUN bench build --force && cp -a sites/assets/. assets/
+
+LABEL centrochange.issue="75" centrochange.base_issue="124"

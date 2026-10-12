@@ -1,24 +1,27 @@
-.cc-client{min-width:0;max-width:100%;--cc-native-bg:#fff}.cc-client .cc-desk-surface{min-width:0}.cc-client .app-shell{display:block!important;min-height:0}.cc-client .page-wrapper{min-width:0}.cc-client .cc-desk-topnav{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #dfe6e9;background:#fff}.cc-client .cc-desk-topnav nav{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}.cc-client .cc-desk-route{display:inline-flex;padding:7px 11px;border-radius:6px;text-decoration:none;color:#365555}.cc-client .cc-desk-route.active,.cc-client .cc-desk-route:focus-visible{background:#e2f5f2;color:#12665f}.cc-client .cc-desk-topnav #logout{padding:7px 10px;white-space:nowrap}.cc-client #cc-main{max-width:100%;min-width:0}.cc-client .calendar-shell{max-height:calc(100dvh - 210px);min-height:430px}.cc-client .cc-desk-surface .sidebar{display:none!important}.cc-client .cc-desk-surface .app-shell{grid-template-columns:minmax(0,1fr)}@media(max-width:700px){.cc-client .cc-desk-topnav{display:block}.cc-client .cc-desk-topnav nav{overflow:auto;white-space:nowrap;flex-wrap:nowrap}.cc-client .cc-desk-topnav #logout{margin-top:6px}.cc-client .calendar-shell{min-height:430px;max-height:65dvh}}
-
-.cc-client .cc-desk-routebar{display:flex;flex-wrap:wrap;gap:4px;padding:8px 14px;border-bottom:1px solid #dfe6e9;background:#fff}
-.cc-client .cc-desk-demo{padding:5px 14px;background:#e2f5f2;color:#12665f;font-size:.78rem;font-weight:600;text-align:right}
-.cc-client .cc-desk-catalog{position:relative;align-self:center}.cc-client .cc-desk-catalog summary{cursor:pointer;padding:7px 11px;color:#365555}.cc-client .cc-desk-catalog[open] summary{background:#e2f5f2}.cc-client .cc-desk-catalog>div{position:absolute;z-index:50;top:100%;left:0;min-width:210px;background:#fff;border:1px solid #dfe6e9;box-shadow:0 8px 24px #102b3825;display:grid}.cc-client .cc-desk-catalog a{display:block;padding:8px 12px;color:#365555;text-decoration:none}.cc-client .cc-desk-catalog a:focus-visible,.cc-client .cc-desk-catalog a:hover{background:#e2f5f2}
-
-.cc-client .cc-desk-home-surface{background:#f4f8f7;min-height:calc(100dvh - 160px)}
-.cc-client .cc-desk-home{max-width:1180px;margin:auto;padding:clamp(18px,3vw,40px)}
-.cc-client .cc-desk-home-heading{padding:12px 0 26px}
-.cc-client .cc-desk-eyebrow{color:#168176;font-size:.78rem;font-weight:700;letter-spacing:.11em;text-transform:uppercase}
-.cc-client .cc-desk-home-heading h1{margin:6px 0 8px;color:#173d3a;font-size:clamp(1.7rem,3vw,2.5rem);font-weight:700;line-height:1.15}
-.cc-client .cc-desk-home-heading>p:last-child{max-width:55ch;margin:0;color:#496562}
-.cc-client .cc-desk-home-group{margin-bottom:32px}
-.cc-client .cc-desk-home-group-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 16px;margin-bottom:13px}
-.cc-client .cc-desk-home-group-heading h2{margin:0;color:#173d3a;font-size:1.05rem;font-weight:700}
-.cc-client .cc-desk-home-group-heading p{margin:0;color:#617b76;font-size:.88rem}
-.cc-client .cc-desk-home-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
-.cc-client .cc-desk-home-card{position:relative;display:flex;flex-direction:column;gap:8px;min-height:110px;padding:17px 38px 17px 18px;border:1px solid #d7e7e3;border-radius:12px;background:#fff;color:#173d3a;text-decoration:none;box-shadow:0 2px 8px #102b380a;transition:border-color .15s,box-shadow .15s,transform .15s}
-.cc-client .cc-desk-home-card strong{font-size:1rem;font-weight:700}
-.cc-client .cc-desk-home-card span:not(.cc-desk-home-arrow){color:#536d69;font-size:.85rem;line-height:1.4}
-.cc-client .cc-desk-home-arrow{position:absolute;right:17px;top:13px;color:#168176;font-size:1.6rem;line-height:1}
-.cc-client .cc-desk-home-card:hover,.cc-client .cc-desk-home-card:focus-visible{border-color:#45a99c;box-shadow:0 6px 18px #102b381b;transform:translateY(-1px);color:#173d3a;text-decoration:none}
-.cc-client .cc-desk-home-card:focus-visible,.cc-client .cc-desk-route:focus-visible,.cc-client .cc-desk-catalog summary:focus-visible{outline:2px solid #12665f;outline-offset:2px}
-@media(max-width:700px){.cc-client .cc-desk-home{padding:18px 14px}.cc-client .cc-desk-home-heading{padding-bottom:22px}.cc-client .cc-desk-home-group{margin-bottom:25px}.cc-client .cc-desk-home-card{min-height:88px}}
+/* Unified Desk content uses the shared Tabler sidebar and navbar from Desk. */
+.cc-client{min-width:0;max-width:100%;--cc-native-bg:#fff}
+.cc-client .cc-desk-surface{min-width:0}
+.cc-client .app-shell{display:block!important;min-height:0}
+.cc-client .page-wrapper{min-width:0}
+.cc-client .cc-desk-topnav{display:none!important}
+.cc-client #cc-main{max-width:100%;min-width:0}
+.cc-client .cc-desk-surface.finance-page .page-body{padding:1.25rem}
+.cc-client .calendar-shell{max-height:calc(100dvh - 210px);min-height:430px}
+.cc-client .cc-desk-surface .sidebar{display:none!important}
+.cc-client .cc-desk-surface .app-shell{grid-template-columns:minmax(0,1fr)}
+.cc-client .cc-desk-home-surface{background:var(--tblr-body-bg,#f4f8f7);min-height:calc(100dvh - 160px)}
+.cc-client .cc-desk-home{max-width:70rem;margin:auto;padding:clamp(1.25rem,3vw,2.5rem)}
+.cc-client .cc-desk-home-heading{padding:.75rem 0 1.75rem}
+.cc-client .cc-desk-home-heading h1{margin:0 0 .6rem;color:#173d3a;font-size:clamp(1.7rem,2.5vw,2.2rem);font-weight:700;line-height:1.2}
+.cc-client .cc-desk-home-heading p{max-width:55ch;margin:0;color:var(--tblr-secondary-color,#496562)}
+.cc-client .cc-desk-home-group h2{margin:0 0 1rem;color:#173d3a;font-size:1.05rem;font-weight:700}
+.cc-client .cc-desk-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.cc-client .cc-desk-home-card{position:relative;display:block;min-height:7rem;border:1px solid var(--tblr-border-color,#d7e7e3);border-radius:var(--tblr-border-radius,.5rem);background:var(--tblr-bg-surface,#fff);color:#173d3a;text-decoration:none;box-shadow:var(--tblr-shadow-card,0 2px 8px #102b380a)}
+.cc-client .cc-desk-home-card .card-body{display:flex;flex-direction:column;gap:.45rem;padding:1.2rem 2.5rem 1.2rem 1.2rem}
+.cc-client .cc-desk-home-card strong{font-size:.95rem;font-weight:700}
+.cc-client .cc-desk-home-card .card-body span{color:var(--tblr-secondary-color,#536d69);font-size:.85rem;line-height:1.4}
+.cc-client .cc-desk-home-arrow{position:absolute;right:1rem;top:.8rem;color:#12665f;font-size:1.5rem;line-height:1}
+.cc-client .cc-desk-home-card:hover,.cc-client .cc-desk-home-card:focus-visible{border-color:#12665f;text-decoration:none;color:#173d3a}
+.cc-client .cc-desk-home-card:focus-visible{outline:2px solid #12665f;outline-offset:2px}
+@media(max-width:991.98px){.cc-client .cc-desk-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.cc-client .calendar-shell{min-height:430px;max-height:65dvh}.cc-client .cc-desk-home{padding:1.25rem .875rem}.cc-client .cc-desk-home-grid{grid-template-columns:minmax(0,1fr)}.cc-client .cc-desk-surface.finance-page .page-body{padding:1rem}}

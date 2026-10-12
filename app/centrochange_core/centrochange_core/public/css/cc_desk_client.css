@@ -1,28 +1,52 @@
-body.cc-client-desk{--cc-desk-accent:#12665f;--cc-desk-border:#d7e7e3}
-body.cc-client-desk #cc-desk-global-nav{position:sticky;top:0;z-index:1100;display:flex;align-items:center;gap:18px;min-height:48px;padding:5px clamp(12px,2vw,28px);background:#fff;border-bottom:1px solid var(--cc-desk-border);box-shadow:0 2px 10px #102b380a}
-body.cc-client-desk .cc-desk-brand{flex:none;color:#173d3a;font-size:1rem;font-weight:750;text-decoration:none;white-space:nowrap}
-body.cc-client-desk .cc-desk-global-links{display:flex;align-items:center;gap:3px;overflow-x:auto;scrollbar-width:thin;min-width:0}
-body.cc-client-desk .cc-desk-global-links a{display:inline-flex;align-items:center;min-height:34px;padding:6px 10px;border-radius:7px;color:#365555;text-decoration:none;white-space:nowrap;font-size:.87rem}
-body.cc-client-desk .cc-desk-global-links a:hover,body.cc-client-desk .cc-desk-global-links a[aria-current=page]{background:#e2f5f2;color:var(--cc-desk-accent)}
-body.cc-client-desk #cc-desk-global-nav a:focus-visible{outline:2px solid var(--cc-desk-accent);outline-offset:2px}
-body.cc-client-desk{--primary:var(--cc-desk-accent);--primary-color:var(--cc-desk-accent);--font-stack:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-/* Frappe v16 renders its module switcher as a sibling of .main-section.
-   Client navigation lives inside .main-section; native List/Form and actions
-   remain untouched. Administrator retains the complete technical Desk. */
+/* Tabler 1.6.1 shell on the supported Frappe Desk asset hook. */
+body.cc-client-desk{--tblr-primary:#12665f;--tblr-primary-rgb:18,102,95;--tblr-primary-lt:#e2f5f2;--cc-desk-accent:#12665f;--cc-desk-border:var(--tblr-border-color,#d7e7e3);--cc-sidebar-width:15.5rem;--primary:#12665f;--primary-color:#12665f;--font-stack:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 body.cc-client-desk>.body-sidebar-container{display:none!important}
 body.cc-client-desk>.main-section{flex:1 1 auto!important;width:100%;min-width:0}
+body.cc-client-desk .main-section>#body,body.cc-client-desk .main-section>footer{margin-left:var(--cc-sidebar-width);min-width:0}
 body.cc-client-desk .page-container{min-width:0}
+body.cc-client-desk #cc-desk-sidebar{position:fixed;inset:0 auto 0 0;width:var(--cc-sidebar-width);height:100dvh;z-index:1090;display:flex;flex-direction:column;align-items:stretch;padding:0;background:var(--tblr-bg-surface,#fff);border-right:1px solid var(--cc-desk-border);overflow:hidden}
+body.cc-client-desk .cc-sidebar-heading{display:flex;align-items:center;justify-content:space-between;min-height:64px;padding:0 .75rem 0 1.2rem;border-bottom:1px solid var(--cc-desk-border)}
+body.cc-client-desk .cc-desk-brand{margin:0;color:#173d3a;font-size:1.05rem;font-weight:700;text-decoration:none;white-space:nowrap}
+body.cc-client-desk .cc-sidebar-collapse{width:2.25rem;height:2.25rem;padding:.45rem}
+body.cc-client-desk .cc-sidebar-collapse img,body.cc-client-desk .cc-mobile-toggle img,body.cc-client-desk .cc-navbar-notifications img{width:1.25rem;height:1.25rem}
+body.cc-client-desk .cc-sidebar-menu{flex:1;overflow-y:auto;padding:.85rem .6rem 1.5rem;scrollbar-width:thin}
+body.cc-client-desk .cc-sidebar-group{margin-bottom:1rem}
+body.cc-client-desk .cc-sidebar-group-title{margin:.55rem .7rem .4rem;color:var(--tblr-secondary-color,#617b76);font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+body.cc-client-desk details.cc-sidebar-group>summary{cursor:pointer;list-style:none}
+body.cc-client-desk details.cc-sidebar-group>summary::-webkit-details-marker{display:none}
+body.cc-client-desk details.cc-sidebar-group>summary::after{content:"⌄";float:right;font-size:1rem;line-height:.7}
+body.cc-client-desk details.cc-sidebar-group:not([open])>summary::after{content:"›"}
+body.cc-client-desk .cc-sidebar-group .navbar-nav{display:grid;gap:.12rem}
+body.cc-client-desk .cc-sidebar-link{display:flex;align-items:center;gap:.55rem;min-height:2.35rem;padding:.45rem .7rem;border-radius:var(--tblr-border-radius,.4rem);color:var(--tblr-body-color,#365555);font-size:.86rem;line-height:1.2;text-decoration:none}
+body.cc-client-desk .cc-sidebar-link:hover,body.cc-client-desk .cc-sidebar-link.active{background:var(--tblr-primary-lt,#e2f5f2);color:var(--cc-desk-accent)}
+body.cc-client-desk .cc-sidebar-link.active{font-weight:650}
+body.cc-client-desk .cc-sidebar-link .nav-link-icon{display:inline-flex;align-items:center;justify-content:center;flex:none;width:1.2rem;height:1.2rem}
+body.cc-client-desk .cc-sidebar-link img{width:1.15rem;height:1.15rem;opacity:.76}
+body.cc-client-desk .cc-sidebar-link.active img{opacity:1}
+body.cc-client-desk #cc-desk-global-nav{position:sticky;top:0;z-index:1080;display:flex;align-items:center;gap:.75rem;min-height:64px;margin-left:var(--cc-sidebar-width);padding:.5rem clamp(1rem,2vw,1.75rem);background:var(--tblr-bg-surface,#fff);border-bottom:1px solid var(--cc-desk-border);box-shadow:0 1px 3px #102b3807}
+body.cc-client-desk .cc-navbar-identity{display:flex;align-items:baseline;gap:.8rem;min-width:0}
+body.cc-client-desk .cc-navbar-identity strong{color:#173d3a;font-size:1rem;white-space:nowrap}
+body.cc-client-desk .cc-navbar-identity span{overflow:hidden;color:var(--tblr-secondary-color,#617b76);font-size:.88rem;text-overflow:ellipsis;white-space:nowrap}
+body.cc-client-desk .cc-navbar-notifications{margin-left:auto;padding:.4rem}
+body.cc-client-desk .cc-navbar-account{position:relative;margin-left:auto}
+body.cc-client-desk .cc-navbar-notifications+.cc-navbar-account{margin-left:0}
+body.cc-client-desk .cc-navbar-account summary{max-width:min(18rem,30vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;list-style:none;color:#365555;font-size:.82rem}
+body.cc-client-desk .cc-navbar-account summary::-webkit-details-marker{display:none}
+body.cc-client-desk .cc-navbar-account[open] .dropdown-item{position:absolute;right:0;top:calc(100% + .25rem);z-index:1100;min-width:9rem;padding:.6rem .85rem;background:#fff;border:1px solid var(--cc-desk-border);border-radius:var(--tblr-border-radius,.4rem);box-shadow:var(--tblr-shadow-dropdown,0 6px 20px #102b3820);text-align:left;color:#365555;text-decoration:none}
+body.cc-client-desk .cc-mobile-toggle{display:none}
+body.cc-client-desk #cc-desk-global-nav a:focus-visible,body.cc-client-desk #cc-desk-sidebar a:focus-visible,body.cc-client-desk #cc-desk-sidebar button:focus-visible,body.cc-client-desk #cc-desk-global-nav button:focus-visible,body.cc-client-desk #cc-desk-global-nav summary:focus-visible{outline:2px solid var(--cc-desk-accent);outline-offset:2px}
 body.cc-client-desk .page-head{border-bottom-color:var(--cc-desk-border)}
+body.cc-client-desk.cc-unified-desk-open .page-head{display:none!important}
 body.cc-client-desk .page-head .title-text{color:#173d3a}
 body.cc-client-desk .btn-primary{background:var(--cc-desk-accent);border-color:var(--cc-desk-accent)}
-body.cc-client-desk .btn-primary:focus-visible{outline:2px solid var(--cc-desk-accent);outline-offset:2px}
-body.cc-client-desk .cc-desk-context{margin-left:auto;padding-left:12px;border-left:1px solid var(--cc-desk-border);font-size:.84rem;color:#56716e;white-space:nowrap}
-body.cc-client-desk #cc-desk-global-nav a[href='/api/method/logout']{margin-left:auto}
-/* The native List/Form content remains intact. Only non-client Desk chrome is
-   removed from the ordinary client view; this is not an authorization guard. */
 body.cc-client-desk .navbar-brand,body.cc-client-desk .dropdown-help,body.cc-client-desk .app-switcher{display:none!important}
-/* Native accounting metadata remains on the canonical document and in HITCH
-   technical Desk. It is secondary implementation detail for client roles. */
-body.cc-client-desk .frappe-control[data-fieldname="cc_request_hash"],
-body.cc-client-desk .frappe-control[data-fieldname="cc_request_key"]{display:none!important}
-@media(max-width:700px){body.cc-client-desk #cc-desk-global-nav{display:block;padding:6px 10px}body.cc-client-desk .cc-desk-brand{display:block;margin-bottom:2px}body.cc-client-desk .cc-desk-global-links a{font-size:.82rem}body.cc-client-desk .cc-desk-context{display:block;margin:4px 0 0;padding:0;border:0}body.cc-client-desk .page-head{padding-inline:12px}}
+body.cc-client-desk #cc-desk-sidebar .navbar-brand{display:block!important}
+body.cc-client-desk .frappe-control[data-fieldname="cc_request_hash"],body.cc-client-desk .frappe-control[data-fieldname="cc_request_key"]{display:none!important}
+body.cc-client-desk.cc-sidebar-compact{--cc-sidebar-width:4.5rem}
+body.cc-client-desk.cc-sidebar-compact .cc-desk-brand,body.cc-client-desk.cc-sidebar-compact .cc-sidebar-group-title,body.cc-client-desk.cc-sidebar-compact .nav-link-title{display:none}
+body.cc-client-desk.cc-sidebar-compact .cc-sidebar-heading{justify-content:center;padding:0}
+body.cc-client-desk.cc-sidebar-compact .cc-sidebar-link{justify-content:center}
+@media(max-width:991.98px){body.cc-client-desk{--cc-sidebar-width:0px}body.cc-client-desk .main-section>#body,body.cc-client-desk .main-section>footer{margin-left:0}body.cc-client-desk #cc-desk-global-nav{margin-left:0;min-height:56px}body.cc-client-desk .cc-mobile-toggle{display:inline-flex}body.cc-client-desk #cc-desk-sidebar{width:min(18rem,88vw);top:56px;height:calc(100dvh - 56px);transform:translateX(-105%);transition:transform .2s ease;box-shadow:0 8px 24px #102b3822}body.cc-client-desk #cc-desk-sidebar.show{transform:translateX(0)}body.cc-client-desk .cc-sidebar-collapse{display:none}body.cc-client-desk.cc-sidebar-compact .cc-desk-brand,body.cc-client-desk.cc-sidebar-compact .cc-sidebar-group-title,body.cc-client-desk.cc-sidebar-compact .nav-link-title{display:initial}body.cc-client-desk.cc-sidebar-compact .cc-sidebar-link{justify-content:flex-start}body.cc-client-desk .cc-navbar-identity{gap:.45rem}}
+@media(max-width:575.98px){body.cc-client-desk .cc-navbar-identity strong{font-size:.9rem}body.cc-client-desk .cc-navbar-identity span{display:none}body.cc-client-desk .cc-navbar-account summary{max-width:7rem}body.cc-client-desk #cc-desk-global-nav{gap:.35rem;padding:.35rem .55rem}body.cc-client-desk .page-head{padding-inline:12px}}
+@media(prefers-reduced-motion:reduce){body.cc-client-desk #cc-desk-sidebar{transition:none}}
+@media print{body.cc-client-desk #cc-desk-global-nav,body.cc-client-desk #cc-desk-sidebar{display:none!important}body.cc-client-desk .main-section>#body{margin-left:0}}
