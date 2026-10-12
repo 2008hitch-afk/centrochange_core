@@ -1,0 +1,14 @@
+# Clean single-stack derivative of the verified TARGET 16.50 application image.
+# The R10 image has the exact PR #112 app tree but its asset manifest contains
+# only the last Healthcare entry. Rebuild all pinned app bundles for a fresh Site.
+FROM centrochange-single:issue124-base
+
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+RUN bench build --force \
+    && cp -a sites/assets/. assets/ \
+    && python -c "import json,pathlib; a=json.loads(pathlib.Path('assets/assets.json').read_text()); required={'desk.bundle.js','erpnext.bundle.js','healthcare.bundle.js','login.bundle.css','frappe-web.bundle.js'}; assert required <= a.keys(), sorted(required-a.keys())"
+
+LABEL centrochange.issue="124" \
+      centrochange.application_revision="e2fd728ecf6acdb0e0ab26379820df6905dd5521"
