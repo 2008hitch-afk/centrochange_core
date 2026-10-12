@@ -12,7 +12,7 @@ import sys
 import time
 import urllib.request
 
-from c109_compose_gate import IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT, R13_PROJECT
+from c109_compose_gate import IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT, R13_PROJECT, R14_PROJECT
 from c109_rc22_identity import full_ids, baseline
 
 PING = "http://127.0.0.1:8082/api/method/ping"
@@ -38,6 +38,9 @@ def stop_c109(run=subprocess.run, project=IO_WAIVER_PROJECT):
     if project == R13_PROJECT:
         from c109_r13_writer import stop_exact_r13
         return stop_exact_r13()
+    if project == R14_PROJECT:
+        from c109_r14_writer import stop_exact_r14
+        return stop_exact_r14()
     ids = c109_ids(project=project)
     if ids:
         result = run(["docker", "stop", "--time", "10", *ids],
@@ -84,7 +87,7 @@ def require_rc22_monitor(state):
 def main(root):
     state = root / "app-run"
     activation = json.loads((state / "activation.json").read_text())
-    if activation.get("issue") != 109 or activation.get("target") not in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT, R13_PROJECT) or (activation.get("io_waiver") is not True and activation.get("target") != R13_PROJECT):
+    if activation.get("issue") != 109 or activation.get("target") not in (IO_WAIVER_PROJECT, FINAL_UI_PROJECT, R9_PROJECT, R10_PROJECT, R11_PROJECT, R12_PROJECT, R13_PROJECT, R14_PROJECT) or (activation.get("io_waiver") is not True and activation.get("target") != R13_PROJECT):
         raise RuntimeError("wrong isolated activation")
     expected = baseline(state)
     if rc22_ids() != expected:
