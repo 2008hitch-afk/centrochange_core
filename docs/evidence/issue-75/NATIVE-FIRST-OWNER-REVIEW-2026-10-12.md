@@ -37,6 +37,13 @@ Script riproducibili: `infra/browser/issue75_native_first.cjs`, `issue75_native_
 
 Le immagini in [`native-first-screenshots/`](native-first-screenshots/) provengono da sessioni Chromium effettive sull'immagine sopra. Contengono il percorso completo, nove liste native, form, sette ruoli desktop, tablet e telefono. [`issue75-native-first-visual.json`](native-first-screenshots/issue75-native-first-visual.json) registra misure geometriche, presenza della sidebar, overflow e rilevamento del branding durante la navigazione. Confronto di riferimento: `TABLER-NAVIGATION-OWNER-REVIEW-2026-10-12.md` e commenti Owner della issue #75.
 
+| Schermata | Prima: precedente PR #126 | Dopo: native-first | Differenza verificabile |
+|---|---|---|---|
+| Home Direzione | [Screenshot precedente](correction-screenshots/issue75-correction-home.jpg) | [Screenshot attuale](native-first-screenshots/issue75-native-first-home.jpg) | Brand duplicato nella barra rimosso; card ridotte e conteggi operativi reali. |
+| Anagrafica pazienti | [Screenshot precedente](correction-screenshots/issue75-correction-native-pazienti.jpg) | [Screenshot attuale](native-first-screenshots/issue75-native-first-native-pazienti.jpg) | Lista nativa mantenuta; titolo, filtri e nomi cliente resi leggibili tramite hook nativi. |
+| Catalogo | [Screenshot precedente](correction-screenshots/issue75-correction-native-servizi.jpg) | [Screenshot attuale](native-first-screenshots/issue75-native-first-native-servizi.jpg) | Etichette servizio presentate dai formatter di List View; nessuna sostituzione globale del DOM. |
+| Telefono | [Screenshot precedente](correction-screenshots/issue75-correction-native-telefono.jpg) | [Screenshot attuale](native-first-screenshots/issue75-native-first-native-telefono.jpg) | Sidebar apribile sullo stesso Site, senza menu orizzontale duplicato. |
+
 ## Difetti e limiti ancora aperti
 
 - Alcuni valori canonici sintetici e testi nativi upstream restano nei campi editabili o nelle viste tecniche, per esempio il sesso `Female` nel form Patient e metadati Frappe. I formatter presentano il nome umano nelle liste, ma non riscrivono i dati salvati.
