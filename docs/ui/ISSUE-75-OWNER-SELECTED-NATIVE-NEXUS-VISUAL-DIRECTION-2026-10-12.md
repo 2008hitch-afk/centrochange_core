@@ -19,7 +19,7 @@ Implement Centro Change as an **extension of its already-pinned Frappe/ERPNext a
 
 ## 2. Approved visual reference and fidelity
 
-The approved reference is the interactive HTML artifact from the Owner/ChatGPT visual review, titled **"Centro Change · Prototipo Frappe nativo + Nexus CSS"**. It is a **local conversation artifact**, not yet a code implementation or GitHub file. Retrieve the source HTML and images from the Owner's Codex handoff if they are supplied; **do not pretend to have opened an inaccessible sandbox URL**. This document contains enough constraints to implement the same direction on real Form/List views.
+The approved reference is the interactive HTML artifact from the Owner/ChatGPT visual review, titled **"Centro Change · Prototipo Frappe nativo + Nexus CSS"**. The **exact approved HTML artifact is now versioned in this PR** at [`docs/ui/prototypes/issue-75-premium-native-frappe-nexus-2026-10-12.html`](prototypes/issue-75-premium-native-frappe-nexus-2026-10-12.html), in commit `48a467439b9a3b532c35d15bacf563c0bdc01a39`. **Read this local repository file rather than recreating the UI from descriptions.** It is a static demo with no server/data connection; it is **not** production implementation or a running Frappe Form. This document governs adapting its appearance and selected MIT CSS to real native Frappe Form/List components.
 
 Selected appearance:
 - A dark, quiet forest-green **single left sidebar**, with visible, restrained role-appropriate Italian navigation and meaningful selected-state contrast.
