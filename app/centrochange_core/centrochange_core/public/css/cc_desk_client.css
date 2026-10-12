@@ -1,4 +1,4 @@
-/* Tabler 1.6.1 shell on the supported Frappe Desk asset hook. */
+/* Scoped Centro Change navigation on Frappe's supported Desk asset hook. */
 body.cc-client-desk{--tblr-primary:#12665f;--tblr-primary-rgb:18,102,95;--tblr-primary-lt:#e2f5f2;--cc-desk-accent:#12665f;--cc-desk-border:var(--tblr-border-color,#d7e7e3);--cc-sidebar-width:15.5rem;--primary:#12665f;--primary-color:#12665f;--font-stack:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 body.cc-client-desk>.body-sidebar-container{display:none!important}
 body.cc-client-desk>#desk-dock{display:none!important}
@@ -17,7 +17,7 @@ body.cc-client-desk details.cc-sidebar-group>summary{cursor:pointer;list-style:n
 body.cc-client-desk details.cc-sidebar-group>summary::-webkit-details-marker{display:none}
 body.cc-client-desk details.cc-sidebar-group>summary::after{content:"⌄";float:right;font-size:1rem;line-height:.7}
 body.cc-client-desk details.cc-sidebar-group:not([open])>summary::after{content:"›"}
-body.cc-client-desk .cc-sidebar-group .navbar-nav{display:grid;gap:.12rem}
+body.cc-client-desk .cc-sidebar-group .cc-sidebar-links{display:grid;gap:.12rem}
 body.cc-client-desk .cc-sidebar-link{display:flex;align-items:center;gap:.55rem;min-height:2.35rem;padding:.45rem .7rem;border-radius:var(--tblr-border-radius,.4rem);color:var(--tblr-body-color,#365555);font-size:.86rem;line-height:1.2;text-decoration:none}
 body.cc-client-desk .cc-sidebar-link:hover,body.cc-client-desk .cc-sidebar-link.active{background:var(--tblr-primary-lt,#e2f5f2);color:var(--cc-desk-accent)}
 body.cc-client-desk .cc-sidebar-link.active{font-weight:650}
@@ -41,7 +41,6 @@ body.cc-client-desk.cc-unified-desk-open .page-head{display:none!important}
 body.cc-client-desk .page-head .title-text{color:#173d3a}
 body.cc-client-desk .btn-primary{background:var(--cc-desk-accent);border-color:var(--cc-desk-accent)}
 body.cc-client-desk .navbar-brand,body.cc-client-desk .dropdown-help,body.cc-client-desk .app-switcher{display:none!important}
-body.cc-client-desk #cc-desk-sidebar .navbar-brand{display:block!important}
 body.cc-client-desk .frappe-control[data-fieldname="cc_request_hash"],body.cc-client-desk .frappe-control[data-fieldname="cc_request_key"]{display:none!important}
 body.cc-client-desk.cc-sidebar-compact{--cc-sidebar-width:4.5rem}
 body.cc-client-desk.cc-sidebar-compact .cc-desk-brand,body.cc-client-desk.cc-sidebar-compact .cc-sidebar-group-title,body.cc-client-desk.cc-sidebar-compact .nav-link-title{display:none}

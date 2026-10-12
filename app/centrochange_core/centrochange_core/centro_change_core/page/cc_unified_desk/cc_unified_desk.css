@@ -9,25 +9,26 @@
 .cc-client .calendar-shell{max-height:calc(100dvh - 210px);min-height:430px}
 .cc-client .cc-desk-surface .sidebar{display:none!important}
 .cc-client .cc-desk-surface .app-shell{grid-template-columns:minmax(0,1fr)}
-.cc-client .cc-desk-home-surface{background:var(--tblr-body-bg,#f4f8f7);min-height:calc(100dvh - 160px)}
-.cc-client .cc-desk-home{max-width:70rem;margin:auto;padding:clamp(1.25rem,3vw,2.5rem)}
-.cc-client .cc-desk-home-heading{padding:.75rem 0 1.75rem}
-.cc-client .cc-desk-home-heading h1{margin:0 0 .6rem;color:#173d3a;font-size:clamp(1.7rem,2.5vw,2.2rem);font-weight:700;line-height:1.2}
-.cc-client .cc-desk-home-heading p{max-width:55ch;margin:0;color:var(--tblr-secondary-color,#496562)}
-.cc-client .cc-desk-home-group h2{margin:0 0 1rem;color:#173d3a;font-size:1.05rem;font-weight:700}
-.cc-client .cc-desk-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
-.cc-client .cc-desk-home-card{position:relative;display:block;min-height:7rem;border:1px solid var(--tblr-border-color,#d7e7e3);border-radius:var(--tblr-border-radius,.5rem);background:var(--tblr-bg-surface,#fff);color:#173d3a;text-decoration:none;box-shadow:var(--tblr-shadow-card,0 2px 8px #102b380a)}
-.cc-client .cc-desk-home-card .card-body{display:flex;flex-direction:column;gap:.45rem;padding:1.2rem 2.5rem 1.2rem 1.2rem}
-.cc-client .cc-desk-home-card strong{font-size:.95rem;font-weight:700}
-.cc-client .cc-desk-home-card .card-body span{color:var(--tblr-secondary-color,#536d69);font-size:.85rem;line-height:1.4}
-.cc-client .cc-desk-home-arrow{position:absolute;right:1rem;top:.8rem;color:#12665f;font-size:1.5rem;line-height:1}
-.cc-client .cc-desk-home-card:hover,.cc-client .cc-desk-home-card:focus-visible{border-color:#12665f;text-decoration:none;color:#173d3a}
-.cc-client .cc-desk-home-card:focus-visible{outline:2px solid #12665f;outline-offset:2px}
+.cc-client .cc-desk-home-surface{background:#f6faf9;min-height:calc(100dvh - 112px)}
+.cc-client .cc-desk-home{max-width:72rem;margin:auto;padding:clamp(1rem,2vw,1.75rem)}
+.cc-client .cc-desk-home-heading{padding:0 0 1rem;border-bottom:1px solid #d7e7e3}
+.cc-client .cc-desk-home-heading h1{margin:0 0 .25rem;color:#173d3a;font-size:1.55rem;font-weight:700;line-height:1.25}
+.cc-client .cc-desk-home-heading p{margin:0;color:#536d69;font-size:.9rem}
+.cc-client .cc-desk-home-group{margin-top:1.25rem}
+.cc-client .cc-desk-home-group h2{margin:0 0 .65rem;color:#173d3a;font-size:.95rem;font-weight:700}
+.cc-client .cc-desk-home-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.65rem}
+.cc-client .cc-desk-home-action{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.2rem .5rem;align-content:center;min-height:4.25rem;padding:.75rem .9rem;background:#fff;border:1px solid #d7e7e3;border-radius:.5rem;color:#173d3a;text-decoration:none}
+.cc-client .cc-desk-home-action strong{font-size:.9rem}
+.cc-client .cc-desk-home-action span:nth-child(2){grid-row:2;color:#536d69;font-size:.78rem}
+.cc-client .cc-desk-home-action span:last-child{grid-column:2;grid-row:1/3;align-self:center;color:#12665f;font-size:1.2rem}
+.cc-client .cc-desk-home-action:hover,.cc-client .cc-desk-home-action:focus-visible{border-color:#12665f;background:#f8fcfb;color:#173d3a;text-decoration:none}
+.cc-client .cc-desk-home-action:focus-visible{outline:2px solid #12665f;outline-offset:2px}
+.cc-client .cc-desk-home-summary{display:flex;gap:.75rem;flex-wrap:wrap;margin-top:1.25rem;color:#536d69;font-size:.85rem}
+.cc-client .cc-desk-home-summary>div{display:flex;align-items:baseline;gap:.45rem;min-width:10rem;padding:.65rem .8rem;background:#fff;border:1px solid #d7e7e3;border-radius:.5rem}
+.cc-client .cc-desk-home-summary strong{color:#12665f;font-size:1.15rem}
 @media(max-width:991.98px){.cc-client .cc-desk-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){.cc-client .calendar-shell{min-height:430px;max-height:65dvh}.cc-client .cc-desk-home{padding:1.25rem .875rem}.cc-client .cc-desk-home-grid{grid-template-columns:minmax(0,1fr)}.cc-client .cc-desk-surface.finance-page .page-body{padding:1rem}}
+@media(max-width:700px){.cc-client .calendar-shell{min-height:430px;max-height:65dvh}.cc-client .cc-desk-home{padding:1rem .75rem}.cc-client .cc-desk-home-grid{grid-template-columns:minmax(0,1fr)}.cc-client .cc-desk-surface.finance-page .page-body{padding:1rem}}
 
-/* The workspace keeps its approved behavior; client screens share Tabler
-   spacing, surfaces, typography and controls with the native Desk lists. */
 .cc-client .cc-desk-surface:not(.cc-desk-home-surface){min-height:calc(100dvh - 64px);background:#f6faf9}
 .cc-client .cc-desk-surface .page-wrapper{margin-left:0}
 .cc-client .cc-desk-surface .page-body{padding:1.5rem clamp(1rem,2vw,1.75rem)}
@@ -40,6 +41,10 @@
 .cc-client .cc-desk-surface .primary-region,.cc-client .cc-desk-surface .detail{background:#fff;border:1px solid #d7e7e3;border-radius:var(--tblr-border-radius-lg,.5rem);box-shadow:0 2px 8px #102b3808;padding:1.25rem;min-width:0}
 .cc-client .cc-desk-surface .filters{padding:.75rem;margin:0 0 1.25rem;background:#f6faf9;border:1px solid #d7e7e3;border-radius:var(--tblr-border-radius,.4rem);flex-wrap:wrap}
 .cc-client .cc-desk-surface .table-wrap{border-radius:var(--tblr-border-radius,.4rem);border-color:#d7e7e3}
+.cc-client .cc-desk-surface .action-buttons{display:flex;gap:.5rem;flex-wrap:wrap;margin:0 0 .85rem}
+.cc-client .cc-desk-surface .action-buttons button{width:auto;min-height:2.25rem;padding:.4rem .75rem;background:#fff;border:1px solid #b8d3cd;color:#12665f;font-size:.84rem;font-weight:600}
+.cc-client .cc-desk-surface .action-buttons button:first-child{background:#12665f;border-color:#12665f;color:#fff}
+.cc-client .cc-desk-surface .action-buttons button:hover{box-shadow:0 0 0 .15rem #12665f18}
 .cc-client .cc-desk-surface table th{background:#eaf3f1;color:#365555;font-size:.8rem}
 .cc-client .cc-desk-surface table td{border-color:#e6efed}
 .cc-client .cc-desk-surface.professional-page .page-body{margin:1.25rem clamp(1rem,2vw,1.75rem);padding:1.25rem;background:#fff;border:1px solid #d7e7e3;border-radius:var(--tblr-border-radius-lg,.5rem);box-shadow:0 2px 8px #102b3808}
@@ -48,4 +53,4 @@
 .cc-client .cc-desk-surface.professional-page #professional-filters,.cc-client .cc-desk-surface.professional-page #patient-filters{display:flex;flex-wrap:wrap;gap:.75rem;align-items:end;margin-bottom:1rem;padding:.8rem;background:#f6faf9;border:1px solid #d7e7e3;border-radius:var(--tblr-border-radius,.4rem)}
 .cc-client .cc-desk-surface.professional-page #professional-filters label,.cc-client .cc-desk-surface.professional-page #patient-filters label{min-width:8rem}
 .cc-client .cc-desk-surface.professional-page #professional-filters button,.cc-client .cc-desk-surface.professional-page #patient-filters button{background:#12665f;color:#fff;border-color:#12665f}
-@media(max-width:700px){.cc-client .cc-desk-surface .page-body{padding:.75rem}.cc-client .cc-desk-surface .primary-region,.cc-client .cc-desk-surface .detail{padding:.75rem}.cc-client .cc-desk-surface.professional-page .page-body{margin:.65rem;padding:.75rem}.cc-client .cc-desk-surface .workspace{display:block}.cc-client .cc-desk-surface .detail{margin-top:.75rem}}
+@media(max-width:700px){.cc-client .cc-desk-surface .page-body{padding:.75rem}.cc-client .cc-desk-surface .primary-region,.cc-client .cc-desk-surface .detail{padding:.75rem}.cc-client .cc-desk-surface.professional-page .page-body{margin:.65rem;padding:.75rem}.cc-client .cc-desk-surface .workspace{display:block}.cc-client .cc-desk-surface .detail{margin-top:.75rem}.cc-client .cc-desk-surface .action-buttons button{flex:1 1 auto}}

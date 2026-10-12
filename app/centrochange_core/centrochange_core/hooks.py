@@ -152,6 +152,14 @@ web_include_css = ["/assets/centrochange_core/vendor/tabler-core-1.6.1/tabler.mi
 # assets never grant access; native DocPerm and CC server guards remain decisive.
 app_include_js = ["/assets/centrochange_core/js/cc_desk_client.js"]
 app_include_css = ["/assets/centrochange_core/css/cc_desk_client.css"]
+# Native List/Form extensions keep the upstream lifecycle and permissions.
+doctype_list_js = {
+    "Patient": "public/js/cc_patient_list.js",
+    "Healthcare Practitioner": "public/js/cc_practitioner_list.js",
+}
+doctype_js = {
+    "Healthcare Practitioner": "public/js/cc_practitioner_form.js",
+}
 # Append presentation after the original request guards; never replace security hooks.
 before_request.append("centrochange_core.operations.website_brand.client_language")
 get_print_format_template = "centrochange_core.operations.website_brand.print_template_locale"

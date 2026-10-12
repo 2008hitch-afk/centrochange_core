@@ -37,9 +37,21 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
   function homeContent(){
     const cards=homeByRole.links.map(link=>{
       const href=link.view?routeUrl(link.view,link.params):link.href;
-      return `<a class="card cc-desk-home-card" href="${href}"><span class="card-body"><strong>${link.label}</strong><span>${link.description}</span></span><span class="cc-desk-home-arrow" aria-hidden="true">›</span></a>`;
+      return `<a class="cc-desk-home-action" href="${href}"><strong>${link.label}</strong><span>${link.description}</span><span aria-hidden="true">›</span></a>`;
     }).join('');
-    return `<div class="cc-desk-home"><header class="cc-desk-home-heading"><h1>${homeByRole.heading}</h1><p>${homeByRole.intro}</p></header><section class="cc-desk-home-group" aria-label="Accessi rapidi"><h2>Accessi rapidi</h2><div class="cc-desk-home-grid">${cards}</div></section></div>`;
+    return `<div class="cc-desk-home"><header class="cc-desk-home-heading"><h1>${homeByRole.heading}</h1><p>${homeByRole.intro}</p></header><section class="cc-desk-home-group" aria-label="Accessi rapidi"><h2>Attività frequenti</h2><div class="cc-desk-home-grid">${cards}</div></section>${canOperate?'<section class="cc-desk-home-summary" aria-label="Dati operativi" aria-live="polite">Caricamento dati operativi…</section>':''}</div>`;
+  }
+  async function loadHomeSummary(section){
+    const target=section.querySelector('.cc-desk-home-summary');
+    if(!target)return;
+    try{
+      const response=await fetch('/api/method/centrochange_core.operations.workspace.bootstrap',{credentials:'same-origin'});
+      if(!response.ok)throw new Error('Dati non disponibili');
+      const data=(await response.json()).message;
+      if(!section.isConnected)return;
+      const values=[['Pazienti visibili',data.patients.length],['Professionisti disponibili',data.practitioners.length],['Servizi attivi',data.services.length]];
+      target.innerHTML=values.map(([label,value])=>`<div><strong>${value}</strong><span>${label}</span></div>`).join('');
+    }catch(_){if(section.isConnected)target.textContent='Consulta Agenda e Pazienti per i dati aggiornati.';}
   }
   let generation=0;
   let fragments;
@@ -96,6 +108,7 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       }
       section.append(shell);
       root.replaceChildren(section);
+      if(view==='home')loadHomeSummary(section);
       window.ccDeskSurfaceRoot=section;
       window.ccDeskNavigate=path=>navigate(path);
       if(surface)await import('/assets/centrochange_core/js/'+surface.script+'?ccdesk='+token);

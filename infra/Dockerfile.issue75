@@ -9,6 +9,13 @@ COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/css/cc_desk_client.css apps/centrochange_core/centrochange_core/public/css/cc_desk_client.css
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.js apps/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.js
 COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.css apps/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.css
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/hooks.py apps/centrochange_core/centrochange_core/hooks.py
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/patches.txt apps/centrochange_core/centrochange_core/patches.txt
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/patches/issue75_native_filters.py apps/centrochange_core/centrochange_core/patches/issue75_native_filters.py
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_patient_list.js apps/centrochange_core/centrochange_core/public/js/cc_patient_list.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_practitioner_list.js apps/centrochange_core/centrochange_core/public/js/cc_practitioner_list.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_practitioner_form.js apps/centrochange_core/centrochange_core/public/js/cc_practitioner_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/translations/it.csv apps/centrochange_core/centrochange_core/translations/it.csv
 
 RUN bench build --force && cp -a sites/assets/. assets/
 
