@@ -192,12 +192,19 @@
       if (/^CC-HTTP-UAT\d+\s+\S/.test(displayed)) {
         node.title = `${displayed} · ${canonical}`;
         node.textContent = readablePerson(displayed);
-      } else if (route === "bank-transaction" && /^CC DEV CC-HTTP-UAT\d+\s+[A-Z]$/.test(displayed)) {
+      } else if (route === "bank-transaction" && /^CC DEV CC-HTTP-UAT\d+\s+[A-Z](?: - CC SYNTHETIC BANK)?$/.test(displayed)) {
         node.title = displayed;
-        node.textContent = `Conto Centro ${displayed.split(" ").pop()}`;
+        node.textContent = `Conto Centro ${displayed.match(/CC-HTTP-UAT\d+\s+([A-Z])/)?.[1]}`;
       }
     }
     if (route === "bank-transaction") {
+      for (const node of document.querySelectorAll('.list-row [data-fieldname="bank_account"] a, .list-row .list-subject a')) {
+        const original = node.textContent.trim();
+        if (/^CC DEV CC-HTTP-UAT\d+\s+[A-Z](?: - CC SYNTHETIC BANK)?$/.test(original)) {
+          node.title = original;
+          node.textContent = `Conto Centro ${original.match(/CC-HTTP-UAT\d+\s+([A-Z])/)?.[1]}`;
+        }
+      }
       for (const node of document.querySelectorAll('.list-row [data-fieldname="description"] a, .list-row [data-fieldname="description"] .ellipsis')) {
         if (node.children.length || !/^SYNTHETIC UAT\s+/i.test(node.textContent.trim())) continue;
         const original = node.textContent.trim();

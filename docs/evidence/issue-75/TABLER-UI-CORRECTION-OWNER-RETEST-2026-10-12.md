@@ -8,7 +8,7 @@ La HEAD di partenza era `4e1c6aa0a00647562627fc515c49f15b7b3eb647`, senza modifi
 
 Una sequenza Chromium Home → Agenda → Pazienti → Professionisti → Catalogo ha riprodotto uno scarto deterministico: entrando in Catalogo Frappe attivava il dock tecnico `#desk-dock` largo **57 px**, spostando `.main-section` da x=0 a x=57; sidebar, navbar e contenuto finivano rispettivamente a x=0, x=305 e x=305. Un semplice reset del margine di `.main-section` non bastava: il dock partecipava al flex del body. La shell cliente ora nasconde il dock solo per `body.cc-client-desk`, mantenendo intatta l'interfaccia Administrator. Dopo la correzione, su Catalogo le coordinate sono x=0, x=248 e x=248.
 
-I sorgenti dell'immagine finale e gli asset serviti hanno SHA-256 identici: `cc_desk_client.js` `c4e07dd997daf897a22a858f6a39ffbb8b0bdbdedf05615659a406f5b7c4a5e2`, `cc_desk_client.css` `64ca4c9accbfa76a0b2e9d40afae9d7e1c814820e3f26638a601b5bbf4548adf`. `sites/assets/assets.json` è stato rigenerato da `bench build` e la cache Frappe è stata svuotata dopo il deploy. Il codice applicativo Centro Change non registra un service worker; i test sono eseguiti con contesti Chromium nuovi. Il menu orizzontale osservato nella sessione Owner precedente non è stato riprodotto in questi nuovi contesti; il test corretto intercetta anche la sua eventuale comparsa durante le transizioni. Non si attribuisce la discrepanza soltanto alla cache.
+I sorgenti dell'immagine finale e gli asset serviti hanno SHA-256 identici: `cc_desk_client.js` `f241bf884d0b315126f8610dba741d82ffa6b6601e112489aba5e6d2a5db5d39`, `cc_desk_client.css` `64ca4c9accbfa76a0b2e9d40afae9d7e1c814820e3f26638a601b5bbf4548adf`. `sites/assets/assets.json` è stato rigenerato da `bench build` e la cache Frappe è stata svuotata dopo il deploy. Il codice applicativo Centro Change non registra un service worker; i test sono eseguiti con contesti Chromium nuovi. Il menu orizzontale osservato nella sessione Owner precedente non è stato riprodotto in questi nuovi contesti; il test corretto intercetta anche la sua eventuale comparsa durante le transizioni. Non si attribuisce la discrepanza soltanto alla cache.
 
 ## Correzione distribuita
 
@@ -16,7 +16,7 @@ La shell cliente usa le classi Tabler `.page`, `.navbar.navbar-vertical`, `.page
 
 Agenda, Finanza, Report e Home condividono spaziature, card, filtri, tipografia e colori. I breadcrumb di navigazione globale ripetuti nei report sono rimossi perché le destinazioni restano nella sidebar. Il calendario settimanale mantiene sette intestazioni giorno e sette colonne. Nessun cambiamento a schema, dati, API, permessi, contabilità, prenotazioni, note cliniche, SdI/TS o workflow.
 
-Immagine finale installata: **`sha256:9e7b06cde6e9241e0f52ef198e71d5b8020bbb367d155b7bb1f45453ebce34b3`**. Solo i sei servizi applicativi del progetto `centrochange-dev` sono stati ricreati; DB e Redis e i loro volumi sono rimasti. Un solo Bench logico, Site `centrochange.local`, DB `_4f614b4543aa5230`, nove servizi attivi. Frappe/ERPNext 16.50.0, Builder 1.35.1, Healthcare 16.6.1 e Tabler Core 1.6.1 invariati.
+Immagine finale installata: **`sha256:d7fde9fc7211359df2c127469bb3c3d9aa83f4d317501f4f1fc3b07a79f34fc0`**. Solo i sei servizi applicativi del progetto `centrochange-dev` sono stati ricreati; DB e Redis e i loro volumi sono rimasti. Un solo Bench logico, Site `centrochange.local`, DB `_4f614b4543aa5230`, nove servizi attivi. Frappe/ERPNext 16.50.0, Builder 1.35.1, Healthcare 16.6.1 e Tabler Core 1.6.1 invariati.
 
 ## Collaudo
 
