@@ -22,6 +22,25 @@ IMAGE = "sha256:ac25b74321da6de7e669e75e9a5ee23494bc6fc672d3b82498aaca73b7225d00
 REVISION = "e2fd728ecf6acdb0e0ab26379820df6905dd5521"
 
 
+def verify_bootstrap_mounts(root):
+    """The container must see the same release directory the host writes."""
+    config = json.loads((root / "app-run" / "compose-final.merged-private.json").read_text())
+    expected_script = str(Path(__file__).with_name("c109_bootstrap_entrypoint.sh").resolve())
+    for service in ("c-fit-db", "c-fit-redis-cache", "c-fit-redis-queue",
+                    "c-fit-backend", "c-fit-websocket", "c-fit-queue-long",
+                    "c-fit-scheduler", "c-fit-frontend"):
+        expected_gate = str((root / "gates" / service).resolve())
+        if not Path(expected_gate).is_dir():
+            raise RuntimeError(f"R14 release directory missing: {service}")
+        binds = {item.get("target"): item for item in config["services"][service].get("volumes", [])
+                 if item.get("type") == "bind"}
+        if (set(binds) != {"/cc-bootstrap", "/opt/cc-bootstrap.sh"}
+                or binds["/cc-bootstrap"].get("source") != expected_gate
+                or binds["/opt/cc-bootstrap.sh"].get("source") != expected_script
+                or not all(item.get("read_only") is True for item in binds.values())):
+            raise RuntimeError(f"R14 bootstrap bind differs from release path: {service}")
+
+
 def preflight(root, *, launch=launch_scopes, sleep=time.sleep, host_run=run,
               gate=precreate_gate, prepare=prepare_resources):
     state = root / "app-run"
@@ -44,6 +63,7 @@ def preflight(root, *, launch=launch_scopes, sleep=time.sleep, host_run=run,
             or mutation_end - start > dt.timedelta(hours=6)):
         raise RuntimeError("R14 authorization, pin or recovery window invalid")
     digest()
+    verify_bootstrap_mounts(root)
     repository = str(Path(__file__).resolve().parent.parent)
     if (host_run("git", "-C", repository, "rev-parse", "HEAD") != activation.get("harness_commit")
             or host_run("git", "-C", repository, "status", "--porcelain")):
@@ -78,6 +98,7 @@ def preflight(root, *, launch=launch_scopes, sleep=time.sleep, host_run=run,
     # The same four guards continue running through the serial, capped copy.
     # A partial preparation is single-use and cannot be resumed automatically.
     prepare(root, image=IMAGE)
+    verify_bootstrap_mounts(root)
     gate(root, attested=False)
     attest(root)
     # Same gate as the real launcher, now requiring the verified attestation.

@@ -160,6 +160,7 @@ class IntegratedR14Test(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.state = self.root / "app-run"
         self.state.mkdir(mode=0o700)
+        (self.root / "gates").mkdir()
         self.ids = [format(i, "064x") for i in range(1, 10)]
         self.live_ids = self.ids[:]
         self.clock = [dt.datetime.now(dt.timezone.utc).timestamp()]
@@ -179,8 +180,16 @@ class IntegratedR14Test(unittest.TestCase):
         (self.state / "protected-before.json").write_text(json.dumps([{"id": i} for i in self.ids]))
         services = {name: {"mem_limit": size, "memswap_limit": size,
                            "labels": {"centrochange.mission": "C109"},
-                           "entrypoint": ["/bin/sh", "/opt/cc-bootstrap.sh", start.KINDS[name]]}
+                           "entrypoint": ["/bin/sh", "/opt/cc-bootstrap.sh", start.KINDS[name]],
+                           "volumes": [
+                               {"type": "bind", "source": str(self.root / "gates" / name),
+                                "target": "/cc-bootstrap", "read_only": True},
+                               {"type": "bind", "source": str(Path(r14.__file__).with_name("c109_bootstrap_entrypoint.sh").resolve()),
+                                "target": "/opt/cc-bootstrap.sh", "read_only": True},
+                           ]}
                     for name, size in EXPECTED_MAX.items()}
+        for name in EXPECTED_MAX:
+            (self.root / "gates" / name).mkdir()
         self.config = {"name": r14.R14_PROJECT, "services": services,
                        "volumes": {f"v{i}": {"name": resources.DEST_PREFIX + suffix}
                                    for i, suffix in enumerate(resources.SUFFIXES)},
@@ -261,6 +270,15 @@ class IntegratedR14Test(unittest.TestCase):
              patch.object(resources, "oom_count", return_value=7):
             r14.preflight(self.root, launch=self.launch, sleep=self.sleep, host_run=self.host,
                           prepare=lambda root, image: resources.prepare(root, host=self.resource_host, image=image))
+
+    def test_wrong_release_bind_stops_before_guards_or_containers(self):
+        self.config["services"]["c-fit-db"]["volumes"][0]["source"] = "/other/gates/c-fit-db"
+        self.write_config()
+        with patch.object(self, "launch") as launch:
+            with self.assertRaisesRegex(RuntimeError, "bootstrap bind differs"):
+                self.exercise()
+            launch.assert_not_called()
+        self.assertFalse((self.state / "r14-resources-attempted").exists())
 
     def test_green_sequence_reaches_exact_precreation_gate(self):
         self.exercise()
