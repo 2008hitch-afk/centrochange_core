@@ -1,0 +1,55 @@
+"""Offline-verified R13 preflight contract; live gate rejects unverified edits."""
+
+import datetime as dt
+import hashlib
+import json
+from pathlib import Path
+
+from c109_rc22_identity import baseline
+
+
+FILES = (
+    "c109_r13_preflight.py", "c109_r13_resources.py", "c109_r13_contract.py",
+    "c109_r13_writer.py", "c109_r13_safety.py", "c109_r13_safety_prepare.py",
+    "c109_protected_events.py",
+    "c109_gated_start.py",
+    "c109_guard_access.py", "c109_rc22_identity.py", "c109_rc22_monitor.py",
+    "c109_compose_gate.py", "c109_demo_expiry.py", "c109_gated_qa.py",
+    "c109_r13_qa.py", "c109_monitored_step.py", "c109_protected_inventory.py",
+    "c109_r7_safety_prepare.py", "c109_cgroup_gate.py", "c109_io_gate.py",
+    "test_c109_r13_preflight.py", "test_c109_r13_security.py",
+)
+MANIFEST = Path(__file__).with_name("c109_r13_verified.json")
+
+
+def digest():
+    expected = json.loads(MANIFEST.read_text())
+    actual = {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+              for name in FILES}
+    if set(expected) != set(FILES) or expected != actual:
+        raise RuntimeError("R13 preflight code differs from offline-verified release")
+    return hashlib.sha256(json.dumps(actual, sort_keys=True).encode()).hexdigest()
+
+
+def require_attestation(root):
+    state = root / "app-run"
+    attestation = json.loads((state / "r13-preflight-attestation.json").read_text())
+    activation = (state / "activation.json").read_bytes()
+    age = (dt.datetime.now(dt.timezone.utc) - dt.datetime.fromisoformat(attestation["checked_at"])).total_seconds()
+    if (not 0 <= age <= 30 or attestation.get("code_digest") != digest()
+            or attestation.get("activation_sha256") != hashlib.sha256(activation).hexdigest()
+            or attestation.get("rc22_ids") != baseline(state)):
+        raise RuntimeError("R13 preflight attestation absent, stale or mismatched")
+
+
+def attest(root):
+    state = root / "app-run"
+    path = state / "r13-preflight-attestation.json"
+    if path.exists():
+        raise RuntimeError("R13 preflight is single-use")
+    payload = {"checked_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+               "code_digest": digest(),
+               "activation_sha256": hashlib.sha256((state / "activation.json").read_bytes()).hexdigest(),
+               "rc22_ids": baseline(state)}
+    from c109_guard_access import atomic_json
+    atomic_json(path, payload)
