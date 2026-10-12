@@ -1,8 +1,9 @@
-# Centro Change UI Design System v1
+# Centro Change UI Design System v1 — Owner revision 2026-10-12
 
-**Status:** OWNER APPROVED — design direction  
-**Owner decision date:** 2026-10-08  
-**Implementation status:** TRANSVERSELY APPLIED — TECHNICAL PASS / READY_FOR_OWNER_UAT (2026-10-08); OWNER VISUAL ACCEPTANCE PENDING
+**Status:** OWNER APPROVED — revised UI implementation direction (2026-10-12)  
+**Original visual direction approved:** 2026-10-08  
+**Current implementation/acceptance:** TARGET DOCUMENTED; PR #126 visual review NOT ACCEPTED / remediation pending. No OWNER VISUAL PASS and no final GOAL-02 acceptance.  
+**Interpretation:** This revision supersedes every earlier v1 statement that treats Tabler, Tabler classes, Bootstrap semantics, or Tabler Core 1.6.1 as mandatory implementation technology. It does not retrospectively validate or reject every existing implementation detail.
 **Issue:** #76  
 **Final visual gate:** #75  
 **Permission gate:** #77
@@ -19,29 +20,46 @@ This specification governs presentation and interaction patterns. It does **not*
 
 Centro Change UI v1 is based on:
 
-- **Tabler Core 1.6.1** as the UI framework/reference baseline.
-- **Bootstrap semantics used by Tabler**, without introducing React or a separate SPA architecture.
-- **Tabler Icons** for client-facing iconography.
-- **Tom Select or an equivalent Tabler-compatible searchable-select control** only where native Tabler/Bootstrap select behavior cannot satisfy the approved single-control search-and-select requirement.
+- **Frappe/ERPNext native customization first.** Prefer supported DocType configuration, Customize Form/Property Setter/Custom Field, List View settings, Form/Client Scripts, translations, Workspace/Page interfaces and versioned app hooks, according to the needs of the view. Preserve standard Frappe lifecycle and upgradeability.
+- **Dedicated client-facing UI only when needed.** Custom Frappe pages/client views are appropriate for workflows that native configuration cannot express well (e.g. calendar, operational dashboards or complex cross-DocType workflows); avoid duplicating native ERPNext data, permissions, services or business rules.
+- **Tabler as visual inspiration only**: clear hierarchy, compact meaningful cards, readable forms/tables, left navigation, icons, whitespace, color and responsive layout. **Do not require installing or importing Tabler Core, Tabler CSS/JS, Bootstrap semantics, or Tabler-specific classes.**
+- Reuse supported Frappe-compatible client widgets, including an appropriate searchable selector when necessary. The interaction requirement is authoritative; **Tom Select is optional, not prescribed**.
 - Existing Centro Change server-side APIs, guards, authorization boundaries and business workflows remain canonical.
 
 ### 2.1 Asset policy
 
 - Runtime client assets MUST be served locally/versioned with the application. No runtime dependency on a public CDN.
-- `@tabler/core` is pinned to **1.6.1**. No `latest` dependency.
+- **No Tabler package is required.** If an existing implementation already includes Tabler 1.6.1, that asset is a legacy implementation fact, not a new mandate. Its retention, simplification or removal requires an impact/regression review; do not uninstall it automatically just because this document changes.
 - Any optional third-party dependency MUST be pinned to the exact tested version and lockfile/vendor evidence committed with the implementation.
 - Third-party licenses MUST be preserved and recorded.
-- Do not import the complete Tabler demo/plugin stack by default. Include only assets/components actually used.
-- No charting/plugin package is approved merely because Tabler demos include it.
+- Prefer the smallest stable Frappe-supported extension; do not impose a second UI framework, a Tabler demo/plugin stack, or new charting packages just for visual imitation.
 
 ### 2.2 Reference sources
 
-- Tabler releases: https://github.com/tabler/tabler/releases
+**Frappe implementation references (native mechanisms):**
+- Frappe Framework documentation: https://docs.frappe.io/framework
+- Frappe customizations and Customize Form: https://docs.frappe.io/framework/user/en/customize-erpnext
+- Frappe Form Scripts: https://docs.frappe.io/framework/user/en/api/form
+- Frappe List View: https://docs.frappe.io/framework/user/en/api/list
+- Frappe hooks: https://docs.frappe.io/framework/user/en/python-api/hooks
+
+**Visual moodboard only (not implementation authority):**
 - Tabler page layouts: https://docs.tabler.io/ui/layout/page-layouts
-- Tabler UI documentation: https://docs.tabler.io/ui
-- Tabler third-party references: https://docs.tabler.io/ui/getting-started/references
-- Tabler license: https://github.com/tabler/tabler/blob/dev/LICENSE
-- Tom Select: https://tom-select.js.org/
+- Tabler UI patterns: https://docs.tabler.io/ui
+
+Official Frappe version-pinned source and documentation remain decisive for available hooks, permissions and lifecycle.
+
+### 2.3 Native-first implementation decision rule — OWNER APPROVED 2026-10-12
+
+For every client-facing area, decide and document which of these three outcomes applies:
+
+1. **NATIVE_CUSTOMIZE** — Use supported Frappe/ERPNext List/Form/DocType/Workspace customization when it meets the workflow. Apply client-friendly labels, fields, ordering, list settings, translations, buttons and styling via supported extension points. Do not rely on DOM text rewriting or broad CSS overrides as the main product architecture.
+2. **NATIVE_WITH_CLIENT_PRESENTATION** — Preserve the native function, rendering and security while applying bounded client brand/visual conventions and a coherent navigation entry. Test transitions, roles and upstream updates.
+3. **DEDICATED_FRAPPE_PAGE** — Implement a purpose-built interface only if native capabilities are insufficient for the validated user task, reusing the same server APIs and permission boundaries. Avoid copying Frappe models or business logic.
+
+Record a rationale and upgrade/regression consequence for any dedicated interface. Do not create a second site, database or frontend stack.
+
+**No mandatory Tabler import, package, CSS classes or technical compliance test.** Acceptance depends on the user's visual/operational experience and functional integrity, not DOM class names or framework installation.
 
 ## 3. Brand and visual principles
 
@@ -61,19 +79,19 @@ Retain the already accepted Centro Change primary teal:
 
 `#12665F`
 
-Use it through Tabler/Bootstrap theme variables for primary actions, active navigation and focus/accent states.
+Use it through Centro Change/Frappe-supported theme tokens or local styling for primary actions, active navigation and focus/accent states; no Tabler CSS variable is mandatory.
 
 Do not create page-specific primary colors.
 
 ### 3.3 Neutral palette
 
-Use Tabler's neutral palette and semantic variables for page backgrounds, surfaces, borders, muted text and disabled controls.
+Use a stable Centro Change neutral palette inspired by Tabler references, implemented via supported/native tokens wherever possible for page backgrounds, surfaces, borders, muted text and disabled controls.
 
 Do not introduce arbitrary greys per page.
 
 ### 3.4 Typography
 
-Use the Tabler/system sans-serif stack.
+Use an accessible, consistent system sans-serif stack inspired by Tabler's visual proportions; prefer the Frappe-native stack when compatible.
 
 Rules:
 
@@ -86,21 +104,23 @@ Rules:
 
 ### 3.5 Spacing and radius
 
-Use Tabler/Bootstrap spacing tokens and component sizing.
+Use consistent Centro Change spacing, radius and sizing tokens inspired by Tabler, implemented through Frappe/native or scoped product styles.
 
 Do not create ad-hoc padding, radius or control heights per page unless required by the calendar geometry and documented.
 
 ## 4. Application shell
 
-All authenticated client-facing application surfaces should converge on the same shell:
+All authenticated client-facing application surfaces should converge on one consistent **Centro Change experience**, using supported Frappe native shell/Workspace/page mechanisms where possible and dedicated page layouts only where necessary:
 
-- `.page`
-- vertical responsive navigation based on `.navbar.navbar-vertical`
-- `.page-wrapper`
-- semantic page header
-- one `main.page-body`
-- optional secondary/detail region inside the page body
-- navigation hidden from print with `d-print-none`
+- persistent client navigation on the left (role-aware, no duplicate horizontal app menu);
+- one unobtrusive brand/account header with a distinct contextual page title (no duplicated "Centro Change");
+- a stable main content region and optional local detail region;
+- no overlapping Frappe dock, native sidebar or upstream launcher in client-facing workflows;
+- transitions, refresh, back/forward and responsive breakpoints without shell jumps, clipped menu or upstream branding flash;
+- print hides navigation and preserves the printable data;
+- Administrator/technical ERPNext remains independently accessible.
+
+**Do not require Tabler DOM structure/classes such as `.page`, `.navbar.navbar-vertical`, `.page-wrapper` or `main.page-body`.** Native Frappe markup may remain native when properly customized.
 
 ### 4.1 Sidebar
 
@@ -127,13 +147,13 @@ Rules:
 - active state always visible;
 - no raw technical route names;
 - no client-facing link to ERPNext/Frappe Desk where a Centro Change surface exists;
-- mobile uses Tabler responsive/collapse behavior;
+- mobile navigation must be accessible and stable, using a supported native pattern or equivalent behavior inspired by Tabler;
 - user/logout area remains visually separated from primary navigation;
 - `Direzione completa` may be shown as profile context, not as a technical role name.
 
 ## 5. Core component contract
 
-No client-facing interactive control should remain as visually raw HTML when an appropriate Tabler pattern exists or can be adapted without changing business semantics.
+Every client-facing interactive control must be styled coherently using native Frappe features or a supported scoped custom view, visually inspired by Tabler. A matching Tabler DOM component or installed Tabler package is not required.
 
 Every applicable component must define and test:
 
@@ -187,7 +207,7 @@ This is a mandatory v1 rule.
 
 ### 7.1 Search input
 
-Use a Tabler-style input group/search control with:
+Use a compact, accessible native Frappe or dedicated search control visually inspired by Tabler with:
 
 - search icon;
 - clear placeholder in Italian;
@@ -227,7 +247,7 @@ If Tom Select is used, configure it as a controlled selector, not as a free-form
 
 ## 8. Forms
 
-All forms use consistent Tabler form controls.
+All forms use consistent, supported native Frappe controls first, customized as needed for Centro Change; dedicated controls only when native ones cannot meet the accepted task.
 
 Required rules:
 
@@ -245,7 +265,7 @@ Required rules:
 
 All application modals follow one contract:
 
-- Tabler modal structure;
+- supported Frappe-native dialog/modal structure first, or dedicated modal structure when necessary, with consistent Centro Change styling inspired by Tabler;
 - clear title;
 - body grouped by task;
 - validation/error area close to affected fields;
@@ -259,7 +279,7 @@ Searchable selectors inside a modal must use the single-control rule from sectio
 
 ## 10. Tables and lists
 
-Use Tabler table/list patterns.
+Use native List View configuration wherever suitable, with consistent Centro Change table/list styling inspired by Tabler. Use dedicated tables only for workflows the native list cannot fulfill.
 
 Rules:
 
@@ -277,7 +297,7 @@ Rules:
 
 ## 11. Cards, details and data grids
 
-Patient/session/invoice/reconciliation/audit detail should use Tabler cards and/or data-grid patterns rather than unstructured key-value paragraphs.
+Patient/session/invoice/reconciliation/audit detail should use meaningful, compact native Form sections or cards/data-grid patterns visually inspired by Tabler rather than unstructured key-value paragraphs or oversized empty panels.
 
 Typical structure:
 
@@ -317,7 +337,7 @@ Do not expose values such as `Pending`, `Closed`, `CENTER_MEMBERSHIP`, raw boole
 
 ## 13. Alerts, feedback and system states
 
-Use consistent Tabler alert/toast/empty/loading patterns.
+Use consistent native Frappe feedback/alert/empty/loading patterns, visually inspired by Tabler and localized for Centro Change.
 
 ### Success
 Short user-oriented confirmation.
@@ -345,7 +365,7 @@ Keep the accepted functional calendar model.
 Apply:
 
 - shared application shell;
-- Tabler page header;
+- a compact semantic page header with styling inspired by Tabler;
 - primary `+ Prenota` button;
 - compact toolbar for center/week/view;
 - professional picker/search following searchable-control rules;
@@ -466,7 +486,7 @@ Apply:
 
 ### 14.11 `/primo_incontro`
 
-Public page uses Centro Change identity and Tabler form/card conventions.
+Public page uses Centro Change identity and clear native/custom form/card conventions visually inspired by Tabler.
 
 Apply:
 
@@ -481,7 +501,7 @@ Apply:
 
 ### 14.12 Login / logout / session states
 
-Apply Centro Change/neutral Tabler authentication pattern.
+Apply Centro Change-branded, native-compatible authentication styling inspired by Tabler; do not replace the authentication implementation.
 
 Must not show:
 
@@ -494,7 +514,7 @@ Authentication implementation remains native unless a separate technical decisio
 
 ### 14.13 403 / 404 / generic error
 
-Use a Centro Change/neutral Tabler empty/error page with:
+Use Centro Change-branded native or dedicated empty/error page styling inspired by Tabler with:
 
 - simple human title;
 - short explanation;
@@ -514,7 +534,7 @@ Desktop, tablet and mobile behavior is part of component acceptance, not later p
 
 Minimum rules:
 
-- sidebar collapses/behaves through Tabler responsive navbar rules;
+- sidebar behaves responsively and accessibly through native Frappe layout features or a scoped equivalent, without a Tabler dependency;
 - controls wrap/stack without overlap;
 - primary action remains reachable;
 - modal stays within viewport;
@@ -585,7 +605,7 @@ If a desired UI pattern appears to require a permission or API expansion, implem
 
 Recommended implementation order:
 
-1. shared Tabler assets/theme variables and base shell;
+1. native Frappe capability map per area; stable single shell and shared Centro Change visual tokens inspired by Tabler;
 2. shared primitives: buttons, forms, searchable select, modal, status, table, card, feedback;
 3. Agenda and operational subviews;
 4. Finance;
@@ -606,23 +626,25 @@ Each client-facing surface must be reviewed against:
 | Gate | Required |
 |---|---|
 | Shared shell / layout | PASS |
-| Tabler component conformity | PASS |
+| Centro Change visual consistency inspired by Tabler (no library/class requirement) | PASS |
 | Search/select behavior | PASS where applicable |
 | Italian client language | PASS |
 | Human label > technical ID | PASS |
 | Loading/empty/error states | PASS |
 | Responsive/mobile | PASS |
 | Keyboard/focus baseline | PASS |
-| ERPNext/Frappe debranding | PASS |
-| No Desk leakage | PASS |
+| ERPNext/Frappe debranding including transitory chrome and authorized client entry | PASS |
+| No client Desk leakage, shell shift or duplicate navigation | PASS |
 | Permission-neutral regression | PASS via #77 |
 | Business behavior unchanged | PASS |
+| Native-first choice documented for each view; dedicated UI only where justified | PASS |
+| Owner visual review against actual screenshots/workflows (not just automated DOM checks) | PASS only after explicit Owner acceptance |
 
 A screen is not accepted merely because it "looks better"; it must conform to the component and interaction rules above.
 
 ## 22. Known UAT observations absorbed into this design system
 
-The following previously observed UX issues are explicitly addressed by this specification:
+The following previously observed UX issues are explicitly addressed by this specification (including subsequent Owner observations on 2026-10-12):
 
 - patient/professional search requiring a second native dropdown click;
 - technical English status/notification vocabulary;
@@ -631,13 +653,17 @@ The following previously observed UX issues are explicitly addressed by this spe
 - ambiguous bank reconciliation amount wording;
 - raw/simple lists without a coherent component treatment;
 - inconsistent controls across Agenda, Finance and reports;
-- ERPNext/Frappe branding leakage.
+- ERPNext/Frappe branding leakage and upstream loader flash during client page transitions;
+- left navigation collapse/overlap, repeated brand in header and unpredictable Frappe dock;
+- oversized three-link Home cards and full-width patient actions without useful density;
+- unintended upstream Workspace with ERPNext/Marley logos;
+- Healthcare Practitioner view triggering Medical Department permission error (technical cause to verify; **no permission widening authorized**).
 
 These are design-system requirements, not invitations to change the underlying business rules.
 
 ## 23. Governance state
 
-Owner approved the Tabler-based direction on **2026-10-08**.
+Owner approved the initial Tabler-inspired visual direction on **2026-10-08** and clarified/approved the **native Frappe-first implementation strategy on 2026-10-12**. This newer decision supersedes the former mandatory Tabler Core 1.6.1 / Tabler-class interpretation. It does not authorize uninstalling assets, redesigning all native screens, changing roles, merging PRs, or deploying to production.
 
 This approval authorizes the **design direction and specification**.
 
@@ -649,4 +675,4 @@ It does **not** by itself authorize:
 - GOAL-03;
 - unreviewed cross-application implementation.
 
-Implementation remains subject to the current GOAL-02 governance, dedicated branch/PR workflow, technical regression evidence, #77 permission review and #75 final Owner visual acceptance.
+Implementation remains subject to current GOAL-02 governance, dedicated branch/PR workflow, technical and functional regression evidence, #77 permission review and #75 final Owner visual acceptance. PR #126 remains DRAFT and its visual UI acceptance remains **NOT ACCEPTED** until a new Owner review; no merge or server changes are authorized by this document update.
