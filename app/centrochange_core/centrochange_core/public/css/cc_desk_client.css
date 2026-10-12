@@ -1,6 +1,7 @@
 /* Tabler 1.6.1 shell on the supported Frappe Desk asset hook. */
 body.cc-client-desk{--tblr-primary:#12665f;--tblr-primary-rgb:18,102,95;--tblr-primary-lt:#e2f5f2;--cc-desk-accent:#12665f;--cc-desk-border:var(--tblr-border-color,#d7e7e3);--cc-sidebar-width:15.5rem;--primary:#12665f;--primary-color:#12665f;--font-stack:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 body.cc-client-desk>.body-sidebar-container{display:none!important}
+body.cc-client-desk>#desk-dock{display:none!important}
 body.cc-client-desk>.main-section{flex:1 1 auto!important;width:100%;min-width:0}
 body.cc-client-desk .main-section>#body,body.cc-client-desk .main-section>footer{margin-left:var(--cc-sidebar-width);min-width:0}
 body.cc-client-desk .page-container{min-width:0}
@@ -50,3 +51,45 @@ body.cc-client-desk.cc-sidebar-compact .cc-sidebar-link{justify-content:center}
 @media(max-width:575.98px){body.cc-client-desk .cc-navbar-identity strong{font-size:.9rem}body.cc-client-desk .cc-navbar-identity span{display:none}body.cc-client-desk .cc-navbar-account summary{max-width:7rem}body.cc-client-desk #cc-desk-global-nav{gap:.35rem;padding:.35rem .55rem}body.cc-client-desk .page-head{padding-inline:12px}}
 @media(prefers-reduced-motion:reduce){body.cc-client-desk #cc-desk-sidebar{transition:none}}
 @media print{body.cc-client-desk #cc-desk-global-nav,body.cc-client-desk #cc-desk-sidebar{display:none!important}body.cc-client-desk .main-section>#body{margin-left:0}}
+
+/* Frappe expands its own slim sidebar on some workspace/list routes. The
+   Centro Change shell owns the only horizontal offset on client pages. */
+body.cc-client-desk>.main-section{margin-left:0!important;padding-left:0!important;max-width:none!important;box-sizing:border-box}
+body.cc-client-desk .main-section>#body,body.cc-client-desk #cc-desk-global-nav{box-sizing:border-box}
+body.cc-client-desk .main-section>#body{width:calc(100% - var(--cc-sidebar-width));max-width:none!important}
+body.cc-client-desk #cc-desk-global-nav{width:calc(100% - var(--cc-sidebar-width))}
+body.cc-client-desk #cc-desk-sidebar{min-width:var(--cc-sidebar-width);max-width:var(--cc-sidebar-width)}
+body.cc-client-desk:not(.cc-sidebar-compact) #cc-desk-sidebar .cc-sidebar-menu{min-width:0}
+body.cc-client-desk:not(.cc-sidebar-compact) #cc-desk-sidebar .nav-link-title{overflow:visible;text-overflow:clip;white-space:normal}
+body.cc-client-desk .page-wrapper{min-width:0}
+body.cc-client-desk .page-body{max-width:none}
+
+/* Supported Desk List/Form markup keeps all native actions and controls.
+   These presentation rules give the client routes the same Tabler rhythm. */
+body.cc-client-desk.cc-native-view .page-head{background:#f6faf9;border-bottom:1px solid var(--cc-desk-border);padding-block:.45rem}
+body.cc-client-desk.cc-native-view .page-head .container{max-width:none;padding-inline:clamp(1rem,2vw,1.75rem)}
+body.cc-client-desk.cc-native-view .page-head .es-breadcrumbs__label{color:#173d3a;font-size:1.15rem;font-weight:650;letter-spacing:-.02em}
+body.cc-client-desk.cc-native-view .page-container{background:#f6faf9;padding:1.25rem clamp(1rem,2vw,1.75rem) 2rem}
+body.cc-client-desk.cc-native-view .page-container>.container{max-width:none;background:#fff;border:1px solid var(--cc-desk-border);border-radius:var(--tblr-border-radius-lg,.5rem);box-shadow:0 2px 8px #102b3808;padding:1.25rem;min-height:calc(100dvh - 160px)}
+body.cc-client-desk.cc-native-view .page-form.list-page-form{align-items:flex-end;gap:.5rem;flex-wrap:wrap;margin-bottom:1.1rem;padding:.8rem;background:#f6faf9;border:1px solid var(--cc-desk-border);border-radius:var(--tblr-border-radius,.4rem)}
+body.cc-client-desk.cc-native-view .list-page-form .standard-filter-section{flex:1 1 35rem;min-width:0;gap:.4rem;flex-wrap:wrap}
+body.cc-client-desk.cc-native-view .list-page-form .frappe-control{margin:0;min-width:9rem;flex:1 1 10rem;max-width:18rem}
+body.cc-client-desk.cc-native-view .list-page-form .form-control{background:#fff;border:1px solid var(--cc-desk-border);border-radius:var(--tblr-border-radius,.4rem);min-height:2.25rem;color:#173d3a;box-shadow:none}
+body.cc-client-desk.cc-native-view .list-page-form .form-control:focus{border-color:var(--cc-desk-accent);box-shadow:0 0 0 .18rem #12665f20}
+body.cc-client-desk.cc-native-view .list-page-form .btn,body.cc-client-desk.cc-native-view .page-actions .btn,body.cc-client-desk.cc-native-view .page-actions .es-button{border-radius:var(--tblr-border-radius,.4rem)}
+body.cc-client-desk.cc-native-view .list-row-head{background:#eaf3f1;border:1px solid var(--cc-desk-border);border-radius:var(--tblr-border-radius,.4rem);min-height:2.75rem;color:#365555;font-size:.78rem;font-weight:650}
+body.cc-client-desk.cc-native-view .list-row{border-bottom:1px solid #e6efed;min-height:3.1rem;background:#fff}
+body.cc-client-desk.cc-native-view .list-row:hover{background:#f6faf9}
+body.cc-client-desk.cc-native-view .list-row .list-subject a{color:#173d3a;font-weight:650;text-decoration:none}
+body.cc-client-desk.cc-native-view .list-row .list-subject a:hover{text-decoration:underline;color:var(--cc-desk-accent)}
+body.cc-client-desk.cc-native-view .list-row [data-fieldname="name"]{font-size:.77rem;color:#708984}
+body.cc-client-desk.cc-native-view .list-row [data-fieldname="name"] a{font-size:.73rem;font-weight:400;color:#708984}
+body.cc-client-desk.cc-native-view .list-row [data-fieldname="name"]{max-width:10rem}
+body.cc-client-desk.cc-native-view .list-row .es-badge{border-radius:999px;padding:.2rem .55rem;font-weight:600}
+body.cc-client-desk.cc-native-view .list-paging-area{padding-top:1rem;border-top:1px solid var(--cc-desk-border)}
+body.cc-client-desk.cc-native-view .form-layout,body.cc-client-desk.cc-native-view .form-section{background:#fff;border-radius:var(--tblr-border-radius-lg,.5rem)}
+body.cc-client-desk.cc-native-view .form-section .section-head{color:#173d3a;font-weight:650}
+body.cc-client-desk.cc-native-view .form-page .form-control{border-color:var(--cc-desk-border);border-radius:var(--tblr-border-radius,.4rem)}
+body.cc-client-desk.cc-native-view .form-page .form-control:focus{border-color:var(--cc-desk-accent);box-shadow:0 0 0 .18rem #12665f20}
+@media(max-width:991.98px){body.cc-client-desk #cc-desk-sidebar{min-width:min(18rem,88vw);max-width:min(18rem,88vw)}body.cc-client-desk .main-section>#body,body.cc-client-desk #cc-desk-global-nav{width:100%}body.cc-client-desk.cc-native-view .page-container>.container{padding:.75rem}}
+@media(max-width:575.98px){body.cc-client-desk.cc-native-view .page-container{padding:.65rem}body.cc-client-desk.cc-native-view .page-form.list-page-form{padding:.6rem}body.cc-client-desk.cc-native-view .list-page-form .frappe-control{min-width:calc(50% - .5rem)}body.cc-client-desk.cc-native-view .page-container>.container{min-height:calc(100dvh - 132px)}}

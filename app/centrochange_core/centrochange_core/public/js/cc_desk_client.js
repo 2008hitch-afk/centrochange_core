@@ -23,6 +23,12 @@
     "payment-entry": "Payment Entry", "bank-transaction": "Bank Transaction",
     "cc-audit-event": "CC Audit Event"
   };
+  const nativeRenderedTitles = {
+    patient: ["Paziente"], "healthcare-practitioner": ["Professionista"],
+    item: ["Servizio / articolo", "Articolo"], "item-price": ["Prezzo articolo"],
+    "sales-invoice": ["Fattura di vendita"], "purchase-invoice": ["Fattura di acquisto"],
+    "payment-entry": ["Registrazione pagamento"], "bank-transaction": ["Transazione bancaria"]
+  };
   const nativeFieldLabels = {
     "Patient Name": "Nome paziente", patient_name: "Nome paziente",
     "Patient Demographics": "Dati del paziente", "Medical History": "Storia clinica",
@@ -32,6 +38,10 @@
     "Healthcare Practitioner": "Professionista", practitioner_name: "Nome professionista",
     "Mobile": "Cellulare", mobile: "Cellulare", "E-mail": "Email",
     "Item Name": "Servizio", item_name: "Servizio", "Item Code": "Codice servizio",
+    "Medical Department": "Reparto", "Designation": "Qualifica", "Item Group": "Categoria",
+    "Variant Of": "Variante di", "Has Variants": "Ha varianti", "Purpose": "Uso",
+    "UOM": "Unità", "Phone (Office)": "Telefono ufficio", "Created On": "Creato il",
+    "Bank Account": "Conto bancario", "Deposit": "Entrata", "Withdrawal": "Uscita",
     "Posting Date": "Data contabile", "Due Date": "Scadenza",
     "Grand Total": "Totale", "Outstanding Amount": "Residuo",
     "Customer": "Soggetto fiscale", "Supplier": "Fornitore",
@@ -122,7 +132,12 @@
     const form = parts.length > parts.indexOf(route) + 1 ? window.cur_frm : null;
     const personField = route === "patient" ? "patient_name" : route === "healthcare-practitioner" ? "practitioner_name" : null;
     const name = personField && form?.doc?.[personField];
-    const personTitle = typeof name === "string" ? name.replace(/^CC-HTTP-UAT\d+\s+/, "").trim() : "";
+    const readablePerson = value => {
+      const short = value.replace(/^CC-HTTP-UAT\d+\s+/, "").trim();
+      if (route === "healthcare-practitioner") return ({a: "Professionista Alfa", b: "Professionista Beta", c: "Professionista Gamma"})[short] || short;
+      return short;
+    };
+    const personTitle = typeof name === "string" ? readablePerson(name) : "";
     for (const node of document.querySelectorAll(".page-head .title-text, .page-head .page-title, .page-head .breadcrumb-item")) {
       // Never replace a document name, field value or user-entered text.
       if (node.children.length === 0 && [english, route, route.replaceAll("-", " ")].includes(node.textContent.trim())) node.textContent = label;
@@ -137,8 +152,73 @@
         if (translation) node.textContent = translation;
       }
     }
+    const listTerms = {"Filters": "Filtri", "Filter": "Filtro", "Purpose": "Utilizzo", "UOM": "Unità", "Item Group": "Categoria", "Item Type": "Tipo servizio", "Medical Department": "Reparto", "Designation": "Qualifica", "Phone (Office)": "Telefono ufficio", "Bank Account": "Conto bancario", "Deposit": "Entrata", "Withdrawal": "Uscita", "Description": "Descrizione", "Tag": "Etichette", "Sales & Purchase": "Vendita e acquisto", "Nos": "Pezzi", "Paid": "Pagata", "Partly Paid": "Pagata parzialmente", "Unreconciled": "Da riconciliare", "Reconciled": "Riconciliata", "Submitted": "Confermata", "Draft": "Bozza"};
+    for (const root of document.querySelectorAll('.list-row-head, .list-row, .page-form, .page-head .page-actions, .form-sidebar')) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        const original = node.nodeValue;
+        const trimmed = original.trim();
+        if (listTerms[trimmed]) node.nodeValue = original.replace(trimmed, listTerms[trimmed]);
+        else if (root.classList.contains('form-sidebar') && original.includes('Last Edited By')) node.nodeValue = original.replace('Last Edited By', 'Ultima modifica di');
+        else if (root.classList.contains('form-sidebar') && original.includes('Assign')) node.nodeValue = original.replace('Assign', 'Assegna');
+        else if (root.classList.contains('form-sidebar') && original.includes('Tags')) node.nodeValue = original.replace('Tags', 'Etichette');
+      }
+    }
+    if (personTitle && form?.doc?.name) {
+      for (const node of document.querySelectorAll('.page-head .es-breadcrumbs__label, .form-sidebar .sidebar-stat')) {
+        if (node.children.length === 0 && node.textContent.trim() === form.doc.name) {
+          node.title = form.doc.name;
+          node.textContent = personTitle;
+        }
+      }
+      const sidebar = document.querySelector('.form-sidebar');
+      if (sidebar) {
+        const walker = document.createTreeWalker(sidebar, NodeFilter.SHOW_TEXT);
+        let node;
+        while ((node = walker.nextNode())) {
+          if (node.nodeValue.trim() === form.doc.name || node.nodeValue.trim() === name) {
+            node.parentElement.title = form.doc.name;
+            node.nodeValue = node.nodeValue.replace(node.nodeValue.trim(), personTitle);
+          }
+        }
+      }
+    }
+    // The demo fixture prefixes readable names with a synthetic import key.
+    // Keep the canonical value in href, data-name and title for traceability.
+    for (const node of document.querySelectorAll('.list-row .list-subject a[data-name], .list-row [data-fieldname="item_name"] a[data-name]')) {
+      const canonical = node.getAttribute("data-name") || "";
+      const displayed = node.textContent.trim();
+      if (/^CC-HTTP-UAT\d+\s+\S/.test(displayed)) {
+        node.title = `${displayed} · ${canonical}`;
+        node.textContent = readablePerson(displayed);
+      } else if (route === "bank-transaction" && /^CC DEV CC-HTTP-UAT\d+\s+[A-Z]$/.test(displayed)) {
+        node.title = displayed;
+        node.textContent = `Conto Centro ${displayed.split(" ").pop()}`;
+      }
+    }
+    if (route === "bank-transaction") {
+      for (const node of document.querySelectorAll('.list-row [data-fieldname="description"] a, .list-row [data-fieldname="description"] .ellipsis')) {
+        if (node.children.length || !/^SYNTHETIC UAT\s+/i.test(node.textContent.trim())) continue;
+        const original = node.textContent.trim();
+        node.title = original;
+        const clean = original.replace(/^SYNTHETIC UAT\s+/i, "");
+        node.textContent = clean.charAt(0).toLocaleUpperCase("it-IT") + clean.slice(1);
+      }
+    }
+    for (const input of document.querySelectorAll('.list-page-form input[placeholder]')) {
+      const label = input.placeholder === "Nome e Cognome" ? (route === "healthcare-practitioner" ? "Nome professionista" : "Nome paziente") :
+        nativeFieldLabels[input.placeholder] || ({"Medical Department": "Reparto", "Designation": "Qualifica", "Variant Of": "Variante di", "Item Group": "Categoria", "Item Name": "Servizio", "Nome articolo": "Nome servizio"})[input.placeholder];
+      if (label) input.placeholder = label;
+    }
+    for (const node of document.querySelectorAll('.page-head .es-breadcrumbs__label, .page-head .es-breadcrumbs__item')) {
+      if (node.children.length === 0 && [english, route, route.replaceAll("-", " "), ...(nativeRenderedTitles[route] || [])].includes(node.textContent.trim())) node.textContent = label;
+    }
+    document.querySelectorAll('.page-head').forEach(node => node.classList.add('page-header'));
+    document.querySelectorAll('.page-container').forEach(node => node.classList.add('page-body'));
     document.title = `${personTitle || label} · Centro Change`;
   }
+  let lastRenderedRoute = "";
   function render() {
     const user = window.frappe?.session?.user;
     const roles = new Set(window.frappe?.user_roles || []);
@@ -149,13 +229,16 @@
       return;
     }
     document.body.classList.add("cc-client-desk");
+    lastRenderedRoute = location.pathname + location.search;
+    const host = document.querySelector("body > .main-section");
+    if (!host) return;
+    host.classList.add("page");
+    host.querySelector(":scope > #body")?.classList.add("page-wrapper");
     let nav = document.getElementById("cc-desk-global-nav");
     let sidebar = document.getElementById("cc-desk-sidebar");
     if (!nav || !sidebar) {
       // Frappe v16 Desk uses a flex body. A direct body child consumes a
       // horizontal flex track and compresses every native Page/List/Form.
-      const host = document.querySelector("body > .main-section");
-      if (!host) return;
       nav = document.createElement("header");
       nav.id = "cc-desk-global-nav";
       nav.className = "navbar d-print-none";
@@ -278,6 +361,7 @@
       try { if (localStorage.getItem("cc-sidebar-compact") === "1") document.body.classList.add("cc-sidebar-compact"); } catch (_) {}
     }
     const route = nativeRoute();
+    document.body.classList.toggle("cc-native-view", Boolean(route));
     if (route) {
       presentNativeTitle(route);
     }
@@ -302,7 +386,11 @@
   const observer = new MutationObserver(() => {
     if (pending || !document.body.classList.contains("cc-client-desk")) return;
     pending = true;
-    requestAnimationFrame(() => { pending = false; presentNativeTitle(nativeRoute()); });
+    requestAnimationFrame(() => {
+      pending = false;
+      if (lastRenderedRoute !== location.pathname + location.search || !document.getElementById("cc-desk-global-nav") || !document.getElementById("cc-desk-sidebar")) render();
+      else presentNativeTitle(nativeRoute());
+    });
   });
   observer.observe(document.body, {childList: true, subtree: true});
 })();

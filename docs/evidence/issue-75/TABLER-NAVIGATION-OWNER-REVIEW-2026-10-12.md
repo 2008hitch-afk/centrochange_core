@@ -1,5 +1,7 @@
 # Issue #75 — Navigazione unica Tabler per GOAL-02
 
+> **Review Owner successiva: NON ACCETTATA.** Gli otto difetti sono registrati nella issue #75. Questo rapporto conserva l'esito tecnico storico della prima versione; l'intervento correttivo e il nuovo collaudo sono in [TABLER-UI-CORRECTION-OWNER-RETEST-2026-10-12.md](TABLER-UI-CORRECTION-OWNER-RETEST-2026-10-12.md). Nessun `OWNER VISUAL PASS` è attribuito alla PR #126.
+
 **Esito: `CENTROCHANGE_TABLER_NAVIGATION_READY_FOR_OWNER_REVIEW` (2026-10-12, 13:10 UTC).** Review visiva Owner e accettazione finale GOAL-02 ancora aperte. Branch `issue-75/tabler-navigation` stacked su PR DRAFT #125, che conserva PR DRAFT #112/#107; nessun merge.
 
 ## Delta

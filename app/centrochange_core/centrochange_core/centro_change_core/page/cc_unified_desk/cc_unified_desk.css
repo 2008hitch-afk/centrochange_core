@@ -25,3 +25,27 @@
 .cc-client .cc-desk-home-card:focus-visible{outline:2px solid #12665f;outline-offset:2px}
 @media(max-width:991.98px){.cc-client .cc-desk-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.cc-client .calendar-shell{min-height:430px;max-height:65dvh}.cc-client .cc-desk-home{padding:1.25rem .875rem}.cc-client .cc-desk-home-grid{grid-template-columns:minmax(0,1fr)}.cc-client .cc-desk-surface.finance-page .page-body{padding:1rem}}
+
+/* The workspace keeps its approved behavior; client screens share Tabler
+   spacing, surfaces, typography and controls with the native Desk lists. */
+.cc-client .cc-desk-surface:not(.cc-desk-home-surface){min-height:calc(100dvh - 64px);background:#f6faf9}
+.cc-client .cc-desk-surface .page-wrapper{margin-left:0}
+.cc-client .cc-desk-surface .page-body{padding:1.5rem clamp(1rem,2vw,1.75rem)}
+.cc-client .cc-desk-surface .page-header{align-items:center;justify-content:flex-start!important;text-align:left;min-height:3.25rem;margin:0 0 1.25rem;padding:0 0 1rem;border-bottom:1px solid #d7e7e3}
+.cc-client .cc-desk-surface h1{color:#173d3a;font-size:1.5rem;line-height:1.25;letter-spacing:-.02em;font-weight:700}
+.cc-client .cc-desk-surface .page-header h1{font-size:1.5rem!important;text-align:left;margin:0}
+.cc-client .cc-desk-surface h2{color:#173d3a;font-size:1.125rem;line-height:1.3;letter-spacing:-.01em}
+.cc-client .cc-desk-surface button,.cc-client .cc-desk-surface input,.cc-client .cc-desk-surface select{border-radius:var(--tblr-border-radius,.4rem)}
+.cc-client .cc-desk-surface input:focus-visible,.cc-client .cc-desk-surface select:focus-visible{border-color:#12665f;box-shadow:0 0 0 .18rem #12665f20}
+.cc-client .cc-desk-surface .primary-region,.cc-client .cc-desk-surface .detail{background:#fff;border:1px solid #d7e7e3;border-radius:var(--tblr-border-radius-lg,.5rem);box-shadow:0 2px 8px #102b3808;padding:1.25rem;min-width:0}
+.cc-client .cc-desk-surface .filters{padding:.75rem;margin:0 0 1.25rem;background:#f6faf9;border:1px solid #d7e7e3;border-radius:var(--tblr-border-radius,.4rem);flex-wrap:wrap}
+.cc-client .cc-desk-surface .table-wrap{border-radius:var(--tblr-border-radius,.4rem);border-color:#d7e7e3}
+.cc-client .cc-desk-surface table th{background:#eaf3f1;color:#365555;font-size:.8rem}
+.cc-client .cc-desk-surface table td{border-color:#e6efed}
+.cc-client .cc-desk-surface.professional-page .page-body{margin:1.25rem clamp(1rem,2vw,1.75rem);padding:1.25rem;background:#fff;border:1px solid #d7e7e3;border-radius:var(--tblr-border-radius-lg,.5rem);box-shadow:0 2px 8px #102b3808}
+.cc-client .cc-desk-surface.professional-page .page-body>nav[aria-label="Report"]{display:none}
+.cc-client .cc-desk-surface.professional-page .page-body>h1{margin:0 0 1.25rem;padding:0 0 1rem;border-bottom:1px solid #d7e7e3}
+.cc-client .cc-desk-surface.professional-page #professional-filters,.cc-client .cc-desk-surface.professional-page #patient-filters{display:flex;flex-wrap:wrap;gap:.75rem;align-items:end;margin-bottom:1rem;padding:.8rem;background:#f6faf9;border:1px solid #d7e7e3;border-radius:var(--tblr-border-radius,.4rem)}
+.cc-client .cc-desk-surface.professional-page #professional-filters label,.cc-client .cc-desk-surface.professional-page #patient-filters label{min-width:8rem}
+.cc-client .cc-desk-surface.professional-page #professional-filters button,.cc-client .cc-desk-surface.professional-page #patient-filters button{background:#12665f;color:#fff;border-color:#12665f}
+@media(max-width:700px){.cc-client .cc-desk-surface .page-body{padding:.75rem}.cc-client .cc-desk-surface .primary-region,.cc-client .cc-desk-surface .detail{padding:.75rem}.cc-client .cc-desk-surface.professional-page .page-body{margin:.65rem;padding:.75rem}.cc-client .cc-desk-surface .workspace{display:block}.cc-client .cc-desk-surface .detail{margin-top:.75rem}}
