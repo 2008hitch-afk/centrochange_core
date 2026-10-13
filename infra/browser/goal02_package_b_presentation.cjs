@@ -9,6 +9,7 @@ const source=fs.readFileSync(path.join(assets,'js/cc_desk_fragments.js'),'utf8')
 const fragments=JSON.parse(source.slice(source.indexOf('{')).trim().replace(/;$/,''));
 const json=(response,message)=>{response.setHeader('Content-Type','application/json');response.end(JSON.stringify({message}));};
 const reviewed=JSON.stringify({opposition:'No Opposition',eligibility:'SYNTHETIC_ELIGIBLE',expense_amount:10,expense_code:'SYNTHETIC_EXPENSE'});
+let gammaMode=false;
 const server=http.createServer((request,response)=>{
  const url=new URL(request.url,'http://localhost');
  if(url.pathname==='/finance'){
@@ -20,6 +21,7 @@ const server=http.createServer((request,response)=>{
   response.end('<!doctype html><html lang="it"><head><meta name="csrf-token" content="synthetic"><link rel="stylesheet" href="/assets/centrochange_core/css/workspace.css"></head><body><input id="audit-start"><input id="audit-end"><input id="audit-type"><input id="audit-reference"><form id="audit-filters"></form><p id="audit-error"></p><section id="audit-content"></section><button id="audit-prev"></button><button id="audit-next"></button><script type="module" src="/assets/centrochange_core/js/audit_view.js"></script></body></html>');return;
  }
  if(url.pathname==='/notifications'){
+  gammaMode=url.searchParams.has('gamma');
   response.setHeader('Content-Type','text/html; charset=utf-8');
   response.end('<!doctype html><html lang="it"><head><meta name="csrf-token" content="synthetic"></head><body><nav id="navigation"></nav><button id="logout"></button>'+fragments.agenda.page+fragments.agenda.modal+'<script>window.ccDeskNavigate=()=>{}</script><script type="module" src="/assets/centrochange_core/js/workspace.js"></script></body></html>');return;
  }
@@ -37,7 +39,9 @@ const server=http.createServer((request,response)=>{
   else if(method.endsWith('fiscal.records'))json(response,[{name:'TS-2',reference_name:'SEDUTA-1',status:'READY',attempt_count:0,direction:'OUTBOUND',corrects:'TS-1'},{name:'TS-1',reference_name:'SEDUTA-1',status:'ELIGIBILITY_PENDING',attempt_count:0,direction:'OUTBOUND'}]);
   else if(method.endsWith('fiscal.status'))json(response,{domain:'TS',status:url.searchParams.get('name')==='TS-2'?'READY':'ELIGIBILITY_PENDING',payload_file:'FILE-1',attempts:[]});
   else if(method.endsWith('audit_view.events'))json(response,{events:[{event_type:'SESSION_REOPENED',actor:'cc-http-uat0000001-m@example.invalid',event_time:'2026-10-13 16:56:29',reference_doctype:'Patient Appointment',reference_name:'SESSION-1',reason:'TEST',before_state:'{"state":"Closed"}',after_state:'{"state":"Reopened"}'}],has_more:false});
-  else if(method.endsWith('workspace.bootstrap'))json(response,{center:'A',centers:[{name:'A',branch:'Centro A'}],roles:['CC Manager'],practitioners:[],patients:[],services:[]});
+  else if(method.endsWith('workspace.bootstrap'))json(response,{center:'A',centers:[{name:'A',branch:'Centro A'}],roles:[gammaMode?'CC Practitioner':'CC Manager'],practitioners:[],patients:[],services:[]});
+  else if(method.endsWith('workspace.agenda'))json(response,{appointments:[],truncated:false});
+  else if(method.endsWith('workspace.schedules'))json(response,[]);
   else if(method.endsWith('client.get_list'))json(response,[]);
   else if(method.endsWith('booking_confirmation.records'))json(response,[{name:'CONF-1',recipient:'demo@example.invalid',state:'Simulated Sent',message:'<p>Primo incontro confermato per il 14/10/2026 alle 12:00 con Marco.</p><p>Servizio: Primo incontro · 60 minuti.</p>',last_error:''}]);
   else {response.statusCode=404;json(response,'Unexpected API: '+method);}
@@ -78,7 +82,10 @@ const server=http.createServer((request,response)=>{
   assert.match(await page.locator('.history-entry details').innerText(),/14\/10\/2026.*12:00.*Marco.*Primo incontro.*60 minuti/s);
   assert.equal(await page.locator('.history-entry p').filter({hasText:'<p>'}).count(),0);
   if(process.env.CC_SCREENSHOT_DIR)await page.screenshot({path:path.join(process.env.CC_SCREENSHOT_DIR,'confirmation-mobile-offline.png'),fullPage:true});
+  await page.goto(base+'/notifications?gamma=1');
+  await page.getByText('Nessun professionista assegnato in questo centro.').waitFor();
+  assert.equal(await page.locator('#new-booking').isHidden(),true);
   assert.deepEqual(errors,[]);
-  console.log(JSON.stringify({status:'PASS',checks:['TS two-column table','TS sections','previous version opens','mobile no overflow','audit Italian states','raw audit collapsed','confirmation content readable','no JavaScript errors'],runtime:'offline mock'}));
+  console.log(JSON.stringify({status:'PASS',checks:['TS two-column table','TS sections','previous version opens','mobile no overflow','audit Italian states','raw audit collapsed','confirmation content readable','unassigned professional empty Agenda','no JavaScript errors'],runtime:'offline mock'}));
  }finally{await browser.close();server.close();}
 })().catch(error=>{console.error(error);server.close();process.exitCode=1;});
