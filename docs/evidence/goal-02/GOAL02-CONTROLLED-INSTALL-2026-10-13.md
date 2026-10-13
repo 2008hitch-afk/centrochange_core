@@ -1,6 +1,6 @@
 # GOAL-02 A+B+C controlled DEV installation — executor preparation
 
-Status: **BLOCKED / waiting for one Owner interactive-sudo command**. No build, deployment, restart, Site or database write was performed by Codex. Ordinary `docker ps` returned `permission denied while trying to connect to the docker API`; this is the access gate explicitly covered by the Owner's authorization in issue #69 comment `6154887590`.
+Status: **READY_FOR_OWNER_RETRY** after correcting the first invocation's read-only preflight failure. No build, deployment, restart, Site or database write was performed by Codex. Ordinary `docker ps` returned `permission denied while trying to connect to the docker API`; this is the access gate explicitly covered by the Owner's authorization in issue #69 comment `6154887590`.
 
 ## Authorized candidate and observed read-only state
 
@@ -24,11 +24,11 @@ The live tests and rollback have **not** run. A static pass cannot be called `LI
 
 ## Static verification
 
-- `python3 -m unittest infra/tests/test_goal02_install.py` — 3 PASS.
+- `python3 -m unittest infra/tests/test_goal02_install.py` — 4 PASS after the Frappe probe fix.
 - `python3 -m py_compile infra/goal02_install_one_command.py` — PASS.
 - `node --check` for the new live browser harness and modified #79 harness — PASS.
 - `git diff --check` — PASS.
-- `--dry-run` with exact script SHA — pending final commit and hash, then run before Owner command.
+- `--dry-run` with exact updated script SHA — PASS, no runtime mutation.
 
 ## Scope and residual limits
 
