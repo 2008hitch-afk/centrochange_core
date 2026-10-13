@@ -1,5 +1,7 @@
 /* Unified Desk content uses the shared Tabler sidebar and navbar from Desk. */
 .cc-client{min-width:0;max-width:100%;--cc-native-bg:#fff}
+.cc-client #modal-fields .cc-combobox{position:relative;min-width:0}
+.cc-client #modal-fields .cc-combobox>.cc-options{position:absolute;top:calc(100% - 1.15rem);left:0;width:100%;max-height:16rem;overflow:auto;z-index:1080;padding:.25rem}
 .cc-client .cc-desk-surface{min-width:0}
 .cc-client .app-shell{display:block!important;min-height:0}
 .cc-client .page-wrapper{min-width:0}
