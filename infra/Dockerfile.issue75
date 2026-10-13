@@ -1,0 +1,35 @@
+# Presentation-only derivative of the verified issue #124 single-stack image.
+# The local base tag is asserted against its immutable ID before build.
+FROM centrochange-single:issue124-runtime
+
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_desk_client.js apps/centrochange_core/centrochange_core/public/js/cc_desk_client.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/css/cc_desk_client.css apps/centrochange_core/centrochange_core/public/css/cc_desk_client.css
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/css/cc_premium_nexus.css apps/centrochange_core/centrochange_core/public/css/cc_premium_nexus.css
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/images/centrochange-wordmark.svg apps/centrochange_core/centrochange_core/public/images/centrochange-wordmark.svg
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/operations/website_brand.py apps/centrochange_core/centrochange_core/operations/website_brand.py
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/operations/client_landing.py apps/centrochange_core/centrochange_core/operations/client_landing.py
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.js apps/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.css apps/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.css
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_desk_fragments.js apps/centrochange_core/centrochange_core/public/js/cc_desk_fragments.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/finance_workspace.js apps/centrochange_core/centrochange_core/public/js/finance_workspace.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/audit_view.js apps/centrochange_core/centrochange_core/public/js/audit_view.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/hooks.py apps/centrochange_core/centrochange_core/hooks.py
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/patches.txt apps/centrochange_core/centrochange_core/patches.txt
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/patches/issue75_native_filters.py apps/centrochange_core/centrochange_core/patches/issue75_native_filters.py
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_patient_list.js apps/centrochange_core/centrochange_core/public/js/cc_patient_list.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_practitioner_list.js apps/centrochange_core/centrochange_core/public/js/cc_practitioner_list.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_practitioner_form.js apps/centrochange_core/centrochange_core/public/js/cc_practitioner_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_patient_form.js apps/centrochange_core/centrochange_core/public/js/cc_patient_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_catalog_finance_list.js apps/centrochange_core/centrochange_core/public/js/cc_catalog_finance_list.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_item_form.js apps/centrochange_core/centrochange_core/public/js/cc_item_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_item_price_form.js apps/centrochange_core/centrochange_core/public/js/cc_item_price_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_operational_form.js apps/centrochange_core/centrochange_core/public/js/cc_operational_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/js/cc_finance_form.js apps/centrochange_core/centrochange_core/public/js/cc_finance_form.js
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/translations/it.csv apps/centrochange_core/centrochange_core/translations/it.csv
+
+RUN bench build --force && cp -a sites/assets/. assets/
+
+LABEL centrochange.issue="75" centrochange.base_issue="124"

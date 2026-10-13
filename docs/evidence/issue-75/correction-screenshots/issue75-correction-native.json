@@ -1,0 +1,311 @@
+{
+  "results": [
+    {
+      "label": "pazienti",
+      "url": "http://centrochange.local:8080/desk/healthcare/patient",
+      "title": "Pazienti · Centro Change",
+      "sidebar": {
+        "x": 0,
+        "w": 248,
+        "h": 900,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "nav": {
+        "x": 248,
+        "w": 1182,
+        "h": 64,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "list": {
+        "x": 312,
+        "w": 1054,
+        "h": 44,
+        "bg": "rgb(234, 243, 241)"
+      },
+      "form": null,
+      "head": {
+        "x": 276,
+        "w": 1126,
+        "h": 63.375,
+        "bg": "rgb(246, 250, 249)"
+      },
+      "dock": "none",
+      "oldbar": false,
+      "overflow": 0,
+      "body": "cc-client-desk cc-native-view desktop-page no-list-sidebar"
+    },
+    {
+      "label": "professionisti",
+      "url": "http://centrochange.local:8080/desk/healthcare/healthcare-practitioner",
+      "title": "Professionisti · Centro Change",
+      "sidebar": {
+        "x": 0,
+        "w": 248,
+        "h": 900,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "nav": {
+        "x": 248,
+        "w": 1182,
+        "h": 64,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "list": {
+        "x": 312,
+        "w": 1054,
+        "h": 44,
+        "bg": "rgb(234, 243, 241)"
+      },
+      "form": null,
+      "head": {
+        "x": 276,
+        "w": 1126,
+        "h": 63.375,
+        "bg": "rgb(246, 250, 249)"
+      },
+      "dock": "none",
+      "oldbar": false,
+      "overflow": 0,
+      "body": "cc-client-desk cc-native-view desktop-page no-list-sidebar"
+    },
+    {
+      "label": "servizi",
+      "url": "http://centrochange.local:8080/desk/stock/item?disabled=0",
+      "title": "Servizi · Centro Change",
+      "sidebar": {
+        "x": 0,
+        "w": 248,
+        "h": 900,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "nav": {
+        "x": 248,
+        "w": 1182,
+        "h": 64,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "list": {
+        "x": 312,
+        "w": 1054,
+        "h": 44,
+        "bg": "rgb(234, 243, 241)"
+      },
+      "form": null,
+      "head": {
+        "x": 276,
+        "w": 1126,
+        "h": 63.375,
+        "bg": "rgb(246, 250, 249)"
+      },
+      "dock": "none",
+      "oldbar": false,
+      "overflow": 0,
+      "body": "cc-client-desk cc-native-view desktop-page dock-active dock-pinned dock-open no-list-sidebar"
+    },
+    {
+      "label": "tariffe",
+      "url": "http://centrochange.local:8080/desk/stock/item-price",
+      "title": "Tariffe · Centro Change",
+      "sidebar": {
+        "x": 0,
+        "w": 248,
+        "h": 900,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "nav": {
+        "x": 248,
+        "w": 1182,
+        "h": 64,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "list": {
+        "x": 312,
+        "w": 1054,
+        "h": 44,
+        "bg": "rgb(234, 243, 241)"
+      },
+      "form": null,
+      "head": {
+        "x": 276,
+        "w": 1126,
+        "h": 63.375,
+        "bg": "rgb(246, 250, 249)"
+      },
+      "dock": "none",
+      "oldbar": false,
+      "overflow": 0,
+      "body": "cc-client-desk cc-native-view desktop-page dock-active dock-pinned dock-open no-list-sidebar"
+    },
+    {
+      "label": "fatture-pazienti",
+      "url": "http://centrochange.local:8080/desk/accounts/sales-invoice",
+      "title": "Fatture pazienti · Centro Change",
+      "sidebar": {
+        "x": 0,
+        "w": 248,
+        "h": 900,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "nav": {
+        "x": 248,
+        "w": 1182,
+        "h": 64,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "list": {
+        "x": 312,
+        "w": 1054,
+        "h": 44,
+        "bg": "rgb(234, 243, 241)"
+      },
+      "form": null,
+      "head": {
+        "x": 276,
+        "w": 1126,
+        "h": 63.375,
+        "bg": "rgb(246, 250, 249)"
+      },
+      "dock": "none",
+      "oldbar": false,
+      "overflow": 0,
+      "body": "cc-client-desk cc-native-view desktop-page dock-active dock-pinned dock-open no-list-sidebar"
+    },
+    {
+      "label": "fatture-professionisti",
+      "url": "http://centrochange.local:8080/desk/accounts/purchase-invoice",
+      "title": "Fatture professionisti · Centro Change",
+      "sidebar": {
+        "x": 0,
+        "w": 248,
+        "h": 900,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "nav": {
+        "x": 248,
+        "w": 1182,
+        "h": 64,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "list": {
+        "x": 312,
+        "w": 1054,
+        "h": 44,
+        "bg": "rgb(234, 243, 241)"
+      },
+      "form": null,
+      "head": {
+        "x": 276,
+        "w": 1126,
+        "h": 63.375,
+        "bg": "rgb(246, 250, 249)"
+      },
+      "dock": "none",
+      "oldbar": false,
+      "overflow": 0,
+      "body": "cc-client-desk cc-native-view desktop-page dock-active dock-pinned dock-open no-list-sidebar"
+    },
+    {
+      "label": "incassi",
+      "url": "http://centrochange.local:8080/desk/accounts/payment-entry",
+      "title": "Incassi e pagamenti · Centro Change",
+      "sidebar": {
+        "x": 0,
+        "w": 248,
+        "h": 900,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "nav": {
+        "x": 248,
+        "w": 1182,
+        "h": 64,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "list": {
+        "x": 312,
+        "w": 1054,
+        "h": 44,
+        "bg": "rgb(234, 243, 241)"
+      },
+      "form": null,
+      "head": {
+        "x": 276,
+        "w": 1126,
+        "h": 63.375,
+        "bg": "rgb(246, 250, 249)"
+      },
+      "dock": "none",
+      "oldbar": false,
+      "overflow": 0,
+      "body": "cc-client-desk cc-native-view desktop-page dock-active dock-pinned dock-open no-list-sidebar"
+    },
+    {
+      "label": "banca",
+      "url": "http://centrochange.local:8080/desk/accounts/bank-transaction",
+      "title": "Movimenti bancari · Centro Change",
+      "sidebar": {
+        "x": 0,
+        "w": 248,
+        "h": 900,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "nav": {
+        "x": 248,
+        "w": 1182,
+        "h": 64,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "list": {
+        "x": 312,
+        "w": 1054,
+        "h": 44,
+        "bg": "rgb(234, 243, 241)"
+      },
+      "form": null,
+      "head": {
+        "x": 276,
+        "w": 1126,
+        "h": 63.375,
+        "bg": "rgb(246, 250, 249)"
+      },
+      "dock": "none",
+      "oldbar": false,
+      "overflow": 0,
+      "body": "cc-client-desk cc-native-view desktop-page dock-active dock-pinned dock-open no-list-sidebar"
+    },
+    {
+      "label": "registro",
+      "url": "http://centrochange.local:8080/desk/centro-change/cc-audit-event",
+      "title": "Registro modifiche · Centro Change",
+      "sidebar": {
+        "x": 0,
+        "w": 248,
+        "h": 900,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "nav": {
+        "x": 248,
+        "w": 1182,
+        "h": 64,
+        "bg": "rgb(255, 255, 255)"
+      },
+      "list": {
+        "x": 312,
+        "w": 1054,
+        "h": 44,
+        "bg": "rgb(234, 243, 241)"
+      },
+      "form": null,
+      "head": {
+        "x": 276,
+        "w": 1126,
+        "h": 63.375,
+        "bg": "rgb(246, 250, 249)"
+      },
+      "dock": "none",
+      "oldbar": false,
+      "overflow": 0,
+      "body": "cc-client-desk cc-native-view desktop-page no-list-sidebar"
+    }
+  ],
+  "errors": []
+}

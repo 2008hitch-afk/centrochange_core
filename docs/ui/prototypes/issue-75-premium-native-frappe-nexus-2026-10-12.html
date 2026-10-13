@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Centro Change · Prototipo Frappe nativo + Nexus CSS</title>
+<style>
+/*
+  FONTE REALE: Nexus Theme v2.1.2 / branch version-16
+  https://github.com/abbas0444/nexus_theme
+  Copyright (c) 2026 Abbas Raza. MIT License.
+  Estratti selezionati dai moduli originali theme_variables.bundle.css
+  e density.bundle.css. Nelle regole sotto soltanto i selettori html/:root
+  sono stati riadattati a #cc-prototype per confinare gli stili a questa anteprima.
+  I colori del marchio sono quelli Centro Change (#12665F).
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+*/
+#cc-prototype {
+  /* Original Nexus Theme tokens, palette overriden to Centro Change brand */
+  --theme-bg-primary: #ffffff;
+  --theme-bg-surface: #f7f8fa;
+  --theme-bg-input: #ffffff;
+  --theme-text-primary: #1f2937;
+  --theme-text-muted: #6b7280;
+  --theme-accent: #12665F;
+  --theme-accent-hover: #0d514a;
+  --theme-button-bg: #12665F;
+  --theme-button-text: #ffffff;
+  --theme-button-hover-bg: #0d514a;
+  --theme-border: #e5e7eb;
+  --theme-font-family: "Inter", system-ui, -apple-system, sans-serif;
+  --theme-font-size-base: 14px;
+  --theme-font-weight-base: 400;
+  --theme-transition-duration: 150ms;
+  --theme-border-radius: 8px;
+  --theme-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --theme-shadow-sm: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --theme-shadow-md: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --theme-ring: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 22%, transparent);
+  --theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --bg-color: var(--theme-bg-primary);
+  --bg-light-gray: var(--theme-bg-surface);
+  --text-color: var(--theme-text-primary);
+  --text-muted: var(--theme-text-muted);
+  --primary: var(--theme-accent);
+  --primary-color: var(--theme-accent);
+  --border-color: var(--theme-border);
+  --shadow-sm: var(--theme-shadow-sm);
+}
+/* Genuine Nexus density values and Frappe-native selectors adapted only for demo scope */
+#cc-prototype[data-density="compact"] {
+  --nx-density-scale: 0.8; --input-height: 24px; --btn-height: 24px;
+  --nx-btn-pad-y: 2px; --nx-input-pad-y: 3px; --nx-field-gap: 10px;
+  --nx-label-gap: 4px; --nx-section-head-pad-y: 6px;
+  --nx-section-body-gap: 6px; --nx-tab-pad-y: 7px;
+}
+#cc-prototype[data-density="spacious"] {
+  --nx-density-scale: 1.2; --input-height: 32px; --btn-height: 32px;
+  --nx-btn-pad-y: 6px; --nx-input-pad-y: 6px; --nx-field-gap: 22px;
+  --nx-label-gap: 8px; --nx-section-head-pad-y: 16px;
+  --nx-section-body-gap: 16px; --nx-tab-pad-y: 13px;
+}
+#cc-prototype[data-density="comfortable"] {
+  --input-height: 29px; --btn-height: 29px; --nx-btn-pad-y: 4px;
+  --nx-input-pad-y: 5px; --nx-field-gap: 16px; --nx-label-gap: 6px;
+  --nx-section-head-pad-y: 11px; --nx-section-body-gap: 10px; --nx-tab-pad-y: 10px;
+}
+#cc-prototype[data-density] .btn:not(.btn-md):not(.btn-lg) {
+  padding-top: var(--nx-btn-pad-y); padding-bottom: var(--nx-btn-pad-y);
+}
+#cc-prototype[data-density] input.form-control {
+  padding-top: var(--nx-input-pad-y); padding-bottom: var(--nx-input-pad-y);
+}
+#cc-prototype[data-density] .form-column .frappe-control:not(:last-child) {
+  margin-bottom: var(--nx-field-gap);
+}
+#cc-prototype[data-density] .control-label { margin-bottom: var(--nx-label-gap); }
+#cc-prototype[data-density] .form-section .section-head {
+  padding-top: var(--nx-section-head-pad-y);
+  padding-bottom: var(--nx-section-head-pad-y);
+}
+#cc-prototype[data-density] .form-section .section-body:first-child {
+  margin-top: var(--nx-section-body-gap);
+}
+#cc-prototype[data-density] .form-tabs-list .nav-link {
+  padding-top: var(--nx-tab-pad-y);padding-bottom: var(--nx-tab-pad-y);
+}
+/* Centro Change composition layer: reusable visual rules over Frappe native-like structure */
+* { box-sizing: border-box; }
+html,body { margin:0; padding:0; }
+body { background: #ebefec; font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; }
+button,select,input,textarea{font:inherit}
+#cc-prototype { color:#22312c; font-family:var(--theme-font-family); font-size:12px; background:#f5f6f5; border:1px solid #dce4df; min-height:730px; }
+#cc-prototype button,#cc-prototype select{cursor:pointer}
+#cc-prototype button:focus-visible,#cc-prototype select:focus-visible,#cc-prototype input:focus-visible,#cc-prototype textarea:focus-visible{outline:none;box-shadow:var(--theme-ring)}
+#cc-prototype .shell { display:grid;grid-template-columns:215px minmax(0,1fr);min-height:730px; }
+#cc-prototype .body-sidebar {background:#123a34;color:#e9f3ee;display:flex;flex-direction:column;min-width:0;}
+#cc-prototype .sidebar-brand{height:63px;border-bottom:1px solid #ffffff15;display:flex;align-items:center;padding:0 21px;font-size:16px;letter-spacing:-.04em;font-weight:720;color:#fff;}
+#cc-prototype .sidebar-brand span{font-weight:360;margin-left:4px;color:#c5ddd2}
+#cc-prototype .side-main{padding:24px 12px;flex:1}
+#cc-prototype .side-group{padding:0 12px;color:#96b8ab;font-size:9px;letter-spacing:.14em;font-weight:700;margin:0 0 10px;text-transform:uppercase}
+#cc-prototype .side-group:not(:first-child){margin-top:24px}
+#cc-prototype .side-link {display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;background:transparent;color:#ccded5;font-size:12px;font-weight:520;height:35px;padding:0 12px;border-radius:5px;margin:1px 0;}
+#cc-prototype .side-link svg{height:16px;width:16px;flex:none;color:#a7c4b8}
+#cc-prototype .side-link.active{background:#e0f1e8;color:#114d3d;font-weight:700}
+#cc-prototype .side-link.active svg{color:#125f4e}
+#cc-prototype .side-link:disabled{opacity:.55;cursor:default}
+#cc-prototype .side-footer{border-top:1px solid #ffffff20;padding:16px 21px;font-size:10px;color:#aac7b8;line-height:1.5}
+#cc-prototype .side-footer b{font-weight:650;color:#e1eee7}
+#cc-prototype .right{min-width:0;display:flex;flex-direction:column}
+#cc-prototype .toolbar{height:63px;background:#fff;border-bottom:1px solid #e7ebe7;display:flex;align-items:center;gap:12px;padding:0 30px;justify-content:space-between}
+#cc-prototype .toolbar-path{font-size:11px;color:#8b9891;display:flex;align-items:center;gap:9px;white-space:nowrap}
+#cc-prototype .toolbar-path b{color:#465e52;font-weight:680}
+#cc-prototype .toolbar-right{display:flex;align-items:center;gap:12px}
+#cc-prototype .keyboard{font-size:10px;border:1px solid #e6eae6;padding:5px 8px;border-radius:5px;color:#9ba7a0}
+#cc-prototype .avatar{width:27px;height:27px;background:#e5ede8;border-radius:6px;color:#2b6854;display:grid;place-items:center;font-size:10px;font-weight:750}
+#cc-prototype .tag-demo{background:#edf4ef;color:#4e7f64;border-radius:4px;padding:4px 6px;font-size:9px;font-weight:700;letter-spacing:.06em}
+#cc-prototype .main{width:100%;max-width:1270px;margin:0 auto;padding:29px 36px 48px;flex:1}
+#cc-prototype .crumb-back{display:inline-flex;align-items:center;gap:8px;color:#557c69;background:transparent;border:0;padding:0;font-size:11px;font-weight:650;margin-bottom:21px}
+#cc-prototype .page-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:26px}
+#cc-prototype .page-overline{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#768a7d;font-weight:720;margin-bottom:10px}
+#cc-prototype h1{font-size:32px;line-height:1.1;letter-spacing:-.045em;font-weight:650;margin:0;color:#1b3027}
+#cc-prototype .subtitle{margin-top:9px;color:#819088;font-size:11px}
+#cc-prototype .status{display:inline-flex;align-items:center;gap:7px;font-size:10px;color:#267056;background:#e6f3e9;border:1px solid #d3e8d9;border-radius:4px;padding:6px 9px;margin-left:13px;vertical-align:middle;font-weight:650;letter-spacing:0}
+#cc-prototype .status:before{content:"";height:6px;width:6px;border-radius:50%;background:#268d63}
+#cc-prototype .actions{display:flex;align-items:center;gap:7px}
+#cc-prototype .btn{font-size:11px;height:auto;min-height:31px;padding:4px 12px;border-radius:5px;font-weight:650;background:#fff;border:1px solid #dbe4dd;color:#496759;box-shadow:0 1px 1px #203c2910;white-space:nowrap;line-height:1.5}
+#cc-prototype .btn:hover{background:#f1f7f3}
+#cc-prototype .btn.primary{background:#12665F;color:white;border-color:#12665f}
+#cc-prototype .btn.primary:hover{background:#0d514a}
+#cc-prototype .btn:disabled{opacity:.4;cursor:default}
+#cc-prototype .content-grid{display:grid;grid-template-columns:minmax(0,1fr) 216px;gap:32px;align-items:start;}
+#cc-prototype .form-pane{background:#fff;border:1px solid #e1e7e2;border-radius:7px;min-width:0;overflow:hidden;}
+#cc-prototype .form-tabs-list{display:flex;align-items:center;gap:24px;border-bottom:1px solid #e3e8e4;padding:0 22px;}
+#cc-prototype .nav-link{display:block;border:0;border-bottom:2px solid transparent;background:transparent;color:#73857a;font-weight:600;font-size:11px;padding:10px 1px;cursor:pointer}
+#cc-prototype .nav-link.active{border-bottom-color:#12665f;color:#185c4a}
+#cc-prototype .tab-body{padding:24px 28px 31px;}
+#cc-prototype .tab-body[hidden]{display:none}
+#cc-prototype .section-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#234638;font-weight:750;border-bottom:1px solid #ebefeb;margin-bottom:16px;padding-bottom:11px}
+#cc-prototype .section-eyebrow{font-size:10px;color:#9aa8a0;font-weight:450}
+#cc-prototype .section-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 23px}
+#cc-prototype .frappe-control{min-width:0}
+#cc-prototype .control-label{display:block;color:#68796f;font-size:10px;font-weight:670}
+#cc-prototype .form-control{display:block;background:#fff;border:1px solid #dce4dd;border-radius:5px;min-height:33px;padding:7px 11px;font-size:12px;color:#243a30;width:100%;outline:none;}
+#cc-prototype .form-control:disabled{background:#f6f8f6;color:#6a7c72}
+#cc-prototype .form-control[readonly]{background:#f6f8f6}
+#cc-prototype .readable{padding:7px 1px;font-size:12px;font-weight:600;min-height:33px;color:#283e32}
+#cc-prototype .readable.muted{color:#84968a;font-weight:480}
+#cc-prototype textarea.form-control{min-height:85px;resize:vertical}
+#cc-prototype .field-wide{grid-column:1/-1}
+#cc-prototype .form-section+.form-section{margin-top:22px}
+#cc-prototype .help{color:#9cab9f;font-size:10px;line-height:1.5;margin-top:7px}
+#cc-prototype .details-side{font-size:11px}
+#cc-prototype .side-block{border-top:1px solid #dee7df;padding:16px 0}
+#cc-prototype .side-block:first-child{border-top:0;padding-top:4px}
+#cc-prototype .side-title{color:#435a4c;font-weight:750;font-size:10px;text-transform:uppercase;letter-spacing:.09em;margin-bottom:13px}
+#cc-prototype .side-data{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #e9eeea;font-size:10px}
+#cc-prototype .side-data span{color:#8b9d91}
+#cc-prototype .side-data b{font-weight:650;text-align:right;color:#334d3e}
+#cc-prototype .inline-link{background:none;border:0;color:#12665f;font-size:11px;font-weight:680;padding:0;text-align:left}
+#cc-prototype .side-alert{background:#eaf2ed;color:#52745f;border-left:2px solid #549d78;padding:12px;font-size:10px;line-height:1.65;margin-top:15px}
+#cc-prototype .side-alert b{color:#356049}
+#cc-prototype details.technical{border-top:1px solid #e3eae4;margin-top:27px}
+#cc-prototype details.technical summary{padding:14px 0;color:#667d70;font-weight:650;font-size:11px;cursor:pointer;list-style:none;display:flex;align-items:center;gap:7px}
+#cc-prototype details.technical summary::before{content:"▸";color:#89a496}
+#cc-prototype details.technical[open] summary::before{content:"▾"}
+#cc-prototype .tech-row{font-size:10px;color:#637669;background:#f8faf8;border:1px solid #e4eae4;border-radius:4px;padding:11px;word-break:break-word;line-height:1.6}
+#cc-prototype .toolbar-select{border:1px solid #e1e7e0;color:#536b5b;background:#fff;border-radius:5px;font-size:10px;height:31px;padding:0 7px}
+#cc-prototype .footnote{margin-top:21px;color:#899c90;font-size:10px;line-height:1.6}
+#cc-prototype .data-table{border-collapse:collapse;width:100%;margin-top:12px;font-size:11px}
+#cc-prototype .data-table th{background:#f7faf7;color:#7c8f82;font-size:10px;text-transform:uppercase;letter-spacing:.05em;text-align:left;font-weight:700;padding:11px 10px;border-bottom:1px solid #e0e9e1}
+#cc-prototype .data-table td{padding:14px 10px;border-bottom:1px solid #eef1ee;vertical-align:middle}
+#cc-prototype .list-row:hover{background:#f8fbf9}
+#cc-prototype .num{text-align:right}
+#cc-prototype .list-panel{border:1px solid #dfe7e0;border-radius:6px;background:#fff;padding:5px 0;overflow:hidden}
+#cc-prototype .list-toolbar{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;gap:8px}
+#cc-prototype .search{border:1px solid #dfe7e0;border-radius:5px;min-height:31px;padding:6px 9px;width:min(100%,265px);font-size:11px;outline:none}
+#cc-prototype .list-link{color:#12665f;background:transparent;border:0;padding:0;font-weight:650;text-align:left;font-size:11px}
+#cc-prototype .indicate{font-size:10px;color:#418363;font-weight:650}
+#cc-prototype .tech-preview{background:#fffaf1;border:1px solid #f0e4c4;padding:11px 13px;font-size:10px;line-height:1.7;color:#81622f;margin-top:15px}
+#cc-prototype .toast{position:fixed;bottom:24px;right:24px;box-shadow:var(--theme-shadow-md);background:#173e30;color:#fff;padding:12px 17px;border-radius:7px;font-size:11px;z-index:10;max-width:380px}
+#cc-prototype .toast[hidden]{display:none}
+#cc-prototype .view[hidden]{display:none}
+#cc-prototype .mobnav{display:none}
+@media(max-width:1030px){#cc-prototype .shell{grid-template-columns:183px minmax(0,1fr)}#cc-prototype .main{padding:22px 22px 30px}#cc-prototype .content-grid{grid-template-columns:minmax(0,1fr) 180px;gap:18px}#cc-prototype .toolbar{padding:0 22px}}
+@media(max-width:760px){#cc-prototype .shell{display:block}#cc-prototype .body-sidebar{display:none}#cc-prototype .mobnav{display:flex;background:#123a34;color:white;gap:4px;padding:9px}#cc-prototype .mobnav button{flex:1;background:#1e5146;border:1px solid #3f7263;color:white;border-radius:4px;padding:9px;font-weight:600;font-size:11px}#cc-prototype .toolbar{height:54px;padding:0 13px}#cc-prototype .keyboard{display:none}#cc-prototype .main{padding:22px 15px}#cc-prototype .content-grid{display:block}#cc-prototype .details-side{border-top:1px solid #e2e8e1;margin-top:22px}#cc-prototype .page-head{flex-wrap:wrap}#cc-prototype h1{font-size:27px}}
+@media(max-width:470px){#cc-prototype .section-body{display:block}#cc-prototype .tab-body{padding:15px}#cc-prototype .form-tabs-list{gap:15px;padding:0 12px}#cc-prototype .toolbar-path{font-size:9px}#cc-prototype .page-head{margin-bottom:17px}#cc-prototype h1{font-size:25px}#cc-prototype .status{margin-left:0;margin-top:10px}}
+</style>
+</head>
+<body>
+<div id="cc-prototype" data-density="comfortable">
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+<symbol id="cc-icon-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8v10h-7v-7h-4v7H3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+<symbol id="cc-icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M7 3v4m10-4v4M3 10h18" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+<symbol id="cc-icon-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 6a3 3 0 0 1 0 6m0 4c3 0 4 2 4 5" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+<symbol id="cc-icon-box" viewBox="0 0 24 24"><path d="M3 7 12 3l9 4v10l-9 4-9-4zM3 7l9 4 9-4m-9 4v10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+<symbol id="cc-icon-bank" viewBox="0 0 24 24"><path d="m3 9 9-6 9 6M5 10v9m5-9v9m4-9v9m5-9v9M2 21h20" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+<symbol id="cc-icon-chart" viewBox="0 0 24 24"><path d="M4 20v-7M10 20V5m6 15v-9m5 9V8M2 21h21" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+</svg>
+<div class="mobnav"><button data-screen="list">Catalogo servizi</button><button data-screen="detail">Scheda servizio</button></div>
+<div class="shell"><aside class="body-sidebar">
+<div class="sidebar-brand">Centro <span>Change</span></div>
+<nav class="side-main" aria-label="Navigazione Centro Change">
+<div class="side-group">Panoramica</div>
+<button class="side-link" disabled title="Fuori perimetro di questa anteprima"><svg><use href="#cc-icon-home"/></svg>Inizio</button>
+<div class="side-group">Operatività</div>
+<button class="side-link" disabled title="Fuori perimetro di questa anteprima"><svg><use href="#cc-icon-calendar"/></svg>Agenda</button>
+<button class="side-link" disabled title="Fuori perimetro di questa anteprima"><svg><use href="#cc-icon-users"/></svg>Pazienti</button>
+<button class="side-link" disabled title="Fuori perimetro di questa anteprima"><svg><use href="#cc-icon-users"/></svg>Professionisti</button>
+<div class="side-group">Amministrazione</div>
+<button class="side-link active" data-screen="list"><svg><use href="#cc-icon-box"/></svg>Catalogo servizi</button>
+<button class="side-link" disabled title="Fuori perimetro di questa anteprima"><svg><use href="#cc-icon-bank"/></svg>Tariffe e contabilità</button>
+<button class="side-link" disabled title="Fuori perimetro di questa anteprima"><svg><use href="#cc-icon-chart"/></svg>Report</button>
+</nav><div class="side-footer"><b>Centro Change</b><div>Prototipo grafico · Frappe nativo</div><div>Nessun dato del server collegato</div></div>
+</aside><div class="right">
+<header class="toolbar"><div class="toolbar-path">Gestione <span>›</span><b>Catalogo servizi</b><span id="cc-toolbar-detail">› Seduta</span></div><div class="toolbar-right"><span class="tag-demo">PROTOTIPO</span><span class="keyboard">⌘ K</span><span class="avatar" aria-label="Direzione">D</span><span style="font-size:11px;font-weight:640;color:#456356">Direzione</span></div></header>
+<main class="main">
+<section class="view" id="cc-view-list" hidden>
+<div class="page-overline">Amministrazione / Catalogo</div>
+<div class="page-head"><div><h1>Servizi</h1><div class="subtitle">Gestione del catalogo · Nomi leggibili e informazioni essenziali</div></div><div class="actions"><button class="btn primary" data-demo="L’aggiunta sarà collegata al Form Item di Frappe">+ Nuovo servizio</button></div></div>
+<div class="list-panel"><div class="list-toolbar"><input class="search" id="cc-search" type="search" placeholder="Cerca un servizio..." aria-label="Cerca un servizio"/><span style="font-size:10px;color:#8fa395">Dati illustrativi</span></div>
+<table class="data-table" aria-label="Elenco servizi illustrativo"><thead><tr><th>Servizio</th><th>Tipo</th><th>Stato</th><th class="num">Listini</th></tr></thead><tbody id="cc-list-items"><tr class="list-row" data-label="seduta"><td><button class="list-link" data-screen="detail" id="cc-list-service-name">Seduta</button></td><td>Prestazione</td><td><span class="indicate">● Attivo</span></td><td class="num">3 collegamenti</td></tr><tr class="list-row" data-label="visita iniziale"><td>Visita iniziale <span style="color:#9aaca0">· esempio</span></td><td>Prestazione</td><td><span class="indicate">● Attivo</span></td><td class="num">—</td></tr><tr class="list-row" data-label="controllo"><td>Controllo <span style="color:#9aaca0">· esempio</span></td><td>Prestazione</td><td><span style="color:#899c91">● Bozza</span></td><td class="num">—</td></tr></tbody></table>
+</div><p class="footnote">La tabella simula una Frappe List View personalizzata. Le due righe «esempio» non provengono dal database.</p>
+</section>
+<section class="view" id="cc-view-detail">
+<button class="crumb-back" data-screen="list">← Torna al catalogo</button>
+<div class="page-head"><div><div class="page-overline">Catalogo servizi / Scheda</div><h1><span id="cc-title">Seduta</span><span class="status">Abilitato</span></h1><div class="subtitle">Informazioni operative del servizio, con dettagli ERPNext disponibili separatamente.</div></div><div class="actions"><select class="toolbar-select" id="cc-density" aria-label="Densità dei campi"><option value="comfortable">Densità normale</option><option value="compact">Compatta</option><option value="spacious">Ampia</option></select><button id="cc-edit" class="btn">Modifica</button><button id="cc-save" class="btn primary" hidden>Salva anteprima</button><button id="cc-cancel" class="btn" hidden>Annulla</button></div></div>
+<div class="content-grid"><div class="form-pane form-layout">
+<div class="form-tabs-list" role="tablist"><button class="nav-link active" data-tab="general" role="tab" aria-selected="true">Dettagli</button><button class="nav-link" data-tab="prices" role="tab" aria-selected="false">Tariffe <span style="color:#8d9e94;margin-left:4px">3</span></button><button class="nav-link" data-tab="links" role="tab" aria-selected="false">Collegamenti</button></div>
+<div class="tab-body" data-panel="general"><div class="form-section"><div class="section-head">Informazioni principali <span class="section-eyebrow">Form Item · vista cliente</span></div>
+<div class="section-body"><div class="form-column"><div class="frappe-control"><label class="control-label" for="cc-field-name">Nome servizio</label><input class="form-control" id="cc-field-name" value="Seduta" readonly maxlength="80"/><div class="help">Il nome che appare in agenda e nel catalogo.</div></div><div class="frappe-control"><label class="control-label" for="cc-field-cat">Categoria</label><input class="form-control" id="cc-field-cat" value="Servizi" readonly/></div></div>
+<div class="form-column"><div class="frappe-control"><label class="control-label" for="cc-field-status">Stato</label><select class="form-control" id="cc-field-status" disabled><option>Abilitato</option><option>Disabilitato</option></select></div><div class="frappe-control"><span class="control-label">Durata</span><div class="readable muted">Non definita in questa anteprima</div><div class="help">Mostrare solo se disponibile nei dati Centro Change.</div></div></div>
+<div class="frappe-control field-wide"><label class="control-label" for="cc-field-description">Descrizione</label><textarea class="form-control" id="cc-field-description" readonly>Servizio dimostrativo utilizzato per verificare la nuova interfaccia Centro Change.</textarea></div></div></div>
+<div class="form-section"><div class="section-head">Utilizzo nel centro <span class="section-eyebrow">Collegamenti autorizzati</span></div><div class="section-body"><div class="form-column"><div class="frappe-control"><span class="control-label">Tipo di seduta</span><div class="readable">Da verificare nei dati</div></div></div><div class="form-column"><div class="frappe-control"><span class="control-label">Tariffe collegate</span><div class="readable">3 riferimenti demo</div></div></div></div></div>
+<details class="technical"><summary>Riferimenti gestionali</summary><div class="tech-row"><b>ID ERPNext:</b> CC-HTTP-UAT0000001 SESSION<br><b>Documento:</b> Item (ERPNext)<br><b>Conservazione dati:</b> invariata. Le sezioni contabili e di magazzino non sono cancellate.</div></details>
+</div>
+<div class="tab-body" data-panel="prices" hidden><div class="form-section"><div class="section-head">Tariffe collegate <span class="section-eyebrow">Dati reali da collegare</span></div><p style="color:#82948b;font-size:11px;line-height:1.6">La scheda visualizzerà i prezzi già presenti nei documenti Item Price. Nessun nuovo listino viene creato da questo design.</p><table class="data-table"><thead><tr><th>Riferimento</th><th>Importo</th><th></th></tr></thead><tbody><tr><td>Collegamento tariffa 1</td><td>Da recuperare</td><td>›</td></tr><tr><td>Collegamento tariffa 2</td><td>Da recuperare</td><td>›</td></tr><tr><td>Collegamento tariffa 3</td><td>Da recuperare</td><td>›</td></tr></tbody></table></div></div>
+<div class="tab-body" data-panel="links" hidden><div class="form-section"><div class="section-head">Collegamenti applicativi</div><div class="section-body"><div class="form-column"><div class="frappe-control"><span class="control-label">Codice originale Item</span><div class="readable">CC-HTTP-UAT0000001 SESSION</div></div></div><div class="form-column"><div class="frappe-control"><span class="control-label">Documenti correlati</span><div class="readable muted">Collegamenti reali da risolvere</div></div></div></div></div></div>
+</div><aside class="details-side"><div class="side-block"><div class="side-title">Riepilogo</div><div class="side-data"><span>Stato</span><b style="color:#1e805b">● Abilitato</b></div><div class="side-data"><span>Categoria</span><b>Servizi</b></div><div class="side-data"><span>Tariffe</span><b>3 riferimenti</b></div><div class="side-data"><span>Identificativo</span><b>Disponibile</b></div></div><div class="side-block"><div class="side-title">Strumenti</div><button class="inline-link" data-tab="prices">Consulta le tariffe ↗</button><p style="color:#9aada0;font-size:10px;line-height:1.6;margin-top:11px">Le azioni seguono permessi e flussi esistenti.</p></div><div class="side-alert"><b>Vista Centro Change</b><br>La logica Item rimane nativa. Qui nascondiamo la complessità tecnica non necessaria agli operatori.</div><div style="border-top:1px solid #e4eae4;margin-top:18px;padding-top:15px"><label style="display:flex;gap:8px;align-items:center;font-size:10px;color:#6c8073;cursor:pointer"><input type="checkbox" id="cc-tech-view"/> Simula vista tecnica Administrator</label></div><div class="tech-preview" id="cc-tech-panel" hidden>Solo simulazione: l'amministratore conserverebbe accesso alle sezioni ERPNext originali (magazzino, imposte, acquisti, vendite, storico). La vista operatore non cambia i permessi.</div></aside></div>
+<p class="footnote">Prototipo isolato: struttura Form Frappe, regole CSS di Nexus realmente adattate e rifinitura grafica Centro Change. Non è collegato alla sessione Frappe o alle API.</p>
+</section></main></div></div>
+<div id="cc-toast" class="toast" role="status" aria-live="polite" hidden></div>
+</div>
+<script>
+(()=>{
+ const root=document.querySelector('#cc-prototype'); if(!root)return;
+ const q=s=>root.querySelector(s);
+ let editing=false, oldValues=null, toastTimer=null;
+ const showToast=s=>{const el=q('#cc-toast');el.textContent=s;el.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.hidden=true},3600)};
+ function screen(s){q('#cc-view-list').hidden=s!=='list';q('#cc-view-detail').hidden=s!=='detail';q('#cc-toolbar-detail').style.display=s==='list'?'none':'';root.querySelectorAll('.side-link[data-screen]').forEach(x=>x.classList.toggle('active',s==='list' || s==='detail'));}
+ function tab(s){root.querySelectorAll('[data-panel]').forEach(el=>el.hidden=el.dataset.panel!==s);root.querySelectorAll('button[data-tab].nav-link').forEach(el=>{const on=el.dataset.tab===s;el.classList.toggle('active',on);el.setAttribute('aria-selected',String(on))});}
+ function editMode(on){editing=on;for(let s of ['#cc-field-name','#cc-field-description'])q(s).readOnly=!on;q('#cc-field-status').disabled=!on;q('#cc-edit').hidden=on;q('#cc-save').hidden=!on;q('#cc-cancel').hidden=!on;if(on)q('#cc-field-name').focus();}
+ root.addEventListener('click',e=>{const change=e.target.closest('[data-screen]');if(change){screen(change.dataset.screen);return;}const t=e.target.closest('[data-tab]');if(t){tab(t.dataset.tab);return;}const demo=e.target.closest('[data-demo]');if(demo){showToast(demo.dataset.demo);}});
+ q('#cc-edit').addEventListener('click',()=>{oldValues=[q('#cc-field-name').value,q('#cc-field-description').value,q('#cc-field-status').value];editMode(true)});
+ q('#cc-save').addEventListener('click',()=>{const text=q('#cc-field-name').value.trim();if(!text){showToast('Inserisci il nome del servizio');return}q('#cc-title').textContent=text;q('#cc-list-service-name').textContent=text;editMode(false);showToast('Anteprima aggiornata. Nessuna modifica al database.')});
+ q('#cc-cancel').addEventListener('click',()=>{if(oldValues){q('#cc-field-name').value=oldValues[0];q('#cc-field-description').value=oldValues[1];q('#cc-field-status').value=oldValues[2]}editMode(false)});
+ q('#cc-density').addEventListener('change',e=>{root.dataset.density=e.target.value;showToast('Densità '+({compact:'compatta',comfortable:'normale',spacious:'ampia'}[e.target.value])+' · regole Nexus per Form Frappe')});
+ q('#cc-tech-view').addEventListener('change',e=>q('#cc-tech-panel').hidden=!e.target.checked);
+ q('#cc-search').addEventListener('input',e=>{const s=e.target.value.trim().toLowerCase();root.querySelectorAll('#cc-list-items tr').forEach(tr=>tr.hidden=!tr.textContent.toLowerCase().includes(s))});
+ screen('detail');
+})();
+</script>
+</body></html>

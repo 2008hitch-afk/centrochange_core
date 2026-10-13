@@ -1,0 +1,158 @@
+/*
+  Centro Change premium Desk presentation. Selected palette, focus and form
+  density tokens adapted from Nexus Theme v16, commit
+  5e6615bf759b8cae80fb52c6e4249eeb45133940:
+  nexus_theme/public/css/theme_variables.bundle.css and density.bundle.css.
+  Copyright (c) 2026 Abbas Raza. MIT License.
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+  Selectors below are confined to authenticated Centro Change Desk views.
+  Frappe List/Form data, lifecycle and permission checks remain native.
+*/
+body.cc-client-desk {
+  --theme-bg-primary:#fff;
+  --theme-bg-surface:#f7f8fa;
+  --theme-bg-input:#fff;
+  --theme-text-primary:#1f2937;
+  --theme-text-muted:#6b7280;
+  --theme-accent:#12665f;
+  --theme-accent-hover:#0d514a;
+  --theme-button-bg:#12665f;
+  --theme-button-text:#fff;
+  --theme-button-hover-bg:#0d514a;
+  --theme-border:#e1e7e2;
+  --theme-font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --theme-border-radius:8px;
+  --theme-shadow-xs:0 1px 2px rgba(0,0,0,.06);
+  --theme-shadow-sm:0 0 0 1px rgba(0,0,0,.06),0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --theme-ring:0 0 0 3px color-mix(in srgb,var(--theme-accent) 22%,transparent);
+  --theme-ease:cubic-bezier(.4,0,.2,1);
+  --nx-field-gap:16px;
+  --nx-label-gap:6px;
+  --nx-section-head-pad-y:11px;
+  --nx-section-body-gap:10px;
+  --nx-tab-pad-y:10px;
+  --cc-sidebar-width:13.5rem;
+  --cc-desk-border:var(--theme-border);
+  --bg-color:var(--theme-bg-primary);
+  --bg-light-gray:var(--theme-bg-surface);
+  --text-color:var(--theme-text-primary);
+  --text-muted:var(--theme-text-muted);
+  --border-color:var(--theme-border);
+  --primary:var(--theme-accent);
+  --primary-color:var(--theme-accent);
+  --btn-primary:var(--theme-button-bg);
+  --focus-default:var(--theme-ring);
+  --font-stack:var(--theme-font-family);
+  color:#22312c;
+  background:#f5f6f5;
+}
+body.cc-client-desk.cc-sidebar-compact{--cc-sidebar-width:4.5rem}
+body.cc-client-desk>.main-section,body.cc-client-desk .main-section>#body{background:#f5f6f5}
+body.cc-client-desk .main-section>#body{min-height:calc(100dvh - 63px)}
+body.cc-client-desk #cc-desk-sidebar{background:#123a34;color:#ccded5;border-right:1px solid #ffffff1c}
+body.cc-client-desk .cc-sidebar-heading{min-height:63px;border-bottom:1px solid #ffffff1c;padding-inline:1.15rem .45rem}
+body.cc-client-desk .cc-desk-brand{color:#fff;font-size:1rem;font-weight:650;letter-spacing:-.03em}
+body.cc-client-desk .cc-sidebar-collapse{background:transparent;border:0}
+body.cc-client-desk .cc-sidebar-collapse img{filter:brightness(0) invert(.83)}
+body.cc-client-desk .cc-sidebar-menu{padding:.95rem .75rem 1.5rem}
+body.cc-client-desk .cc-sidebar-group{margin-bottom:.7rem}
+body.cc-client-desk .cc-sidebar-group-title{color:#96b8ab;font-size:.65rem;letter-spacing:.12em;margin:.7rem .65rem .45rem}
+body.cc-client-desk .cc-sidebar-link{color:#d5e5dc;font-size:.79rem;min-height:2.2rem;padding:.42rem .55rem;border-radius:5px}
+body.cc-client-desk .cc-sidebar-link img{filter:brightness(0) invert(.82);opacity:.75}
+body.cc-client-desk .cc-sidebar-link:hover{background:#ffffff16;color:#fff}
+body.cc-client-desk .cc-sidebar-link.active{background:#e0f1e8;color:#114d3d;font-weight:700}
+body.cc-client-desk .cc-sidebar-link.active img{filter:none;opacity:1}
+body.cc-client-desk #cc-desk-global-nav{min-height:63px;background:#fff;border-bottom:1px solid #e7ebe7;box-shadow:none;padding-inline:clamp(1rem,2.1vw,1.9rem)}
+body.cc-client-desk .cc-navbar-identity span{color:#465e52;font-size:.8rem;font-weight:600}
+body.cc-client-desk .cc-navbar-account summary{color:#536b5b}
+body.cc-client-desk #cc-desk-global-nav a:focus-visible,
+body.cc-client-desk #cc-desk-sidebar a:focus-visible,
+body.cc-client-desk #cc-desk-sidebar button:focus-visible,
+body.cc-client-desk #cc-desk-global-nav button:focus-visible{box-shadow:var(--theme-ring);outline:none}
+body.cc-client-desk .btn-primary{background:#12665f;border-color:#12665f;color:#fff}
+body.cc-client-desk .btn-primary:hover{background:#0d514a;border-color:#0d514a}
+body.cc-client-desk .btn-default:hover{background:#f1f7f3}
+body.cc-client-desk.cc-native-view .page-head{background:#f5f6f5;border-bottom:0;padding-block:1rem .4rem}
+body.cc-client-desk.cc-native-view .page-head .es-breadcrumbs__label{font-size:1.35rem;font-weight:650;color:#1b3027;letter-spacing:-.035em}
+body.cc-client-desk.cc-native-view .page-container{background:#f5f6f5;padding:1rem clamp(1rem,2.1vw,1.9rem) 2.5rem}
+body.cc-client-desk.cc-native-view .page-container>.container{border:1px solid #e1e7e2;border-radius:7px;box-shadow:none;padding:1.1rem}
+body.cc-client-desk.cc-native-view .page-form.list-page-form{background:#fff;border-color:#e1e7e2;padding:.55rem .7rem;margin-bottom:.8rem}
+body.cc-client-desk.cc-native-view .list-row-head{background:#f7faf7;border-color:#e1e7e2;color:#63786b;min-height:2.3rem}
+body.cc-client-desk.cc-native-view .list-row{min-height:2.75rem;border-bottom-color:#e9eeea}
+body.cc-client-desk.cc-native-view .list-row:hover{background:#f7faf7}
+body.cc-client-desk.cc-native-view .list-row .list-subject a{color:#234638}
+body.cc-client-desk.cc-native-view .list-row .list-subject a:hover{color:#12665f}
+body.cc-client-desk.cc-native-view .form-layout{border:1px solid #e1e7e2;box-shadow:none}
+body.cc-client-desk.cc-native-view .form-tabs-list{border-bottom:1px solid #e3e8e4}
+body.cc-client-desk.cc-native-view .form-tabs-list .nav-link{color:#73857a;font-weight:600;padding-block:var(--nx-tab-pad-y)}
+body.cc-client-desk.cc-native-view .form-tabs-list .nav-link.active{color:#185c4a;border-bottom-color:#12665f}
+body.cc-client-desk.cc-native-view .form-section .section-head{color:#234638;font-weight:700;padding-block:var(--nx-section-head-pad-y)}
+body.cc-client-desk.cc-native-view .form-column .frappe-control:not(:last-child){margin-bottom:var(--nx-field-gap)}
+body.cc-client-desk.cc-native-view .control-label{color:#68796f;font-size:.77rem;font-weight:650;margin-bottom:var(--nx-label-gap)}
+body.cc-client-desk.cc-native-view .form-control{background:#fff;border-color:#dce4dd;border-radius:5px;color:#243a30;min-height:2.1rem}
+body.cc-client-desk.cc-native-view .form-control:focus{border-color:#12665f;box-shadow:var(--theme-ring)}
+body.cc-client-desk.cc-native-view .like-disabled-input{background:#f6f8f6;border-color:#e1e7e2;color:#34483e}
+body.cc-client-desk.cc-native-view .indicator-pill{border-radius:4px}
+body.cc-client-desk.cc-native-view .page-actions .btn{border-radius:5px}
+body.cc-client-desk.cc-native-view .page-actions .btn-primary{background:#12665f;color:#fff}
+body.cc-client-desk[data-cc-form-type="item"]:not([data-cc-technical="1"]) .form-sidebar{display:none!important}
+body.cc-client-desk[data-cc-form-type="item"]:not([data-cc-technical="1"]) .layout-side-section.right{display:none!important}
+body.cc-client-desk[data-cc-form-type="item"]:not([data-cc-technical="1"]) .form-footer{display:none!important}
+body.cc-client-desk[data-cc-form-type="item"] .layout-main-section-wrapper{width:100%;max-width:none}
+body.cc-client-desk[data-cc-form-type="item"]:not([data-cc-technical="1"]) .layout-main-section-wrapper{flex:1 1 100%}
+body.cc-client-desk[data-cc-form-type="item"] .form-layout{max-width:none}
+body.cc-client-desk[data-cc-form-type="item"]:not([data-cc-technical="1"]) .form-section[data-fieldname="section_break_11"] .ql-container{height:145px}
+body.cc-client-desk[data-cc-form-type="item"]:not([data-cc-technical="1"]) .form-section[data-fieldname="section_break_11"] .ql-editor{min-height:120px!important;height:120px!important;overflow:auto}
+body.cc-client-desk[data-cc-form-type="item-price"]:not([data-cc-technical="1"]) .layout-side-section.right{display:none!important}
+body.cc-client-desk[data-cc-form-type="item-price"]:not([data-cc-technical="1"]) .layout-main-section-wrapper{flex:1 1 100%;width:100%;max-width:none}
+body.cc-client-desk[data-cc-form-type="healthcare-practitioner"] .form-heatmap{display:none}
+body.cc-client-desk .cc-desk-surface{background:#f5f6f5}
+body.cc-client-desk .cc-desk-surface .page-body{background:#f5f6f5}
+body.cc-client-desk .cc-desk-surface .btn-primary{background:#12665f;border-color:#12665f}
+body.cc-client-desk .cc-desk-surface input:focus-visible,
+body.cc-client-desk .cc-desk-surface select:focus-visible,
+body.cc-client-desk .cc-desk-surface button:focus-visible{box-shadow:var(--theme-ring);outline:none}
+@media(max-width:991.98px){body.cc-client-desk{--cc-sidebar-width:0px}body.cc-client-desk #cc-desk-sidebar{background:#123a34}body.cc-client-desk .cc-sidebar-heading{min-height:55px}}
+@media(max-width:575.98px){body.cc-client-desk.cc-native-view .page-container>.container{padding:.65rem}body.cc-client-desk.cc-native-view .form-column .frappe-control:not(:last-child){margin-bottom:12px}}
+/* Compact guidance inside native accounting forms and the existing Finance page. */
+body.cc-client-desk.cc-native-view .cc-finance-dashboard{border:1px solid #dce8e3;border-radius:8px;background:#f7fbf9;margin-bottom:1rem}
+body.cc-client-desk.cc-native-view .cc-finance-dashboard .section-head{display:none}
+body.cc-client-desk.cc-native-view .cc-finance-context{display:grid;grid-template-columns:minmax(0,1fr) minmax(12rem,22rem);gap:1rem;padding:.8rem 1rem;margin-bottom:.8rem;border:1px solid #dce8e3;border-left:3px solid #12665f;border-radius:6px;background:#f7fbf9}
+body.cc-client-desk.cc-native-view .cc-finance-context h2{font-size:1rem;color:#164b42;margin:0 0 .45rem}
+body.cc-client-desk.cc-native-view .cc-finance-context dl{display:flex;flex-wrap:wrap;gap:.35rem 1.2rem;margin:0}
+body.cc-client-desk.cc-native-view .cc-finance-context dt{font-size:.7rem;color:#68796f;font-weight:650}
+body.cc-client-desk.cc-native-view .cc-finance-context dd{font-size:.84rem;color:#223b32;font-weight:600;margin:0;overflow-wrap:anywhere}
+body.cc-client-desk.cc-native-view .cc-finance-context p{border-left:2px solid #12665f;padding-left:.8rem;margin:0;font-size:.82rem;line-height:1.45}
+body.cc-client-desk.cc-native-view .cc-finance-context p strong,body.cc-client-desk.cc-native-view .cc-finance-context p span{display:block}
+body.cc-client-desk.cc-native-view .cc-finance-context p strong{color:#12665f;margin-bottom:.2rem}
+body.cc-client-desk[data-cc-form-type="sales-invoice"][data-cc-finance-advanced="0"] .layout-side-section.right,
+body.cc-client-desk[data-cc-form-type="purchase-invoice"][data-cc-finance-advanced="0"] .layout-side-section.right,
+body.cc-client-desk[data-cc-form-type="payment-entry"][data-cc-finance-advanced="0"] .layout-side-section.right{display:none}
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="contact_and_address_tab"]),
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="address_and_contact_tab"]),
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="terms_tab"]),
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="more_info_tab"]),
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="connections_tab"]){display:none}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-guide{display:flex;flex-wrap:wrap;gap:.25rem .8rem;align-items:baseline;border-left:3px solid #12665f;background:#f7fbf9;padding:.6rem .85rem;margin:.2rem 0 .8rem;font-size:.85rem;color:#36584e}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-guide strong{color:#164b42}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-facts{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;margin:.65rem 0}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-facts dt{font-size:.72rem;color:#66796f}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-facts dd{font-weight:650;margin:0}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-next{border-left:2px solid #12665f;padding:.55rem .8rem;background:#f7fbf9}
+@media(max-width:767px){body.cc-client-desk.cc-native-view .cc-finance-context{grid-template-columns:1fr}}

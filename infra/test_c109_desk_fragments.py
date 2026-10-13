@@ -31,8 +31,8 @@ class DeskFragmentsTest(unittest.TestCase):
         self.assertIn("deskFragments", source)
         self.assertNotIn("DOMParser", source)
         self.assertNotIn("fetch(surface.path", source)
-        self.assertIn("/app/cc-audit-event", source)
-        self.assertNotIn("audit_view.js", source)
+        self.assertIn("audit:{path:'/registro_modifiche'", source)
+        self.assertIn("audit_view.js", source)
 
 
 if __name__ == "__main__":

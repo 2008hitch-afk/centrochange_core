@@ -9,65 +9,65 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     agenda:{path:'/centrochange',script:'workspace.js',css:['workspace.css']},
     finance:{path:'/finanza',script:'finance_workspace.js',css:['workspace.css']},
     professional:{path:'/professionista',script:'professional_view.js',css:['workspace.css','professional_view.css']},
-    patient:{path:'/pazienti_report',script:'patient_report.js',css:['workspace.css','professional_view.css','patient_report.css']}
+    patient:{path:'/pazienti_report',script:'patient_report.js',css:['workspace.css','professional_view.css','patient_report.css']},
+    audit:{path:'/registro_modifiche',script:'audit_view.js',css:['workspace.css']}
   };
   const routeByPath=Object.fromEntries(Object.entries(surfaces).map(([name,s])=>[s.path,name]));
   const roles=new Set(frappe.user_roles||[]);
   const canOperate=['CC Manager','CC Secretariat','CC Professional'].some(x=>roles.has(x));
   const canFinance=['CC Manager','CC Secretariat','CC Finance','CC Accountant'].some(x=>roles.has(x));
   const canManage=roles.has('CC Manager');
-  const allowed={home:true,agenda:canOperate,finance:canFinance,professional:canFinance,patient:canFinance};
-  const items=[['home','Inizio'],['agenda','Agenda'],['finance','Finanza'],['professional','Report professionisti'],['patient','Report pazienti']];
-  // These are actual Desk List routes. The server's DocPerm and row guards remain
-  // authoritative; a navigation link never confers document access.
-  const nativeMenus=[
-    {label:'Anagrafiche',show:canManage,links:[['Pazienti','/app/patient'],['Professionisti','/app/healthcare-practitioner']]},
-    {label:'Catalogo',show:canManage,links:[['Servizi','/app/item'],['Tariffe','/app/item-price'],['Tipi di seduta','/app/appointment-type'],['Servizi del centro','/app/cc-center-service'],['Modelli pacchetto','/app/cc-package-template']]},
-    {label:'Documenti contabili',show:canFinance,links:[['Fatture pazienti','/app/sales-invoice'],['Fatture professionisti','/app/purchase-invoice'],['Incassi e pagamenti','/app/payment-entry'],['Movimenti bancari','/app/bank-transaction']]},
-    {label:'Audit',show:canManage,links:[['Registro modifiche','/app/cc-audit-event']]}
-  ];
-  function nativeNavigation(){
-    return nativeMenus.filter(group=>group.show).map(group=>{
-      const links=group.links.map(([label,href])=>`<a href="${href}">${label}</a>`).join('');
-      return `<details class="cc-desk-catalog"><summary>${group.label}</summary><div>${links}</div></details>`;
-    }).join('');
-  }
-  const homeGroups=[
-    {title:'Lavoro quotidiano',description:'Sedute, persone e disponibilità.',links:[
-      {view:'agenda',label:'Agenda',description:'Settimana, prenotazioni e sedute',roles:canOperate},
-      {view:'agenda',params:{cc_ops_view:'Pazienti'},label:'Pazienti',description:'Ricerca e schede autorizzate',roles:canOperate},
-      {view:'agenda',params:{cc_ops_view:'Disponibilità'},label:'Disponibilità',description:'Orari e assenze dei professionisti',roles:canOperate},
-      {view:'agenda',params:{cc_ops_view:'Notifiche'},label:'Notifiche',description:'Avvisi e attività operative',roles:canOperate},
-      {view:'professional',label:'Professionisti',description:'Sedute e posizione per periodo',roles:canFinance},
-      {view:'patient',label:'Report pazienti',description:'Saldo e scadenze del soggetto fiscale',roles:canFinance}
-    ]},
-    {title:'Amministrazione',description:'Documenti e flussi economici autorizzati.',links:[
-      {view:'finance',label:'Finanza',description:'Fatture, incassi e riconciliazioni',roles:canFinance},
-      {view:'finance',params:{cc_fin_view:'Banca'},label:'Banca',description:'Movimenti e riconciliazioni',roles:canFinance},
-      {view:'finance',params:{cc_fin_view:'SdI'},label:'SdI simulato',description:'Documenti e tentativi di prova',roles:canFinance},
-      {view:'finance',params:{cc_fin_view:'TS'},label:'TS simulato',description:'Revisioni e versioni di prova',roles:canFinance},
-      {href:'/app/sales-invoice',label:'Fatture pazienti',description:'Documenti ERPNext',roles:canFinance},
-      {href:'/app/payment-entry',label:'Incassi e pagamenti',description:'Movimenti ERPNext',roles:canFinance}
-    ]},
-    {title:'Anagrafiche e catalogo',description:'Documenti nativi per la Direzione.',links:[
-      {href:'/app/patient',label:'Anagrafiche pazienti',description:'Schede Patient',roles:canManage},
-      {href:'/app/healthcare-practitioner',label:'Anagrafiche professionisti',description:'Schede Practitioner',roles:canManage},
-      {href:'/app/item',label:'Servizi',description:'Catalogo ERPNext',roles:canManage},
-      {view:'agenda',params:{cc_ops_view:'Gestione accessi'},label:'Gestione accessi',description:'Ruoli e centri autorizzati',roles:canManage},
-      {href:'/app/cc-audit-event',label:'Registro modifiche',description:'Tracciamento delle operazioni',roles:canManage}
-    ]}
-  ];
+  const allowed={home:true,agenda:canOperate,finance:canFinance,professional:canFinance,patient:canFinance,audit:canManage};
+  const items=[['home','Inizio'],['agenda','Agenda'],['finance','Finanza'],['professional','Report professionisti'],['patient','Report economico pazienti'],['audit','Registro modifiche']];
+  const homeByRole=canManage?{
+    heading:'Panoramica del Centro',intro:'Le attività quotidiane e i dati economici aggiornati sono nelle rispettive sezioni.',
+    links:[{view:'agenda',label:'Apri Agenda',description:'Sedute e prenotazioni'}, {view:'finance',label:'Apri Finanza',description:'Contabilità e posizioni'}, {view:'professional',label:'Report professionisti',description:'Sedute e compensi per periodo'}]
+  }:roles.has('CC Professional')?{
+    heading:'Il tuo lavoro',intro:'Consulta le sedute e i pazienti che ti sono assegnati.',
+    links:[{view:'agenda',label:'Apri Agenda',description:'Sedute e appuntamenti'}, {view:'agenda',params:{cc_ops_view:'Pazienti'},label:'Cerca pazienti',description:'Solo le persone assegnate'}, {view:'agenda',params:{cc_ops_view:'Disponibilità'},label:'Disponibilità',description:'Orari e assenze'}]
+  }:roles.has('CC Secretariat')?{
+    heading:'Attività di segreteria',intro:'Organizza sedute, pazienti e avvisi del Centro.',
+    links:[{view:'agenda',label:'Apri Agenda',description:'Prenotazioni e sedute'}, {view:'agenda',params:{cc_ops_view:'Pazienti'},label:'Cerca pazienti',description:'Schede autorizzate'}, {view:'agenda',params:{cc_ops_view:'Notifiche'},label:'Notifiche',description:'Avvisi operativi'}]
+  }:roles.has('CC Accountant')?{
+    heading:'Consultazione contabile',intro:'Documenti e report dei centri autorizzati in sola lettura.',
+    links:[{view:'finance',label:'Apri Finanza',description:'Posizioni economiche'}, {view:'patient',label:'Report economico pazienti',description:'Saldi e scadenze'}, {href:'/app/sales-invoice',label:'Fatture pazienti',description:'Documenti contabili'}]
+  }:{
+    heading:'Amministrazione e finanza',intro:'Consulta fatture, incassi e movimenti dei centri autorizzati.',
+    links:[{view:'finance',label:'Apri Finanza',description:'Posizioni economiche'}, {href:'/app/sales-invoice',label:'Fatture pazienti',description:'Documenti contabili'}, {view:'finance',params:{cc_fin_view:'Banca'},label:'Banca',description:'Movimenti e riconciliazioni'}]
+  };
   function homeContent(){
-    const groups=homeGroups.map(group=>{
-      const links=group.links.filter(link=>link.roles);
-      if(!links.length)return '';
-      const cards=links.map(link=>{
-        const href=link.view?routeUrl(link.view,link.params):link.href;
-        return `<a class="cc-desk-home-card" href="${href}"><strong>${link.label}</strong><span>${link.description}</span><span class="cc-desk-home-arrow" aria-hidden="true">›</span></a>`;
-      }).join('');
-      return `<section class="cc-desk-home-group"><div class="cc-desk-home-group-heading"><h2>${group.title}</h2><p>${group.description}</p></div><div class="cc-desk-home-grid">${cards}</div></section>`;
+    const cards=homeByRole.links.map(link=>{
+      const href=link.view?routeUrl(link.view,link.params):link.href;
+      return `<a class="cc-desk-home-action" href="${href}"><strong>${link.label}</strong><span>${link.description}</span><span aria-hidden="true">›</span></a>`;
     }).join('');
-    return `<div class="cc-desk-home"><header class="cc-desk-home-heading"><p class="cc-desk-eyebrow">Centro Change · Desk</p><h1>Buon lavoro</h1><p>Scegli un’area per iniziare. Ogni operazione rispetta le autorizzazioni del tuo ruolo.</p></header>${groups}</div>`;
+    return `<div class="cc-desk-home"><header class="cc-desk-home-heading"><h1>${homeByRole.heading}</h1><p>${homeByRole.intro}</p></header><section class="cc-desk-home-group" aria-label="Accessi rapidi"><h2>Attività frequenti</h2><div class="cc-desk-home-grid">${cards}</div></section>${canOperate?'<section class="cc-desk-home-summary" aria-label="Dati operativi" aria-live="polite">Caricamento dati operativi…</section>':''}</div>`;
+  }
+  async function loadHomeSummary(section){
+    const target=section.querySelector('.cc-desk-home-summary');
+    if(!target)return;
+    try{
+      const request=async(method,params={})=>{
+        const url=new URL('/api/method/centrochange_core.operations.workspace.'+method,location.origin);
+        Object.entries(params).forEach(([key,value])=>url.searchParams.set(key,value));
+        const response=await fetch(url,{credentials:'same-origin'});
+        if(!response.ok)throw new Error('Dati non disponibili');
+        return (await response.json()).message;
+      };
+      const initial=await request('bootstrap');
+      const centers=initial.centers||[];
+      const today=new Date(),end=new Date(today);
+      end.setDate(today.getDate()+6);
+      const iso=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+      const data=await Promise.all(centers.map(center=>Promise.all([
+        center.name===initial.center?initial:request('bootstrap',{center:center.name}),
+        request('agenda',{center:center.name,start:iso(today),end:iso(end)})
+      ])));
+      if(!section.isConnected)return;
+      const patients=new Set(data.flatMap(([boot])=>boot.patients.map(row=>row.name)));
+      const appointments=data.reduce((count,[,agenda])=>count+agenda.appointments.length,0);
+      const values=[['Centri accessibili',centers.length],['Pazienti visibili',patients.size],['Sedute nei prossimi 7 giorni',appointments]];
+      target.innerHTML=values.map(([label,value])=>`<div><strong>${value}</strong><span>${label}</span></div>`).join('');
+    }catch(_){if(section.isConnected)target.textContent='Consulta Agenda e Pazienti per i dati aggiornati.';}
   }
   let generation=0;
   let fragments;
@@ -92,12 +92,14 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     }};visit(style.sheet.cssRules);
   }
   function routeUrl(view,params){const u=new URL('/app/cc-unified-desk',location.origin);u.searchParams.set('cc_view',view);new URLSearchParams(params||'').forEach((v,k)=>{if(k!=='cc_view')u.searchParams.set(k,v)});return u.pathname+u.search;}
-  async function navigate(path,replace=true){
+  async function navigate(path,replace=false){
     const u=new URL(path,location.origin),view=u.pathname==='/app/cc-unified-desk'?u.searchParams.get('cc_view')||'home':routeByPath[u.pathname];
     if(!view){if(u.pathname.startsWith('/login'))location.href=u.href;return;}
     if(!Object.hasOwn(allowed,view)||!allowed[view]){root.textContent='Accesso non autorizzato.';return;}
-    const token=++generation;root.textContent='Caricamento…';
+    const token=++generation;
+    if(!root.childElementCount)root.innerHTML='<p class="cc-inline-loading" role="status">Caricamento contenuto…</p>';
     if(replace)history.replaceState(null,'',routeUrl(view,u.search));
+    else history.pushState(null,'',routeUrl(view,u.search));
     try{
       const surface=surfaces[view];
       let fragment;
@@ -112,10 +114,6 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       if(view!=='agenda')document.body.classList.remove('is-agenda');
       const section=document.createElement('section');section.className='cc-desk-surface '+(fragment?.bodyClass||'cc-desk-home-surface');
       const shell=document.createElement('div');shell.className='app-shell page';
-      let links=items.filter(([id])=>allowed[id]).map(([id,text])=>`<a href="${routeUrl(id)}" class="cc-desk-route ${id===view?'active':''}" ${id===view?'aria-current="page"':''}>${text}</a>`).join('');
-      links+=nativeNavigation();
-      const routebar=document.createElement('nav');routebar.className='cc-desk-routebar';routebar.setAttribute('aria-label','Aree Centro Change');routebar.innerHTML=links;
-      const demo=document.createElement('div');demo.className='cc-desk-demo';demo.textContent='Versione dimostrativa · dati di prova';
       if(fragment){
         const nav=document.createElement('header');nav.className='cc-desk-topnav';
         nav.innerHTML='<nav id="navigation" aria-label="Funzioni della sezione"></nav><button type="button" id="logout">Esci</button>';
@@ -126,13 +124,15 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
       }else{
         shell.innerHTML=homeContent();
       }
-      section.prepend(demo,routebar);section.append(shell);
+      section.append(shell);
       root.replaceChildren(section);
+      if(view==='home')loadHomeSummary(section);
       window.ccDeskSurfaceRoot=section;
       window.ccDeskNavigate=path=>navigate(path);
       if(surface)await import('/assets/centrochange_core/js/'+surface.script+'?ccdesk='+token);
       if(token!==generation)return;
       page.set_title('Centro Change · '+(items.find(([id])=>id===view)?.[1]||''));
+      window.dispatchEvent(new Event('cc-desk-route-change'));
     }catch(error){if(token===generation){root.textContent='';const alert=document.createElement('p');alert.className='alert alert-danger';alert.setAttribute('role','alert');alert.textContent=error.message;root.append(alert);}}
   }
   root.addEventListener('click',event=>{
@@ -141,11 +141,18 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     event.preventDefault();event.stopImmediatePropagation();navigate(url.pathname+url.search);
   },true);
   frappe.pages['cc-unified-desk'].on_page_show=()=>{
+    document.body.classList.add('cc-unified-desk-open');
     if(root.childElementCount)return;
-    const args=new URLSearchParams(location.search),requested=args.get('cc_view')||'home';
-    const view=Object.hasOwn(allowed,requested)&&allowed[requested]?requested:'home';
-    if(view)navigate(view==='home'?routeUrl('home'):surfaces[view].path+'?'+args.toString());
+    const args=new URLSearchParams(location.search),fallback=canOperate?'agenda':canFinance?'finance':'home',requested=args.get('cc_view')||fallback;
+    const view=Object.hasOwn(allowed,requested)&&allowed[requested]?requested:fallback;
+    if(view)navigate(view==='home'?routeUrl('home'):surfaces[view].path+'?'+args.toString(),true);
     else root.textContent='Accesso non autorizzato.';
   };
-  $(wrapper).on('hide',()=>{generation++;root.replaceChildren();window.ccDeskSurfaceRoot=null;window.ccDeskNavigate=null;});
+  $(wrapper).on('hide',()=>{generation++;root.replaceChildren();window.ccDeskSurfaceRoot=null;window.ccDeskNavigate=null;document.body.classList.remove('cc-unified-desk-open');});
+  // Frappe may spell the same Page under /desk/<app>/ after history moves.
+  // Normalize that alias and restore the requested view without a document load.
+  window.addEventListener('popstate',()=>{
+    if(!/\/(?:app|desk)(?:\/[^/]+)?\/cc-unified-desk$/.test(location.pathname))return;
+    setTimeout(()=>navigate('/app/cc-unified-desk'+location.search,true),0);
+  });
 };

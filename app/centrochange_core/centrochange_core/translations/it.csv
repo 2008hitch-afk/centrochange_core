@@ -69,6 +69,27 @@ Item Price,Tariffa
 Purchase Invoice,Fattura professionista
 Payment Entry,Incasso o pagamento
 Bank Transaction,Movimento bancario
+Item,Servizio
+Include Payment (POS),Includi pagamento POS
+Is Return (Credit Note),Nota di credito
+Is Rate Adjustment Entry (Debit Note),Nota di debito
+Edit Posting Date and Time,Modifica data e ora contabile
+Consider for Tax Withholding,Applica ritenuta
+Currency and Price List,Valuta e listino
+Update Stock,Aggiorna magazzino
+Packing Unit,Unità confezione
+Quantity that must be bought or sold per UOM,Quantità per unità di misura
+Batch No,Numero lotto
+Buy,Acquisto
+Sell,Vendita
+Lead Time in days,Tempi di approvvigionamento (giorni)
+Employee and User Details,Collegamenti professionali
+Practitioner Type,Tipo professionista
+Hospital,Struttura
+Medical Codes,Codifiche mediche
+Appointments,Sedute
+Centro Change First Meeting,Primo incontro Centro Change
+Centro Change Service Item,Servizio Centro Change
 CC Audit Event,Registro modifiche
 Dashboard,Riepilogo
 Address & Contact,Indirizzo e contatti
@@ -84,3 +105,82 @@ Required,Obbligatorio
 Mandatory,Obbligatorio
 Please fill in the mandatory fields,Compila i campi obbligatori
 You are not permitted to access this page,Non hai accesso a questa pagina
+Healthcare Practitioners,Professionisti
+Patients,Pazienti
+Items,Servizi
+Item Prices,Tariffe
+Filters,Filtri
+Filter,Filtro
+Begin typing for results.,Digita per cercare.
+No results found,Nessun risultato
+Name,Nome
+Medical Department,Reparto
+Designation,Qualifica
+Phone (Office),Telefono ufficio
+Item Group,Categoria
+Item Name,Servizio
+Item Code,Codice servizio
+Bank Account,Conto bancario
+Deposit,Entrata
+Withdrawal,Uscita
+Purpose,Utilizzo
+UOM,Unità
+Sales & Purchase,Vendita e acquisto
+Nos,Pezzi
+Partly Paid,Pagata parzialmente
+Unreconciled,Da riconciliare
+Reconciled,Riconciliata
+Variant Of,Variante di
+Has Variants,Ha varianti
+Created On,Creato il
+Phone (R),Telefono residenza
+Status,Stato
+Modified,Modificato
+Owner,Creato da
+Customer,Soggetto fiscale
+Supplier,Fornitore
+Paid,Pagata
+Unpaid,Da pagare
+Price List,Listino
+Item Type,Tipo servizio
+Brand,Marchio
+Reference,Riferimento
+Filters {0},Filtri {0}
+Apply Filters,Applica filtri
+Clear Filters,Cancella filtri
+Select Filters,Seleziona filtri
+Consultations,Sedute
+Basic Details,Dati principali
+This is based on transactions against this Healthcare Practitioner.,Attività registrate per questo professionista.
+Assign,Assegna
+Tag,Etichette
+Last Edited By,Ultima modifica di
+Female,Femminile
+Male,Maschile
+Other,Altro
+Pricing,Tariffe
+Connections,Collegamenti
+Accounting,Contabilità
+Purchasing,Acquisti
+Quality,Qualità
+Sales,Vendite
+Tax,Imposte
+Inventory,Magazzino
+Variants,Varianti
+Manufacturing,Produzione
+Appointment Type,Tipo di seduta
+Appointment Types,Tipi di seduta
+Allow Booking For,Prenotabile per
+Default Duration (In Minutes),Durata predefinita (minuti)
+Practitioner,Professionista
+Service Unit,Unità operativa
+Department,Reparto
+Color,Colore
+Description,Descrizione
+Item Attributes,Informazioni principali
+Stock UOM,Unità di misura predefinita
+Available for Sale,Disponibile per la vendita
+Sales Invoice,Fattura paziente
+Purchase Invoice,Fattura professionista
+Payment Entry,Incasso o pagamento
+Bank Transaction,Movimento bancario
