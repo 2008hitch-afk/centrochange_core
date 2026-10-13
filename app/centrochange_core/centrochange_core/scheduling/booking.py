@@ -74,23 +74,30 @@ def validate_slot(doc):
 	start_instant=start_utc(doc)
 	end_instant=start_utc(SimpleNamespace(appointment_date=end.date(),appointment_time=end.time()))
 	if end_instant-start_instant!=timedelta(minutes=flt(doc.duration)):
-		frappe.throw('Session interval crosses a daylight-saving offset; choose an unambiguous interval')
-	if start<=datetime.now(ZoneInfo('Europe/Rome')).replace(tzinfo=None) or end.date()!=start.date():
-		frappe.throw('Appointment requires a future same-day interval')
+		frappe.throw('L’orario attraversa un cambio d’ora legale: scegli un intervallo non ambiguo.')
+	if end.date()!=start.date():
+		frappe.throw('La seduta deve iniziare e terminare nello stesso giorno.')
+	if start<=datetime.now(ZoneInfo('Europe/Rome')).replace(tzinfo=None):
+		previous=doc.get_doc_before_save() if doc.flags.get('cc_historical_slot_correction') else None
+		if not (frappe.flags.get('cc_appointment_write') and previous
+			and previous.cc_closure_state=='Reopened' and doc.cc_closure_state=='Reopened'
+			and doc.status=='Closed' and getdate(previous.appointment_date)==getdate(doc.appointment_date)):
+			frappe.throw('Una prenotazione o uno spostamento ordinario richiede un orario futuro. La correzione storica richiede una seduta riaperta e la stessa data.')
+		require_historical_correction_without_effects(doc)
 	schedules=current_rows('Practitioner Schedule',{'cc_practitioner':doc.practitioner,'cc_center':doc.cc_center,'disabled':0},pluck='name')
 	rows=current_rows('Healthcare Schedule Time Slot',{'parent':['in',schedules or ['']], 'parenttype':'Practitioner Schedule',
 		'day':start.strftime('%A')},fields=['from_time','to_time'])
 	if not any(get_time(row.from_time)<=start.time() and get_time(row.to_time)>=end.time() for row in rows):
-		frappe.throw('Appointment is outside the center recurring schedule')
+		frappe.throw('L’orario è fuori dalla disponibilità abituale del professionista nel Centro.')
 	absences=current_rows('Practitioner Availability',{'scope_type':'Healthcare Practitioner','scope':doc.practitioner,
 		'type':'Unavailable','docstatus':1},fields=['start_date','end_date','start_time','end_time','repeat'])
 	for absence in absences:
 		if absence.repeat!='Never':
-			frappe.throw('Recurring absence requires an explicitly supported rule')
+			frappe.throw('L’assenza ricorrente richiede una regola esplicita prima di spostare la seduta.')
 		absent_start=datetime.combine(getdate(absence.start_date),get_time(absence.start_time))
 		absent_end=datetime.combine(getdate(absence.end_date or absence.start_date),get_time(absence.end_time))
 		if start<absent_end and end>absent_start:
-			frappe.throw('Practitioner is unavailable for this interval')
+			frappe.throw('Il professionista non è disponibile in questo intervallo.')
 	# Current row reads avoid the native non-locking overlap snapshot under REPEATABLE READ.
 	rows=current_rows('Patient Appointment',{'appointment_date':doc.appointment_date,'name':['!=',doc.name or ''],
 		'status':['!=','Cancelled']},fields=['name','patient','practitioner','appointment_time','duration'])
@@ -99,7 +106,44 @@ def validate_slot(doc):
 			continue
 		other=datetime.combine(start.date(),get_time(row.appointment_time))
 		if start<other+timedelta(minutes=flt(row.duration)) and end>other:
-			frappe.throw('Patient or practitioner interval is already booked')
+			frappe.throw('Paziente o professionista hanno già una seduta in questo intervallo.')
+
+
+def require_historical_correction_without_effects(doc):
+	"""Fail closed on retained downstream facts before moving a reopened past slot.
+
+	A zero-paid closure settlement is the mandatory operational closure record,
+	not a receipt. A paid settlement or a derived source is an economic fact.
+	"""
+	blocked='La correzione storica richiede una rettifica separata: esistono effetti economici o amministrativi collegati.'
+	unverified='Impossibile verificare i collegamenti economici della seduta: serve una rettifica separata.'
+	if doc.cc_paid or doc.cc_package_state in ('Consumed','Released'):
+		frappe.throw(blocked)
+	checks=(
+		('CC Professional Expectation',{'appointment':doc.name}),
+		('CC Economic Source Link',{'appointment':doc.name}),
+		('CC Settlement',{'appointment':doc.name,'paid':1}),
+		('CC Payment Override',{'reference_doctype':'Patient Appointment','reference_name':doc.name}),
+		('CC Admin Exception',{'reference_doctype':'Patient Appointment','reference_name':doc.name}),
+		('CC Booking Confirmation',{'appointment':doc.name}),
+		('Communication',{'reference_doctype':'Patient Appointment','reference_name':doc.name}),
+	)
+	try:
+		linked=any(frappe.db.get_value(doctype,filters,'name',for_update=True) for doctype,filters in checks)
+		ledger=any(row.event_type!='RESERVE' for row in current_rows('CC Package Ledger',
+			{'appointment':doc.name},fields=['event_type']))
+		# Other same-day expectations can include this session in their unpaid rank.
+		peers=current_rows('Patient Appointment',{'patient':doc.patient,'practitioner':doc.practitioner,
+			'appointment_date':doc.appointment_date},pluck='name')
+		peer_expectation=frappe.db.get_value('CC Professional Expectation',
+			{'appointment':['in',peers or ['']]},'name',for_update=True)
+		# A notice records a patient/center debt, not a document ID: its exact
+		# session link cannot be established, so any such notice blocks the move.
+		notice=frappe.db.get_value('CC Payment Notice',{'patient':doc.patient,'center':doc.cc_center},'name',for_update=True)
+	except Exception:
+		frappe.throw(unverified)
+	if linked or ledger or peer_expectation or notice:
+		frappe.throw(blocked)
 
 
 @frappe.whitelist(methods=['POST'])
@@ -190,17 +234,31 @@ def reschedule(appointment,appointment_date,appointment_time,reason):
 	doc.check_permission('read')
 	require_booking(doc.patient,doc.practitioner,doc.cc_center)
 	if doc.status in ('Cancelled','No Show') or (doc.status=='Closed' and doc.cc_closure_state!='Reopened'):
-		frappe.throw('Finalized appointments require a governed correction')
+		frappe.throw('La seduta conclusa richiede una riapertura autorizzata prima della correzione.')
 	from centrochange_core.operations.lifecycle import require_mutable
 	require_mutable(doc)
 	date,time=getdate(appointment_date),get_time(appointment_time)
 	before={'appointment_date':str(getdate(doc.appointment_date)),'appointment_time':str(get_time(doc.appointment_time))}
 	after={'appointment_date':str(date),'appointment_time':str(time)}
 	if before==after:
+		if datetime.combine(date,time)<=datetime.now(ZoneInfo('Europe/Rome')).replace(tzinfo=None) and (not reason or not reason.strip()):
+			frappe.throw('Indica il motivo della correzione storica della seduta.')
 		return {'name':doc.name,'replay':True}
+	if not reason or not reason.strip():
+		frappe.throw('Indica il motivo dello spostamento della seduta.')
+	historical=datetime.combine(date,time)<=datetime.now(ZoneInfo('Europe/Rome')).replace(tzinfo=None)
+	if historical:
+		if doc.cc_closure_state!='Reopened' or doc.status!='Closed':
+			frappe.throw('La correzione di un orario passato richiede una seduta formalmente riaperta.')
+		if date!=getdate(doc.appointment_date):
+			frappe.throw('La correzione storica può cambiare soltanto l’orario, nella stessa data della seduta.')
 	with internal_write('cc_appointment_write'):
 		doc.appointment_date=date
 		doc.appointment_time=time
-		doc.save(ignore_permissions=True)
+		doc.flags.cc_historical_slot_correction=historical
+		try:
+			doc.save(ignore_permissions=True)
+		finally:
+			doc.flags.cc_historical_slot_correction=False
 	append('APPOINTMENT_RESCHEDULED',doc.doctype,doc.name,before,after,reason)
 	return {'name':doc.name,'replay':False}
