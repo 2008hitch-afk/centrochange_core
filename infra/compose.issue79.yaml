@@ -1,0 +1,6 @@
+# Persisted only for the authorized issue #79 DEV backend CSS image.
+# The other application services retain CC_UAT_IMAGE from runtime.env.
+services:
+  backend:
+    image: centrochange-single:issue79-css-f3ab9d5ddf9f
+    pull_policy: never

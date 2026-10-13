@@ -28,12 +28,16 @@ ENV = STATE / 'runtime.env'
 CHECKPOINT = STATE / 'issue79-checkpoint-20261013'
 COMPOSE_DIR = Path('/tmp/centrochange-issue124/infra')
 COMPOSE_NAMES = ('compose.yaml', 'compose.issue124.yaml', 'compose.uat.yaml')
+OVERRIDE_SOURCE = REPO / 'infra/compose.issue79.yaml'
+OVERRIDE = STATE / 'compose.issue79.yaml'
+OVERRIDE_SHA = 'f68f3da5adc5ed8b3ec907602f8a5ff671735b5265aeb3a6c7fafeed4cdb4a8f'
 COMPOSE_SHA = {
     'compose.yaml': '5df3c081f4afff41e6e07222405a4d311bc75eeb1fa97c1045834115e5a0a67d',
     'compose.issue124.yaml': 'ced6e5d2af243bfefbd368ddc46e49de0381bf36c25d05109a13413b59bd7917',
     'compose.uat.yaml': '982fd1cd6253c331482af430a64f9a0b9d1ba205af8a37fd31a1e4cf2a10ade7',
 }
 ORIGINAL_ENV_SHA = '6fba9cef0e66ca6472407489bb5886b300eedc316fcbb5f656b54cb39cde56ad'
+DEPLOYED_ENV_SHA = 'd2e2e2849b0507f9bcfe8de78d48dc81cdb59d705aa62a765e96eea60429f080'
 BASE_IMAGE = 'sha256:f38215267771e4db2e42af9312211931dc039b07ff17b69953c10f50026c6285'
 ROLLBACK_TAG = 'centrochange-single:issue79-rollback-20261013'
 NEW_TAG = 'centrochange-single:issue79-css-f3ab9d5ddf9f'
@@ -111,6 +115,10 @@ def static_preflight(expected_script_sha: str) -> dict:
             f'FROM {ROLLBACK_TAG}' in recipe and IMAGE_CSS in recipe, 'recipe exceeds CSS-only scope')
     for name, expected in COMPOSE_SHA.items():
         require(file_sha(COMPOSE_DIR / name) == expected, f'{name} drift')
+    require(file_sha(OVERRIDE_SOURCE) == OVERRIDE_SHA, 'backend-only override changed')
+    require(OVERRIDE_SOURCE.read_text().splitlines()[-3:] ==
+            ['  backend:', f'    image: {NEW_TAG}', '    pull_policy: never'],
+            'backend-only override scope changed')
     require(ENV.is_file() and ENV.stat().st_mode & 0o077 == 0, 'private env missing or exposed')
     settings = read_env()
     require(settings.get('SITE_NAME') == 'centrochange.local', 'Site mismatch')
@@ -145,11 +153,51 @@ def checkpoint_preflight(env_hash: str, owner_uid: int = 0) -> None:
     require(env_hash in hashes or recorded, 'checkpoint env checksum mismatch')
 
 
-def compose(*args: str, env_file: Path = ENV, label: str = 'Compose') -> subprocess.CompletedProcess:
+def compose(*args: str, env_file: Path = ENV, target: bool = False,
+            override_file: Path = OVERRIDE,
+            label: str = 'Compose') -> subprocess.CompletedProcess:
     base = ['docker', 'compose', '--env-file', str(env_file), '-p', 'centrochange-dev']
     for name in COMPOSE_NAMES:
         base += ['-f', str(COMPOSE_DIR / name)]
+    if target:
+        base += ['-f', str(override_file)]
     return command(base + list(args), label=label)
+
+
+def compose_files_value() -> str:
+    return ':'.join(str(COMPOSE_DIR / name) for name in COMPOSE_NAMES) + ':' + str(OVERRIDE)
+
+
+def configured_services(*, target: bool = False, env_file: Path = ENV,
+                        override_file: Path = OVERRIDE) -> dict:
+    data = json.loads(compose('config', '--format', 'json', env_file=env_file,
+                              target=target, override_file=override_file,
+                              label='Compose config').stdout)
+    require(data.get('name') == 'centrochange-dev', 'Compose project mismatch')
+    return data['services']
+
+
+def require_backend_only(before: dict, after: dict, base_ref: str) -> None:
+    require(before.keys() == after.keys(), 'Compose service set changed')
+    require(before['backend']['image'] == base_ref, 'baseline backend image drift')
+    for service in before:
+        if service == 'backend':
+            expected = dict(before[service]); expected['image'] = NEW_TAG
+            expected['pull_policy'] = 'never'
+            require(after[service] == expected, 'backend Compose config exceeds image override')
+        else:
+            require(after[service] == before[service], f'{service}: indirect Compose config change')
+    require(all(after[s]['image'] == base_ref for s in APP if s != 'backend'),
+            'another application image changed')
+
+
+def require_default_compose(expected: dict) -> None:
+    result = command(['docker', 'compose', '--env-file', str(ENV), '-p', 'centrochange-dev',
+                      'config', '--format', 'json'], cwd=COMPOSE_DIR,
+                     label='persistent default Compose config')
+    actual = json.loads(result.stdout)
+    require(actual.get('name') == 'centrochange-dev' and actual['services'] == expected,
+            'future ordinary Compose config differs from backend-only target')
 
 
 def image_id(ref: str) -> str:
@@ -247,12 +295,14 @@ def write_report(path: Path, report: dict) -> None:
     path.chmod(0o600)
 
 
-def replace_env_image(new_image: str, original: bytes, stat: os.stat_result) -> None:
+def persist_compose_file(original: bytes, stat: os.stat_result) -> None:
     lines = original.decode().splitlines(keepends=True)
-    found = [i for i, line in enumerate(lines) if line.startswith('CC_UAT_IMAGE=')]
-    require(len(found) == 1, 'env requires exactly one CC_UAT_IMAGE')
-    ending = '\n' if lines[found[0]].endswith('\n') else ''
-    lines[found[0]] = f'CC_UAT_IMAGE={new_image}{ending}'
+    require(sum(line.startswith('CC_UAT_IMAGE=') for line in lines) == 1,
+            'env requires exactly one CC_UAT_IMAGE')
+    require(not any(line.startswith('COMPOSE_FILE=') for line in lines),
+            'COMPOSE_FILE already present')
+    require(original.endswith(b'\n'), 'env needs a final newline')
+    lines.append(f'COMPOSE_FILE={compose_files_value()}\n')
     fd, temp = tempfile.mkstemp(prefix='.issue79-env-', dir=ENV.parent)
     try:
         os.fchmod(fd, stat.st_mode & 0o777)
@@ -264,6 +314,40 @@ def replace_env_image(new_image: str, original: bytes, stat: os.stat_result) -> 
     finally:
         if os.path.exists(temp):
             os.unlink(temp)
+
+
+def persist_override() -> None:
+    require(not OVERRIDE.exists(), 'persistent override already exists')
+    fd, temp = tempfile.mkstemp(prefix='.issue79-compose-', dir=STATE)
+    try:
+        os.fchmod(fd, 0o644)
+        with os.fdopen(fd, 'wb') as handle:
+            handle.write(OVERRIDE_SOURCE.read_bytes()); handle.flush(); os.fsync(handle.fileno())
+        os.replace(temp, OVERRIDE)
+    finally:
+        if os.path.exists(temp): os.unlink(temp)
+    require(file_sha(OVERRIDE) == OVERRIDE_SHA, 'persistent override checksum mismatch')
+
+
+def remove_override() -> None:
+    if OVERRIDE.exists():
+        require(file_sha(OVERRIDE) == OVERRIDE_SHA, 'persistent override changed; unsafe cleanup')
+        OVERRIDE.unlink()
+
+
+def evidence_preflight(run_name: str) -> Path:
+    root = STATE / 'browser-evidence'
+    account = pwd.getpwnam('empv26')
+    require(root.is_dir() and root.stat().st_uid == account.pw_uid and
+            root.stat().st_mode & 0o077 == 0, 'browser evidence directory unavailable or exposed')
+    output = root / run_name
+    output.mkdir(mode=0o700, exist_ok=False)
+    os.chown(output, account.pw_uid, account.pw_gid)
+    unprivileged(['python3', '-c',
+                  'import pathlib,sys; p=pathlib.Path(sys.argv[1])/".write-check"; '
+                  'p.write_text("ok"); p.unlink()', str(output)],
+                 label='browser evidence write check')
+    return output
 
 
 def restore_env(original: bytes, stat: os.stat_result) -> None:
@@ -283,32 +367,38 @@ def apply(static: dict) -> dict:
             'run as Owner-authorized root on srv2033673')
     require(Path('/var/run/docker.sock').exists(), 'Docker socket missing')
     require(shutil.disk_usage('/var/lib/docker').free >= 2 * 1024**3, 'less than 2 GiB Docker free')
-    require(static['env_sha256'] == ORIGINAL_ENV_SHA or read_env().get('CC_UAT_IMAGE') == NEW_TAG,
-            'runtime env drift')
+    deployed = (read_env().get('COMPOSE_FILE') == compose_files_value())
+    require(static['env_sha256'] == ORIGINAL_ENV_SHA or
+            (deployed and static['env_sha256'] == DEPLOYED_ENV_SHA), 'runtime env drift')
     checkpoint_preflight(ORIGINAL_ENV_SHA)
     browser_preflight()
     require(image_id(ROLLBACK_TAG) == BASE_IMAGE, 'rollback image ID mismatch')
     require(image_css_sha(ROLLBACK_TAG) == OLD_CSS_SHA, 'rollback image CSS mismatch')
-    config = json.loads(compose('config', '--format', 'json', label='Compose config').stdout)
-    require(config.get('name') == 'centrochange-dev', 'Compose project mismatch')
+    config = configured_services()
     initial = snapshot()
     http_ready()
     require(container_css_sha(initial['backend']['id']) in (OLD_CSS_SHA, NEW_CSS_SHA),
             'running backend CSS unexpected')
     runtime_image = read_env().get('CC_UAT_IMAGE')
-    if runtime_image == NEW_TAG:
+    if deployed:
+        require(OVERRIDE.is_file() and file_sha(OVERRIDE) == OVERRIDE_SHA,
+                'persistent backend override missing or changed')
+        require(runtime_image != NEW_TAG and image_id(runtime_image) == BASE_IMAGE,
+                'global app image drift')
+        require_backend_only(config, configured_services(target=True), runtime_image)
+        require_default_compose(configured_services(target=True))
         require(initial['backend']['image'] == image_id(NEW_TAG), 'partial prior deployment')
         require(all(initial[s]['image'] == BASE_IMAGE for s in APP if s != 'backend'),
                 'other app image drift')
-        require(all(config['services'][s]['image'] == NEW_TAG for s in APP),
-                'deployed Compose image drift')
+        require(all(config[s]['image'] == runtime_image for s in APP),
+                'baseline Compose image drift')
         require(image_css_sha(NEW_TAG) == NEW_CSS_SHA, 'deployed CSS mismatch')
         require(container_css_sha(initial['backend']['id']) == NEW_CSS_SHA, 'deployed backend CSS mismatch')
-        result = browser('issue79_unified_autocomplete.cjs', live=True,
-                         output=STATE / 'browser-evidence')
-        records = browser('issue79_inventory.cjs')
         run_dir = STATE / 'issue79-runs' / (time.strftime('%Y%m%dT%H%M%SZ', time.gmtime()) + f'-{os.getpid()}')
         run_dir.mkdir(mode=0o700, parents=True, exist_ok=False)
+        screenshots = evidence_preflight(run_dir.name)
+        result = browser('issue79_unified_autocomplete.cjs', live=True, output=screenshots)
+        records = browser('issue79_inventory.cjs')
         report_path = run_dir / 'report.json'
         write_report(report_path, {'status':'LIVE_TECHNICAL_PASS','already_deployed':True,
                                   'image_before':BASE_IMAGE,'image_after':image_id(NEW_TAG),
@@ -319,12 +409,16 @@ def apply(static: dict) -> dict:
     require(image_id(runtime_image) == BASE_IMAGE, 'configured image mismatch')
     require(all(initial[s]['image'] == BASE_IMAGE for s in APP), 'app image drift')
     require(container_css_sha(initial['backend']['id']) == OLD_CSS_SHA, 'running backend CSS mismatch')
-    require(all(config['services'][s]['image'] == runtime_image for s in APP), 'Compose image drift')
-    require(config['services']['backend'].get('volumes'), 'backend Site volume missing')
+    require(not OVERRIDE.exists(), 'unexpected persistent override exists')
+    require(all(config[s]['image'] == runtime_image for s in APP), 'Compose image drift')
+    require(config['backend'].get('volumes'), 'backend Site volume missing')
+    target_config = configured_services(target=True, override_file=OVERRIDE_SOURCE)
+    require_backend_only(config, target_config, runtime_image)
     before_data = browser('issue79_inventory.cjs')
     run_dir = STATE / 'issue79-runs' / (time.strftime('%Y%m%dT%H%M%SZ', time.gmtime()) + f'-{os.getpid()}')
     run_dir.mkdir(mode=0o700, parents=True, exist_ok=False)
     run_dir.chmod(0o700)
+    screenshots = evidence_preflight(run_dir.name)
     report_path = run_dir / 'report.json'
     original = ENV.read_bytes(); original_stat = ENV.stat()
     backup = run_dir / 'runtime.env.before'
@@ -362,9 +456,17 @@ def apply(static: dict) -> dict:
                 'runtime changed during preparation')
         require(browser('issue79_inventory.cjs')['sha256'] == before_data['sha256'],
                 'synthetic records changed during preparation')
-        replace_env_image(NEW_TAG, original, original_stat)
         switched = True
-        compose('up','-d','--no-deps','--no-build','--force-recreate','backend',label='backend switch')
+        persist_override()
+        persist_compose_file(original, original_stat)
+        require(file_sha(OVERRIDE) == OVERRIDE_SHA and
+                read_env().get('COMPOSE_FILE') == compose_files_value() and
+                read_env().get('CC_UAT_IMAGE') == runtime_image,
+                'persistent Compose configuration drift')
+        require_backend_only(config, configured_services(target=True), runtime_image)
+        require_default_compose(target_config)
+        compose('up','-d','--no-deps','--no-build','--force-recreate','backend',
+                target=True, label='backend switch')
         http_ready()
         after = snapshot()
         require(after['backend']['image'] == new_id and
@@ -372,10 +474,6 @@ def apply(static: dict) -> dict:
                 all(after[s] == initial[s] for s in TECH), 'unexpected service change')
         require(after['backend']['mounts'] == initial['backend']['mounts'], 'Site volume changed')
         require(container_css_sha(after['backend']['id']) == NEW_CSS_SHA, 'backend did not load candidate CSS')
-        screenshots = STATE / 'browser-evidence' / run_dir.name
-        screenshots.mkdir(mode=0o700)
-        account = pwd.getpwnam('empv26')
-        os.chown(screenshots, account.pw_uid, account.pw_gid)
         live = browser('issue79_unified_autocomplete.cjs', live=True, output=screenshots)
         after_data = browser('issue79_inventory.cjs')
         require(after_data['sha256'] == before_data['sha256'], 'synthetic record fingerprint changed')
@@ -383,6 +481,7 @@ def apply(static: dict) -> dict:
                       backend_after=after['backend']['id'], browser=live,
                       inventory_after=after_data, env_after_sha256=file_sha(ENV),
                       screenshots=str(screenshots),
+                      compose_file=compose_files_value(), override_sha256=OVERRIDE_SHA,
                       technical_after={s:after[s]['id'] for s in TECH})
         write_report(report_path, report)
         return {'status':'LIVE_TECHNICAL_PASS','report':str(report_path),'image_before':BASE_IMAGE,
@@ -392,6 +491,10 @@ def apply(static: dict) -> dict:
         if switched:
             try:
                 restore_env(original, original_stat)
+                remove_override()
+                require(file_sha(ENV) == ORIGINAL_ENV_SHA and not OVERRIDE.exists(),
+                        'rollback Compose configuration mismatch')
+                require(configured_services() == config, 'rollback Compose services changed')
                 compose('up','-d','--no-deps','--no-build','--force-recreate','backend',label='backend rollback')
                 http_ready()
                 recovered = snapshot()
