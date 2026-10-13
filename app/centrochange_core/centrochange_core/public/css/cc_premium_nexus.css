@@ -130,3 +130,29 @@ body.cc-client-desk .cc-desk-surface select:focus-visible,
 body.cc-client-desk .cc-desk-surface button:focus-visible{box-shadow:var(--theme-ring);outline:none}
 @media(max-width:991.98px){body.cc-client-desk{--cc-sidebar-width:0px}body.cc-client-desk #cc-desk-sidebar{background:#123a34}body.cc-client-desk .cc-sidebar-heading{min-height:55px}}
 @media(max-width:575.98px){body.cc-client-desk.cc-native-view .page-container>.container{padding:.65rem}body.cc-client-desk.cc-native-view .form-column .frappe-control:not(:last-child){margin-bottom:12px}}
+/* Compact guidance inside native accounting forms and the existing Finance page. */
+body.cc-client-desk.cc-native-view .cc-finance-dashboard{border:1px solid #dce8e3;border-radius:8px;background:#f7fbf9;margin-bottom:1rem}
+body.cc-client-desk.cc-native-view .cc-finance-dashboard .section-head{display:none}
+body.cc-client-desk.cc-native-view .cc-finance-context{display:grid;grid-template-columns:minmax(0,1fr) minmax(12rem,22rem);gap:1rem;padding:.8rem 1rem;margin-bottom:.8rem;border:1px solid #dce8e3;border-left:3px solid #12665f;border-radius:6px;background:#f7fbf9}
+body.cc-client-desk.cc-native-view .cc-finance-context h2{font-size:1rem;color:#164b42;margin:0 0 .45rem}
+body.cc-client-desk.cc-native-view .cc-finance-context dl{display:flex;flex-wrap:wrap;gap:.35rem 1.2rem;margin:0}
+body.cc-client-desk.cc-native-view .cc-finance-context dt{font-size:.7rem;color:#68796f;font-weight:650}
+body.cc-client-desk.cc-native-view .cc-finance-context dd{font-size:.84rem;color:#223b32;font-weight:600;margin:0;overflow-wrap:anywhere}
+body.cc-client-desk.cc-native-view .cc-finance-context p{border-left:2px solid #12665f;padding-left:.8rem;margin:0;font-size:.82rem;line-height:1.45}
+body.cc-client-desk.cc-native-view .cc-finance-context p strong,body.cc-client-desk.cc-native-view .cc-finance-context p span{display:block}
+body.cc-client-desk.cc-native-view .cc-finance-context p strong{color:#12665f;margin-bottom:.2rem}
+body.cc-client-desk[data-cc-form-type="sales-invoice"][data-cc-finance-advanced="0"] .layout-side-section.right,
+body.cc-client-desk[data-cc-form-type="purchase-invoice"][data-cc-finance-advanced="0"] .layout-side-section.right,
+body.cc-client-desk[data-cc-form-type="payment-entry"][data-cc-finance-advanced="0"] .layout-side-section.right{display:none}
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="contact_and_address_tab"]),
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="address_and_contact_tab"]),
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="terms_tab"]),
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="more_info_tab"]),
+body.cc-client-desk[data-cc-finance-advanced="0"]:is([data-cc-form-type="sales-invoice"],[data-cc-form-type="purchase-invoice"]) .form-tabs-list .nav-item:has(button[data-fieldname="connections_tab"]){display:none}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-guide{display:flex;flex-wrap:wrap;gap:.25rem .8rem;align-items:baseline;border-left:3px solid #12665f;background:#f7fbf9;padding:.6rem .85rem;margin:.2rem 0 .8rem;font-size:.85rem;color:#36584e}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-guide strong{color:#164b42}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-facts{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;margin:.65rem 0}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-facts dt{font-size:.72rem;color:#66796f}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-facts dd{font-weight:650;margin:0}
+body.cc-client-desk.cc-unified-desk-open .cc-finance-next{border-left:2px solid #12665f;padding:.55rem .8rem;background:#f7fbf9}
+@media(max-width:767px){body.cc-client-desk.cc-native-view .cc-finance-context{grid-template-columns:1fr}}

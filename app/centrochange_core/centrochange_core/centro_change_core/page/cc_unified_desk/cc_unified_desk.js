@@ -92,12 +92,14 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
     }};visit(style.sheet.cssRules);
   }
   function routeUrl(view,params){const u=new URL('/app/cc-unified-desk',location.origin);u.searchParams.set('cc_view',view);new URLSearchParams(params||'').forEach((v,k)=>{if(k!=='cc_view')u.searchParams.set(k,v)});return u.pathname+u.search;}
-  async function navigate(path,replace=true){
+  async function navigate(path,replace=false){
     const u=new URL(path,location.origin),view=u.pathname==='/app/cc-unified-desk'?u.searchParams.get('cc_view')||'home':routeByPath[u.pathname];
     if(!view){if(u.pathname.startsWith('/login'))location.href=u.href;return;}
     if(!Object.hasOwn(allowed,view)||!allowed[view]){root.textContent='Accesso non autorizzato.';return;}
-    const token=++generation;root.textContent='Caricamento…';
+    const token=++generation;
+    if(!root.childElementCount)root.innerHTML='<p class="cc-inline-loading" role="status">Caricamento contenuto…</p>';
     if(replace)history.replaceState(null,'',routeUrl(view,u.search));
+    else history.pushState(null,'',routeUrl(view,u.search));
     try{
       const surface=surfaces[view];
       let fragment;
@@ -141,10 +143,16 @@ frappe.pages['cc-unified-desk'].on_page_load = function(wrapper) {
   frappe.pages['cc-unified-desk'].on_page_show=()=>{
     document.body.classList.add('cc-unified-desk-open');
     if(root.childElementCount)return;
-    const args=new URLSearchParams(location.search),requested=args.get('cc_view')||'home';
-    const view=Object.hasOwn(allowed,requested)&&allowed[requested]?requested:'home';
-    if(view)navigate(view==='home'?routeUrl('home'):surfaces[view].path+'?'+args.toString());
+    const args=new URLSearchParams(location.search),fallback=canOperate?'agenda':canFinance?'finance':'home',requested=args.get('cc_view')||fallback;
+    const view=Object.hasOwn(allowed,requested)&&allowed[requested]?requested:fallback;
+    if(view)navigate(view==='home'?routeUrl('home'):surfaces[view].path+'?'+args.toString(),true);
     else root.textContent='Accesso non autorizzato.';
   };
   $(wrapper).on('hide',()=>{generation++;root.replaceChildren();window.ccDeskSurfaceRoot=null;window.ccDeskNavigate=null;document.body.classList.remove('cc-unified-desk-open');});
+  // Frappe may spell the same Page under /desk/<app>/ after history moves.
+  // Normalize that alias and restore the requested view without a document load.
+  window.addEventListener('popstate',()=>{
+    if(!/\/(?:app|desk)(?:\/[^/]+)?\/cc-unified-desk$/.test(location.pathname))return;
+    setTimeout(()=>navigate('/app/cc-unified-desk'+location.search,true),0);
+  });
 };

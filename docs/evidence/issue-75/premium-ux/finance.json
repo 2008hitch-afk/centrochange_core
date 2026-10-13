@@ -1,0 +1,118 @@
+{
+  "m": {
+    "invoices": [
+      {
+        "slug": "draft",
+        "status": "Bozza",
+        "actions": [
+          "Approva e contabilizza"
+        ]
+      },
+      {
+        "slug": "unpaid",
+        "status": "Contabilizzata",
+        "actions": [
+          "Registra pagamento",
+          "Annulla documento",
+          "Nota di credito",
+          "Differisci scadenza con motivo"
+        ]
+      },
+      {
+        "slug": "paid",
+        "status": "Saldata",
+        "actions": [
+          "Annulla documento",
+          "Nota di credito"
+        ]
+      },
+      {
+        "slug": "partial",
+        "status": "Parzialmente saldata",
+        "actions": [
+          "Registra pagamento",
+          "Annulla documento",
+          "Nota di credito",
+          "Differisci scadenza con motivo"
+        ]
+      }
+    ],
+    "errors": [],
+    "native_invoice": true,
+    "professional_invoice": true
+  },
+  "f": {
+    "invoices": [
+      {
+        "slug": "draft",
+        "status": "Bozza",
+        "actions": [
+          "Approva e contabilizza"
+        ]
+      },
+      {
+        "slug": "unpaid",
+        "status": "Contabilizzata",
+        "actions": [
+          "Registra pagamento",
+          "Annulla documento",
+          "Nota di credito",
+          "Differisci scadenza con motivo"
+        ]
+      },
+      {
+        "slug": "paid",
+        "status": "Saldata",
+        "actions": [
+          "Annulla documento",
+          "Nota di credito"
+        ]
+      },
+      {
+        "slug": "partial",
+        "status": "Parzialmente saldata",
+        "actions": [
+          "Registra pagamento",
+          "Annulla documento",
+          "Nota di credito",
+          "Differisci scadenza con motivo"
+        ]
+      }
+    ],
+    "errors": [],
+    "native_invoice": true,
+    "professional_invoice": true
+  },
+  "t": {
+    "invoices": [
+      {
+        "slug": "draft",
+        "status": "Bozza",
+        "actions": []
+      },
+      {
+        "slug": "unpaid",
+        "status": "Contabilizzata",
+        "actions": []
+      },
+      {
+        "slug": "paid",
+        "status": "Saldata",
+        "actions": []
+      },
+      {
+        "slug": "partial",
+        "status": "Parzialmente saldata",
+        "actions": []
+      }
+    ],
+    "errors": [],
+    "native_invoice": true,
+    "professional_invoice": true
+  },
+  "other": {
+    "payment_bank_fiscal": "PASS",
+    "errors": [],
+    "cancelled_invoice": "No cancelled synthetic invoice exists; read-only boundary only"
+  }
+}

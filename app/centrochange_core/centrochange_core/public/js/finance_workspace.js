@@ -6,6 +6,17 @@ import {clean,person,userLabel} from './report_ui.js';
 const ccSurface=window.ccDeskSurfaceRoot||document,$=s=>ccSurface.querySelector(s),finance=(method,args={},post=false)=>api('centrochange_core.finance.'+method,args,post);
 const state={boot:null,view:'Riepilogo',rows:[],selected:null,renderGeneration:0,detailGeneration:0};
 const views=['Riepilogo','Fatture pazienti','XML ricevuti','Fatture fornitori','Banca','Professionisti','Coda amministrativa','SdI','TS'];
+const viewHelp={
+ 'Riepilogo':['Situazione economica del centro','Consulta importi, documenti e report del periodo.'],
+ 'Fatture pazienti':['Documenti verso i pazienti','Apri una riga per verificare prestazioni, stato, residuo e azioni consentite.'],
+ 'XML ricevuti':['Documenti ricevuti in prova','Controlla fornitore e classificazione prima di preparare una fattura.'],
+ 'Fatture fornitori':['Documenti dei professionisti e fornitori','Apri una riga per controllare importo, stato e pagamento.'],
+ 'Banca':['Movimenti e riconciliazioni','Apri un movimento per vedere i documenti abbinati o quelli ancora disponibili.'],
+ 'Professionisti':['Compensi attesi','Verifica le sedute e confronta le fatture ricevute con gli importi attesi.'],
+ 'Coda amministrativa':['Condizioni da verificare','Apri una condizione per vedere fonte, stato e operazioni autorizzate.'],
+ 'SdI':['Simulazione SdI · nessun invio reale','Verifica lo stato dei documenti e i tentativi; correggi gli errori prima di un nuovo tentativo simulato.'],
+ 'TS':['Simulazione TS · nessun invio reale','Verifica eligibilità, opposizione ed esito; rivedi i dati quando lo stato lo richiede.']
+};
 const money=v=>v===null||v===undefined?'Da definire':new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(v);
 function notice(message,error=false){$('#notice').textContent=message;$('#notice').className='notice'+(error?' error':'');$('#notice').hidden=false;}
 const options=(rows,key='name',label=key)=>rows.map(r=>`<option value="${esc(r[key]??r)}">${esc(clean(display(r[label]??r[key]??r)))}</option>`).join('');
@@ -25,6 +36,7 @@ if(window.ccDeskNavigate)$('#navigation').insertAdjacentHTML('beforeend',views.m
 $('#navigation').onclick=e=>{const b=e.target.closest('[data-view]');if(!b)return;state.view=b.dataset.view;refresh().catch(e=>notice(e.message,true));};
 $('#filters').onsubmit=e=>{e.preventDefault();refresh().catch(e=>notice(e.message,true));};
 $('#center').onchange=async()=>{const center=$('#center').value;try{const boot=await finance('reporting.bootstrap',{center});if(center!==$('#center').value)return;state.boot=boot;await refresh();}catch(e){if(center===$('#center').value)notice(e.message,true);}};
+const guide=document.createElement('section');guide.className='cc-finance-guide';guide.setAttribute('aria-label','Guida alla funzione');$('#finance-content').before(guide);
 function cell(row,key){
  const value=row[key];if(key==='practitioner')return person(state.boot.practitioners.find(p=>p.name===value)?.practitioner_name||value);if(key==='supplier'&&/^CC-HTTP-[A-Za-z0-9]+\s/.test(value||''))return person(value);if(key==='docstatus')return documentState(value);if(['date','posting_date','due_date'].includes(key))return italianDate(value??'—');if(key==='amount'&&!row.amount_known)return 'Da definire';
  if(['grand_total','net_total','outstanding_amount','total','deposit','withdrawal','unallocated_amount','rate','received_amount','expected_amount','difference','allocated_amount','amount'].includes(key)&&typeof value==='number')return money(value);
@@ -39,6 +51,7 @@ async function refresh(){
  const generation=++state.renderGeneration,view=state.view,center=$('#center').value;++state.detailGeneration;
  const current=()=>generation===state.renderGeneration&&view===state.view&&center===$('#center').value;
  $('#page-title').textContent=state.view;ccSurface.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));$('#detail').hidden=true;$('.workspace').style.gridTemplateColumns='1fr';$('#finance-content').onclick=null;
+ const help=viewHelp[state.view];guide.innerHTML='<strong>'+esc(help[0])+'</strong><span>'+esc(help[1])+'</span>';
  $('#finance-action').hidden=!state.boot?.can_write||!['Fatture pazienti','XML ricevuti','Banca','Professionisti','Coda amministrativa','SdI','TS'].includes(state.view);
  $('#finance-action').textContent=({'Fatture pazienti':'Crea fattura','XML ricevuti':'Importa XML','Banca':'Importa movimenti','Professionisti':'Registra atteso','Coda amministrativa':'Rileva condizioni','SdI':'Prepara SdI simulato','TS':'Prepara TS simulato'})[state.view]||'Nuova operazione';
  if(!state.boot?.center){$('#finance-content').innerHTML='<p class="empty">Nessun centro assegnato.</p>';return;}
@@ -85,7 +98,11 @@ async function invoiceDetail(row,dt){
   if(source){const economic=(await fetch('/api/resource/CC%20Economic%20Source%20Link/'+encodeURIComponent(source),{credentials:'same-origin'}).then(r=>r.json())).data;if(!current())return;if(economic){patient=economic.patient;paymentPosition=await finance('collections.position',{patient,center});if(!current())return;}}
  }
  $('#detail').hidden=false;$('.workspace').style.gridTemplateColumns='';
- $('#detail').innerHTML='<h2>'+esc(row.name)+'</h2><p>'+esc(clean(doc.customer||doc.supplier))+'</p><p>Totale '+money(doc.grand_total)+(doc.docstatus===2?' · Documento annullato; residuo storico non dovuto: ':' · Residuo ')+money(doc.outstanding_amount)+'</p><p>Stato '+esc(display(doc.status)||['Bozza','Contabilizzata','Annullata'][doc.docstatus])+'</p>'+table(doc.items.map((r,i)=>({...r,name:String(i)})),[['item_name','Voce'],['qty','Quantità'],['rate','Prezzo'],['cc_economic_source','Fonte seduta']])+ (state.boot.can_write?'<div class="action-buttons">'+(doc.docstatus===0?'<button id="post-invoice">Approva e contabilizza</button>':doc.docstatus===1?'<button id="pay-invoice">Registra pagamento</button><button id="cancel-invoice">Annulla documento</button>'+(dt==='Sales Invoice'?'<button id="credit-invoice">Nota di credito</button>':''):'<button id="amend-invoice">Rettifica e riemetti</button>')+'</div>':'');
+ const status=doc.docstatus===2?'Annullata':doc.docstatus===0?'Bozza':Number(doc.outstanding_amount||0)<=0?'Saldata':Number(doc.outstanding_amount)<Number(doc.grand_total||0)?'Parzialmente saldata':'Contabilizzata';
+ const next=doc.docstatus===2?'Documento annullato. Consulta la cronologia; una rettifica richiede motivazione.':doc.docstatus===0?
+  (state.boot.can_write?'Controlla prestazioni, imponibili e soggetto prima di contabilizzare.':'Consulta la bozza; solo un operatore autorizzato può contabilizzarla.'):
+  Number(doc.outstanding_amount||0)<=0?'Documento saldato. Consulta i pagamenti e i riferimenti.':state.boot.can_write?'Controlla il residuo e registra il pagamento effettivo.':'Consulta residuo e scadenza; la registrazione è riservata agli operatori autorizzati.';
+ $('#detail').innerHTML='<h2>'+esc(dt==='Sales Invoice'?'Fattura paziente':'Fattura professionista')+'</h2><p><strong>'+esc(clean(doc.customer_name||doc.supplier_name||doc.customer||doc.supplier))+'</strong> · '+esc(status)+'</p><dl class="cc-finance-facts"><div><dt>Documento</dt><dd>'+esc(row.name)+'</dd></div><div><dt>Totale</dt><dd>'+money(doc.grand_total)+'</dd></div><div><dt>Residuo</dt><dd>'+money(doc.outstanding_amount)+'</dd></div><div><dt>Scadenza</dt><dd>'+esc(italianDate(doc.due_date||'—'))+'</dd></div></dl><p class="cc-finance-next"><strong>Come procedere</strong> '+esc(next)+'</p><h3>Prestazioni e voci</h3>'+table(doc.items.map((r,i)=>({...r,name:String(i)})),[['item_name','Voce'],['qty','Quantità'],['rate','Prezzo'],['cc_economic_source','Fonte seduta']])+ (state.boot.can_write?'<div class="action-buttons">'+(doc.docstatus===0?'<button id="post-invoice">Approva e contabilizza</button>':doc.docstatus===1?((Number(doc.outstanding_amount||0)>0?'<button id="pay-invoice">Registra pagamento</button>':'')+'<button id="cancel-invoice">Annulla documento</button>'+(dt==='Sales Invoice'?'<button id="credit-invoice">Nota di credito</button>':'')):'<button id="amend-invoice">Rettifica e riemetti</button>')+'</div>':'');
  if(paymentPosition){$('#detail').insertAdjacentHTML('beforeend','<p>Posizione paziente: '+(paymentPosition.blocked?'Prenotazione successiva bloccata per scadenza':'Nessun blocco attuale')+'</p>'+table(paymentPosition.debts.map(debt=>({...debt,amount_known:1})),[['name','Debito'],['amount','Importo'],['due_date','Scadenza effettiva']])+(state.boot.can_write?'<button id="defer-payment">Differisci scadenza con motivo</button>':''));if($('#defer-payment'))$('#defer-payment').onclick=()=>{const key=requestKey();modal('Differisci pagamento',label('Nuova scadenza',input('due_date','date',''))+'<p>Il debito e la scadenza originaria restano conservati.</p>'+reason(),d=>finance('collections.override',{patient,center,reference_doctype:'Sales Invoice',reference_name:row.name,...d,request_key:key},true));};}
  if(!state.boot.can_write)return;
  const today=new Date().toISOString().slice(0,10);

@@ -3,7 +3,7 @@
   "use strict";
   const clientRoles = ["CC Manager", "CC Secretariat", "CC Finance", "CC Accountant", "CC Professional"];
   const technicalRoles = ["System Manager", "Website Manager"];
-  const home = "/app/cc-unified-desk?cc_view=home";
+  const home = roles => `/app/cc-unified-desk?cc_view=${["CC Manager", "CC Secretariat", "CC Professional"].some(role => roles.has(role)) ? "agenda" : "finance"}`;
   const desk = view => `/app/cc-unified-desk?cc_view=${view}`;
   // These labels change presentation only. Native DocPerm and the CC guards
   // remain authoritative for every direct route and API request.
@@ -27,7 +27,7 @@
     const professional = roles.has("CC Professional") && !manager;
     const accountant = roles.has("CC Accountant") && !manager;
     return [
-      {title: "Panoramica", links: [["Inizio", home, "chart-bar", true]]},
+      {title: "Panoramica", links: [["Inizio", home(roles), "chart-bar", true]]},
       {title: "Operatività", links: [
         ["Agenda", desk("agenda"), "calendar-week", operate],
         ["Ricerca pazienti", `${desk("agenda")}&cc_ops_view=Pazienti`, "users", operate],
@@ -126,7 +126,7 @@
     brandRow.className = "cc-sidebar-heading";
     const brand = document.createElement("a");
     brand.className = "cc-desk-brand";
-    brand.href = home;
+    brand.href = home(roles);
     brand.textContent = "Centro Change";
     brandRow.append(brand);
     const collapse = document.createElement("button");
@@ -238,6 +238,24 @@
       location.href = "/login?redirect-to=/app/cc-unified-desk";
     } catch (_) { window.frappe?.msgprint?.("Impossibile uscire. Riprova."); }
   });
+  // Delegate sidebar navigation to Frappe's router. Native anchors otherwise
+  // trigger a full document request from the dedicated Page on pinned v16.
+  document.addEventListener("click", event => {
+    const link = event.target.closest?.("#cc-desk-sidebar a[href], #cc-desk-global-nav a[href]");
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target) return;
+    const url = new URL(link.href, location.href);
+    if (url.origin !== location.origin || !url.pathname.startsWith("/app/")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (url.pathname === "/app/cc-unified-desk" && /^\/(?:app|desk)\/cc-unified-desk$/.test(location.pathname) && window.ccDeskNavigate)
+      window.ccDeskNavigate(url.pathname + url.search);
+    else {
+      // Frappe keeps route_options across set_route calls unless explicitly
+      // replaced; do not leak cc_view into a native List/Form URL.
+      frappe.route_options = {};
+      frappe.set_route(url.pathname + url.search);
+    }
+  }, true);
   // Frappe owns its List/Form DOM. Observe only direct shell replacement;
   // routing updates use Frappe's page-change event.
   let pending = false;

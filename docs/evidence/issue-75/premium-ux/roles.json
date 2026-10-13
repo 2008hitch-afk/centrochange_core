@@ -1,0 +1,255 @@
+{
+  "m": {
+    "landing": "agenda",
+    "menu": [
+      "Inizio",
+      "Agenda",
+      "Ricerca pazienti",
+      "Anagrafica pazienti",
+      "Anagrafica professionisti",
+      "Disponibilità",
+      "Notifiche",
+      "Finanza",
+      "Fatture pazienti",
+      "Fatture professionisti",
+      "Incassi e pagamenti",
+      "Movimenti bancari",
+      "Banca",
+      "SdI simulato",
+      "TS simulato",
+      "Report professionisti",
+      "Report economico pazienti",
+      "Gestione accessi",
+      "Servizi",
+      "Tariffe",
+      "Tipi di seduta",
+      "Servizi del centro",
+      "Modelli pacchetto",
+      "Registro modifiche"
+    ],
+    "sizes": [
+      {
+        "size": "desktop",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "tablet",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "mobile",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      }
+    ],
+    "errors": []
+  },
+  "s": {
+    "landing": "agenda",
+    "menu": [
+      "Inizio",
+      "Agenda",
+      "Ricerca pazienti",
+      "Disponibilità",
+      "Notifiche",
+      "Finanza",
+      "Fatture pazienti",
+      "Fatture professionisti",
+      "Incassi e pagamenti",
+      "Movimenti bancari",
+      "Banca",
+      "SdI simulato",
+      "TS simulato",
+      "Report professionisti",
+      "Report economico pazienti"
+    ],
+    "sizes": [
+      {
+        "size": "desktop",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "tablet",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "mobile",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      }
+    ],
+    "errors": []
+  },
+  "a": {
+    "landing": "agenda",
+    "menu": [
+      "Inizio",
+      "Agenda",
+      "Ricerca pazienti",
+      "Disponibilità",
+      "Notifiche"
+    ],
+    "sizes": [
+      {
+        "size": "desktop",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "tablet",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "mobile",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      }
+    ],
+    "errors": []
+  },
+  "b": {
+    "landing": "agenda",
+    "menu": [
+      "Inizio",
+      "Agenda",
+      "Ricerca pazienti",
+      "Disponibilità",
+      "Notifiche"
+    ],
+    "sizes": [
+      {
+        "size": "desktop",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "tablet",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "mobile",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      }
+    ],
+    "errors": []
+  },
+  "c": {
+    "landing": "agenda",
+    "menu": [
+      "Inizio",
+      "Agenda",
+      "Ricerca pazienti",
+      "Disponibilità",
+      "Notifiche"
+    ],
+    "sizes": [
+      {
+        "size": "desktop",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "tablet",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "mobile",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      }
+    ],
+    "errors": []
+  },
+  "f": {
+    "landing": "finance",
+    "menu": [
+      "Inizio",
+      "Finanza",
+      "Fatture pazienti",
+      "Fatture professionisti",
+      "Incassi e pagamenti",
+      "Movimenti bancari",
+      "Banca",
+      "SdI simulato",
+      "TS simulato",
+      "Report professionisti",
+      "Report economico pazienti"
+    ],
+    "sizes": [
+      {
+        "size": "desktop",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "tablet",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "mobile",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      }
+    ],
+    "errors": []
+  },
+  "t": {
+    "landing": "finance",
+    "menu": [
+      "Inizio",
+      "Finanza",
+      "Fatture pazienti",
+      "Fatture professionisti",
+      "Report professionisti",
+      "Report economico pazienti"
+    ],
+    "sizes": [
+      {
+        "size": "desktop",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "tablet",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      },
+      {
+        "size": "mobile",
+        "overflow": 0,
+        "shell": 1,
+        "upstream": 0
+      }
+    ],
+    "errors": []
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "documents_at_login": 4,
+  "results": [
+    {
+      "slug": "agenda",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=agenda",
+      "route_ms": 418,
+      "document_requests": 0,
+      "content_unavailable_samples": 0,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "Agenda"
+    },
+    {
+      "slug": "ricerca-pazienti",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti",
+      "route_ms": 421,
+      "document_requests": 0,
+      "content_unavailable_samples": 0,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "Pazienti"
+    },
+    {
+      "slug": "pazienti",
+      "url": "http://centrochange.local:8080/desk/healthcare/patient",
+      "route_ms": 1173,
+      "document_requests": 0,
+      "content_unavailable_samples": 10,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "                                                            "
+    },
+    {
+      "slug": "professionisti",
+      "url": "http://centrochange.local:8080/desk/healthcare/healthcare-practitioner",
+      "route_ms": 372,
+      "document_requests": 0,
+      "content_unavailable_samples": 4,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "                                                            "
+    },
+    {
+      "slug": "fatture",
+      "url": "http://centrochange.local:8080/desk/accounts/sales-invoice",
+      "route_ms": 409,
+      "document_requests": 0,
+      "content_unavailable_samples": 9,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "                                                            "
+    },
+    {
+      "slug": "incassi",
+      "url": "http://centrochange.local:8080/desk/accounts/payment-entry",
+      "route_ms": 401,
+      "document_requests": 0,
+      "content_unavailable_samples": 8,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "                                                            "
+    },
+    {
+      "slug": "movimenti",
+      "url": "http://centrochange.local:8080/desk/accounts/bank-transaction",
+      "route_ms": 389,
+      "document_requests": 0,
+      "content_unavailable_samples": 8,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "                                                            "
+    },
+    {
+      "slug": "banca",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=finance&cc_fin_view=Banca",
+      "route_ms": 431,
+      "document_requests": 0,
+      "content_unavailable_samples": 4,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "Banca"
+    },
+    {
+      "slug": "report",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=professional",
+      "route_ms": 377,
+      "document_requests": 0,
+      "content_unavailable_samples": 0,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "                                                            "
+    },
+    {
+      "slug": "agenda-ritorno",
+      "url": "http://centrochange.local:8080/app/cc-unified-desk?cc_view=agenda",
+      "route_ms": 413,
+      "document_requests": 0,
+      "content_unavailable_samples": 0,
+      "splash_samples": 0,
+      "persistent_sidebar": true,
+      "overflow_px": 0,
+      "title": "Agenda"
+    }
+  ],
+  "errors": []
+}

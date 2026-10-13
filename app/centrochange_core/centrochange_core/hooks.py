@@ -10,6 +10,8 @@ before_install = ["centrochange_core.security.install.ensure_roles", "centrochan
 after_install = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure", "centrochange_core.finance.install.configure"]
 before_migrate = ["centrochange_core.security.install.ensure_roles", "centrochange_core.finance.install.ensure_roles"]
 after_migrate = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure", "centrochange_core.finance.install.configure"]
+after_migrate.append("centrochange_core.operations.client_landing.configure_existing_users")
+add_to_apps_screen = [{"name": "centrochange_core", "title": "Centro Change", "route": "/app/cc-unified-desk", "has_permission": "centrochange_core.operations.client_landing.app_visible"}]
 before_request = ["centrochange_core.finance.request_guard.before_request", "centrochange_core.security.diagnostics.before_request", "centrochange_core.security.api.before_request", "centrochange_core.operations.notes.request_guard"]
 
 permission_query_conditions = {
@@ -180,4 +182,6 @@ doctype_js = {
 before_request.append("centrochange_core.operations.website_brand.client_language")
 get_print_format_template = "centrochange_core.operations.website_brand.print_template_locale"
 after_request = ["centrochange_core.security.response_cache.protect"]
+after_request.append("centrochange_core.operations.client_landing.redirect_launcher")
+doc_events["User"]["on_update"] = [doc_events["User"]["on_update"], "centrochange_core.operations.client_landing.configure_user"]
 before_request.append("centrochange_core.operations.website_brand.login_language")
