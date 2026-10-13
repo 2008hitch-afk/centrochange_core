@@ -155,7 +155,8 @@ async function testRole(browser, role, viewport) {
   const browser=await chromium.launch({headless:true,args:['--host-resolver-rules=MAP centrochange.local 127.0.0.1','--no-proxy-server']});
   const results=[];
   try {
-    for(const role of ['m','s','a','b','c']) results.push(await testRole(browser,role,{width:1440,height:900}));
+    const roles=(process.env.CC_ISSUE79_ROLES||'m,s,a,b,c').split(',');
+    for(const role of roles) results.push(await testRole(browser,role,{width:1440,height:900}));
     results.push(await testRole(browser,'m',{width:390,height:844}));
     console.log(JSON.stringify({status:'PASS',mode,route:'/app/cc-unified-desk?cc_view=agenda',results,mutations:'NONE'}));
   } finally {await browser.close();}
