@@ -1,0 +1,5 @@
+# The one-command executor verifies the immutable ID of this local base tag.
+# Build context contains only this recipe and the CSS from commit 1b2486d.
+FROM centrochange-single:issue79-rollback-20261013
+COPY --chown=frappe:frappe cc_unified_desk.css /home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/centro_change_core/page/cc_unified_desk/cc_unified_desk.css
+LABEL centrochange.issue="79" centrochange.delta="cc_unified_desk.css" centrochange.source="1b2486d00754ba68fa4ee3c57a39060dc8cc781c"
