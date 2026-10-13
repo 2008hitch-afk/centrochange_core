@@ -192,7 +192,8 @@ def snapshot() -> dict:
 
 
 def browser_env() -> dict:
-    return {'PATH':'/usr/sbin:/usr/bin:/sbin:/bin', 'NODE_PATH':str(NODE_MODULES),
+    return {'PATH':'/usr/sbin:/usr/bin:/sbin:/bin', 'HOME':'/home/empv26',
+            'NODE_PATH':str(NODE_MODULES),
             'LD_LIBRARY_PATH':str(CHROMIUM_LIBS), 'CC_ISSUE79_FIXTURE':str(FIXTURE),
             'CC_BASE_URL':'http://centrochange.local:8082'}
 
