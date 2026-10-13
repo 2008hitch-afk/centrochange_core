@@ -35,3 +35,11 @@ The live tests and rollback have **not** run. A static pass cannot be called `LI
 The #79 harness uses roles m/s/a/b for its modal checks; Package B intentionally removes unusable **+ Prenota** from unassigned role c. The new live harness verifies c's empty state and all seven role landings. Browser checks are read-only. The existing security fixture suite creates only its own synthetic rows and cleans them; the executor compares persistent fingerprints afterward. The Administrator browser check uses the existing private DEV credential and deletes its temporary fixture immediately. Credential validity, record counts, current image IDs and post-switch results remain unverified until the Owner command executes.
 
 This PR is an executor stacked on #132, not a merge request for the candidate itself. The GOAL-02 final Owner gate remains separate.
+
+## First Owner invocation — preflight blocker and correction
+
+The first Owner invocation returned `BLOCKED`, `runtime_mutations: NONE` while the read-only Frappe probe called `frappe.connect()`. The previous executor used `docker exec -w /home/frappe/frappe-bench ... env/bin/python`. In [Frappe 16.50.0 logger.py](https://github.com/frappe/frappe/blob/v16.50.0/frappe/utils/logger.py), the default file handler constructs Bench logs as `../logs/<module>.log` relative to the process working directory. The old command therefore resolved `../logs/database.log` to `/home/frappe/logs/database.log`, which is absent. This was a preflight process-context error; it did not demonstrate a missing database or corrupt Site.
+
+The corrected helper runs with `-w /home/frappe/frappe-bench/sites`, an absolute Bench virtualenv interpreter, and `FRAPPE_STREAM_LOGGING=1`. The latter is Frappe's supported stream handler mode and is already used by existing DEV acceptance probes in this repository; it avoids creating any log files during the read-only gate. The Site inventory probe now uses an absolute `sites` path. No container directory, Frappe source, database or operational configuration is changed.
+
+The updated unit test verifies both path resolution and the exact `docker exec` arguments. The previous attempt is not retried by Codex. A new SHA-256 and single Owner command supersede the original invocation; the first command's hash must not be reused.

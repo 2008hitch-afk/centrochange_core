@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location('goal02_install', ROOT / 'infra/goal02_install_one_command.py')
@@ -10,6 +11,20 @@ SPEC.loader.exec_module(module)
 
 
 class InstallContract(unittest.TestCase):
+    def test_frappe_exec_uses_sites_cwd_and_stream_logging(self):
+        # Frappe v16.50 logger.py uses ../logs relative to process cwd.
+        bench = Path('/home/frappe/frappe-bench')
+        self.assertEqual((bench / '..' / 'logs').resolve(), Path('/home/frappe/logs'))
+        self.assertEqual((bench / 'sites' / '..' / 'logs').resolve(), bench / 'logs')
+        with patch.object(module, 'run') as call:
+            call.return_value.stdout = 'ok'
+            self.assertEqual(module.backend_python('print(1)'), 'ok')
+        argv = call.call_args.args[0]
+        self.assertEqual(argv[argv.index('-w') + 1], str(bench / 'sites'))
+        self.assertIn('FRAPPE_STREAM_LOGGING=1', argv)
+        self.assertEqual(argv[-1], str(bench / 'env/bin/python'))
+        self.assertEqual(call.call_args.kwargs['input'], 'print(1)')
+
     def test_authorized_application_delta(self):
         names = module.git('diff', '--name-only', module.BASE, module.SOURCE, '--', module.REL).stdout.splitlines()
         self.assertEqual(names, sorted(module.REL + x for x in module.CHANGED))

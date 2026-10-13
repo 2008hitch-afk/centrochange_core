@@ -184,8 +184,11 @@ def snapshot():
 
 
 def backend_python(code):
-    return run(['docker', 'exec', '-i', '-w', '/home/frappe/frappe-bench',
-                'centrochange-dev-backend-1', 'env/bin/python'], input=code).stdout
+    # Frappe resolves ../logs and <site>/logs relative to the sites directory.
+    # Stream logging keeps these read-only probes from creating log files.
+    return run(['docker', 'exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1',
+                '-w', '/home/frappe/frappe-bench/sites', 'centrochange-dev-backend-1',
+                '/home/frappe/frappe-bench/env/bin/python'], input=code).stdout
 
 
 def runtime_fingerprint():
@@ -293,7 +296,7 @@ def preflight():
     require(len([x for x in before['backend']['mounts'] if x[3].endswith('/sites')]) == 1,
             'single Site volume not verified')
     site_info = json.loads(backend_python('''import json,pathlib,hashlib
-p=pathlib.Path("sites"); names=sorted(x.name for x in p.iterdir() if x.is_dir() and (x/"site_config.json").exists())
+p=pathlib.Path("/home/frappe/frappe-bench/sites"); names=sorted(x.name for x in p.iterdir() if x.is_dir() and (x/"site_config.json").exists())
 print("CC_SITE_JSON="+json.dumps({"sites":names,"config_sha256":hashlib.sha256((p/"centrochange.local/site_config.json").read_bytes()).hexdigest()}))
 ''').split('CC_SITE_JSON=', 1)[1].splitlines()[0])
     require(site_info['sites'] == ['centrochange.local'], 'multiple or unexpected Sites')
