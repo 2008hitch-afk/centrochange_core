@@ -18,6 +18,12 @@ Nel [codice Frappe 16.50.0 della Page](https://github.com/frappe/frappe/blob/v16
 
 ## Preparazione e limiti
 
-Check statici: Python AST, Node `--check`, `git diff --check`; test offline di sostituzione/ripristino env e checkpoint; dry-run dello script senza sudo. La prova Docker completa avverrà **solo** quando l'Owner lancerà il comando autorizzato. Il dry-run non dichiara immagine nuova né PASS live.
+Check statici **PASS**: Python AST, Node `--check`, `git diff --check`; 2 test offline PASS (sostituzione/ripristino env e checkpoint). Dry-run senza sudo **PASS**: `STATIC_DRY_RUN_PASS`, con SHA Compose/env/commit CSS attesi e zero mutazioni runtime. Un hash script errato è stato rifiutato con `BLOCKED`. La prova Docker completa avverrà **solo** quando l'Owner lancerà il comando autorizzato. Il dry-run non dichiara immagine nuova né PASS live.
 
-Il comando e lo SHA-256 dello script vengono forniti all'Owner dopo il commit finale. L'Owner deve eseguirlo nella propria sessione SSH sul server `srv2033673`, dove `sudo` chiederà la normale password locale. Nessuna esecuzione remota pipe-to-shell o modifica ai privilegi. PR #129 resta DRAFT; nessun Owner PASS.
+Lo script versionato è `/tmp/centrochange-issue79/infra/issue79_one_command.py`, SHA-256 `cf0baed590d7675264fae2ff445d266c8272a248c70dde8f926d5a0fdce92473`. L'Owner lo esegue nella propria sessione SSH sul server `srv2033673` con **un solo comando**:
+
+```sh
+sudo /usr/bin/python3 -I /tmp/centrochange-issue79/infra/issue79_one_command.py --script-sha256 cf0baed590d7675264fae2ff445d266c8272a248c70dde8f926d5a0fdce92473 --apply
+```
+
+`sudo` chiede la normale password locale dell'Owner. `-I` isola gli import Python; l'esecutor confronta il proprio hash prima di ogni operazione. Nessuna esecuzione remota pipe-to-shell o modifica ai privilegi. PR #129 resta DRAFT; nessun Owner PASS.

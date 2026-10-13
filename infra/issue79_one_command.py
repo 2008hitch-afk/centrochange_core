@@ -297,6 +297,10 @@ def apply(static: dict) -> dict:
     runtime_image = read_env().get('CC_UAT_IMAGE')
     if runtime_image == NEW_TAG:
         require(initial['backend']['image'] == image_id(NEW_TAG), 'partial prior deployment')
+        require(all(initial[s]['image'] == BASE_IMAGE for s in APP if s != 'backend'),
+                'other app image drift')
+        require(all(config['services'][s]['image'] == NEW_TAG for s in APP),
+                'deployed Compose image drift')
         require(image_css_sha(NEW_TAG) == NEW_CSS_SHA, 'deployed CSS mismatch')
         require(container_css_sha(initial['backend']['id']) == NEW_CSS_SHA, 'deployed backend CSS mismatch')
         result = browser('issue79_unified_autocomplete.cjs', live=True,
