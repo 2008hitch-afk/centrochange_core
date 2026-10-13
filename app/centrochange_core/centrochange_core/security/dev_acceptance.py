@@ -129,6 +129,13 @@ def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None
 		frappe.throw('Explicit synthetic UAT configuration required')
 	if not commit and fixture_tag != 'CC-HTTP-UAT0000001':
 		frappe.throw('Deferred fixture commit is reserved for synthetic UAT')
+	public_route_name=None
+	if scheduling and public_route:
+		# The persistent UAT seed can already own Marco. Never replace its route.
+		public_route_name=next((name for name in ('Marco','Francesca')
+			if not frappe.db.exists('CC Public Booking Route',name)),None)
+		if public_route_name is None:
+			frappe.throw('No unused synthetic public booking route is available')
 	tag = fixture_tag or 'CC-HTTP-' + frappe.generate_hash(length=10)
 	result = {'tag':tag, 'users':{}, 'patients':[], 'practitioners':[], 'centers':[]}
 	identities=[('a','CC Professional'),('b','CC Professional'),('c','CC Professional'),('s','CC Secretariat'),('m','CC Manager')]
@@ -169,7 +176,7 @@ def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None
 			[{'day':'Monday','from_time':'09:00:00','to_time':'12:00:00'}],tag)['name']
 		route=None
 		if public_route:
-			route=frappe.get_doc({'doctype':'CC Public Booking Route','route':'Marco','center':result['centers'][0],
+			route=frappe.get_doc({'doctype':'CC Public Booking Route','route':public_route_name,'center':result['centers'][0],
 			'practitioner':result['practitioners'][0],'appointment_type':profile.name,'enabled':1}).insert()
 		result['catalog']={'CC Public Booking Route':[route.name] if route else [],'Item':[item.name],'Price List':[price_list.name],'Appointment Type':[profile.name],
 			'Item Price':[price.name],'CC Center Service':[availability.name],'Practitioner Schedule':[schedule]}

@@ -1,0 +1,10 @@
+# Single-file derivative of the verified issue #75 DEV image.
+# Build only after asserting the local base tag has the recorded immutable ID.
+FROM centrochange-single:issue75-premium-ux
+
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/security/dev_acceptance.py apps/centrochange_core/centrochange_core/security/dev_acceptance.py
+
+LABEL centrochange.goal="02" centrochange.delta="issue-23-fixture-only"
