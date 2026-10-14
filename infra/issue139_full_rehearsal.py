@@ -75,7 +75,12 @@ def setup_clone(state, gate, adapter, image):
     for service in (*SERVICES, 'configurator'):
         if service in ('db', 'redis-cache', 'redis-queue'):
             continue
-        overlay += f'  {service}:\n    image: {BASE}\n    pull_policy: never\n'
+        overlay += (f'  {service}:\n    image: {BASE}\n    pull_policy: never\n'
+                    f'    volumes:\n      - {PROJECT}-{service}-logs:/home/frappe/frappe-bench/logs\n')
+    overlay += 'volumes:\n'
+    for service in (*SERVICES, 'configurator'):
+        if service not in ('db', 'redis-cache', 'redis-queue'):
+            overlay += f'  {PROJECT}-{service}-logs:\n    name: {PROJECT}-{service}-logs\n'
     (state / 'base-overlay.yaml').write_text(overlay)
     candidate = (REPO / 'infra/compose.issue139_candidate.yaml').read_text()
     candidate = candidate.replace('centrochange-dev-net', PROJECT + '-net')
