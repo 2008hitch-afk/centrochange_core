@@ -21,7 +21,19 @@ async function geometry(page, kind) {
     const icons=[...document.querySelectorAll('svg,.icon')].filter(visible);
     const target=kind==='list'?document.querySelector('.list-row-container,.listview-body'):
       document.querySelector('.form-page');
+    const clippedBadges=kind==='list'?[...document.querySelectorAll('.list-row-container .es-badge')]
+      .filter(visible).filter(badge=>{
+        const b=badge.getBoundingClientRect();
+        for(let parent=badge.parentElement;parent;parent=parent.parentElement){
+          const style=getComputedStyle(parent);
+          if(!['hidden','clip'].includes(style.overflowX)) continue;
+          const r=parent.getBoundingClientRect();
+          if(b.left<r.left-2||b.right>r.right+2) return true;
+        }
+        return false;
+      }).length:0;
     return {targetVisible:!!target && visible(target),
+      clippedBadges,
       maxIconPx:Math.round(Math.max(0,...icons.map(x=>{const r=x.getBoundingClientRect();return Math.max(r.width,r.height)}))),
       overflowPx:Math.max(0,document.documentElement.scrollWidth-innerWidth),
       stylesheets:document.styleSheets.length,
@@ -76,6 +88,7 @@ async function geometry(page, kind) {
         if(!metric?.targetVisible) reason.push(kind+'_MISSING');
         if(metric?.maxIconPx>96) reason.push(kind+'_OVERSIZED_ICONS');
         if(metric?.overflowPx>3) reason.push(kind+'_HORIZONTAL_OVERFLOW');
+        if(kind==='LIST' && metric?.clippedBadges) reason.push('LIST_CLIPPED_BADGES');
         if(!metric?.deskStyle || !metric?.erpStyle) reason.push(kind+'_CORE_CSS_MISSING');
       }
       if(cssErrors.length||jsErrors.length) reason.push('BUNDLE_HTTP_OR_MIME');
