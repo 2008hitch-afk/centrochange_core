@@ -23,7 +23,7 @@ def get_patient_detail(patient):
 @frappe.validate_and_sanitize_search_inputs
 def get_practitioner_list(doctype, txt, searchfield, start, page_len, filters=None):
 	if doctype != "Healthcare Practitioner":
-		frappe.throw("Invalid practitioner lookup", frappe.PermissionError)
+		frappe.throw("La ricerca del professionista non è valida.", frappe.PermissionError)
 	return frappe.get_list("Healthcare Practitioner", fields=["name", "practitioner_name"],
 		filters={"status": "Active"}, or_filters={"name": ["like", "%" + txt + "%"],
 			"practitioner_name": ["like", "%" + txt + "%"]}, start=start, page_length=min(int(page_len), 50), as_list=True)
@@ -41,7 +41,7 @@ def discover_patient(center, uid):
 	"""Exact identifier lookup for authorized cross-center identity reuse; never clinical."""
 	require_operations(center)
 	if not uid or len(uid) > 140:
-		frappe.throw("An exact patient identifier is required")
+		frappe.throw("Indica un identificativo paziente esatto.")
 	return frappe.get_all("Patient", filters={"uid": uid}, fields=list(IDENTITY_FIELDS), limit_page_length=1)
 
 
@@ -51,6 +51,6 @@ def before_request():
 	from centrochange_core.scheduling.public_booking import SERVICE_USER
 	from centrochange_core.operations.install import AUTOMATION_USER
 	if frappe.session.user in (SERVICE_USER, AUTOMATION_USER):
-		frappe.throw("Ingress service cannot authenticate interactively", frappe.PermissionError)
+		frappe.throw("Il servizio di ingresso non può accedere come utente interattivo.", frappe.PermissionError)
 	if frappe.session.user != "Guest" and not enabled():
-		frappe.throw("Disabled principal cannot access Centro Change", frappe.PermissionError)
+		frappe.throw("L’account disattivato non può accedere a Centro Change.", frappe.PermissionError)

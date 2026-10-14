@@ -16,6 +16,7 @@
 - Altri 65 messaggi server-side di Banca, TS, SdI e adapter fiscale simulato sono stati resi in italiano senza cambiare controlli, autorizzazioni o trasporto fiscale. Totale di questo ciclo: 109 messaggi; restano aperti gli altri moduli Finance/Operations e il collaudo degli error path live.
 - Altri 84 messaggi di fatture pazienti, fatture fornitori/XML ricevuti, accordi di pagamento e compensi professionisti sono stati localizzati. Totale di questo ciclo: **193 messaggi**. I controlli di importo, fonte, idempotenza e audit non sono stati modificati; la restante superficie backend deve ancora essere inventariata e provata live.
 - Altri 55 messaggi dei percorsi operativi (sedute, note, pacchetti, conferme, ricerca e disponibilità del workspace) sono stati tradotti. Totale: **248 messaggi** server-side. I messaggi dinamici e le risposte native Frappe/ERPNext richiedono ancora un retest per ruolo e per error path.
+- Altri 38 messaggi dei controlli di accesso, audit e ciclo di vita degli account sono in italiano. Totale: **286 messaggi** server-side localizzati senza modificare i predicati o le classi di errore. I messaggi tecnici DEV e quelli nativi non sono presentati come coperti.
 - La cronologia eventi seduta è letta da API esistenti con isolamento per paziente/professionista; note e revisioni sono distinte. Due test offline controllano isolamento e forma dei dati.
 - La localizzazione globale di errori, picker, stampa e superfici native richiesta da #134 resta **non completata e non collaudata live**. Nessun PASS W3 globale.
 
