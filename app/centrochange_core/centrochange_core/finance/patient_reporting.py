@@ -23,7 +23,7 @@ def _groups(center):
     customers.update(current_rows('Payment Entry',{'cc_center':center,'party_type':'Customer'},pluck='party'))
     for customer in customers:
         if customer:groups.setdefault(customer,{'key':customer,'customer':customer,'patients':[]})
-    if len(groups)>500:frappe.throw('Narrow center scope; more than 500 fiscal subjects')
+    if len(groups)>500:frappe.throw('Riduci la ricerca: ci sono oltre 500 soggetti fiscali.')
     for g in groups.values():
         g['customer_label']=frappe.db.get_value('Customer',g['customer'],'customer_name') if g['customer'] else 'Soggetto fiscale non collegato'
         # Only a shared-subject flag; no foreign Patient identities/counts are exposed.
@@ -64,12 +64,12 @@ def _project(center,start,end,group):
         for row in data['payments']:
             if row.payment_type=='Internal Transfer':continue
             currency=row.paid_to_account_currency if row.payment_type=='Receive' else row.paid_from_account_currency
-            if currency!='EUR':frappe.throw('Separate currency reporting required')
+            if currency!='EUR':frappe.throw('Le valute diverse richiedono report separati.')
             payments.append({**dict(row),'mode_of_payment':frappe.db.get_value('Payment Entry',row.name,'mode_of_payment'),'collected_amount':row.received_amount if row.payment_type=='Receive' else -row.paid_amount})
         open_rows=_bounded('Sales Invoice',{'cc_center':center,'customer':customer,'docstatus':1,'outstanding_amount':['!=',0]},['name','posting_date','customer','currency','grand_total','outstanding_amount','due_date','status','payment_terms_template','is_return'])
         for row in open_rows:
             row['session_links']=invoice_links(row.name)
-            if row.currency!='EUR':frappe.throw('Separate currency reporting required')
+            if row.currency!='EUR':frappe.throw('Le valute diverse richiedono report separati.')
             override=collections._deferred('Sales Invoice',row.name)
             row['original_due_date']=row.due_date;row['effective_due_date']=override.due_date if override else row.due_date
             row['deferral']=override.name if override else None
@@ -106,11 +106,11 @@ def patient_view(center,start,end,key=None,patient=None):
     require_finance(center);start,end=_interval(start,end);groups=_groups(center)
     if patient:
         group=next((g for g in groups.values() if any(p['name']==patient for p in g['patients'])),None)
-        if not group:frappe.throw('Patient report context denied',frappe.PermissionError)
-        if key and key!=group['key']:frappe.throw('Fiscal report context mismatch',frappe.PermissionError)
+        if not group:frappe.throw('Non hai accesso al report di questo paziente.',frappe.PermissionError)
+        if key and key!=group['key']:frappe.throw('Il report fiscale non corrisponde al contesto selezionato.',frappe.PermissionError)
         key=group['key']
     if key:
-        if key not in groups:frappe.throw('Fiscal subject report context denied',frappe.PermissionError)
+        if key not in groups:frappe.throw('Non hai accesso al report di questo soggetto fiscale.',frappe.PermissionError)
         return _project(center,start,end,groups[key])
     rows=[]
     for g in sorted(groups.values(),key=lambda r:r['customer_label'] or r['key']):

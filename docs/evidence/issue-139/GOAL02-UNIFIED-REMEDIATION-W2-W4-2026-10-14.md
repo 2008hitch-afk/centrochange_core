@@ -17,6 +17,7 @@
 - Altri 84 messaggi di fatture pazienti, fatture fornitori/XML ricevuti, accordi di pagamento e compensi professionisti sono stati localizzati. Totale di questo ciclo: **193 messaggi**. I controlli di importo, fonte, idempotenza e audit non sono stati modificati; la restante superficie backend deve ancora essere inventariata e provata live.
 - Altri 55 messaggi dei percorsi operativi (sedute, note, pacchetti, conferme, ricerca e disponibilità del workspace) sono stati tradotti. Totale: **248 messaggi** server-side. I messaggi dinamici e le risposte native Frappe/ERPNext richiedono ancora un retest per ruolo e per error path.
 - Altri 38 messaggi dei controlli di accesso, audit e ciclo di vita degli account sono in italiano. Totale: **286 messaggi** server-side localizzati senza modificare i predicati o le classi di errore. I messaggi tecnici DEV e quelli nativi non sono presentati come coperti.
+- Altri 58 messaggi di allegati contabili, adapter nativo, report e coda amministrativa sono stati localizzati. Totale: **344 messaggi** server-side nel candidato. Rimangono da verificare le stringhe dinamiche, i DocType esposti e le risposte native; la #134 resta aperta fino ai test live di successo ed errore.
 - La cronologia eventi seduta è letta da API esistenti con isolamento per paziente/professionista; note e revisioni sono distinte. Due test offline controllano isolamento e forma dei dati.
 - La localizzazione globale di errori, picker, stampa e superfici native richiesta da #134 resta **non completata e non collaudata live**. Nessun PASS W3 globale.
 
