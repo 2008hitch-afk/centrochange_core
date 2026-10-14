@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""Run the existing exact synthetic fixture suite once, with a before/after data gate."""
+import argparse
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+
+REPO = Path(__file__).resolve().parent.parent
+STATE = Path('/home/empv26/.local/state/centrochange-single')
+EXECUTOR = REPO / 'infra/goal02_install_one_command.py'
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--expected-data', required=True)
+    parser.add_argument('--expected-communication', required=True)
+    args = parser.parse_args()
+    os.umask(0o077)
+    if os.geteuid() != 0 or sys.flags.isolated != 1:
+        raise SystemExit('Requires sudo python3 -I on the authorized host')
+    spec = importlib.util.spec_from_file_location('goal02_installed', EXECUTOR)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.http_ready()
+    before_services = module.snapshot()
+    module.hooks()
+    before = module.runtime_fingerprint()
+    if before['sha256'] != args.expected_data or before['communication_sha256'] != args.expected_communication:
+        raise SystemExit('BLOCKED: current synthetic fingerprint differs from this run checkpoint')
+    run_dir = STATE / 'browser-evidence' / ('issue137-fixture-' + time.strftime('%Y%m%dT%H%M%SZ', time.gmtime()))
+    run_dir.mkdir(mode=0o700)
+    (run_dir / 'before.json').write_text(json.dumps(before, sort_keys=True))
+    command = [sys.executable, str(REPO / 'infra/security_acceptance.py'), '--env-file',
+               str(STATE / 'runtime.env'), '--with-booking', '--with-operations']
+    result = subprocess.run(command, cwd=REPO, capture_output=True, text=True)
+    (run_dir / 'suite.log').write_text(result.stdout + '\n' + result.stderr)
+    after = module.runtime_fingerprint()
+    (run_dir / 'after.json').write_text(json.dumps(after, sort_keys=True))
+    same = before == after
+    services_same = module.snapshot() == before_services
+    status = 'PASS' if result.returncode == 0 and same and services_same else 'FAIL'
+    print(json.dumps({'status':status,'suite_exit':result.returncode,
+                      'data_unchanged':same,'services_unchanged':services_same,
+                      'private_evidence':str(run_dir)}))
+    return 0 if status == 'PASS' else 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
