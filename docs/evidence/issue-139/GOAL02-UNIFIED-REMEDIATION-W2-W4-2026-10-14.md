@@ -2,6 +2,8 @@
 
 **Stato: PARTIAL.** Le modifiche W2–W4 sono versionate sulla PR #140 DRAFT ma non installate sul DEV. Le prove browser qui sotto usano la versione DEV corrente o un CSS candidato iniettato solo nella sessione di prova; non sono un PASS live del candidato. Dati Owner, Site, Compose e immagini non modificati.
 
+Ultimo controllo read-only: nove servizi `centrochange-dev` attivi, `assets_json` in stato `MATCH` (69 mapping, zero differenze, file CSS presenti), impronta dei dati Owner `e9dc4980b849362b77e394d6e9c2baf7cc33d413097bc41d8156dae8ed4128f3` e `Communication` `b38c7b6334fd4010251e7258a593c49d5f4efd02c677b41860c2d08055e8c7e2`, invariate. I sei servizi applicativi servono ancora l'immagine baseline `centrochange-single:goal02-abc-fixture-83f8f4f`; il candidato PR #140 non è stato distribuito.
+
 ## W2 — sede operativa
 
 - `Branch.cc_operational` è proposto come Custom Field versionato. `set_operational` è riservato alla Direzione, richiede motivo, scrive audit e consente riattivazione solo con lista esplicita nella configurazione del Site. Una stringa di configurazione non vale come allowlist.
