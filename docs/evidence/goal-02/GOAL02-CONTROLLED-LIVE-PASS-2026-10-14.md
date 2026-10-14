@@ -21,7 +21,7 @@ The six application services (`backend`, `frontend`, `websocket`, `queue-short`,
 | Package B Agenda, TS simulation view, audit, notifications, responsive UI | PASS for tested read-only routes and controls |
 | Seven demo roles plus technical Administrator, login/landing, JavaScript errors | PASS; no page errors or browser writes |
 | Security acceptance with booking and operations fixtures | PASS |
-| Targeted regression with private per-run log and fixture teardown | PASS |
+| Targeted regression and fixture teardown | PASS; the runner writes a unique private log only on failure, so no failure log was created |
 | Served asset SHA and running application file SHA | PASS against exact approved source |
 | Synthetic data and Communication fingerprints after all tests | PASS, unchanged |
 
