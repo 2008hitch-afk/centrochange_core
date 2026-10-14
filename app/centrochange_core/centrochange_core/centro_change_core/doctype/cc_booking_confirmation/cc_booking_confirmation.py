@@ -10,4 +10,4 @@ class CCBookingConfirmation(Document):
         if old and any(self.get(k)!=old.get(k) for k in ['appointment','center','recipient','message']):
             frappe.throw('Confirmation snapshot is immutable',frappe.PermissionError)
     def on_trash(self):
-        frappe.throw('Confirmation history cannot be deleted',frappe.PermissionError)
+        frappe.throw('La cronologia delle conferme non può essere cancellata.',frappe.PermissionError)

@@ -7,5 +7,5 @@ def get_context(context):
     if frappe.session.user=='Guest':
         frappe.local.flags.redirect_location='/login?redirect-to=/pazienti_report'
         raise frappe.Redirect
-    if not allowed():frappe.throw('Patient financial report access denied',frappe.PermissionError)
+    if not allowed():frappe.throw('Non hai accesso al report economico pazienti.',frappe.PermissionError)
     return context
