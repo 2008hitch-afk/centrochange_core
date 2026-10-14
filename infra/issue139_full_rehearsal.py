@@ -55,6 +55,8 @@ def cleanup_clone_tags(state, image):
         raise RuntimeError('clone containers remain; image cleanup refused')
     if command(['docker', 'volume', 'ls', '--filter', f'name=^{PROJECT}', '-q']).stdout.strip():
         raise RuntimeError('clone volumes remain; image cleanup refused')
+    if command(['docker', 'network', 'ls', '--filter', f'name=^{PROJECT}', '-q']).stdout.strip():
+        raise RuntimeError('clone network remains; image cleanup refused')
     tags = [image]
     for run_dir in (state / 'runs').glob('*'):
         if not run_dir.is_dir() or not re.fullmatch(r'\d{8}T\d{6}Z-\d+', run_dir.name):
@@ -319,7 +321,8 @@ def main():
     finally:
         command(compose + ['down', '-v', '--remove-orphans'], check=False)
         if command(['docker', 'ps', '-a', '--filter', f'label=com.docker.compose.project={PROJECT}', '-q']).stdout.strip() or \
-                command(['docker', 'volume', 'ls', '--filter', f'name=^{PROJECT}', '-q']).stdout.strip():
+                command(['docker', 'volume', 'ls', '--filter', f'name=^{PROJECT}', '-q']).stdout.strip() or \
+                command(['docker', 'network', 'ls', '--filter', f'name=^{PROJECT}', '-q']).stdout.strip():
             result['status'] = 'CLEANUP_FAILED'
         else:
             try:
