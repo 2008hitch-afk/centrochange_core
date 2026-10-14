@@ -47,6 +47,8 @@ def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointm
 			from centrochange_core.operations.booking_confirmation import confirm
 			return {'name':name,'replay':True,'confirmation':confirm(name,route,payload['email'])}
 		configuration=frappe.get_doc('CC Public Booking Route',route,for_update=True)
+		from centrochange_core.security.guards import require_operational_center
+		require_operational_center(configuration.center)
 		if not configuration.enabled or not frappe.db.get_value('Appointment Type',configuration.appointment_type,'cc_first_meeting',for_update=True):
 			frappe.throw('First-meeting route unavailable',frappe.PermissionError)
 		practitioner=frappe.get_doc('Healthcare Practitioner',configuration.practitioner,for_update=True)
@@ -97,6 +99,8 @@ def available_slots(route,start_date):
 	if date<today or date>today+timedelta(days=120):
 		frappe.throw('Choose a date within the next 120 days')
 	configuration=frappe.get_doc('CC Public Booking Route',route)
+	from centrochange_core.security.guards import require_operational_center
+	require_operational_center(configuration.center)
 	if not configuration.enabled or not frappe.db.get_value('Appointment Type',configuration.appointment_type,'cc_first_meeting'):
 		frappe.throw('First-meeting route unavailable',frappe.PermissionError)
 	practitioner=frappe.get_doc('Healthcare Practitioner',configuration.practitioner)

@@ -133,5 +133,7 @@ def capture(appointment,reason):
 
 def protected_center(doc,method=None):
     previous=doc.get_doc_before_save()
+    from centrochange_core.security.center_state import protect_operational_state
+    protect_operational_state(doc,previous)
     if not frappe.flags.get('cc_finance_mapping_write') and any(doc.get(field)!=(previous.get(field) if previous else None) for field in ('cc_company','cc_cost_center','cc_bank_account')):
         frappe.throw('Accounting center mappings require the audited bridge',frappe.PermissionError)

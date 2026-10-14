@@ -26,6 +26,22 @@ def centers(user=None):
 	return current_rows("CC Center Membership", filters={"user": user, "active": 1}, pluck="center")
 
 
+def operational_centers(user=None):
+	"""Selectable centers only; historical read scopes still use ``centers``."""
+	if not enabled(user):
+		return []
+	filters = {"cc_operational": 1}
+	if not is_manager(user):
+		filters["name"] = ["in", centers(user) or [""]]
+	return current_rows("Branch", filters=filters, fields=["name", "branch"])
+
+
+def require_operational_center(center):
+	if not center or not frappe.db.get_value("Branch", center, "cc_operational",
+			for_update=bool(frappe.flags.get("cc_permission_current_read"))):
+		frappe.throw("La sede non è operativa: nuove operazioni non consentite.", frappe.PermissionError)
+
+
 def require_center(center):
 	if not is_manager() and center not in centers():
 		frappe.throw("Centro Change center access denied", frappe.PermissionError)
@@ -33,6 +49,7 @@ def require_center(center):
 
 def require_operations(center):
 	require_center(center)
+	require_operational_center(center)
 	if not is_manager() and "CC Secretariat" not in roles():
 		frappe.throw("Centro Change administrative permission required", frappe.PermissionError)
 

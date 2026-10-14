@@ -7,6 +7,8 @@ from centrochange_core.security.lifecycle import lock
 
 
 def require_practitioner(practitioner, center):
+	from centrochange_core.security.guards import require_operational_center
+	require_operational_center(center)
 	doc=frappe.get_doc('Healthcare Practitioner',practitioner,for_update=True)
 	if not enabled() or doc.status != 'Active':
 		frappe.throw('Active authorized practitioner required',frappe.PermissionError)

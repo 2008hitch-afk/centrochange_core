@@ -1,6 +1,7 @@
 """Synthetic security regression via bench, never a whitelisted API."""
 import frappe
 from functools import wraps
+from centrochange_core.security.audit import internal_write
 
 
 def synthetic_test(function):
@@ -41,8 +42,9 @@ def run(extra_checks=None):
 	try:
 		pro1, pro2 = user('professional-a', 'CC Professional'), user('professional-b', 'CC Professional')
 		secretary = user('secretariat-a', 'CC Secretariat')
-		center = frappe.get_doc({'doctype':'Branch', 'branch':'CC SYNTHETIC A'}).insert().name
-		other = frappe.get_doc({'doctype':'Branch', 'branch':'CC SYNTHETIC B'}).insert().name
+		with internal_write('cc_center_state_write'):
+			center = frappe.get_doc({'doctype':'Branch', 'branch':'CC SYNTHETIC A', 'cc_operational':1}).insert().name
+			other = frappe.get_doc({'doctype':'Branch', 'branch':'CC SYNTHETIC B', 'cc_operational':1}).insert().name
 		for principal in (pro1, pro2, secretary):
 			service.set_membership(principal, center, 1, 'Synthetic fixture')
 		prac1, prac2 = [frappe.get_doc({'doctype':'Healthcare Practitioner', 'first_name':label,
@@ -148,8 +150,9 @@ def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None
 		password = frappe.generate_hash(length=32)
 		update_password(name,password)
 		result['users'][label]={'name':name,'password':password}
-	for label in ('A','B'):
-		result['centers'].append(frappe.get_doc({'doctype':'Branch','branch':tag+' '+label}).insert().name)
+	with internal_write('cc_center_state_write'):
+		for label in ('A','B'):
+			result['centers'].append(frappe.get_doc({'doctype':'Branch','branch':tag+' '+label,'cc_operational':1}).insert().name)
 	for principal in result['users'].values():
 		service.set_membership(principal['name'],result['centers'][0],1,tag)
 	for label in ('a','b'):

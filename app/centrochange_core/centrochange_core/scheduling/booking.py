@@ -15,6 +15,8 @@ SNAPSHOTS=('cc_booking_key','cc_booking_date','cc_service_item','cc_service_labe
 
 
 def require_booking(patient,practitioner,center):
+	from centrochange_core.security.guards import require_operational_center
+	require_operational_center(center)
 	if frappe.flags.get('cc_public_ingress'):
 		from centrochange_core.scheduling.public_booking import SERVICE_USER
 		context=frappe.flags.get('cc_public_booking_context') or {}

@@ -61,9 +61,9 @@ def patient_history(patient,center):
 
 @frappe.whitelist()
 def bootstrap(center=None):
-    from centrochange_core.security.guards import centers,practitioner_for,current_rows
+    from centrochange_core.security.guards import practitioner_for,current_rows,operational_centers
     require_actor()
-    available=current_rows('Branch',fields=['name','branch']) if is_manager() else current_rows('Branch',{'name':['in',centers() or ['']]},fields=['name','branch'])
+    available=operational_centers()
     if not available:
         return {'centers':[],'patients':[],'practitioners':[],'services':[],'payment_methods':[],'roles':roles()}
     center=center or available[0].name

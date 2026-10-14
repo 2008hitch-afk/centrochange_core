@@ -134,7 +134,7 @@ def catch_up():
     try:
         from centrochange_core.operations.install import AUTOMATION_USER
         require_synthetic();frappe.set_user(AUTOMATION_USER);lock()
-        for center in current_rows('Branch',{'cc_company':['is','set']},pluck='name'):
+        for center in current_rows('Branch',{'cc_company':['is','set'],'cc_operational':1},pluck='name'):
             from centrochange_core.finance.professional_economics import _reevaluate
             _reevaluate(center,'Scheduled professional unpaid threshold reconciliation')
             _refresh(center,'Scheduled administrative condition reconciliation')

@@ -82,8 +82,12 @@ def export_csv(center,start,end,customer=None,practitioner=None):
 @frappe.whitelist(methods=['GET'])
 def bootstrap(center=None):
     if not allowed():frappe.throw('Finance workspace access denied',frappe.PermissionError)
-    scopes=current_rows('Branch',{} if is_manager() else {'name':['in',centers() or ['']]},fields=['name','branch','cc_company','cc_cost_center','cc_bank_account'])
+    from centrochange_core.security.guards import operational_centers
+    available=operational_centers()
+    scopes=current_rows('Branch',{'name':['in',[row.name for row in available] or ['']]},fields=['name','branch','cc_company','cc_cost_center','cc_bank_account'])
     center=center or (scopes[0].name if scopes else None)
+    if center and center not in [row.name for row in scopes]:
+        frappe.throw('La sede non è disponibile per le operazioni.',frappe.PermissionError)
     if center:require_finance(center)
     from centrochange_core.finance.permissions import master_names
     def masters(dt,fields):

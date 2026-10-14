@@ -19,6 +19,9 @@ def allowed(user=None,write=False):
 def require_finance(center,write=False):
     if not allowed(write=write) or not is_manager() and center not in centers():
         frappe.throw('Center finance access denied',frappe.PermissionError)
+    if write:
+        from centrochange_core.security.guards import require_operational_center
+        require_operational_center(center)
 
 
 def patient_context(patient,center,write=False):
