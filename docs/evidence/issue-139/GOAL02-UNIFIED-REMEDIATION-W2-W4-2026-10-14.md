@@ -22,6 +22,7 @@
 - CSS candidato circoscritto alle List View cliente fino a 575,98 px: risultato e righe occupano la larghezza disponibile. La prova Chromium con sola iniezione temporanea di questa regola dà **11/11 PASS** sul controllo geometrico; nello screenshot di `Sales Invoice` i badge «Bozza», «In ritardo» e «Pagata» sono completi. La prova non equivale a test live dopo distribuzione. Screenshot privati: `issue139-w4-baseline-20261014/` e `issue139-w4-css-preview-20261014/` nel vault `browser-evidence` del server.
 - Report economico pazienti: il residuo zero non è più colorato come allarme; il rosso resta riservato a saldi positivi. Restano da verificare sulla versione installata i flussi Finanza, TS/SdI, la navigazione completa e tutti i ruoli.
 - Liste TS/SdI simulate: la colonna «Esito / verifica» distingue un esito acquisito, un problema classificato, l'assenza di tentativi e un tentativo da consultare; evita il trattino ambiguo segnalato dall'Owner. Quattro stati testati offline; il contenuto live resta da verificare.
+- Dettaglio seduta cancellata: la proiezione già autorizzata include ora il fatto `cc_late_cancellation`; la scheda distingue cancellazione tardiva, stato economico operativo e documento contabile, rinviando a Storico per autore e motivo. Non calcola un nuovo addebito e non modifica i valori canonici.
 
 ## Test ed evidenze
 

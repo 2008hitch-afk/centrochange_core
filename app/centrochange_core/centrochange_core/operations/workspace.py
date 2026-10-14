@@ -8,7 +8,7 @@ from centrochange_core.operations.notes import require_context
 
 APPOINTMENT_FIELDS=['name','patient','patient_name','practitioner','practitioner_name','cc_center',
     'appointment_date','appointment_time','duration','status','cc_closure_state','cc_economic_state',
-    'cc_performed','cc_paid','cc_service_label','cc_price_snapshot','cc_currency_snapshot','cc_package','cc_package_state']
+    'cc_performed','cc_paid','cc_late_cancellation','cc_service_label','cc_price_snapshot','cc_currency_snapshot','cc_package','cc_package_state']
 
 
 def require_actor():
