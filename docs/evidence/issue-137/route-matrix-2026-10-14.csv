@@ -1,0 +1,129 @@
+role,viewport,screen,route,native,http,visual_status,reasons,max_icon_px,horizontal_overflow_px,screenshot_private
+m,1440,Anagrafica pazienti,/app/patient,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-02-anagrafica-pazienti.png
+m,1440,Anagrafica professionisti,/app/healthcare-practitioner,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-03-anagrafica-professionisti.png
+m,1440,Banca,/app/cc-unified-desk?cc_view=finance&cc_fin_view=Banca,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-11-banca.png
+m,1440,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-00-centro-change.png
+m,1440,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-04-disponibilita.png
+m,1440,Fatture pazienti,/app/sales-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-07-fatture-pazienti.png
+m,1440,Fatture professionisti,/app/purchase-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-08-fatture-professionisti.png
+m,1440,Finanza,/app/cc-unified-desk?cc_view=finance,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-06-finanza.png
+m,1440,Gestione accessi,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Gestione%20accessi,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-16-gestione-accessi.png
+m,1440,Incassi e pagamenti,/app/payment-entry,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-09-incassi-e-pagamenti.png
+m,1440,Modelli pacchetto,/app/cc-package-template,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-21-modelli-pacchetto.png
+m,1440,Movimenti bancari,/app/bank-transaction,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-10-movimenti-bancari.png
+m,1440,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-05-notifiche.png
+m,1440,Registro modifiche,/app/cc-unified-desk?cc_view=audit,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-22-registro-modifiche.png
+m,1440,Report economico pazienti,/app/cc-unified-desk?cc_view=patient,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-15-report-economico-pazienti.png
+m,1440,Report professionisti,/app/cc-unified-desk?cc_view=professional,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-14-report-professionisti.png
+m,1440,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-01-ricerca-pazienti.png
+m,1440,SdI simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=SdI,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-12-sdi-simulato.png
+m,1440,Servizi,/app/item,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-17-servizi.png
+m,1440,Servizi del centro,/app/cc-center-service,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-20-servizi-del-centro.png
+m,1440,TS simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=TS,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-1440-13-ts-simulato.png
+m,1440,Tariffe,/app/item-price,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-18-tariffe.png
+m,1440,Tipi di seduta,/app/appointment-type,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-1440-19-tipi-di-seduta.png
+m,390,Anagrafica pazienti,/app/patient,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-02-anagrafica-pazienti.png
+m,390,Anagrafica professionisti,/app/healthcare-practitioner,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-03-anagrafica-professionisti.png
+m,390,Banca,/app/cc-unified-desk?cc_view=finance&cc_fin_view=Banca,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-11-banca.png
+m,390,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-00-centro-change.png
+m,390,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-04-disponibilita.png
+m,390,Fatture pazienti,/app/sales-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-07-fatture-pazienti.png
+m,390,Fatture professionisti,/app/purchase-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-08-fatture-professionisti.png
+m,390,Finanza,/app/cc-unified-desk?cc_view=finance,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-06-finanza.png
+m,390,Gestione accessi,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Gestione%20accessi,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-16-gestione-accessi.png
+m,390,Incassi e pagamenti,/app/payment-entry,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-09-incassi-e-pagamenti.png
+m,390,Modelli pacchetto,/app/cc-package-template,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-21-modelli-pacchetto.png
+m,390,Movimenti bancari,/app/bank-transaction,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-10-movimenti-bancari.png
+m,390,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-05-notifiche.png
+m,390,Registro modifiche,/app/cc-unified-desk?cc_view=audit,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-22-registro-modifiche.png
+m,390,Report economico pazienti,/app/cc-unified-desk?cc_view=patient,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-15-report-economico-pazienti.png
+m,390,Report professionisti,/app/cc-unified-desk?cc_view=professional,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-14-report-professionisti.png
+m,390,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-01-ricerca-pazienti.png
+m,390,SdI simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=SdI,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-12-sdi-simulato.png
+m,390,Servizi,/app/item,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-17-servizi.png
+m,390,Servizi del centro,/app/cc-center-service,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-20-servizi-del-centro.png
+m,390,TS simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=TS,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,m-390-13-ts-simulato.png
+m,390,Tariffe,/app/item-price,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-18-tariffe.png
+m,390,Tipi di seduta,/app/appointment-type,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,m-390-19-tipi-di-seduta.png
+s,1440,Banca,/app/cc-unified-desk?cc_view=finance&cc_fin_view=Banca,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-09-banca.png
+s,1440,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-00-centro-change.png
+s,1440,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-02-disponibilita.png
+s,1440,Fatture pazienti,/app/sales-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,s-1440-05-fatture-pazienti.png
+s,1440,Fatture professionisti,/app/purchase-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,s-1440-06-fatture-professionisti.png
+s,1440,Finanza,/app/cc-unified-desk?cc_view=finance,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-04-finanza.png
+s,1440,Incassi e pagamenti,/app/payment-entry,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,s-1440-07-incassi-e-pagamenti.png
+s,1440,Movimenti bancari,/app/bank-transaction,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,s-1440-08-movimenti-bancari.png
+s,1440,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-03-notifiche.png
+s,1440,Report economico pazienti,/app/cc-unified-desk?cc_view=patient,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-13-report-economico-pazienti.png
+s,1440,Report professionisti,/app/cc-unified-desk?cc_view=professional,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-12-report-professionisti.png
+s,1440,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-01-ricerca-pazienti.png
+s,1440,SdI simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=SdI,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-10-sdi-simulato.png
+s,1440,TS simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=TS,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-1440-11-ts-simulato.png
+s,390,Banca,/app/cc-unified-desk?cc_view=finance&cc_fin_view=Banca,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-09-banca.png
+s,390,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-00-centro-change.png
+s,390,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-02-disponibilita.png
+s,390,Fatture pazienti,/app/sales-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,s-390-05-fatture-pazienti.png
+s,390,Fatture professionisti,/app/purchase-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,s-390-06-fatture-professionisti.png
+s,390,Finanza,/app/cc-unified-desk?cc_view=finance,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-04-finanza.png
+s,390,Incassi e pagamenti,/app/payment-entry,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,s-390-07-incassi-e-pagamenti.png
+s,390,Movimenti bancari,/app/bank-transaction,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,s-390-08-movimenti-bancari.png
+s,390,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-03-notifiche.png
+s,390,Report economico pazienti,/app/cc-unified-desk?cc_view=patient,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-13-report-economico-pazienti.png
+s,390,Report professionisti,/app/cc-unified-desk?cc_view=professional,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-12-report-professionisti.png
+s,390,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-01-ricerca-pazienti.png
+s,390,SdI simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=SdI,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-10-sdi-simulato.png
+s,390,TS simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=TS,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,s-390-11-ts-simulato.png
+a,1440,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,a-1440-00-centro-change.png
+a,1440,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,a-1440-02-disponibilita.png
+a,1440,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,a-1440-03-notifiche.png
+a,1440,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,a-1440-01-ricerca-pazienti.png
+a,390,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,a-390-00-centro-change.png
+a,390,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,a-390-02-disponibilita.png
+a,390,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,a-390-03-notifiche.png
+a,390,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,a-390-01-ricerca-pazienti.png
+b,1440,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,b-1440-00-centro-change.png
+b,1440,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,b-1440-02-disponibilita.png
+b,1440,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,b-1440-03-notifiche.png
+b,1440,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,b-1440-01-ricerca-pazienti.png
+b,390,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,b-390-00-centro-change.png
+b,390,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,b-390-02-disponibilita.png
+b,390,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,b-390-03-notifiche.png
+b,390,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,b-390-01-ricerca-pazienti.png
+c,1440,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,c-1440-00-centro-change.png
+c,1440,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,c-1440-02-disponibilita.png
+c,1440,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,c-1440-03-notifiche.png
+c,1440,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,c-1440-01-ricerca-pazienti.png
+c,390,Centro Change,/app/cc-unified-desk?cc_view=agenda,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,c-390-00-centro-change.png
+c,390,Disponibilità,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Disponibilit%C3%A0,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,c-390-02-disponibilita.png
+c,390,Notifiche,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Notifiche,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,c-390-03-notifiche.png
+c,390,Ricerca pazienti,/app/cc-unified-desk?cc_view=agenda&cc_ops_view=Pazienti,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,c-390-01-ricerca-pazienti.png
+f,1440,Banca,/app/cc-unified-desk?cc_view=finance&cc_fin_view=Banca,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-1440-05-banca.png
+f,1440,Centro Change,/app/cc-unified-desk?cc_view=finance,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-1440-00-centro-change.png
+f,1440,Fatture pazienti,/app/sales-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,f-1440-01-fatture-pazienti.png
+f,1440,Fatture professionisti,/app/purchase-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,f-1440-02-fatture-professionisti.png
+f,1440,Incassi e pagamenti,/app/payment-entry,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,f-1440-03-incassi-e-pagamenti.png
+f,1440,Movimenti bancari,/app/bank-transaction,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,f-1440-04-movimenti-bancari.png
+f,1440,Report economico pazienti,/app/cc-unified-desk?cc_view=patient,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-1440-09-report-economico-pazienti.png
+f,1440,Report professionisti,/app/cc-unified-desk?cc_view=professional,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-1440-08-report-professionisti.png
+f,1440,SdI simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=SdI,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-1440-06-sdi-simulato.png
+f,1440,TS simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=TS,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-1440-07-ts-simulato.png
+f,390,Banca,/app/cc-unified-desk?cc_view=finance&cc_fin_view=Banca,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-390-05-banca.png
+f,390,Centro Change,/app/cc-unified-desk?cc_view=finance,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-390-00-centro-change.png
+f,390,Fatture pazienti,/app/sales-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,f-390-01-fatture-pazienti.png
+f,390,Fatture professionisti,/app/purchase-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,f-390-02-fatture-professionisti.png
+f,390,Incassi e pagamenti,/app/payment-entry,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,f-390-03-incassi-e-pagamenti.png
+f,390,Movimenti bancari,/app/bank-transaction,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,f-390-04-movimenti-bancari.png
+f,390,Report economico pazienti,/app/cc-unified-desk?cc_view=patient,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-390-09-report-economico-pazienti.png
+f,390,Report professionisti,/app/cc-unified-desk?cc_view=professional,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-390-08-report-professionisti.png
+f,390,SdI simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=SdI,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-390-06-sdi-simulato.png
+f,390,TS simulato,/app/cc-unified-desk?cc_view=finance&cc_fin_view=TS,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,f-390-07-ts-simulato.png
+t,1440,Centro Change,/app/cc-unified-desk?cc_view=finance,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,t-1440-00-centro-change.png
+t,1440,Fatture pazienti,/app/sales-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,t-1440-01-fatture-pazienti.png
+t,1440,Fatture professionisti,/app/purchase-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,t-1440-02-fatture-professionisti.png
+t,1440,Report economico pazienti,/app/cc-unified-desk?cc_view=patient,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,t-1440-04-report-economico-pazienti.png
+t,1440,Report professionisti,/app/cc-unified-desk?cc_view=professional,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,t-1440-03-report-professionisti.png
+t,390,Centro Change,/app/cc-unified-desk?cc_view=finance,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,t-390-00-centro-change.png
+t,390,Fatture pazienti,/app/sales-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,t-390-01-fatture-pazienti.png
+t,390,Fatture professionisti,/app/purchase-invoice,true,200,FAIL,OVERSIZED_ICONS;ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,300,0,t-390-02-fatture-professionisti.png
+t,390,Report economico pazienti,/app/cc-unified-desk?cc_view=patient,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,t-390-04-report-economico-pazienti.png
+t,390,Report professionisti,/app/cc-unified-desk?cc_view=professional,false,200,FAIL,ASSET_HTTP_OR_MIME_ERROR;JS_ERROR,0,0,t-390-03-report-professionisti.png
