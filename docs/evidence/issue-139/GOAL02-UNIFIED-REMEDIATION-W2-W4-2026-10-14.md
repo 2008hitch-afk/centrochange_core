@@ -19,6 +19,7 @@
 - Altri 38 messaggi dei controlli di accesso, audit e ciclo di vita degli account sono in italiano. Totale: **286 messaggi** server-side localizzati senza modificare i predicati o le classi di errore. I messaggi tecnici DEV e quelli nativi non sono presentati come coperti.
 - Altri 58 messaggi di allegati contabili, adapter nativo, report e coda amministrativa sono stati localizzati. Totale: **344 messaggi** server-side nel candidato. Rimangono da verificare le stringhe dinamiche, i DocType esposti e le risposte native; la #134 resta aperta fino ai test live di successo ed errore.
 - Altri 11 messaggi delle route web cliente e dei DocType Centro Change sono stati tradotti. Totale: **355 messaggi** server-side; esclusi messaggi dei fixture/test DEV. La copertura è basata su inventario di `frappe.throw` letterali, non dimostra ancora assenza di inglese in errori dinamici o upstream.
+- Un controllo automatico impedisce la reintroduzione di `frappe.throw` letterali evidentemente inglesi nei moduli runtime cliente. Non è un traduttore e non sostituisce test degli error path, messaggi generati dinamicamente o Frappe nativo.
 - La cronologia eventi seduta è letta da API esistenti con isolamento per paziente/professionista; note e revisioni sono distinte. Due test offline controllano isolamento e forma dei dati.
 - La localizzazione globale di errori, picker, stampa e superfici native richiesta da #134 resta **non completata e non collaudata live**. Nessun PASS W3 globale.
 
@@ -33,7 +34,7 @@
 
 ## Test ed evidenze
 
-- `python3 -m unittest discover -s infra/tests -p 'test_*.py' -q`: 36 PASS.
+- `python3 -m unittest discover -s infra/tests -p 'test_*.py' -q`: 37 PASS.
 - `node infra/tests/issue139_rome_date.cjs`: 5 PASS; `node infra/tests/issue139_session_actions.cjs`: 7 PASS.
 - `node infra/browser/issue139_time_control.cjs`: `en-US` e `it-IT` PASS con Chromium reale.
 - `node infra/tests/issue139_fiscal_outcome.cjs`: 4 stati fiscali simulati PASS.
