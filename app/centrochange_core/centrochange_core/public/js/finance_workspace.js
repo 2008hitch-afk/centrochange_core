@@ -1,5 +1,5 @@
 import {enhanceDates} from './date_controls.js';
-import {accountLabel,documentState,italianDate} from './accounting_labels.js';
+import {accountLabel,documentState,italianDate,fiscalOutcome} from './accounting_labels.js';
 import {api,escapeHtml as esc,requestKey} from './api.js';
 import {enhanceSelectors} from './search_select.js';
 import {romeToday} from './rome_date.js';
@@ -65,9 +65,9 @@ async function refresh(){
   $('#finance-export').onclick=()=>{location.href='/api/method/centrochange_core.finance.reporting.export_csv?'+new URLSearchParams(interval());};
   $('#finance-content').onclick=e=>{const r=e.target.closest('[data-name]');if(!r)return;const sale=data.sales_invoices.find(x=>x.name===r.dataset.name);const row=sale||data.purchase_invoices.find(x=>x.name===r.dataset.name);if(row)invoiceDetail(row,sale?'Sales Invoice':'Purchase Invoice').catch(e=>notice(e.message,true));};
  }else if(state.view==='TS'){
-  const rows=await finance('fiscal.records',{center:$('#center').value,domain:'TS'});if(!current())return;showRows(rows,[['reference_name','Fonte spesa'],['status','Stato'],['attempt_count','Tentativi'],['error_class','Da verificare']],fiscalDetail);
+  const rows=await finance('fiscal.records',{center:$('#center').value,domain:'TS'});if(!current())return;showRows(rows.map(row=>({...row,issue_summary:fiscalOutcome(row,display)})),[['reference_name','Fonte spesa'],['status','Stato'],['attempt_count','Tentativi'],['issue_summary','Esito / verifica']],fiscalDetail);
  }else if(state.view==='SdI'){
-  const rows=await finance('fiscal.records',{center:$('#center').value,domain:'SDI'});if(!current())return;showRows(rows,[['reference_name','Documento'],['direction','Direzione'],['status','Stato'],['attempt_count','Tentativi'],['error_class','Esito']],fiscalDetail);
+  const rows=await finance('fiscal.records',{center:$('#center').value,domain:'SDI'});if(!current())return;showRows(rows.map(row=>({...row,issue_summary:fiscalOutcome(row,display)})),[['reference_name','Documento'],['direction','Direzione'],['status','Stato'],['attempt_count','Tentativi'],['issue_summary','Esito / verifica']],fiscalDetail);
   if(state.boot.can_write){$('#finance-content').insertAdjacentHTML('beforeend','<button id="simulated-inbound">Ricevi XML simulato</button>');$('#simulated-inbound').onclick=()=>modal('Ricevi XML simulato',label('Identificativo messaggio sintetico',input('external_message_id','text','SYNTHETIC-'))+label('File XML','<input name="file" type="file" accept=".xml" required>')+reason(),async d=>finance('sdi.intake',{center:$('#center').value,external_message_id:d.external_message_id,xml:await $('#modal [name=file]').files[0].text(),reason:d.reason},true));}
  }else if(state.view==='Coda amministrativa'){
   const rows=await finance('admin_queue.list_items',{center:$('#center').value});if(!current())return;showRows(rows,[['exception_type','Condizione'],['reference_name','Fonte'],['state','Stato'],['priority','Priorità'],['assignee','Responsabile'],['due_at','Scadenza'],['defer_until','Rinvio']],queueDetail);

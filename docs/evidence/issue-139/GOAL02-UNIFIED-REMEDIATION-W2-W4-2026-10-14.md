@@ -21,12 +21,14 @@
 - Il test nativo ora misura badge di stato effettivamente tagliati da antenati con overflow nascosto. Sulla versione DEV servita a 390×844: **6 FAIL su 11 liste** (`Patient`, `Healthcare Practitioner`, `Sales Invoice`, `Purchase Invoice`, `Payment Entry`, `Bank Transaction`); 5 PASS. Il difetto è il risultato `display:table` di Frappe più largo del contenitore mobile. A 390 px il badge di `Sales Invoice` superava il bordo visibile della tabella.
 - CSS candidato circoscritto alle List View cliente fino a 575,98 px: risultato e righe occupano la larghezza disponibile. La prova Chromium con sola iniezione temporanea di questa regola dà **11/11 PASS** sul controllo geometrico; nello screenshot di `Sales Invoice` i badge «Bozza», «In ritardo» e «Pagata» sono completi. La prova non equivale a test live dopo distribuzione. Screenshot privati: `issue139-w4-baseline-20261014/` e `issue139-w4-css-preview-20261014/` nel vault `browser-evidence` del server.
 - Report economico pazienti: il residuo zero non è più colorato come allarme; il rosso resta riservato a saldi positivi. Restano da verificare sulla versione installata i flussi Finanza, TS/SdI, la navigazione completa e tutti i ruoli.
+- Liste TS/SdI simulate: la colonna «Esito / verifica» distingue un esito acquisito, un problema classificato, l'assenza di tentativi e un tentativo da consultare; evita il trattino ambiguo segnalato dall'Owner. Quattro stati testati offline; il contenuto live resta da verificare.
 
 ## Test ed evidenze
 
 - `python3 -m unittest discover -s infra/tests -p 'test_*.py' -q`: 36 PASS.
 - `node infra/tests/issue139_rome_date.cjs`: 5 PASS; `node infra/tests/issue139_session_actions.cjs`: 7 PASS.
 - `node infra/browser/issue139_time_control.cjs`: `en-US` e `it-IT` PASS con Chromium reale.
+- `node infra/tests/issue139_fiscal_outcome.cjs`: 4 stati fiscali simulati PASS.
 - `node --check` sui JS modificati e sul browser runner, `compileall` sui moduli Python modificati, `git diff --check`: PASS.
 - Il CSS candidato è stato testato in Chromium senza scrivere al runtime. **I test W5 delle 128 combinazioni e 38 controlli sintetici sul candidato non sono stati eseguiti:** richiedono prima installazione autorizzata, preflight, checkpoint e rollback.
 
