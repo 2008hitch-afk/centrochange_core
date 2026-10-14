@@ -20,6 +20,10 @@ Fonti: [documentazione ufficiale Frappe Asset Bundling](https://docs.frappe.io/f
 
 **Autorizzazione Owner DEV distinta richiesta prima di `--invalidate`.** Dopo l'eventuale autorizzazione: un'unica esecuzione, confronto delle 11 liste e 11 schede native con Chromium desktop/mobile, CSS status/content-type e icon sizing; stop a nuovi errori. La correzione deve poi entrare nella procedura versionata di cambio immagine affinché il problema non ricompaia al deploy del candidato finale. L'errore socket.io resta da diagnosticare separatamente, senza cambiare autenticazione.
 
+### Errore realtime separato
+
+Il sorgente Frappe 16.50 `realtime/middlewares/authenticate.js` chiama `fetch(get_url(socket, ...))`; `get_url` usa l'header `Origin`. Nginx invia `Origin: http://centrochange.local` per preservare il controllo hostname, mentre il container websocket non risolve `centrochange.local` nella rete Docker (risolve `frontend` e `backend`). Questo spiega il `TypeError: fetch failed` prima dell'autenticazione. La configurazione versionata `infra/compose.issue139_realtime.yaml` aggiunge **solo** l'alias di rete `centrochange.local` al frontend esistente; una simulazione `docker compose config` dimostra che nessun altro servizio o campo cambia. Nessuna applicazione dell'override, ricreazione o test live autorizzato: il risultato realtime è ancora **NOT_TESTED**. Non si disabilita il confronto Origin/Host.
+
 ## Fasi successive
 
 - W2: l'attuale `Branch` non espone uno stato operativo Centro Change; i `require_center`/`require_finance` controllano appartenenza, non inattività. Inventariare le chiamate server e i selettori prima di introdurre uno stato versionato; nessuna modifica ai dati Centro B eseguita.
