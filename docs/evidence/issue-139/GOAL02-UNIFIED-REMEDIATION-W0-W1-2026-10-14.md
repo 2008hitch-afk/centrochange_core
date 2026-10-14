@@ -1,6 +1,6 @@
 # GOAL-02 #139 — W0 baseline e W1 diagnosi asset (14/10/2026)
 
-**Stato: PARTIAL.** La causa del difetto P0 è provata; il DEV non è stato modificato. W1 non è PASS finché non si esegue il gate Owner e il retest visivo live. #23 risulta CLOSED su GitHub, mentre il manifest cliente mantiene GOAL-02 `AUTHORIZED_ACTIVE`: nessuno dei due stati è stato modificato.
+**Stato: P0 CSS PASS live; W1 complessivo PARTIAL.** La causa del difetto P0 è provata e la chiave Redis è stata invalidata una sola volta dopo autorizzazione Owner specifica. Il difetto socket.io resta aperto e W2–W5 non sono ancora collaudati. #23 risulta CLOSED su GitHub, mentre il manifest cliente mantiene GOAL-02 `AUTHORIZED_ACTIVE`: nessuno dei due stati è stato modificato.
 
 ## Baseline osservata, sola lettura
 
@@ -20,7 +20,11 @@ Fonti: [documentazione ufficiale Frappe Asset Bundling](https://docs.frappe.io/f
 
 `infra/issue139_asset_cache_gate.py` verifica immagine e inventario, Site, sei hook, fingerprint Owner/Communication, manifest e HTTP degli asset. Senza flag è read-only e segnala `STALE` con exit 2. Con `--invalidate` elimina **solo** la chiave Redis bench-shared `assets_json` usando l'API Frappe pinned, quindi verifica manifest/cache e impronte dati. Non cambia DB, immagini, container, Compose, file o permessi. I cinque test offline verificano no-mutation di default, invalidazione esplicita, idempotenza del gate e FAIL se il nuovo mapping non coincide. Il check read-only contro il DEV restituisce `STALE` atteso.
 
-**Autorizzazione Owner DEV distinta richiesta prima di `--invalidate`.** Dopo l'eventuale autorizzazione: un'unica esecuzione, confronto delle 11 liste e 11 schede native con Chromium desktop/mobile, CSS status/content-type e icon sizing; stop a nuovi errori. La correzione deve poi entrare nella procedura versionata di cambio immagine affinché il problema non ricompaia al deploy del candidato finale. L'errore socket.io resta da diagnosticare separatamente, senza cambiare autenticazione.
+**Gate Owner ricevuto in chat** per una sola invalidazione `assets_json`, senza deploy/riavvio/DB. Esecuzione dello script SHA-256 `417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361`: prima `STALE`, 24 differenze note; dopo `CACHE_INVALIDATED`, zero differenze su 69 mapping, 69 file presenti. Impronte degli 11 DocType e di `Communication`, hook e identità dei nove servizi identici prima/dopo. Nessun retry.
+
+Il nuovo test Chromium `infra/browser/issue139_native_renderer.cjs` apre le **11 liste e le 11 prime schede** con Direzione su desktop 1440×900 e mobile 390×844. **22/22 coppie List/Form PASS per il renderer**: bundle CSS/JS senza errori HTTP/MIME, icone 16–32 px, form e liste presenti, nessun overflow del documento. Gli screenshot reali rimangono privati in `/home/empv26/.local/state/centrochange-single/browser-evidence/issue139-w1-20261014/`; confronto esaminato fra `issue137-20261014/m-1440-07-fatture-pazienti.png` (icone enormi, filtri destrutturati) e `issue139-w1-20261014/w1-1440-sales-invoice-list.png` (tabella/filtri normali). Il form e la lista mobile sono stati anch'essi ispezionati: la tabella mobile richiede ancora miglioramenti di leggibilità e alcuni identificativi tecnici dominano la scheda. Il PASS CSS non equivale a PASS UX Owner.
+
+La vecchia suite #137 restituisce ancora 23/23 `FAIL` Direzione desktop perché aggrega l'errore socket.io a `JS_ERROR` e attribuisce genericamente ad asset alcune risposte API 400. Il test W1 distingue ora il renderer dai problemi realtime/API e non silenzia le eccezioni. La procedura di cambio immagine dovrà invalidare `assets_json` a ogni asset manifest modificato, altrimenti il P0 può ricomparire al prossimo deploy.
 
 ### Errore realtime separato
 
@@ -29,5 +33,5 @@ Il sorgente Frappe 16.50 `realtime/middlewares/authenticate.js` chiama `fetch(ge
 ## Fasi successive
 
 - W2: l'attuale `Branch` non espone uno stato operativo Centro Change; i `require_center`/`require_finance` controllano appartenenza, non inattività. Inventariare le chiamate server e i selettori prima di introdurre uno stato versionato; nessuna modifica ai dati Centro B eseguita.
-- W3/W4: non si valuta né ritocca la resa visiva sopra le 22 native rotte. Si riusano i test #137 e i difetti #136 dopo il retest del renderer.
+- W3/W4: il renderer ora consente di valutare i difetti grafici e operativi reali; si riusano i test #137 e i difetti #136.
 - W5: 128 visite comparabili, 11 liste/Form, sette ruoli, Guest e fixture di sicurezza soltanto con ownership/cleanup verificato; report finale e Owner visual UAT separata.
