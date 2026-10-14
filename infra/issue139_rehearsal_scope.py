@@ -1,5 +1,6 @@
 """Fail-closed command routing for a full isolated #139 executor rehearsal."""
 from pathlib import Path
+import sys
 
 PROJECT = 'cc139-w5-isolated'
 IMAGE_PREFIX = 'centrochange-single:issue139-e2e-'
@@ -23,10 +24,18 @@ def scope_command(args, *, root, image):
         raise IsolationError('invalid rehearsal command or image')
     args = [str(x) for x in args]
     if args[0] != 'docker':
-        if args[0] not in ('git', 'gpg', 'runuser'):
-            raise IsolationError('non-Docker operation outside isolated executor scope')
         if any('centrochange-dev' in x for x in args):
             raise IsolationError('non-Docker command references DEV')
+        if Path(args[0]).resolve() == Path(sys.executable).resolve():
+            runner = str(Path(__file__).resolve().with_name('issue137_safe_security_run.py'))
+            if len(args) != 11 or args[1:3] != ['-I', runner] or \
+                    args[3] != '--expected-data' or args[5] != '--expected-communication' or \
+                    args[7:9] != ['--isolated-project', PROJECT] or \
+                    args[9] != '--env-file' or not _inside(args[10], root) or \
+                    Path(args[10]).name != 'runtime.env':
+                raise IsolationError('security Python command is not the isolated pinned runner')
+        elif args[0] not in ('git', 'gpg', 'runuser'):
+            raise IsolationError('non-Docker operation outside isolated executor scope')
         return args
     scoped = [x.replace('centrochange-dev-', PROJECT + '-') for x in args]
     if any('centrochange-dev' in x for x in scoped):

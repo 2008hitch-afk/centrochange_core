@@ -1,6 +1,7 @@
 """No executor rehearsal command may reach shared DEV."""
 import importlib.util
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
@@ -54,6 +55,13 @@ class RehearsalScopeTests(unittest.TestCase):
             env = Path(directory) / 'runtime.env'
             command = gate.security_command('data', 'communications',
                                             isolated_project=scope.PROJECT, env_file=env)
+            self.assertEqual(scope.scope_command(command, root=Path(directory), image=IMAGE),
+                             command)
+            for invalid in (command[:1] + command[2:],
+                            command[:-1] + ['/home/empv26/.local/state/centrochange-single/runtime.env'],
+                            [sys.executable, '-I', '/tmp/unsafe.py']):
+                with self.assertRaises(scope.IsolationError):
+                    scope.scope_command(invalid, root=Path(directory), image=IMAGE)
         self.assertEqual(command[1], '-I')
         self.assertEqual(command[-4:], ['--isolated-project', scope.PROJECT,
                                         '--env-file', str(env)])
