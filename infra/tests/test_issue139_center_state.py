@@ -93,6 +93,18 @@ class CenterStateTests(unittest.TestCase):
         self.assertFalse(self.branch.saved)
         self.assertEqual(self.audit, [])
 
+    def test_first_center_can_be_activated_when_all_are_inactive(self):
+        self.branch.name = "Centro A"
+        self.other = None
+        self.conf["cc_operational_activation_allowed"] = ["Centro A"]
+        result = self.module.set_operational("Centro A", "1", "Attivazione approvata")
+        self.assertEqual(result, {"center": "Centro A", "active": 1, "replay": False})
+        self.assertEqual(self.branch.cc_operational, 1)
+        self.assertTrue(self.branch.saved)
+        self.assertEqual(len(self.audit), 1)
+        self.assertEqual(self.audit[0][0], "CENTER_OPERATIONAL_STATE")
+        self.assertEqual(self.audit[0][-1], "Attivazione approvata")
+
     def test_activation_gate_rejects_string_configuration(self):
         self.conf["cc_operational_activation_allowed"] = "Centro B"
         with self.assertRaisesRegex(Denied, "decisione"):
