@@ -1,6 +1,6 @@
 # #139 — INSTALLATION_GATE_REPORT — 14/10/2026
 
-**Esito: INSTALLATION_GATE_PREPARED / DECISIONE RICHIESTA.** Nessuna immagine costruita, nessun servizio fermato o riavviato, nessuna migrazione, backup o modifica persistente del DEV condiviso in questa preparazione. La PR #140 resta DRAFT. Questo rapporto non dichiara W5 PASS, `READY_FOR_OWNER_VISUAL_UAT` o accettazione Owner.
+**Esito aggiornato: EXECUTOR_REPAIR_PASS / RESTORE_REHEARSAL_PASS; installazione DEV non ancora avviata.** La successiva decisione Owner nella issue #139 autorizza una sola installazione immediata dopo i gate tecnici, con finestra UTC ricavata dall’ora effettiva di avvio. La PR #140 resta DRAFT. Questo rapporto non dichiara W5 PASS, `READY_FOR_OWNER_VISUAL_UAT` o accettazione Owner.
 
 ## Candidato e baseline verificati
 
@@ -12,7 +12,7 @@
 
 ## Executor versionato
 
-`infra/issue139_install_gate.py` — **SHA-256 `5f7066bc7f3fb4aa583e9a904abfc207ee470e5b6737fc318cde231c5ec043cc`**. L'override `infra/compose.issue139_candidate.yaml` — SHA-256 `1bbef44f4bab86e014bd805be1001870558c4066515037218054f61aa1a5d4ac` — cambia soltanto l'immagine dei sei servizi applicativi e l'alias `centrochange.local` sulla rete privata del frontend. Nessun cambio DB/Redis/volumi/porte/limiti/permessi Docker. Le dipendenze eseguibili del gate hanno SHA pinati nello script. `--dry-run` è predefinito nel piano di verifica; `--execute` richiede un file privato con candidato, hash executor e finestra Owner esatti. Un secondo tentativo incontra il tag candidato/override già presenti e viene rifiutato.
+`infra/issue139_install_gate.py` — **SHA-256 `e44be980328860fdaf250032e54219f3c6c0dba1380a7c34a9c67d27ba4b5970`**. L'override `infra/compose.issue139_candidate.yaml` — SHA-256 `1bbef44f4bab86e014bd805be1001870558c4066515037218054f61aa1a5d4ac` — cambia soltanto l'immagine dei sei servizi applicativi e l'alias `centrochange.local` sulla rete privata del frontend. Nessun cambio DB/Redis/volumi/porte/limiti/permessi Docker. Le dipendenze eseguibili del gate hanno SHA pinati nello script. `--dry-run` è predefinito nel piano di verifica; `--execute` richiede un file privato con candidato, hash executor e finestra Owner esatti. Un secondo tentativo incontra il tag candidato/override già presenti e viene rifiutato.
 
 Sequenza dopo il gate Owner: preflight read-only → checkpoint env/Compose/Site config e tag delle sei immagini → build derivata dall'immagine verificata con soli 57 file del commit applicativo → secondo preflight → fermo controllato di frontend, websocket, worker e scheduler (backend isolato resta disponibile al solo executor) → backup nativo completo di DB, file pubblici/privati e config, cifrato AES-256/GPG e verificato in vault privato → selezione persistente dell'override → migrazione supportata `bench --site centrochange.local migrate` → attivazione di A tramite `set_operational` con audit, motivo e gate temporaneo → revoca dell'allowlist temporanea → riavvio backend e cinque servizi applicativi → verifica asset, DNS realtime, nove servizi, sorgenti, hook, permessi e dati → W5.
 
@@ -31,7 +31,7 @@ Al primo errore dopo il fermo, l'executor interrompe W5, ferma i sei servizi app
 - `sudo -n python3 -I infra/issue139_install_gate.py --dry-run`: **PASS**; nove servizi, due sedi, 57 file delta, origine immagini, sei hook, hash #79, cache CSS, Site, fingerprint dati/schema/permessi e diff Compose verificati in sola lettura.
 - `python3 -B -m unittest discover -s infra/tests -p 'test_*.py' -q`: **45 PASS** (inclusi gate Owner, delta Compose, append/ripristino env, sequenza rollback DB prima del frontend, attivazione della prima sede inattiva). `node --check` e AST Python: PASS. `git diff --check`: PASS.
 - Rehearsal isolato su file **esclusivamente sintetico**: backup cifrato GPG → decifrato → SHA identico, 5000 byte; PASS. Il mock della sequenza di recovery dimostra una sola chiamata al ripristino DB prima della riapertura frontend. Nessun Site o database clonato sul server.
-- **Limite reale:** la migrazione e il restore Frappe 16.50 dell'esatto Site non sono stati eseguiti in un clone isolato in questo turno. Le primitive native `backup --with-files --compress` e `_restore` sono state verificate sul codice pinned; l'evidenza storica di restore isolato CAP-037 resta PARTIAL. Non presentiamo il rollback DB come PASS runtime già dimostrato. Questo rischio è incluso nella decisione Owner del gate.
+- **Stato storico al primo gate:** il restore dell'esatto Site non era ancora provato. La rehearsal completa dell'executor corretto è documentata nell'addendum e supera questo limite.
 
 ## Piano W5 dopo autorizzazione
 
@@ -40,6 +40,16 @@ Al primo errore dopo il fermo, l'executor interrompe W5, ferma i sei servizi app
 3. `infra/issue137_safe_security_run.py` esegue i **38 controlli sintetici** con fixture e cleanup esatto, confrontando fingerprint Owner/Communication prima/dopo. Controlli cross-professional, cross-center, URL/API diretti, note riservate, audit e ruoli restano server-side. Nessun provider fiscale reale.
 4. Un FAIL significativo su asset, realtime, permessi, dati, migrazione o ruolo provoca **un solo rollback**. Difetti grafici non critici vanno riportati con evidenza; la suite non deve trasformare FAIL in PASS. Dopo un rollback, nessun retry automatico.
 
-## Decisione Owner richiesta
+## Decisione Owner aggiornata
 
-Autorizzare **una sola installazione controllata #139** sul DEV `centrochange-dev`, candidato applicativo `0380874fdf91c7fe191a93ec676e2c1d6f62ff7f`, executor SHA-256 `5f7066bc7f3fb4aa583e9a904abfc207ee470e5b6737fc318cde231c5ec043cc`, con build immagine, fermo dei soli servizi applicativi, backup privato, migrazione del Site, attivazione auditata di Centro A, Centro B inattiva, alias Socket.IO, W5 e un rollback/recupero se necessario. **Finestra richiesta: massimo 4 ore operative + 1 ora esclusiva di recupero**, registrata in un file privato prima della prima mutazione. La decisione deve prendere atto che il restore del Site esatto non è stato provato in clone isolato; il gate verifica backup cifrato prima di iniziare la migrazione e arresta tutto se non riesce. Codex crea il file privato e avvia direttamente l'executor solo dopo la decisione esplicita. Nessun merge, produzione, GOAL-03 o Owner visual PASS implicito.
+La decisione successiva nella issue #139 autorizza **una sola installazione controllata immediata** sul DEV dopo PASS di isolamento, restore executor e preflight. Il gate privato usa l'ora UTC effettiva di avvio, massimo 4 ore operative più 1 ora di recupero. Nessun merge, produzione, GOAL-03 o Owner visual PASS implicito.
+
+## Addendum: vero percorso executor ripristinato in clone isolato
+
+L'executor corregge i due `chown` a `frappe:root` e verifica prima di ogni copia l'identità Unix dell'immagine pinned: UID 1000, GID 0, gruppo `root` presente e gruppo `frappe` assente. `infra/issue139_restore_guard.py` riscrive e valida anche le destinazioni `container:path`, non solo gli argomenti `container`; rifiuta altri servizi DEV, target inattesi e comandi Docker fuori dallo scope. Tre test positivi/negativi nuovi PASS.
+
+La nuova rehearsal usa il backup nativo completo e cifrato del Site sintetico, catturato nella prova precedente e ancora identico agli attuali fingerprint del DEV. Il command trace fail-closed ha verificato **24 comandi** di `restore_backup()` prima della creazione del clone; nessuno indirizza `centrochange-dev-*`. La stessa guard ha protetto l'esecuzione effettiva di `restore_backup()` nel clone con rete Docker interna, volumi propri e nessuna porta pubblica. Risultato `RESTORE_REHEARSAL_PASS`: DB, file pubblici/privati, configurazione, schema, ruoli, permessi, sei hook e due sedi corrispondono al Site sorgente; HTTP 200 e integrità invariata dopo il riavvio del clone. Tutti i container, volumi e network della rehearsal sono stati rimossi. Il DEV non è stato riavviato né migrato. Evidenze raw private: `~/.local/state/centrochange-single/issue139-restore-rehearsal/cc139-restore-20261014180948/`.
+
+Dopo la rehearsal: **50 test Python offline PASS**, `git diff --check` PASS, dry-run executor PASS; nove servizi, cache CSS, sei hook e fingerprint Owner/Communication invariati. La limitazione precedente sul restore non provato è quindi superata per l'executor corretto. W5 sul candidato resta da eseguire dopo l'installazione.
+
+L'Owner ha autorizzato il deploy condizionato immediato nella issue #139; la sezione precedente che chiedeva una finestra calendario separata è superata da tale decisione. Il file gate privato deve essere creato con ora UTC effettiva di avvio, durata massima 4h operative + 1h recupero e SHA-256 executor sopra indicato.
