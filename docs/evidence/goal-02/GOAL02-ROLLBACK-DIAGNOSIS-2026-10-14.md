@@ -1,0 +1,28 @@
+# GOAL-02 PR #133 — rollback diagnosis and retry preparation
+
+Status: **READY_FOR_OWNER_RETRY / no new deployment executed**. Authority: issue #69 Owner mandate and the 2026-10-14 request to diagnose the rolled-back attempt. Candidate application remains exactly PR #132 commit `90817de65312becb6888ef60a8caa5c679248fb0`; #78/#128 remain excluded.
+
+## Previous attempt and exact cause
+
+The protected report `goal02-install-runs/20261013T212011Z-2235835/report.json` says `ROLLED_BACK`, failure `runuser failed with exit 1; private output suppressed`, no rollback failure, and `served_asset_hashes` completed. The failed command was the first browser call in `infra/goal02_install_one_command.py`: `runuser -u empv26 -- /usr/bin/env ... node infra/browser/issue79_unified_autocomplete.cjs`. The old executor discarded stderr, so that attempt's original Playwright traceback cannot be recovered from the saved report or empty screenshot directory.
+
+The cause was reproduced without deploying: an isolated Chromium context requested the five candidate A+B assets from the exact `90817de` checkout while all API calls used the restored DEV. The old #79 harness timed out on `locator('#new-booking').waitFor()` for Manager at 1440 px. At that moment Agenda had not completed bootstrap (`#center.selectedIndex == -1` in a subsequent trace); the new Package B behavior correctly hides **+ Prenota** while the selected center has no professionals. The old harness assumed that button was visible before loading or selecting a center. It therefore failed on valid candidate presentation behavior. After waiting for a populated, selected center and completed content, selecting Centro A, then requiring the button to become visible, the same candidate-asset preview passed m/s/a/b desktop and m mobile. This is evidence of a test readiness defect; no application defect or security bypass was observed in this reproduction.
+
+## Rollback verified on 2026-10-14
+
+Read-only `sudo -n` verification against the private checkpoint confirmed nine running project services, exact pre-attempt image IDs for all nine, original Compose/env precedence, one Site, unchanged synthetic fingerprint, all six effective hooks, and accepted #79 CSS in the backend. The database and Redis containers retained their IDs. Six per-service rollback tags still resolve to the recorded images. The candidate image tag remained local, inactive, with ID `sha256:5ec8db83748fdc9d46bfd862a85930b9e8416aec1049afabca21faa15a5cdf1e`.
+
+The retained image was independently checked: its source label is `90817de`, its layer chain extends the accepted #79 image, runtime image configuration is unchanged, and all five A+B asset files plus #79 Page CSS hash to the authorized commit. The executor now permits reuse only at that exact image ID; a moved tag blocks before switching. It verifies layers/config/files again before activation. No application rebuild or DEV switch was performed during diagnosis.
+
+## Procedure and tests corrected
+
+- `infra/browser/issue79_unified_autocomplete.cjs`: waits for Agenda center options, valid selection and completed content on login and direct route before checking **+ Prenota**. The existing suggestion, mouse, keyboard, responsive and isolation assertions remain active. Role c remains in the separate Package B empty-state check.
+- `infra/goal02_install_one_command.py`: retains a bounded sanitized Chromium error excerpt in its private report instead of suppressing all stderr; validates the retained candidate image ID and its derivation/configuration before reuse. Existing preflight, checkpoint, six-service switch and one rollback remain intact.
+- `infra/browser/goal02_abc_live.cjs`: waits for loaded Agenda/Finance content; accepts the native Administrator `/desk` landing; treats Frappe's read-only POST endpoints as read-only while still flagging write APIs and relying on the server fingerprint gate. The Finance summary action itself opens the comparison modal, so the harness no longer tries to click the covered inner button a second time.
+- `infra/tests/test_goal02_install.py`: exercises sanitized failure diagnostics and fail-closed retained-image selection.
+
+Results: 12 Python tests PASS; Package A offline Chromium PASS; Package B offline Chromium PASS; Python compile, Node syntax and `git diff --check` PASS. The corrected #79 runner using the exact executor `runuser` context passed on the restored DEV. The isolated candidate-asset preview passed m/s/a/b desktop plus m mobile for #79 and passed seven demo roles plus Administrator for A+B, including Manager/Finance mobile. These previews used the real DEV APIs and synthetic records but browser-local candidate assets; they are **not** a live deployed candidate PASS. No product write request was observed in those browser checks. A final read-only fingerprint comparison after diagnostics matched the previous checkpoint.
+
+## Next authorized operation, not executed
+
+After a **new** Owner authorization for one attempt, Codex can run the updated executor directly with `sudo -n` on `srv2033673`. It must recheck exact source/Compose/env, nine-service health, Site, data fingerprint, hooks, #79 and retained candidate ID; create a new checkpoint and rollback tags; activate only six application services; run live Chromium, security and rollback-only regressions; then report `LIVE_TECHNICAL_PASS`, `BLOCKED`, `ROLLED_BACK` or `ROLLBACK_FAILED`. No automatic retry follows a new failure. GOAL-02 final Owner acceptance remains separate.

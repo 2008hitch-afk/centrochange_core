@@ -14,6 +14,7 @@ import json
 import os
 from pathlib import Path
 import pwd
+import re
 import shutil
 import socket
 import subprocess
@@ -32,6 +33,7 @@ BASE_IMAGE = 'sha256:f38215267771e4db2e42af9312211931dc039b07ff17b69953c10f50026
 CSS_IMAGE = 'centrochange-single:issue79-css-f3ab9d5ddf9f'
 CSS_SHA = 'f3ab9d5ddf9f15e63b576a5656331169067af6d722cdea6d79b8c5ca644fe27d'
 TARGET = 'centrochange-single:goal02-abc-90817de'
+RETAINED_CANDIDATE_IMAGE = 'sha256:5ec8db83748fdc9d46bfd862a85930b9e8416aec1049afabca21faa15a5cdf1e'
 EXPECTED_ENV_SHA = 'd2e2e2849b0507f9bcfe8de78d48dc81cdb59d705aa62a765e96eea60429f080'
 OLD_OVERRIDE_SHA = 'f68f3da5adc5ed8b3ec907602f8a5ff671735b5265aeb3a6c7fafeed4cdb4a8f'
 COMPOSE_DIR = Path('/tmp/centrochange-issue124/infra')
@@ -163,6 +165,15 @@ def image_id(ref):
     return run(['docker', 'image', 'inspect', '--format', '{{.Id}}', ref]).stdout.strip()
 
 
+def retained_candidate_present():
+    existing = run(['docker','image','inspect',TARGET], allow_fail=True)
+    if existing.returncode:
+        return False
+    require(image_id(TARGET) == RETAINED_CANDIDATE_IMAGE,
+            'retained candidate tag differs from verified rolled-back build')
+    return True
+
+
 def snapshot():
     result = {}
     for service in APP + TECH:
@@ -274,6 +285,7 @@ def verify_environment():
 
 def preflight():
     verify_environment()
+    retained_candidate_present()
     before = snapshot()
     require(image_id('centrochange-single:goal02-fixture-d1892e0') == BASE_IMAGE,
             'baseline image ID drift')
@@ -348,7 +360,18 @@ def browser(script, output):
            f'CC_GOAL02_ADMIN_FIXTURE={output / "admin-login.json"}',
            f'CC_GOAL02_OUTPUT={output}']
     result = run(['runuser', '-u', 'empv26', '--', '/usr/bin/env', *env,
-                  'node', str(REPO / 'infra/browser' / script)], cwd=REPO)
+                  'node', str(REPO / 'infra/browser' / script)], cwd=REPO, allow_fail=True)
+    if result.returncode:
+        lines = result.stderr.splitlines()
+        relevant = [line.strip() for line in lines if any(marker in line for marker in
+                    ('Error:', 'AssertionError', 'Timeout ', 'locator.', 'page.waitFor',
+                     'Call log:', 'waiting for', 'at login ',
+                     'at testRole ', 'at principal ', 'at administrator ', 'TEST '))]
+        excerpt = ' | '.join(relevant[:8])[:1000]
+        excerpt = re.sub(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}', '[email]', excerpt, flags=re.I)
+        excerpt = re.sub(r'(?i)(password|passwd|token|cookie|authorization|pwd)[=:]\s*[^\s|]+',
+                         r'\1=[redacted]', excerpt)
+        raise Stop(f'Chromium {script} failed (exit {result.returncode}): {excerpt or "no diagnostic line"}')
     data = json.loads(result.stdout.strip().splitlines()[-1])
     require(data.get('status') == 'PASS' and data.get('mutations') == 'NONE',
             f'{script}: live check failed')
@@ -411,14 +434,24 @@ def apply(script_sha):
         recipe += ['RUN bench build --force && cp -a sites/assets/. assets/',
                    'LABEL centrochange.goal="02" centrochange.source="'+SOURCE+'"', '']
         (build / 'Dockerfile').write_text('\n'.join(recipe))
-        existing = run(['docker','image','inspect',TARGET],allow_fail=True)
-        require(existing.returncode != 0, 'candidate tag already exists; no second attempt')
-        run(['docker','build','--pull=false','--no-cache','-t',TARGET,'-f',str(build / 'Dockerfile'),str(build)])
+        if retained_candidate_present():
+            report['candidate_reused'] = True
+        else:
+            run(['docker','build','--pull=false','--no-cache','-t',TARGET,'-f',str(build / 'Dockerfile'),str(build)])
+            report['candidate_reused'] = False
         target_id = image_id(TARGET)
         require(target_id != before['backend']['image'], 'candidate image unchanged')
         # Image labels and exact contents, including retained #79 CSS.
         candidate = json.loads(run(['docker','image','inspect',TARGET]).stdout)[0]
         require(candidate['Config']['Labels']['centrochange.source'] == SOURCE, 'candidate source label mismatch')
+        base_image = json.loads(run(['docker','image','inspect',CSS_IMAGE]).stdout)[0]
+        base_layers = base_image['RootFS']['Layers']
+        require(candidate['RootFS']['Layers'][:len(base_layers)] == base_layers and
+                len(candidate['RootFS']['Layers']) > len(base_layers),
+                'candidate image does not derive from accepted #79 image')
+        for key in ('Entrypoint','Cmd','User','Env','WorkingDir','ExposedPorts','Volumes'):
+            require(candidate['Config'].get(key) == base_image['Config'].get(key),
+                    f'candidate runtime config changed: {key}')
         check = run(['docker','run','--rm','--network','none','--read-only','--entrypoint','python',TARGET,
                      '-c', 'import hashlib,json,pathlib; p=pathlib.Path("'+IMAGE_REL+'"); '
                            'print(json.dumps({x:hashlib.sha256((p/x).read_bytes()).hexdigest() for x in '+

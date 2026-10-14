@@ -43,3 +43,7 @@ The first Owner invocation returned `BLOCKED`, `runtime_mutations: NONE` while t
 The corrected helper runs with `-w /home/frappe/frappe-bench/sites`, an absolute Bench virtualenv interpreter, and `FRAPPE_STREAM_LOGGING=1`. The latter is Frappe's supported stream handler mode and is already used by existing DEV acceptance probes in this repository; it avoids creating any log files during the read-only gate. The Site inventory probe now uses an absolute `sites` path. No container directory, Frappe source, database or operational configuration is changed.
 
 The updated unit test verifies both path resolution and the exact `docker exec` arguments. The previous attempt is not retried by Codex. A new SHA-256 and single Owner command supersede the original invocation; the first command's hash must not be reused.
+
+## 2026-10-14 superseding status
+
+The later Owner invocation completed build/switch but rolled back at the first Chromium test. The confirmed rollback and corrected runner are documented in [GOAL02-ROLLBACK-DIAGNOSIS-2026-10-14.md](GOAL02-ROLLBACK-DIAGNOSIS-2026-10-14.md). The command and hash from 2026-10-13 are obsolete. Codex now has authorized `sudo -n` access for diagnosis, but a **new Owner installation authorization** is still required before another switch.

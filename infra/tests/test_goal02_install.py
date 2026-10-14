@@ -3,6 +3,7 @@ import importlib.util
 from pathlib import Path
 import unittest
 from unittest.mock import patch
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location('goal02_install', ROOT / 'infra/goal02_install_one_command.py')
@@ -11,6 +12,28 @@ SPEC.loader.exec_module(module)
 
 
 class InstallContract(unittest.TestCase):
+    def test_retained_candidate_is_reused_only_at_verified_image_id(self):
+        with patch.object(module, 'run', return_value=SimpleNamespace(returncode=0)), \
+             patch.object(module, 'image_id', return_value=module.RETAINED_CANDIDATE_IMAGE):
+            self.assertTrue(module.retained_candidate_present())
+        with patch.object(module, 'run', return_value=SimpleNamespace(returncode=0)), \
+             patch.object(module, 'image_id', return_value='sha256:unexpected'):
+            with self.assertRaises(module.Stop):
+                module.retained_candidate_present()
+        with patch.object(module, 'run', return_value=SimpleNamespace(returncode=1)):
+            self.assertFalse(module.retained_candidate_present())
+
+    def test_chromium_failure_retains_safe_diagnostic(self):
+        output = '/tmp/synthetic-output'
+        error = "TEST m 1440\nlocator.waitFor: Timeout 30000ms exceeded. user@example.invalid password=secret123\nCall log:\n  - waiting for locator('#new-booking')\n"
+        with patch.object(module, 'run', return_value=SimpleNamespace(returncode=1, stderr=error, stdout='')):
+            with self.assertRaises(module.Stop) as failure:
+                module.browser('issue79_unified_autocomplete.cjs', Path(output))
+        self.assertIn('Timeout 30000ms', str(failure.exception))
+        self.assertIn("locator('#new-booking')", str(failure.exception))
+        self.assertNotIn('secret123', str(failure.exception))
+        self.assertNotIn('user@example.invalid', str(failure.exception))
+
     def test_frappe_exec_uses_sites_cwd_and_stream_logging(self):
         # Frappe v16.50 logger.py uses ../logs relative to process cwd.
         bench = Path('/home/frappe/frappe-bench')

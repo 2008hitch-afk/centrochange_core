@@ -15,12 +15,19 @@ async function login(page, user) {
   await page.locator('#login_email').fill(user.name);
   await page.locator('#login_password').fill(user.password);
   await page.getByRole('button', {name:'Continua'}).click();
-  await page.waitForURL(/\/app\//);
+  await page.waitForURL(url => /^\/(?:app|desk)(?:\/|$)/.test(new URL(url).pathname));
 }
 
 async function open(page, suffix) {
   await page.goto(base + suffix, {waitUntil:'domcontentloaded'});
   await page.locator('#cc-main').waitFor({timeout:20000});
+  if (/cc_view=(agenda|finance)/.test(suffix)) {
+    await page.waitForFunction(() => {
+      const center=document.querySelector('#center'), content=document.querySelector('#cc-main');
+      return center?.options.length>0 && center.selectedIndex>=0 && content &&
+        !content.querySelector('.loading') && !document.querySelector('.cc-inline-loading');
+    });
+  }
   return page.locator('#cc-main').innerText();
 }
 
@@ -29,13 +36,21 @@ async function principal(browser, role, viewport) {
   const page = await context.newPage();
   const errors = [], writes = [];
   page.on('pageerror', error => errors.push(error.message));
-  page.on('request', req => {if (!['GET','HEAD'].includes(req.method()) && !/\/api\/method\/login/.test(req.url())) writes.push(req.url());});
+  page.on('request', req => {
+    if (['GET','HEAD'].includes(req.method())) return;
+    const target=new URL(req.url()).pathname;
+    const action=/\.(?:create|reschedule|compare|save|submit|cancel|retry|prepare|import_movements|intake|settle|capture|update|delete|set_assignment)(?:$|\/)/;
+    if (['PUT','PATCH','DELETE'].includes(req.method()) ||
+        /^\/api\/resource\//.test(target) ||
+        /^\/api\/method\/frappe\.client\.(?:insert|save|delete)$/.test(target) ||
+        /^\/api\/method\/centrochange_core\./.test(target) && action.test(target)) writes.push(target);
+  });
   try {
     await login(page,users[role]);
     const agenda = ['m','s','a','b','c'].includes(role);
     const landing = agenda ? '/app/cc-unified-desk?cc_view=agenda' : '/app/cc-unified-desk?cc_view=finance';
     const landingText = await open(page,landing);
-    assert.match(landingText, agenda ? /Agenda/ : /Finanza/);
+    assert.match(landingText, agenda ? /Agenda/ : /Contabilità del centro/);
     if (role === 'c') {
       assert.match(landingText,/Nessun professionista assegnato/);
       assert.equal(await page.locator('#new-booking').isVisible(),false);
@@ -50,7 +65,7 @@ async function principal(browser, role, viewport) {
       assert.match(audit,/Registro|modifiche/i);
       await page.screenshot({path:path.join(output,'goal02-manager-audit.png'),fullPage:true});
       const finance = await open(page,'/app/cc-unified-desk?cc_view=finance');
-      assert.match(finance,/Finanza/);
+      assert.match(finance,/Contabilità del centro/);
       await page.screenshot({path:path.join(output,'goal02-manager-finance.png'),fullPage:true});
       const ts = await open(page,'/app/cc-unified-desk?cc_view=finance&cc_fin_view=TS');
       assert.match(ts,/TS|Tessera/i);
@@ -58,13 +73,11 @@ async function principal(browser, role, viewport) {
     }
     if (role === 'f') {
       const finance = await open(page,'/app/cc-unified-desk?cc_view=finance');
-      assert.match(finance,/Finanza/);
+      assert.match(finance,/Contabilità del centro/);
       if (viewport.width === 1440) {
         const comparison = page.getByRole('button',{name:'Confronta fattura professionista'});
         await comparison.waitFor();
         await comparison.click();
-        await page.locator('#compare-compensation').waitFor();
-        await page.locator('#compare-compensation').click();
         await page.getByRole('heading',{name:'Confronta atteso e ricevuto'}).waitFor();
         assert.equal(await page.locator('#modal [name=expectations]').count(),1);
         await page.screenshot({path:path.join(output,'goal02-finance-comparison.png'),fullPage:true});

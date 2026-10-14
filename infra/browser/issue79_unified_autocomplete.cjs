@@ -16,14 +16,21 @@ const customerLabel=value=>String(value||'').replace(/CC-HTTP-[A-Za-z0-9]+\s+/g,
 const professionalLabel=value=>({a:'Alfa',b:'Beta',c:'Gamma'}[customerLabel(value)]||customerLabel(value));
 fs.mkdirSync(output, {recursive:true});
 
+async function agendaReady(page) {
+  await page.waitForFunction(() => {
+    const center=document.querySelector('#center'), content=document.querySelector('#main-content');
+    return center?.options.length>0 && center.selectedIndex>=0 && content && !content.querySelector('.loading');
+  });
+}
+
 async function login(page, role) {
   await page.goto(base + '/login?redirect-to=/app/cc-unified-desk%3Fcc_view%3Dagenda');
   await page.locator('#login_email').fill(fixture.users[role].name);
   await page.locator('#login_password').fill(fixture.users[role].password);
   await page.getByRole('button', {name:'Continua'}).click();
-  await page.locator('#new-booking').waitFor();
+  await agendaReady(page);
   await page.goto(base + '/app/cc-unified-desk?cc_view=agenda');
-  await page.locator('#new-booking').waitFor();
+  await agendaReady(page);
   assert.match(page.url(), /\/app\/cc-unified-desk\?cc_view=agenda/);
 }
 
@@ -64,6 +71,7 @@ async function testRole(browser, role, viewport) {
         await page.waitForTimeout(150);
       }
     }
+    await page.locator('#new-booking').waitFor({state:'visible'});
     await page.locator('#new-booking').click();
     await page.locator('#modal').waitFor({state:'visible'});
     checks.push('route/modal');
