@@ -85,10 +85,12 @@ class InstallContract(unittest.TestCase):
             module.compare_config(old,new)
 
     def test_rollback_requires_original_technical_services(self):
-        self.assertIn("all(recovered[s] == before[s] for s in TECH)",
-                      (ROOT / 'infra/goal02_install_one_command.py').read_text())
+        source = (ROOT / 'infra/goal02_install_one_command.py').read_text()
+        self.assertIn("all(recovered[s] == before[s] for s in TECH)", source)
         self.assertIn('runtime_fingerprint() == before_data',
-                      (ROOT / 'infra/goal02_install_one_command.py').read_text())
+                      source)
+        self.assertIn('atomic_bytes(OVERRIDE, old_override, old_override_stat.st_mode', source)
+        self.assertIn("file_sha(OVERRIDE) == STALE_CANDIDATE_OVERRIDE_SHA", source)
 
 
 if __name__ == '__main__':

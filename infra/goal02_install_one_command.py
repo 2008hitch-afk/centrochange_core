@@ -235,7 +235,9 @@ frappe.set_user("Administrator")
 types=["Patient","Healthcare Practitioner","Patient Appointment","Sales Invoice","Purchase Invoice","Payment Entry","Bank Transaction","CC Audit Event","CC Booking Confirmation","CC Fiscal Transaction","CC Professional Comparison"]
 rows={dt:frappe.get_all(dt,fields=["name","modified"],order_by="name",limit_page_length=0) for dt in types}
 value=json.dumps(rows,sort_keys=True,default=str,separators=(",",":"))
-print("CC_PREFLIGHT_JSON="+json.dumps({"counts":{dt:len(v) for dt,v in rows.items()},"sha256":hashlib.sha256(value.encode()).hexdigest(),"db_sha256":hashlib.sha256(frappe.conf.db_name.encode()).hexdigest()}))
+communications=frappe.get_all("Communication",fields=["name","modified"],order_by="name",limit_page_length=0)
+communication_value=json.dumps(communications,sort_keys=True,default=str,separators=(",",":"))
+print("CC_PREFLIGHT_JSON="+json.dumps({"counts":{dt:len(v) for dt,v in rows.items()},"sha256":hashlib.sha256(value.encode()).hexdigest(),"communication_sha256":hashlib.sha256(communication_value.encode()).hexdigest(),"db_sha256":hashlib.sha256(frappe.conf.db_name.encode()).hexdigest()}))
 frappe.db.rollback();frappe.destroy()
 '''
     output = backend_python(code)
@@ -547,6 +549,8 @@ def apply(script_sha):
         run(['python3',str(REPO / 'infra/security_acceptance.py'),'--env-file',str(ENV),
              '--with-booking','--with-operations'],cwd=REPO)
         report['tests']['security_acceptance'] = 'PASS'
+        require(runtime_fingerprint() == before_data,
+                'HTTP fixture teardown changed persistent synthetic records')
         report['tests']['goal02_targeted_regression'] = targeted_regression()
         require(runtime_fingerprint() == before_data, 'post-test synthetic fingerprint changed')
         require(all(snapshot()[s] == before[s] for s in TECH), 'technical services changed after tests')
