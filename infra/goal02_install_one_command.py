@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One authorized GOAL-02 A+B DEV attempt. Run only with interactive Owner sudo.
+"""One GOAL-02 A+B DEV attempt, only after renewed Owner authorization.
 
 The script has no network fetch and never changes the Site, database, grants or
 technical services. Failure before switch is BLOCKED; failure after switch gets
@@ -111,7 +111,8 @@ def static_gate(script_sha):
                                 'infra/browser/goal02_abc_live.cjs',
                                 'infra/browser/issue79_unified_autocomplete.cjs',
                                 'infra/tests/test_goal02_install.py',
-                                'docs/evidence/goal-02/GOAL02-CONTROLLED-INSTALL-')) for x in executor_delta),
+                                'docs/evidence/goal-02/GOAL02-CONTROLLED-INSTALL-',
+                                'docs/evidence/goal-02/GOAL02-ROLLBACK-DIAGNOSIS-')) for x in executor_delta),
             'executor branch includes unapproved application changes')
     require(not git('status', '--porcelain').stdout.strip(), 'executor checkout is not clean')
     require(git('merge-base', BASE, SOURCE).stdout.strip() == BASE, '#129 is not ancestor')
