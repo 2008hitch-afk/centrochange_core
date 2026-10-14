@@ -49,6 +49,9 @@ BASE_OVERLAY = STATE / 'compose.goal02_candidate.yaml'
 ACTIVE_OVERLAY = STATE / 'compose.issue139_candidate.yaml'
 APP = ('backend', 'frontend', 'websocket', 'queue-short', 'queue-long', 'scheduler')
 TECH = ('db', 'redis-cache', 'redis-queue')
+PROJECT = 'centrochange-dev'
+NETWORK_NAME = 'centrochange-dev-net'
+LOOPBACK_IP = '127.0.0.1'
 IMAGE = 'centrochange-single:issue139-realtime-v2'
 RETAINED_INACTIVE_OVERLAY_SHA = '1bbef44f4bab86e014bd805be1001870558c4066515037218054f61aa1a5d4ac'
 APP_PREFIX = 'app/centrochange_core/centrochange_core/'
@@ -64,7 +67,7 @@ DEPENDENCY_SHA = {
     'infra/compose.issue139_candidate.yaml': '7b8eb76ed9e8e6b044ab859b6e09c87d969e9d655a725f3a01e83d3884202713',
     'infra/issue139_asset_cache_gate.py': '417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361',
     'infra/goal02_install_one_command.py': '607578830188ab47a5c9d062e0848d5ef2c38c8a5422b503326f30d166592ac5',
-    'infra/issue137_safe_security_run.py': 'fb71b91329cecf67c2b62b7c60add0f2a84613cb5d24f209644993867c9ccb83',
+    'infra/issue137_safe_security_run.py': '13e820df9f55e92807719751789e50d96187b091f4e515f20c2b196241da9783',
     'infra/security_acceptance.py': '80215aa8047bf7ef9066e74fabfdbef354dd860cd001215779b391441526195b',
     'infra/browser/issue137_owner_uat_sweep.cjs': '62fa5855a3e8216c18015ba5fc399f614872577a249c615aa44889bb2baf17c9',
     'infra/browser/issue139_native_renderer.cjs': '1f7f2ade73f2eb046ce328f0ebf1f5aebe41fc80fb584f01bd9c4efabc208487',
@@ -141,6 +144,14 @@ def old_probe():
     return module
 
 
+def asset_cache_probe():
+    spec = importlib.util.spec_from_file_location('issue139_assets',
+                                                  REPO / 'infra/issue139_asset_cache_gate.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.probe()
+
+
 def settings():
     return parse_settings(ENV.read_bytes())
 
@@ -160,14 +171,14 @@ def compose_files(value):
 
 
 def compose_config(files, extra=None):
-    args = ['docker', 'compose', '--env-file', str(ENV), '-p', 'centrochange-dev']
+    args = ['docker', 'compose', '--env-file', str(ENV), '-p', PROJECT]
     for path in files + ([extra] if extra else []):
         args += ['-f', str(path)]
     return json.loads(run(args + ['config', '--format', 'json']).stdout)
 
 
 def compose(files, *args):
-    cmd = ['docker', 'compose', '--env-file', str(ENV), '-p', 'centrochange-dev']
+    cmd = ['docker', 'compose', '--env-file', str(ENV), '-p', PROJECT]
     for path in files:
         cmd += ['-f', str(path)]
     return run(cmd + list(args))
@@ -184,9 +195,9 @@ def compare_compose(before, proposed):
         if name in APP:
             expected['image'] = IMAGE
             if name == 'frontend':
-                network = expected['networks']['centrochange-dev-net'] or {}
+                network = expected['networks'][NETWORK_NAME] or {}
                 network['aliases'] = ['centrochange.local']
-                expected['networks']['centrochange-dev-net'] = network
+                expected['networks'][NETWORK_NAME] = network
         require(proposed['services'][name] == expected, f'{name}: indirect Compose change')
 
 
@@ -311,11 +322,7 @@ def preflight(executor_sha=None):
     require(module.app_hashes([css])[css] ==
             'f3ab9d5ddf9f15e63b576a5656331169067af6d722cdea6d79b8c5ca644fe27d',
             '#79 accepted autocomplete CSS changed')
-    spec = importlib.util.spec_from_file_location('issue139_assets',
-                                                  REPO / 'infra/issue139_asset_cache_gate.py')
-    assets = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(assets)
-    cache = assets.probe()
+    cache = asset_cache_probe()
     require(not cache['mismatch_keys_after'] and cache['all_files_present'],
             'CSS P0 cache repair regressed; no second invalidation authorized')
     sites_output = module.backend_python('''import json,pathlib
@@ -622,11 +629,7 @@ def source_probe(module, paths):
 
 
 def asset_probe(paths):
-    spec = importlib.util.spec_from_file_location('issue139_assets',
-                                                  REPO / 'infra/issue139_asset_cache_gate.py')
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    cache = module.probe()
+    cache = asset_cache_probe()
     require(not cache['mismatch_keys_after'] and cache['all_files_present'],
             'Frappe asset manifest/cache mismatch')
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -636,7 +639,7 @@ def asset_probe(paths):
         if not relative.startswith('public/'):
             continue
         path = '/assets/centrochange_core/' + relative.removeprefix('public/')
-        request = urllib.request.Request('http://127.0.0.1:8082' + path,
+        request = urllib.request.Request(f'http://{LOOPBACK_IP}:8082' + path,
                                          headers={'Host': SITE, 'Cache-Control': 'no-cache'})
         with opener.open(request, timeout=15) as response:
             require(response.status == 200 and sha(response.read()) == file_sha(REPO / source),
@@ -658,7 +661,7 @@ def realtime_probe():
                    check=False)
     require(internal.returncode == 0, 'websocket cannot reach Frappe via internal port 8080')
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    url = 'http://127.0.0.1:8082/socket.io/?EIO=4&transport=polling'
+    url = f'http://{LOOPBACK_IP}:8082/socket.io/?EIO=4&transport=polling'
     for host, origin, expected in [
         ('centrochange.local:8082', 'http://centrochange.local:8082', 200),
         ('127.0.0.1:8082', 'http://127.0.0.1:8082', 200),
@@ -677,12 +680,17 @@ def realtime_probe():
             'canonical_and_tunnel_origins': 200, 'foreign_and_mismatched_origins': 403}
 
 
-def security_command(expected_data, expected_communication):
+def security_command(expected_data, expected_communication, *, isolated_project=None, env_file=None):
     # The child runner refuses non-isolated Python. sys.executable alone does
     # not preserve -I from this executor's own command line.
-    return [sys.executable, '-I', str(REPO / 'infra/issue137_safe_security_run.py'),
-            '--expected-data', expected_data,
-            '--expected-communication', expected_communication]
+    command = [sys.executable, '-I', str(REPO / 'infra/issue137_safe_security_run.py'),
+               '--expected-data', expected_data,
+               '--expected-communication', expected_communication]
+    if isolated_project:
+        require(isolated_project == 'cc139-w5-isolated' and env_file is not None,
+                'unsupported isolated security target')
+        command += ['--isolated-project', isolated_project, '--env-file', str(env_file)]
+    return command
 
 
 def browser(script, output, *, role=None, width=None):
@@ -867,7 +875,7 @@ def execute(executor_sha, gate_path):
         require(all(observed[n] == pre['services'][n] for n in TECH),
                 'technical service identity changed')
         network = json.loads(run(['docker', 'inspect', 'centrochange-dev-frontend-1']).stdout)[0]
-        aliases = network['NetworkSettings']['Networks']['centrochange-dev-net']['Aliases']
+        aliases = network['NetworkSettings']['Networks'][NETWORK_NAME]['Aliases']
         require('centrochange.local' in aliases, 'frontend realtime hostname alias missing')
         require(run(['docker', 'exec', 'centrochange-dev-websocket-1',
                      'getent', 'hosts', 'centrochange.local'], check=False).returncode == 0,
