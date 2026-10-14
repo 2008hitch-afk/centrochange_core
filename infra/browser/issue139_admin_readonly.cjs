@@ -7,9 +7,11 @@ const credentials=JSON.parse(fs.readFileSync(process.env.CC_ISSUE139_ADMIN_FIXTU
 const output=process.env.CC_ISSUE137_OUTPUT;
 if(!output||credentials.name!=='Administrator'||!credentials.password)throw Error('private Administrator fixture required');
 const base=process.env.CC_BASE_URL||'http://centrochange.local:8082';
+const browserIp=process.env.CC_ISSUE139_BROWSER_IP||'127.0.0.1';
+if(!['127.0.0.1','127.0.0.2'].includes(browserIp))throw Error('Unsupported browser loopback target');
 (async()=>{
  const browser=await chromium.launch({headless:true,args:[
-  '--host-resolver-rules=MAP centrochange.local 127.0.0.1','--no-proxy-server','--disable-dev-shm-usage']});
+  `--host-resolver-rules=MAP centrochange.local ${browserIp}`,'--no-proxy-server','--disable-dev-shm-usage']});
  const context=await browser.newContext({viewport:{width:1440,height:900},locale:'it-IT',serviceWorkers:'block'});
  const page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
@@ -18,7 +20,7 @@ const base=process.env.CC_BASE_URL||'http://centrochange.local:8082';
   await page.locator('#login_email').fill(credentials.name);
   await page.locator('#login_password').fill(credentials.password);
   await page.getByRole('button',{name:'Continua'}).click();
-  await page.waitForURL(u=>new URL(u).pathname.startsWith('/app'),{timeout:30000});
+  await page.waitForURL(u=>/^\/(app|desk)(?:\/|$)/.test(new URL(u).pathname),{timeout:30000});
   const response=await page.goto(base+'/app',{waitUntil:'domcontentloaded'});
   const user=await page.evaluate(async()=>{
    const r=await fetch('/api/method/frappe.auth.get_logged_user',{credentials:'same-origin'});
@@ -27,7 +29,9 @@ const base=process.env.CC_BASE_URL||'http://centrochange.local:8082';
   assert.equal(response.status(),200);
   assert.equal(user,'Administrator');
   assert.equal(errors.length,0);
-  assert(await page.locator('body').innerText().then(t=>t.length>100));
+  const body=await page.locator('body').innerText();
+  assert(body.includes('Framework')&&body.includes('ERPNext'));
+  assert(await page.locator('.page-content,.layout-main-section').count()>0);
   const screenshot=path.join(output,'issue139-administrator.png');
   await page.screenshot({path:screenshot,fullPage:true});
   const guest=await browser.newContext({serviceWorkers:'block'});

@@ -53,3 +53,7 @@ La nuova rehearsal usa il backup nativo completo e cifrato del Site sintetico, c
 Dopo la rehearsal: **50 test Python offline PASS**, `git diff --check` PASS, dry-run executor PASS; nove servizi, cache CSS, sei hook e fingerprint Owner/Communication invariati. La limitazione precedente sul restore non provato è quindi superata per l'executor corretto. W5 sul candidato resta da eseguire dopo l'installazione.
 
 L'Owner ha autorizzato il deploy condizionato immediato nella issue #139; la sezione precedente che chiedeva una finestra calendario separata è superata da tale decisione. Il file gate privato deve essere creato con ora UTC effettiva di avvio, durata massima 4h operative + 1h recupero e SHA-256 executor sopra indicato.
+
+## Stato successivo al tentativo consumato
+
+L'installazione descritta sopra è stata eseguita una volta e poi ripristinata. L'esito storico resta `ROLLED_BACK`; vedere [GOAL02-UNIFIED-REMEDIATION-REPORT](GOAL02-UNIFIED-REMEDIATION-REPORT-2026-10-14.md). Gli SHA executor/overlay di questo rapporto identificano **il primo tentativo** e non sono validi per una nuova esecuzione. La correzione Socket.IO, la prova W5 isolata e il gate aggiornato sono documentati in [SECOND-DEV-INSTALLATION-GATE](SECOND-DEV-INSTALLATION-GATE-2026-10-14.md).

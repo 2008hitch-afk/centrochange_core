@@ -3,6 +3,7 @@ const {chromium} = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
+const {assetResponseError} = require('./issue139_asset_response.cjs');
 
 const base = process.env.CC_BASE_URL || 'http://centrochange.local:8082';
 const fixture = JSON.parse(fs.readFileSync(process.env.CC_ISSUE137_FIXTURE, 'utf8'));
@@ -68,7 +69,9 @@ async function measure(page) {
 }
 
 async function run() {
-  const browser=await chromium.launch({headless:true,args:['--host-resolver-rules=MAP centrochange.local 127.0.0.1','--no-proxy-server','--disable-dev-shm-usage']});
+  const browserIp=process.env.CC_ISSUE139_BROWSER_IP || '127.0.0.1';
+  if (!['127.0.0.1','127.0.0.2'].includes(browserIp)) throw Error('Unsupported browser loopback target');
+  const browser=await chromium.launch({headless:true,args:[`--host-resolver-rules=MAP centrochange.local ${browserIp}`,'--no-proxy-server','--disable-dev-shm-usage']});
   const context=await browser.newContext({viewport:{width,height},locale:'it-IT',timezoneId:'Europe/Rome',serviceWorkers:'block'});
   const page=await context.newPage();
   const unexpectedMutations=[];
@@ -102,9 +105,8 @@ async function run() {
       const onResponse=r=>{
         if(!/\.(?:css|js|svg|woff2?|png)(?:\?|$)/i.test(r.url()))return;
         const kind=/\.css(?:\?|$)/i.test(r.url())?'css':/\.js(?:\?|$)/i.test(r.url())?'js':'other';
-        const mime=(r.headers()['content-type']||'').split(';')[0];
-        if(r.status()>=400||(kind==='css'&&mime!=='text/css')||(kind==='js'&&!/javascript/.test(mime)))
-          assetErrors.push({status:r.status(),path:safePath(r.url()),mime});
+        const problem=assetResponseError(r,kind);
+        if(problem) assetErrors.push({path:safePath(r.url()),...problem});
       };
       const onApiResponse=r=>{if(r.status()>=400&&safePathOnly(r.url()).startsWith('/api/'))
         apiErrors.push({status:r.status(),path:safePath(r.url())});};

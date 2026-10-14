@@ -2,6 +2,7 @@
 const {chromium} = require('playwright');
 const fs = require('node:fs');
 const path = require('node:path');
+const {assetResponseError} = require('./issue139_asset_response.cjs');
 
 const fixture = JSON.parse(fs.readFileSync(process.env.CC_ISSUE137_FIXTURE, 'utf8'));
 const user = (fixture.fixture || fixture).users.m;
@@ -43,8 +44,10 @@ async function geometry(page, kind) {
 }
 
 (async()=>{
+  const browserIp=process.env.CC_ISSUE139_BROWSER_IP || '127.0.0.1';
+  if (!['127.0.0.1','127.0.0.2'].includes(browserIp)) throw Error('Unsupported browser loopback target');
   const browser=await chromium.launch({headless:true,args:[
-    '--host-resolver-rules=MAP centrochange.local 127.0.0.1','--no-proxy-server','--disable-dev-shm-usage']});
+    `--host-resolver-rules=MAP centrochange.local ${browserIp}`,'--no-proxy-server','--disable-dev-shm-usage']});
   const context=await browser.newContext({viewport:{width,height:width===390?844:900},
     locale:'it-IT',timezoneId:'Europe/Rome',serviceWorkers:'block'});
   const page=await context.newPage();
@@ -60,10 +63,8 @@ async function geometry(page, kind) {
       const onResponse=response=>{
         const p=endpoint(response.url());
         if(!/\.(css|js)$/.test(p)) return;
-        const mime=(response.headers()['content-type']||'').split(';')[0];
-        if(response.status()>=400 || p.endsWith('.css') && mime!=='text/css' ||
-           p.endsWith('.js') && !/javascript/.test(mime))
-          (p.endsWith('.css')?cssErrors:jsErrors).push({path:p,status:response.status(),mime});
+        const problem=assetResponseError(response,p.endsWith('.css')?'css':'js');
+        if(problem) (p.endsWith('.css')?cssErrors:jsErrors).push({path:p,...problem});
       };
       const onError=e=>otherConsole.push(String(e.message).slice(0,220));
       const onConsole=m=>{if(m.type()==='error')otherConsole.push(m.text().slice(0,220));};

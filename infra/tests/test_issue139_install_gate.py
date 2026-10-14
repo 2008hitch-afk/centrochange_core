@@ -17,6 +17,22 @@ spec.loader.exec_module(gate)
 
 
 class InstallationGateTests(unittest.TestCase):
+    def test_versioned_realtime_proxy_keeps_public_origin_and_internal_auth_route(self):
+        template = gate.FRONTEND_TEMPLATE.read_text()
+        for allowed in ('"centrochange.local:8082" 1;',
+                        '"127.0.0.1:8082" 2;',
+                        '"http://centrochange.local:8082" 1;',
+                        '"http://127.0.0.1:8082" 2;',
+                        '"1:0" 1;', '"1:1" 1;', '"2:0" 1;', '"2:2" 1;'):
+            self.assertIn(allowed, template)
+        self.assertIn('if ($cc_realtime_public_origin_valid = 0) { return 403; }', template)
+        self.assertIn('proxy_set_header Origin http://${FRAPPE_SITE_NAME_HEADER}:${NGINX_LISTEN_PORT};', template)
+        self.assertIn('proxy_set_header Host ${FRAPPE_SITE_NAME_HEADER};', template)
+        self.assertNotIn('proxy_set_header Origin $proxy_x_forwarded_proto://${FRAPPE_SITE_NAME_HEADER};', template)
+        overlay = gate.OVERLAY.read_text()
+        self.assertEqual(overlay.count('image: '+gate.IMAGE), 6)
+        self.assertNotIn('issue139-candidate', overlay)
+
     def test_only_six_app_images_and_frontend_alias_may_change(self):
         services = {name: {'image': 'old', 'networks': {'centrochange-dev-net': None}}
                     for name in gate.APP + gate.TECH}

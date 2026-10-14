@@ -22,6 +22,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.error
 import urllib.request
 
 REPO = Path(__file__).resolve().parent.parent
@@ -42,11 +43,14 @@ COMPOSE_SHA = {
 }
 COMPOSE_DIR = Path('/tmp/centrochange-issue124/infra')
 OVERLAY = REPO / 'infra/compose.issue139_candidate.yaml'
+FRONTEND_TEMPLATE = REPO / 'infra/issue139_frontend.conf.template'
+IMAGE_FRONTEND_TEMPLATE = '/templates/nginx/frappe.conf.template'
 BASE_OVERLAY = STATE / 'compose.goal02_candidate.yaml'
 ACTIVE_OVERLAY = STATE / 'compose.issue139_candidate.yaml'
 APP = ('backend', 'frontend', 'websocket', 'queue-short', 'queue-long', 'scheduler')
 TECH = ('db', 'redis-cache', 'redis-queue')
-IMAGE = 'centrochange-single:issue139-candidate'
+IMAGE = 'centrochange-single:issue139-realtime-v2'
+RETAINED_INACTIVE_OVERLAY_SHA = '1bbef44f4bab86e014bd805be1001870558c4066515037218054f61aa1a5d4ac'
 APP_PREFIX = 'app/centrochange_core/centrochange_core/'
 IMAGE_PREFIX = '/home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/'
 BENCH = '/home/frappe/frappe-bench'
@@ -55,14 +59,16 @@ BRANCH_A = 'CC-HTTP-UAT0000001 A'
 BRANCH_B = 'CC-HTTP-UAT0000001 B'
 RUN_ROOT = STATE / 'issue139-install-runs'
 DEPENDENCY_SHA = {
-    'infra/compose.issue139_candidate.yaml': '1bbef44f4bab86e014bd805be1001870558c4066515037218054f61aa1a5d4ac',
+    'infra/browser/issue139_asset_response.cjs': '30ab0eaa9a15674d4d67f42837b25d3e009727ae796b36903a5de315b5dc3b0a',
+    'infra/issue139_frontend.conf.template': '8335c04ce44258137b84a511f790f207614e3f25135910fc22aa77f25c81d48b',
+    'infra/compose.issue139_candidate.yaml': '7b8eb76ed9e8e6b044ab859b6e09c87d969e9d655a725f3a01e83d3884202713',
     'infra/issue139_asset_cache_gate.py': '417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361',
     'infra/goal02_install_one_command.py': '607578830188ab47a5c9d062e0848d5ef2c38c8a5422b503326f30d166592ac5',
     'infra/issue137_safe_security_run.py': '0ed4a0f28df6f7c349513eb06f7fdb15e4e66bdd922440c56d119f5d407da0b3',
-    'infra/security_acceptance.py': 'e10901eeb50980a02814746e38fb8042a5c8f63d4d4e14952a5c417b59e6d8f0',
-    'infra/browser/issue137_owner_uat_sweep.cjs': '6420982d0fa568e54e81da13895d820551f603d90ff5a98a7885bd6b3b59a7ca',
-    'infra/browser/issue139_native_renderer.cjs': '2b21506d89ea1b9d75bc6a192272404c40d81b1fe5a2f596529d3b4bd16362ec',
-    'infra/browser/issue139_admin_readonly.cjs': 'bc118f2e339a2862fab15deaeb351db0023f57986a1c047fd6c8ae997c975b30',
+    'infra/security_acceptance.py': '80215aa8047bf7ef9066e74fabfdbef354dd860cd001215779b391441526195b',
+    'infra/browser/issue137_owner_uat_sweep.cjs': '62fa5855a3e8216c18015ba5fc399f614872577a249c615aa44889bb2baf17c9',
+    'infra/browser/issue139_native_renderer.cjs': '1f7f2ade73f2eb046ce328f0ebf1f5aebe41fc80fb584f01bd9c4efabc208487',
+    'infra/browser/issue139_admin_readonly.cjs': 'ba6b6eb45736018451f5b96a646fdf0255bf4b1ec28ba192b556af788767ad9a',
 }
 PRIVATE_LOG = None
 OPERATION_END = None
@@ -332,7 +338,10 @@ print("CC_SITES="+json.dumps(sorted(x.name for x in p.iterdir() if (x/"site_conf
             'native backup encryption differs from verified restore path')
     require(value.get('CC_UAT_IMAGE') == 'centrochange-single:goal02-fixture-d1892e0',
             'base application env drift')
-    require(not ACTIVE_OVERLAY.exists(), 'candidate overlay unexpectedly present')
+    require(not ACTIVE_OVERLAY.exists() or
+            (ACTIVE_OVERLAY.stat().st_mode & 0o077 == 0 and
+             file_sha(ACTIVE_OVERLAY) in (RETAINED_INACTIVE_OVERLAY_SHA, file_sha(OVERLAY))),
+            'inactive candidate overlay drift')
     schema = schema_fingerprint(module)
     permissions = permission_fingerprint(module)
     return {'files': files, 'baseline': baseline, 'services': services, 'data': data,
@@ -400,6 +409,16 @@ def build_candidate(paths, output):
                 f'{relative}: source content drift')
         target.write_bytes(data)
         commands.append(f'COPY --chown=frappe:frappe {relative} apps/centrochange_core/centrochange_core/{relative}')
+    # The same frontend image serves host 8082 but listens on container 8080.
+    # Frappe's pinned realtime worker fetches its Origin internally; install the
+    # exact, versioned nginx template without patching a running container.
+    template = FRONTEND_TEMPLATE.read_bytes()
+    require(template.count(b'proxy_set_header Origin http://${FRAPPE_SITE_NAME_HEADER}:${NGINX_LISTEN_PORT};') == 1,
+            'frontend internal Origin route missing or ambiguous')
+    (context / 'issue139_frontend.conf.template').write_bytes(template)
+    commands.append('USER root')
+    commands.append(f'COPY issue139_frontend.conf.template {IMAGE_FRONTEND_TEMPLATE}')
+    commands.append('USER frappe')
     commands.append(f'LABEL centrochange.source="{SOURCE}" centrochange.issue="139"')
     (context / 'Dockerfile').write_text('\n'.join(commands) + '\n')
     run(['docker', 'build', '--pull=false', '--network=none', '-t', IMAGE,
@@ -420,6 +439,9 @@ def build_candidate(paths, output):
                              '--entrypoint', 'python', IMAGE, '-c', check]).stdout)
     require(all(actual[p.removeprefix(APP_PREFIX)] == file_sha(REPO / p) for p in paths),
             'candidate application file hashes mismatch')
+    observed_template = run_bytes(['docker', 'run', '--rm', '--network=none', '--read-only',
+                                   '--entrypoint', 'cat', IMAGE, IMAGE_FRONTEND_TEMPLATE])
+    require(sha(observed_template) == sha(template), 'candidate nginx template mismatch')
     return observed['Id']
 
 
@@ -623,6 +645,38 @@ def asset_probe(paths):
     return {'manifest_mapping_count': cache['manifest_count'], 'direct_assets_verified': checked}
 
 
+def realtime_probe():
+    rendered = run(['docker', 'exec', 'centrochange-dev-frontend-1',
+                    'cat', '/etc/nginx/conf.d/frappe.conf']).stdout
+    require('proxy_set_header Origin http://centrochange.local:8080;' in rendered
+            and 'proxy_set_header Host centrochange.local;' in rendered
+            and 'if ($cc_realtime_public_origin_valid = 0) { return 403; }' in rendered,
+            'running frontend realtime proxy differs from pinned route')
+    internal = run(['docker', 'exec', 'centrochange-dev-websocket-1', 'node', '-e',
+                    'fetch("http://centrochange.local:8080/api/method/frappe.realtime.get_user_info")'
+                    '.then(r=>process.exit(r.status<500?0:2)).catch(()=>process.exit(3))'],
+                   check=False)
+    require(internal.returncode == 0, 'websocket cannot reach Frappe via internal port 8080')
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    url = 'http://127.0.0.1:8082/socket.io/?EIO=4&transport=polling'
+    for host, origin, expected in [
+        ('centrochange.local:8082', 'http://centrochange.local:8082', 200),
+        ('127.0.0.1:8082', 'http://127.0.0.1:8082', 200),
+        ('centrochange.local:8082', 'http://127.0.0.1:8082', 403),
+        ('centrochange.local:8082', 'http://invalid.example', 403),
+        ('invalid.example:8082', 'http://invalid.example:8082', 403),
+    ]:
+        request = urllib.request.Request(url, headers={'Host': host, 'Origin': origin})
+        try:
+            with opener.open(request, timeout=10) as response:
+                status = response.status
+        except urllib.error.HTTPError as error:
+            status = error.code
+        require(status == expected, f'realtime Origin gate returned {status}, expected {expected}')
+    return {'internal_frontend_port': 8080, 'public_browser_port': 8082,
+            'canonical_and_tunnel_origins': 200, 'foreign_and_mismatched_origins': 403}
+
+
 def browser(script, output, *, role=None, width=None):
     account = pwd.getpwnam('empv26')
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -812,6 +866,7 @@ def execute(executor_sha, gate_path):
                 'websocket cannot resolve realtime Origin host')
         source_probe(pre['module'], paths)
         report['tests']['assets'] = asset_probe(paths)
+        report['tests']['realtime_proxy'] = realtime_probe()
         require(pre['module'].hooks() == pre['module'].GUARDS, 'security hooks changed')
         require(pre['module'].runtime_fingerprint() == after_data,
                 'data changed during application start')
