@@ -21,7 +21,8 @@ class InstallContract(unittest.TestCase):
             with self.assertRaises(module.Stop):
                 module.retained_candidate_present()
         with patch.object(module, 'run', return_value=SimpleNamespace(returncode=1)):
-            self.assertFalse(module.retained_candidate_present())
+            with self.assertRaises(module.Stop):
+                module.retained_candidate_present()
 
     def test_chromium_failure_retains_safe_diagnostic(self):
         output = '/tmp/synthetic-output'
@@ -63,8 +64,10 @@ class InstallContract(unittest.TestCase):
         self.assertEqual(call.call_args.kwargs['input'], 'print(1)')
 
     def test_authorized_application_delta(self):
-        names = module.git('diff', '--name-only', module.BASE, module.SOURCE, '--', module.REL).stdout.splitlines()
+        names = module.git('diff', '--name-only', module.BASE, module.AB_SOURCE, '--', module.REL).stdout.splitlines()
         self.assertEqual(names, sorted(module.REL + x for x in module.CHANGED))
+        fixture_names = module.git('diff', '--name-only', module.AB_SOURCE, module.SOURCE, '--', module.REL).stdout.splitlines()
+        self.assertEqual(fixture_names, sorted(module.REL + x for x in module.FIXTURE_CHANGED))
         self.assertEqual(module.digest(module.git_file(module.SOURCE,module.CSS_FILE)), module.CSS_SHA)
         self.assertNotEqual(module.git('merge-base',module.EXCLUDED,module.SOURCE).stdout.strip(),module.EXCLUDED)
 

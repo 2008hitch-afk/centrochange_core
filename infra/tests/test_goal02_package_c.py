@@ -8,6 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 HOOKS = ROOT / 'app/centrochange_core/centrochange_core/hooks.py'
 BASE = '2f0aa47f51d452a3e711cb838b1dd350611cb6cb'
+AB_SOURCE = '90817de65312becb6888ef60a8caa5c679248fb0'
 REQUIRED = {
     'centrochange_core.finance.request_guard.before_request',
     'centrochange_core.security.diagnostics.before_request',
@@ -35,7 +36,7 @@ class ConsolidationTests(unittest.TestCase):
         self.assertEqual(len(set(initial + appended)), 6)
 
     def test_package_changes_do_not_touch_security_or_business_modules(self):
-        changed = subprocess.check_output(['git', 'diff', '--name-only', BASE, 'HEAD'],
+        changed = subprocess.check_output(['git', 'diff', '--name-only', BASE, AB_SOURCE],
                                           cwd=ROOT, text=True).splitlines()
         forbidden = ('/security/', '/finance/', '/scheduling/', '/operations/', '/doctype/')
         app = [name for name in changed if name.startswith('app/')]

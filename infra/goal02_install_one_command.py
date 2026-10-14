@@ -26,22 +26,26 @@ import urllib.request
 REPO = Path(__file__).resolve().parent.parent
 STATE = Path('/home/empv26/.local/state/centrochange-single')
 ENV = STATE / 'runtime.env'
-SOURCE = '90817de65312becb6888ef60a8caa5c679248fb0'
+AB_SOURCE = '90817de65312becb6888ef60a8caa5c679248fb0'
+SOURCE = '83f8f4f97b74e25e73710b6fc3667be0ae473fce'
 BASE = '2f0aa47f51d452a3e711cb838b1dd350611cb6cb'
 EXCLUDED = '382042c493dc07db142ce1e1abc2159060444f49'
 BASE_IMAGE = 'sha256:f38215267771e4db2e42af9312211931dc039b07ff17b69953c10f50026c6285'
 CSS_IMAGE = 'centrochange-single:issue79-css-f3ab9d5ddf9f'
 CSS_SHA = 'f3ab9d5ddf9f15e63b576a5656331169067af6d722cdea6d79b8c5ca644fe27d'
-TARGET = 'centrochange-single:goal02-abc-90817de'
+PRIOR_CANDIDATE = 'centrochange-single:goal02-abc-90817de'
+TARGET = 'centrochange-single:goal02-abc-fixture-83f8f4f'
 RETAINED_CANDIDATE_IMAGE = 'sha256:5ec8db83748fdc9d46bfd862a85930b9e8416aec1049afabca21faa15a5cdf1e'
+EXPECTED_DATA_SHA = '0454ed99df64c29a6d1c81e033b560d8fe96cf98826ab3d96ecdf52f4e21944a'
 EXPECTED_ENV_SHA = 'd2e2e2849b0507f9bcfe8de78d48dc81cdb59d705aa62a765e96eea60429f080'
 OLD_OVERRIDE_SHA = 'f68f3da5adc5ed8b3ec907602f8a5ff671735b5265aeb3a6c7fafeed4cdb4a8f'
+STALE_CANDIDATE_OVERRIDE_SHA = '36bfbc37da334893385da8046f1df639e690eff15748ca5332a52858cd23c4f6'
 COMPOSE_DIR = Path('/tmp/centrochange-issue124/infra')
 COMPOSE_NAMES = ('compose.yaml', 'compose.issue124.yaml', 'compose.uat.yaml')
 COMPOSE_SHA = ('5df3c081f4afff41e6e07222405a4d311bc75eeb1fa97c1045834115e5a0a67d',
                'ced6e5d2af243bfefbd368ddc46e49de0381bf36c25d05109a13413b59bd7917',
                '982fd1cd6253c331482af430a64f9a0b9d1ba205af8a37fd31a1e4cf2a10ade7')
-OVERRIDE_SOURCE = REPO / 'infra/compose.goal02_candidate.yaml'
+OVERRIDE_SOURCE = REPO / 'infra/compose.goal02_retry.yaml'
 OVERRIDE = STATE / 'compose.goal02_candidate.yaml'
 APP = ('backend', 'frontend', 'websocket', 'queue-short', 'queue-long', 'scheduler')
 TECH = ('db', 'redis-cache', 'redis-queue')
@@ -51,6 +55,7 @@ CSS_FILE = 'centro_change_core/page/cc_unified_desk/cc_unified_desk.css'
 CHANGED = ('public/css/workspace.css', 'public/js/audit_view.js',
            'public/js/finance_workspace.js', 'public/js/ui_labels.js',
            'public/js/workspace.js')
+FIXTURE_CHANGED = ('security/dev_acceptance.py', 'security/fixture_cleanup.py')
 GUARDS = ['centrochange_core.finance.request_guard.before_request',
           'centrochange_core.security.diagnostics.before_request',
           'centrochange_core.security.api.before_request',
@@ -111,31 +116,48 @@ def static_gate(script_sha):
                                 'infra/browser/goal02_abc_live.cjs',
                                 'infra/browser/issue79_unified_autocomplete.cjs',
                                 'infra/tests/test_goal02_install.py',
+                                'infra/tests/test_goal02_package_c.py',
+                                'infra/tests/test_goal02_cleanup.py',
+                                'infra/goal02_targeted_regression.py',
+                                'infra/goal02_orphan_cleanup.py',
+                                'infra/compose.goal02_retry.yaml',
                                 'docs/evidence/goal-02/GOAL02-CONTROLLED-INSTALL-',
-                                'docs/evidence/goal-02/GOAL02-ROLLBACK-DIAGNOSIS-')) for x in executor_delta),
+                                'docs/evidence/goal-02/GOAL02-ROLLBACK-DIAGNOSIS-',
+                                'docs/evidence/goal-02/GOAL02-ROLLBACK-RECOVERY-PLAN-',
+                                'docs/evidence/goal-02/GOAL02-CONTROLLED-RETRY-ROLLBACK-FAILED-',
+                                'docs/evidence/goal-02/GOAL02-CLEANUP-')) for x in executor_delta),
             'executor branch includes unapproved application changes')
     require(not git('status', '--porcelain').stdout.strip(), 'executor checkout is not clean')
-    require(git('merge-base', BASE, SOURCE).stdout.strip() == BASE, '#129 is not ancestor')
+    require(git('merge-base', BASE, AB_SOURCE).stdout.strip() == BASE, '#129 is not ancestor')
+    require(git('merge-base', AB_SOURCE, SOURCE).stdout.strip() == AB_SOURCE,
+            'fixture source does not descend from exact approved A+B candidate')
     for ancestor in ('6f8a8f5f28ebc39f8e25eecd10086a601fc21419',
                      'cb21cc2f74d3c99a31c9d9b82b080bc39bea5b87',
                      'dbb02b389e83f2cff0b05dde2689793797fe3e6f',
                      'f0521445257a8298c35d8056c94f7a7b64254f0e',
                      'f403a60166b99aaad3fc9374bfb2eb1ebc4cb438',
                      'cf662ed7f5d46902badc3a034fc1322a9e8ee090'):
-        require(git('merge-base', ancestor, SOURCE).stdout.strip() == ancestor,
+        require(git('merge-base', ancestor, AB_SOURCE).stdout.strip() == ancestor,
                 'approved PR ancestry drift')
     require(git('merge-base', EXCLUDED, SOURCE).stdout.strip() != EXCLUDED, '#128 unexpectedly included')
-    require(git('diff', '--name-only', BASE, SOURCE, '--', REL).stdout.splitlines() ==
+    require(git('diff', '--name-only', BASE, AB_SOURCE, '--', REL).stdout.splitlines() ==
             sorted(REL + path for path in CHANGED), 'candidate application delta differs from A+B')
-    for relative in CHANGED + (CSS_FILE, 'hooks.py', 'security/dev_acceptance.py'):
+    require(git('diff', '--name-only', AB_SOURCE, SOURCE, '--', REL).stdout.splitlines() ==
+            sorted(REL + path for path in FIXTURE_CHANGED), 'fixture candidate source delta drift')
+    for relative in CHANGED + FIXTURE_CHANGED + (CSS_FILE, 'hooks.py'):
         require(git_file(SOURCE, relative), f'missing pinned file: {relative}')
+    require(all(digest(git_file(AB_SOURCE, path)) == digest(git_file(SOURCE, path))
+                for path in CHANGED + (CSS_FILE, 'hooks.py')),
+            'approved A+B/CSS/security baseline drift')
     require(digest(git_file(SOURCE, CSS_FILE)) == CSS_SHA, '#79 CSS missing from candidate')
     for name, sha in zip(COMPOSE_NAMES, COMPOSE_SHA):
         require(file_sha(COMPOSE_DIR / name) == sha, f'{name} drift')
     require(file_sha(STATE / 'compose.issue79.yaml') == OLD_OVERRIDE_SHA, '#79 override drift')
     require(file_sha(ENV) == EXPECTED_ENV_SHA and ENV.stat().st_mode & 0o077 == 0,
             'private runtime env drift or unsafe mode')
-    require(OVERRIDE_SOURCE.is_file() and not OVERRIDE.exists(), 'candidate override missing or already deployed')
+    require(OVERRIDE_SOURCE.is_file() and OVERRIDE.exists() and
+            file_sha(OVERRIDE) == STALE_CANDIDATE_OVERRIDE_SHA,
+            'inactive prior candidate override missing or changed')
     raw = ENV.read_text()
     settings = dict(line.split('=', 1) for line in raw.splitlines() if '=' in line and not line.startswith('#'))
     expected_files = ':'.join(str(COMPOSE_DIR / x) for x in COMPOSE_NAMES) + ':' + str(STATE / 'compose.issue79.yaml')
@@ -143,6 +165,7 @@ def static_gate(script_sha):
             settings.get('COMPOSE_FILE') == expected_files, 'Site, port or Compose precedence drift')
     require(settings.get('CC_UAT_IMAGE') == 'centrochange-single:goal02-fixture-d1892e0',
             'configured five-service base image drift')
+    require(str(OVERRIDE) not in settings['COMPOSE_FILE'], 'prior candidate override unexpectedly active')
     require(Path(NODE_MODULES, 'playwright/package.json').is_file() and Path(CHROMIUM).is_file(),
             'Chromium prerequisites unavailable')
     return settings
@@ -167,11 +190,11 @@ def image_id(ref):
 
 
 def retained_candidate_present():
-    existing = run(['docker','image','inspect',TARGET], allow_fail=True)
-    if existing.returncode:
-        return False
-    require(image_id(TARGET) == RETAINED_CANDIDATE_IMAGE,
-            'retained candidate tag differs from verified rolled-back build')
+    existing = run(['docker','image','inspect',PRIOR_CANDIDATE], allow_fail=True)
+    require(existing.returncode == 0,
+            'approved A+B candidate image is unavailable')
+    require(image_id(PRIOR_CANDIDATE) == RETAINED_CANDIDATE_IMAGE,
+            'approved A+B candidate tag differs from verified build')
     return True
 
 
@@ -318,6 +341,9 @@ print("CC_SITE_JSON="+json.dumps({"sites":names,"config_sha256":hashlib.sha256((
             'currently served A+B base asset drift')
     before_data = runtime_fingerprint()
     require(before_data['counts']['Patient'] > 0, 'synthetic data inventory unexpectedly empty')
+    require(before_data['sha256'] == EXPECTED_DATA_SHA, 'restored synthetic data fingerprint drift')
+    require(run(['docker','image','inspect',TARGET],allow_fail=True).returncode != 0,
+            'new candidate tag unexpectedly exists before the authorized build')
     return before, current, before_data, site_info
 
 
@@ -418,9 +444,10 @@ def apply(script_sha):
     require(run(['runuser','-u','empv26','--','test','-w',str(evidence)]).returncode == 0,
             'browser evidence is not writable')
     original = ENV.read_bytes(); original_stat = ENV.stat()
+    old_override = OVERRIDE.read_bytes(); old_override_stat = OVERRIDE.stat()
     checkpoint = run_dir / 'checkpoint'
     checkpoint.mkdir(mode=0o700)
-    for path in [ENV, *(COMPOSE_DIR / x for x in COMPOSE_NAMES), STATE / 'compose.issue79.yaml']:
+    for path in [ENV, *(COMPOSE_DIR / x for x in COMPOSE_NAMES), STATE / 'compose.issue79.yaml', OVERRIDE]:
         target = checkpoint / path.name
         target.write_bytes(path.read_bytes());target.chmod(0o600)
         require(file_sha(target) == file_sha(path), 'checkpoint copy mismatch')
@@ -429,7 +456,7 @@ def apply(script_sha):
               'before_images':{s:before[s]['image'] for s in APP + TECH},
               'before_data':before_data,'before_site':site_info,
               'before_env_sha256':digest(original),'checkpoint':str(checkpoint),
-              'source_delta':list(CHANGED),'tests':{}}
+              'source_delta':list(CHANGED + FIXTURE_CHANGED),'tests':{}}
     write_report(report_path, report)
     # Immutable rollback tags for all six app services; no service is switched yet.
     for name in APP:
@@ -442,38 +469,35 @@ def apply(script_sha):
     activation_started = False
     try:
         build = run_dir / 'build';build.mkdir(mode=0o700)
-        for relative in CHANGED:
+        for relative in FIXTURE_CHANGED:
             target = build / relative;target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(git_file(SOURCE, relative))
             require(file_sha(target) == digest(git_file(SOURCE, relative)), 'build context mismatch')
-        recipe = ['FROM ' + CSS_IMAGE, 'USER frappe', 'WORKDIR /home/frappe/frappe-bench']
-        for relative in CHANGED:
+        recipe = ['FROM ' + PRIOR_CANDIDATE, 'USER frappe', 'WORKDIR /home/frappe/frappe-bench']
+        for relative in FIXTURE_CHANGED:
             recipe.append('COPY --chown=frappe:frappe ' + relative + ' apps/centrochange_core/centrochange_core/' + relative)
-        recipe += ['RUN bench build --force && cp -a sites/assets/. assets/',
-                   'LABEL centrochange.goal="02" centrochange.source="'+SOURCE+'"', '']
+        recipe += ['LABEL centrochange.goal="02" centrochange.source="'+SOURCE+'"', '']
         (build / 'Dockerfile').write_text('\n'.join(recipe))
-        if retained_candidate_present():
-            report['candidate_reused'] = True
-        else:
-            run(['docker','build','--pull=false','--no-cache','-t',TARGET,'-f',str(build / 'Dockerfile'),str(build)])
-            report['candidate_reused'] = False
+        retained_candidate_present()
+        run(['docker','build','--pull=false','--no-cache','-t',TARGET,'-f',str(build / 'Dockerfile'),str(build)])
+        report['prior_candidate_reused'] = True
         target_id = image_id(TARGET)
         require(target_id != before['backend']['image'], 'candidate image unchanged')
         # Image labels and exact contents, including retained #79 CSS.
         candidate = json.loads(run(['docker','image','inspect',TARGET]).stdout)[0]
         require(candidate['Config']['Labels']['centrochange.source'] == SOURCE, 'candidate source label mismatch')
-        base_image = json.loads(run(['docker','image','inspect',CSS_IMAGE]).stdout)[0]
+        base_image = json.loads(run(['docker','image','inspect',PRIOR_CANDIDATE]).stdout)[0]
         base_layers = base_image['RootFS']['Layers']
         require(candidate['RootFS']['Layers'][:len(base_layers)] == base_layers and
                 len(candidate['RootFS']['Layers']) > len(base_layers),
-                'candidate image does not derive from accepted #79 image')
+                'candidate image does not derive from approved A+B/#79 image')
         for key in ('Entrypoint','Cmd','User','Env','WorkingDir','ExposedPorts','Volumes'):
             require(candidate['Config'].get(key) == base_image['Config'].get(key),
                     f'candidate runtime config changed: {key}')
         check = run(['docker','run','--rm','--network','none','--read-only','--entrypoint','python',TARGET,
                      '-c', 'import hashlib,json,pathlib; p=pathlib.Path("'+IMAGE_REL+'"); '
                            'print(json.dumps({x:hashlib.sha256((p/x).read_bytes()).hexdigest() for x in '+
-                           repr(list(CHANGED) + [CSS_FILE])+ '}))'])
+                           repr(list(CHANGED + FIXTURE_CHANGED) + [CSS_FILE])+ '}))'])
         image_files = json.loads(check.stdout)
         require(all(image_files[p] == digest(git_file(SOURCE,p)) for p in image_files),
                 'candidate app file mismatch')
@@ -500,7 +524,7 @@ def apply(script_sha):
         require(all(after[s] == before[s] for s in TECH), 'database or Redis changed')
         require(hooks() == GUARDS and runtime_fingerprint() == before_data,
                 'security hooks or synthetic records changed')
-        require(app_hashes(list(CHANGED) + [CSS_FILE]) == image_files,
+        require(app_hashes(list(CHANGED + FIXTURE_CHANGED) + [CSS_FILE]) == image_files,
                 'running candidate source differs from image')
         live_assets = served_assets()
         require(all(live_assets[p] == digest(git_file(SOURCE,p)) for p in CHANGED),
@@ -547,8 +571,10 @@ def apply(script_sha):
                         app_hashes([CSS_FILE])[CSS_FILE] == CSS_SHA, 'rollback security, data or #79 mismatch')
                 require(all(served_assets()[p] == digest(git_file(BASE,p)) for p in CHANGED),
                         'rollback served assets mismatch')
-                if OVERRIDE.exists() and file_sha(OVERRIDE) == file_sha(OVERRIDE_SOURCE):
-                    OVERRIDE.unlink()
+                atomic_bytes(OVERRIDE, old_override, old_override_stat.st_mode & 0o777,
+                             (old_override_stat.st_uid, old_override_stat.st_gid))
+                require(file_sha(OVERRIDE) == STALE_CANDIDATE_OVERRIDE_SHA,
+                        'rollback inactive candidate override mismatch')
                 report['status'] = 'ROLLED_BACK' if activation_started else 'BLOCKED'
             except Exception as rollback_error:
                 report['status'] = 'ROLLBACK_FAILED'

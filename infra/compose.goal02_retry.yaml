@@ -1,0 +1,20 @@
+# Future GOAL-02 A+B fixture-corrected candidate; use only after new Owner deploy authorization.
+services:
+  backend:
+    image: centrochange-single:goal02-abc-fixture-83f8f4f
+    pull_policy: never
+  frontend:
+    image: centrochange-single:goal02-abc-fixture-83f8f4f
+    pull_policy: never
+  websocket:
+    image: centrochange-single:goal02-abc-fixture-83f8f4f
+    pull_policy: never
+  queue-short:
+    image: centrochange-single:goal02-abc-fixture-83f8f4f
+    pull_policy: never
+  queue-long:
+    image: centrochange-single:goal02-abc-fixture-83f8f4f
+    pull_policy: never
+  scheduler:
+    image: centrochange-single:goal02-abc-fixture-83f8f4f
+    pull_policy: never
