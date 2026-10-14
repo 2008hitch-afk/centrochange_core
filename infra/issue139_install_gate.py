@@ -64,7 +64,7 @@ DEPENDENCY_SHA = {
     'infra/compose.issue139_candidate.yaml': '7b8eb76ed9e8e6b044ab859b6e09c87d969e9d655a725f3a01e83d3884202713',
     'infra/issue139_asset_cache_gate.py': '417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361',
     'infra/goal02_install_one_command.py': '607578830188ab47a5c9d062e0848d5ef2c38c8a5422b503326f30d166592ac5',
-    'infra/issue137_safe_security_run.py': '0ed4a0f28df6f7c349513eb06f7fdb15e4e66bdd922440c56d119f5d407da0b3',
+    'infra/issue137_safe_security_run.py': 'fb71b91329cecf67c2b62b7c60add0f2a84613cb5d24f209644993867c9ccb83',
     'infra/security_acceptance.py': '80215aa8047bf7ef9066e74fabfdbef354dd860cd001215779b391441526195b',
     'infra/browser/issue137_owner_uat_sweep.cjs': '62fa5855a3e8216c18015ba5fc399f614872577a249c615aa44889bb2baf17c9',
     'infra/browser/issue139_native_renderer.cjs': '1f7f2ade73f2eb046ce328f0ebf1f5aebe41fc80fb584f01bd9c4efabc208487',
@@ -677,6 +677,14 @@ def realtime_probe():
             'canonical_and_tunnel_origins': 200, 'foreign_and_mismatched_origins': 403}
 
 
+def security_command(expected_data, expected_communication):
+    # The child runner refuses non-isolated Python. sys.executable alone does
+    # not preserve -I from this executor's own command line.
+    return [sys.executable, '-I', str(REPO / 'infra/issue137_safe_security_run.py'),
+            '--expected-data', expected_data,
+            '--expected-communication', expected_communication]
+
+
 def browser(script, output, *, role=None, width=None):
     account = pwd.getpwnam('empv26')
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -905,9 +913,8 @@ def execute(executor_sha, gate_path):
             admin_fixture.unlink(missing_ok=True)
         require(pre['module'].runtime_fingerprint() == after_data,
                 'read-only W5 altered Owner data')
-        safety = run([sys.executable, str(REPO / 'infra/issue137_safe_security_run.py'),
-                      '--expected-data', after_data['sha256'], '--expected-communication',
-                      after_data['communication_sha256']], cwd=REPO, check=False)
+        safety = run(security_command(after_data['sha256'],
+                                      after_data['communication_sha256']), cwd=REPO, check=False)
         private_write(output / 'security-run.log', (safety.stdout + '\n' + safety.stderr).encode())
         require(safety.returncode == 0, '38-control fixture security suite failed')
         result = json.loads(safety.stdout.splitlines()[-1])

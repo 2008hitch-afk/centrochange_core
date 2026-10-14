@@ -17,6 +17,14 @@ spec.loader.exec_module(gate)
 
 
 class InstallationGateTests(unittest.TestCase):
+    def test_security_runner_keeps_isolated_python_in_both_processes(self):
+        command = gate.security_command('data-sha', 'communication-sha')
+        self.assertEqual(command[:2], [gate.sys.executable, '-I'])
+        self.assertEqual(command[-4:], ['--expected-data', 'data-sha',
+                                        '--expected-communication', 'communication-sha'])
+        inner = (gate.REPO / 'infra/issue137_safe_security_run.py').read_text()
+        self.assertIn("command = [sys.executable, '-I',", inner)
+
     def test_versioned_realtime_proxy_keeps_public_origin_and_internal_auth_route(self):
         template = gate.FRONTEND_TEMPLATE.read_text()
         for allowed in ('"centrochange.local:8082" 1;',

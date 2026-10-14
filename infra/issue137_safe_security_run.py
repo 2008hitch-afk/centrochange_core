@@ -34,7 +34,7 @@ def main():
     run_dir = STATE / 'browser-evidence' / ('issue137-fixture-' + time.strftime('%Y%m%dT%H%M%SZ', time.gmtime()))
     run_dir.mkdir(mode=0o700)
     (run_dir / 'before.json').write_text(json.dumps(before, sort_keys=True))
-    command = [sys.executable, str(REPO / 'infra/security_acceptance.py'), '--env-file',
+    command = [sys.executable, '-I', str(REPO / 'infra/security_acceptance.py'), '--env-file',
                str(STATE / 'runtime.env'), '--with-booking', '--with-operations']
     result = subprocess.run(command, cwd=REPO, capture_output=True, text=True)
     (run_dir / 'suite.log').write_text(result.stdout + '\n' + result.stderr)
