@@ -13,7 +13,10 @@ function confirmationText(markup){const doc=new DOMParser().parseFromString(Stri
 function options(rows,label='name',value='name'){return rows.map(row=>typeof row==='string'?`<option value="${esc(row)}">${esc(row)}</option>`:`<option value="${esc(row[value])}">${esc(row[label]||row[value])}</option>`).join('');}
 function label(text,markup){return `<label>${esc(text)}${markup}</label>`;}
 function select(name,rows,textField='name',required=true){return `<select name="${name}" ${required?'required':''}><option value="">Seleziona</option>${options(rows,textField)}</select>`;}
-function input(name,type='text',value='',required=true){return `<input name="${name}" type="${type}" value="${esc(value)}" ${required?'required':''}>`;}
+function input(name,type='text',value='',required=true){
+  if(type==='time')return `<input name="${name}" type="text" inputmode="numeric" autocomplete="off" placeholder="HH:mm" pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" title="Usa il formato 24 ore HH:mm" value="${esc(String(value).slice(0,5))}" ${required?'required':''}>`;
+  return `<input name="${name}" type="${type}" value="${esc(value)}" ${required?'required':''}>`;
+}
 const reason=()=>label('Motivo (obbligatorio)','<textarea name="reason" required maxlength="2000"></textarea>');
 function modal(title,fields,action){
   $('#modal-title').textContent=title;$('#modal-fields').innerHTML=fields;$('#modal-error').textContent='';$('#modal-submit').disabled=false;

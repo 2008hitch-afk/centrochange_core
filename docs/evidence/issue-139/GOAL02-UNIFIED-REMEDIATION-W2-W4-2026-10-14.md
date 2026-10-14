@@ -11,6 +11,7 @@
 ## W3 — date/ore e storia
 
 - Helper Europe/Rome per calendario e intervalli su cambio ora legale/solare (5 test). Nessuna conversione del valore canonico DB/API. Le azioni seduta presentate dalla UI rispettano stato e ruolo; il backend rimane autoritativo (7 test).
+- I campi ora dell'Agenda (prenotazione, spostamento, disponibilità, assenza) propongono `HH:mm` 24 ore con validazione browser indipendente dalla lingua del sistema. Prova Chromium `en-US` e `it-IT`: `09:00` e `23:59` validi, `09:00 AM` e `24:00` rifiutati. È ancora una verifica del candidato, non della versione servita.
 - La cronologia eventi seduta è letta da API esistenti con isolamento per paziente/professionista; note e revisioni sono distinte. Due test offline controllano isolamento e forma dei dati.
 - La localizzazione globale di errori, picker, stampa e superfici native richiesta da #134 resta **non completata e non collaudata live**. Nessun PASS W3 globale.
 
@@ -24,6 +25,7 @@
 
 - `python3 -m unittest discover -s infra/tests -p 'test_*.py' -q`: 36 PASS.
 - `node infra/tests/issue139_rome_date.cjs`: 5 PASS; `node infra/tests/issue139_session_actions.cjs`: 7 PASS.
+- `node infra/browser/issue139_time_control.cjs`: `en-US` e `it-IT` PASS con Chromium reale.
 - `node --check` sui JS modificati e sul browser runner, `compileall` sui moduli Python modificati, `git diff --check`: PASS.
 - Il CSS candidato è stato testato in Chromium senza scrivere al runtime. **I test W5 delle 128 combinazioni e 38 controlli sintetici sul candidato non sono stati eseguiti:** richiedono prima installazione autorizzata, preflight, checkpoint e rollback.
 
