@@ -28,7 +28,8 @@ def set_operational(center, active, reason):
     before = int(doc.cc_operational or 0)
     if before == target:
         return {"center": doc.name, "active": before, "replay": True}
-    if target and doc.name not in (frappe.conf.get("cc_operational_activation_allowed") or []):
+    allowed = frappe.conf.get("cc_operational_activation_allowed") or []
+    if target and (not isinstance(allowed, (list, tuple)) or doc.name not in allowed):
         frappe.throw("L'attivazione della sede richiede una decisione e configurazione autorizzate.",
                      frappe.PermissionError)
     if not target:

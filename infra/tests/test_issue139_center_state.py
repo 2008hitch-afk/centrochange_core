@@ -89,6 +89,12 @@ class CenterStateTests(unittest.TestCase):
         self.assertFalse(self.branch.saved)
         self.assertEqual(self.audit, [])
 
+    def test_activation_gate_rejects_string_configuration(self):
+        self.conf["cc_operational_activation_allowed"] = "Centro B"
+        with self.assertRaisesRegex(Denied, "decisione"):
+            self.module.set_operational("Centro B", "1", "Preparo la sede")
+        self.assertFalse(self.branch.saved)
+
     def test_replay_is_idempotent(self):
         result = self.module.set_operational("Centro B", "0", "Già inattiva")
         self.assertTrue(result["replay"])
