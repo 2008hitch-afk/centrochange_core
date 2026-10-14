@@ -33,6 +33,10 @@ class FakeBranch:
 
 
 class CenterStateTests(unittest.TestCase):
+    def test_new_operational_field_fails_closed_until_audited_activation(self):
+        definition = (ROOT / "security/install.py").read_text()
+        self.assertRegex(definition, r'"fieldname":"cc_operational"[^\n]*"default":"0"')
+
     def setUp(self):
         self.branch = FakeBranch()
         self.audit = []

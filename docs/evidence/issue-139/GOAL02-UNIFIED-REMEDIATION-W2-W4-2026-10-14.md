@@ -6,9 +6,9 @@ Ultimo controllo read-only: nove servizi `centrochange-dev` attivi, `assets_json
 
 ## W2 — sede operativa
 
-- `Branch.cc_operational` è proposto come Custom Field versionato. `set_operational` è riservato alla Direzione, richiede motivo, scrive audit e consente riattivazione solo con lista esplicita nella configurazione del Site. Una stringa di configurazione non vale come allowlist.
+- `Branch.cc_operational` è proposto come Custom Field versionato con default **0 (non operativa)**, così una migrazione incompleta non rende Centro B prenotabile. `set_operational` è riservato alla Direzione, richiede motivo, scrive audit e consente riattivazione solo con lista esplicita nella configurazione del Site. Una stringa di configurazione non vale come allowlist.
 - Guard server-side per nuove operazioni in Agenda, disponibilità, prenotazione pubblica, amministrazione e Finance; i selettori mostrano soltanto sedi operative. `Gestione → Centri` espone lo stato alla Direzione. La route pubblica restituisce un errore generico se la sede è inattiva, evitando la divulgazione dello stato interno.
-- Test offline positivi e negativi per stato, replay, ruoli e guard. **Non è stata eseguita la migrazione e Centro B non è stata disattivata sul Site.** Occorrono gate separati Owner per installazione/migrazione e per la transizione persistente di Centro B; la semplice disponibilità del campo non soddisfa #135 live.
+- Test offline positivi e negativi per stato, replay, ruoli, guard e default fail-closed. **Non è stata eseguita la migrazione e Centro B non è stata disattivata sul Site.** Il gate Owner dovrà autorizzare una finestra controllata per migrazione, attivazione auditata di Centro A e permanenza inattiva di Centro B, con snapshot e recupero dei dati. La sola disponibilità del campo non soddisfa #135 live.
 
 ## W3 — date/ore e storia
 
@@ -36,7 +36,7 @@ Ultimo controllo read-only: nove servizi `centrochange-dev` attivi, `assets_json
 
 ## Test ed evidenze
 
-- `python3 -m unittest discover -s infra/tests -p 'test_*.py' -q`: 37 PASS.
+- `python3 -m unittest discover -s infra/tests -p 'test_*.py' -q`: 38 PASS.
 - `node infra/tests/issue139_rome_date.cjs`: 5 PASS; `node infra/tests/issue139_session_actions.cjs`: 7 PASS.
 - `node infra/browser/issue139_time_control.cjs`: `en-US` e `it-IT` PASS con Chromium reale.
 - `node infra/tests/issue139_fiscal_outcome.cjs`: 4 stati fiscali simulati PASS.
