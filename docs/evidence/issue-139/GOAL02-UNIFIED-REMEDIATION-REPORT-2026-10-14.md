@@ -1,6 +1,6 @@
 # GOAL-02 / #139 — unified remediation report — 14/10/2026
 
-**Esito finale dopo due installazioni autorizzate distinte: `ROLLED_BACK` / `PARTIAL`.** Il primo tentativo si è fermato su Socket.IO; il secondo ha superato i controlli browser ma si è fermato prima della suite sicurezza per un errore nell'invocazione del runner. Entrambi hanno eseguito **un solo rollback verificato**. Il DEV serve ancora la baseline precedente. `READY_FOR_OWNER_VISUAL_UAT` **non** è raggiunto; nessun Owner PASS, merge, produzione o GOAL-03.
+**Stato attuale dopo la terza installazione autorizzata: `READY_FOR_OWNER_VISUAL_UAT`.** Il DEV serve il candidato #139 e ha superato W5 completo, inclusa la suite di sicurezza. I primi due tentativi, descritti nelle sezioni storiche sotto, restano `ROLLED_BACK` con recupero verificato. Nessun Owner PASS, merge, produzione o GOAL-03.
 
 ## Versioni, gate e rehearsal
 
@@ -69,3 +69,27 @@ Screenshot **live del secondo tentativo**, con soli dati demo: [Agenda desktop](
 **Accesso Owner attuale:** tunnel privato `ssh -L 8082:127.0.0.1:8082 empv26@srv2033673`, quindi `http://127.0.0.1:8082`; usare le credenziali demo già custodite nel canale sicuro. Il link serve **la baseline ripristinata**, non il candidato #139. Una review finale del candidato non può essere dichiarata pronta in questo stato.
 
 **Prossimo gate:** valutazione Owner del risultato `ROLLED_BACK` e, soltanto se desiderato, autorizzazione distinta per un eventuale terzo tentativo con il nuovo executor pin e suite live completa. Nessun retry in questo mandato. La [panoramica GOAL-03](GOAL03-READONLY-PREREQUISITES-2026-10-14.md) è documentale; GOAL-03 non è stato avviato.
+
+## Terza installazione distinta — stato DEV corrente
+
+L'Owner ha autorizzato espressamente un terzo e singolo intervento, [registrato nella issue #139 prima della prima mutazione](https://github.com/2008hitch-afk/centrochange_core/issues/139#issuecomment-6180252885). PR #140 DRAFT HEAD autorizzata `e28d678bb2e7323f89f2776b884b26318faff720`; sorgente applicativo immutato `0380874fdf91c7fe191a93ec676e2c1d6f62ff7f`; executor SHA-256 `ca6df1016d2876da959745366ca7f4fb90b6c3d9b3a13067aec09a6c0340fc5b`. Il preflight read-only ha confermato nove servizi baseline, sei hook, CSS #79, env/Compose, Site, permessi e fingerprint Owner. Il tag inattivo del secondo tentativo, non usato da alcun container, è stato archiviato senza cancellare i layer prima dell'esecuzione dell'executor esatto.
+
+Il [gate UTC privato è stato registrato](https://github.com/2008hitch-afk/centrochange_core/issues/139#issuecomment-6180262196) prima della prima modifica runtime: inizio **2026-10-14 22:51:56.689555 UTC**, scadenza operativa **2026-10-15 02:51:56.689555 UTC**, recupero esclusivo fino alle **03:51:56.689555 UTC**. Report e backup cifrato privati: `~/.local/state/centrochange-single/issue139-install-runs/20261014T225220Z-3509658/`. Nessun segreto o dump è nel repository.
+
+L'executor ha creato checkpoint e backup nativo cifrato verificato, costruito e installato `sha256:2054c8d2ffe887e56bfd0a5a2a867449286e97bee76380119d3c6fcdb9e68cbc` sui **sei soli servizi applicativi**, migrato il Site e attivato Centro A una volta tramite il percorso auditato. Centro B resta inattivo; DB e due Redis non sono stati ricreati. **Esito executor: `LIVE_TECHNICAL_PASS`; nessun rollback di routine.** Una verifica read-only indipendente dopo W5 ha confermato nove servizi, sei immagini applicative candidate, sei hook, A=1/B=0 e fingerprint finale stabile.
+
+| Verifica sul DEV aggiornato | Esito |
+| --- | --- |
+| Asset e proxy realtime | **PASS**: 11 hash file serviti, 69 mapping manifest; Origin canonico/tunnel HTTP 200, estraneo o incongruente HTTP 403; porta interna 8080 e pubblica 8082 corrette |
+| Browser sette ruoli, desktop/mobile | **PASS 128/128** visite, zero FAIL e zero mutazioni inattese |
+| Liste e schede native | **PASS 11/11** coppie desktop e **11/11** mobile |
+| Administrator tecnico | **PASS** |
+| Sicurezza Centro Change | **PASS 38/38** controlli specifici, `python -I` in entrambi i processi, fixture sintetiche ripulite, snapshot dati e servizi invariati |
+| Integrità dati | **PASS**: Communication `b38c7b6334fd4010251e7258a593c49d5f4efd02c677b41860c2d08055e8c7e2` invariato; 133 CC Audit Event, cioè uno in più per l'attivazione A; fingerprint Owner finale `1c087c272824b273e2241aa842b6bb0c50aa3ba05d2876ac58727526693be84a` |
+| Accesso demo | **PASS**: frontend legato a `127.0.0.1:8082`; `/api/method/ping` HTTP 200; login e route protette verificati da Chromium |
+
+Screenshot Chromium **live del terzo tentativo**: [Agenda desktop](screenshots/w5-third-dev-agenda-desktop.png), [Agenda mobile](screenshots/w5-third-dev-agenda-mobile.png), [Pazienti](screenshots/w5-third-dev-patients-desktop.png), [Professionisti](screenshots/w5-third-dev-professionals-desktop.png), [Finanza](screenshots/w5-third-dev-finance-desktop.png), [Fattura paziente desktop](screenshots/w5-third-dev-invoice-form-desktop.png), [Fattura paziente mobile](screenshots/w5-third-dev-invoice-form-mobile.png). Le 14 sweep e le due verifiche native complete restano nell'evidenza privata `~/.local/state/centrochange-single/browser-evidence/issue139-20261014T225220Z-3509658/`.
+
+**Accesso Owner:** dal proprio computer eseguire `ssh -L 8082:127.0.0.1:8082 empv26@srv2033673`, mantenere aperta la sessione e visitare `http://127.0.0.1:8082/app/cc-unified-desk?cc_view=agenda`. Usare le credenziali demo Direzione già custodite nel canale sicuro; non sono pubblicate qui.
+
+**Rilievi visivi per la review Owner:** nella Agenda iniziale «Inizio» e «Agenda» risultano entrambi evidenziati; alcune fatture mantengono identificativi sintetici prominenti e qualche etichetta nativa in inglese. Non sono failure dei gate sicurezza/runtime. Chiarezza grafica e workflow economici completi richiedono giudizio Owner; questo report non dichiara `OWNER VISUAL PASS` né GOAL-02 concluso. La precedente frase «Prossimo gate» nella sezione storica sopra si riferisce allo stato dopo il secondo rollback ed è superata dalla presente installazione.
