@@ -1,8 +1,9 @@
 """Bounded, explicitly scoped operational projections for the primary workspace."""
 from datetime import timedelta
+import json
 import frappe
 from frappe.utils import getdate,get_time
-from centrochange_core.security.guards import enabled,is_manager,roles,require_center
+from centrochange_core.security.guards import enabled,is_manager,roles,require_center,current_rows
 from centrochange_core.operations.notes import require_context
 
 APPOINTMENT_FIELDS=['name','patient','patient_name','practitioner','practitioner_name','cc_center',
@@ -57,6 +58,36 @@ def patient_history(patient,center):
                 **balance(row.name,center)})
     return {'appointments':appointments[:100],'truncated':len(appointments)>100,
         'settlements':settlements,'organizational_notes':organizational,'private_notes':private,'packages':packages}
+
+
+@frappe.whitelist(methods=['GET'])
+def appointment_events(appointment):
+    """Operational timeline scoped to one readable appointment, without audit-table access."""
+    require_actor()
+    doc=frappe.get_doc('Patient Appointment',appointment)
+    require_context(doc.patient,doc.cc_center)
+    doc.check_permission('read')
+    allowed={'APPOINTMENT_BOOKED':('appointment_date','appointment_time'),
+             'APPOINTMENT_RESCHEDULED':('appointment_date','appointment_time'),
+             'SESSION_CANCELLED':('late','economic'),
+             'SESSION_CLOSED':('performed','economic'),
+             'SESSION_REOPENED':('closure',),
+             'ECONOMIC_WAIVER':('economic','late'),
+             'OPERATIONAL_SETTLEMENT':('paid','method')}
+    rows=current_rows('CC Audit Event',{'reference_doctype':'Patient Appointment',
+        'reference_name':doc.name,'event_type':['in',list(allowed)]},
+        fields=['event_type','actor','event_time','reason','before_state','after_state'])
+    if len(rows)>100:
+        frappe.throw('Storico troppo esteso: restringere la consultazione.')
+    result=[]
+    for row in sorted(rows,key=lambda event:event.event_time):
+        keys=allowed[row.event_type]
+        before=json.loads(row.before_state or '{}') or {}
+        after=json.loads(row.after_state or '{}') or {}
+        result.append({'event_type':row.event_type,'actor':row.actor,'event_time':row.event_time,
+                       'reason':row.reason,'before':{key:before[key] for key in keys if key in before},
+                       'after':{key:after[key] for key in keys if key in after}})
+    return result
 
 
 @frappe.whitelist()
