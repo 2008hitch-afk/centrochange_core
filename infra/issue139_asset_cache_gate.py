@@ -89,12 +89,12 @@ def probe(invalidate: bool = False) -> dict:
                            if line.startswith("CC_ASSET_GATE=")))
 
 
-def integrity() -> tuple[dict, list[str]]:
+def integrity() -> tuple[dict, list[str], dict]:
     path = Path(__file__).with_name("goal02_install_one_command.py")
     spec = importlib.util.spec_from_file_location("goal02_install_one_command", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.runtime_fingerprint(), module.hooks()
+    return module.runtime_fingerprint(), module.hooks(), module.snapshot()
 
 
 def main() -> int:
@@ -104,7 +104,10 @@ def main() -> int:
                         help="Exact authorized backend image sha256")
     args = parser.parse_args()
     image_and_scope(args.expected_image)
-    data_before, hooks_before = integrity()
+    data_before, hooks_before, services_before = integrity()
+    if any(services_before[name]["image"] != args.expected_image for name in
+           ("backend", "frontend", "websocket", "queue-short", "queue-long", "scheduler")):
+        raise RuntimeError("Six application images are not identical to expected image")
     before = probe()
     check_served_assets(before["manifest"])
     if args.invalidate:
@@ -119,9 +122,9 @@ def main() -> int:
         result = {"status": "CACHE_INVALIDATED", **after}
     else:
         result = {"status": "MATCH" if before["cache_after"] == before["manifest"] else "STALE", **before}
-    data_after, hooks_after = integrity()
-    if data_after != data_before or hooks_after != hooks_before:
-        raise RuntimeError("Synthetic data fingerprint or security hooks changed")
+    data_after, hooks_after, services_after = integrity()
+    if data_after != data_before or hooks_after != hooks_before or services_after != services_before:
+        raise RuntimeError("Synthetic data, security hooks or service identities changed")
     result["data_sha256"] = data_after["sha256"]
     result["communication_sha256"] = data_after["communication_sha256"]
     print(json.dumps(result, sort_keys=True))

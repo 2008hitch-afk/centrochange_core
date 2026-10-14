@@ -19,7 +19,9 @@ MANIFEST = {
     "report.bundle.css": "/assets/frappe/dist/css/report.bundle.NEW.css",
 }
 OLD = gate.KNOWN_STALE
-INTEGRITY = ({"sha256": "synthetic", "communication_sha256": "synthetic"}, [])
+INTEGRITY = ({"sha256": "synthetic", "communication_sha256": "synthetic"}, [],
+             {name: {"image": gate.EXPECTED_IMAGE} for name in
+              ("backend", "frontend", "websocket", "queue-short", "queue-long", "scheduler")})
 
 
 class AssetGateTests(unittest.TestCase):
