@@ -1,0 +1,21 @@
+# Persistent six-service image selection for the authorized GOAL-02 A+B candidate.
+# The prior issue-79 backend-only override stays untouched for exact rollback.
+services:
+  backend:
+    image: centrochange-single:goal02-abc-90817de
+    pull_policy: never
+  frontend:
+    image: centrochange-single:goal02-abc-90817de
+    pull_policy: never
+  websocket:
+    image: centrochange-single:goal02-abc-90817de
+    pull_policy: never
+  queue-short:
+    image: centrochange-single:goal02-abc-90817de
+    pull_policy: never
+  queue-long:
+    image: centrochange-single:goal02-abc-90817de
+    pull_policy: never
+  scheduler:
+    image: centrochange-single:goal02-abc-90817de
+    pull_policy: never
