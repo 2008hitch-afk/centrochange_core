@@ -23,6 +23,13 @@ KNOWN_STALE = {
     "erpnext.bundle.css": "/assets/erpnext/dist/css/erpnext.bundle.2XFOQZJL.css",
     "report.bundle.css": "/assets/frappe/dist/css/report.bundle.UX3MMGCD.css",
 }
+STALE_CSS_BUNDLES = {
+    "erpnext-web.bundle.css", "erpnext.bundle.css", "erpnext_email.bundle.css",
+    "desk.bundle.css", "email.bundle.css", "leaflet.bundle.css", "login.bundle.css",
+    "print.bundle.css", "print_format.bundle.css", "report.bundle.css",
+    "web_form.bundle.css", "website.bundle.css",
+}
+KNOWN_MISMATCH_KEYS = STALE_CSS_BUNDLES | {"rtl_" + key for key in STALE_CSS_BUNDLES}
 
 PROBE = r'''
 import json, pathlib, frappe
@@ -30,19 +37,25 @@ frappe.init(site="centrochange.local", sites_path="/home/frappe/frappe-bench/sit
 frappe.connect()
 keys=("desk.bundle.css", "erpnext.bundle.css", "report.bundle.css")
 manifest=json.loads(pathlib.Path("assets/assets.json").read_text())
+rtl=pathlib.Path("assets/assets-rtl.json")
+if rtl.is_file():
+    manifest.update(json.loads(rtl.read_text()))
 cached=frappe.cache.get_value("assets_json", shared=True)
 before={k:(cached or {}).get(k) for k in keys}
 expected={k:manifest.get(k) for k in keys}
 existing={k:bool(expected[k] and pathlib.Path(expected[k].lstrip("/")).is_file()) for k in keys}
-if not all(existing.values()) or any(not v for v in expected.values()):
+all_files_present=all(pathlib.Path(v.lstrip("/")).is_file() for v in manifest.values())
+if not all(existing.values()) or not all_files_present or any(not v for v in expected.values()):
     raise RuntimeError("Manifest asset missing on disk")
+diff_before=sorted(k for k in set(manifest)|(set(cached or {})) if manifest.get(k)!=(cached or {}).get(k))
 if INVAL:
     if before == expected:
         raise RuntimeError("Cache already matches; no invalidation needed")
     frappe.cache.delete_value("assets_json", shared=True)
     frappe.client_cache.clear_cache()
 after=frappe.utils.get_assets_json()
-print("CC_ASSET_GATE="+json.dumps({"manifest":expected,"cache_before":before,"cache_after":{k:after.get(k) for k in keys},"files_present":existing},sort_keys=True))
+diff_after=sorted(k for k in set(manifest)|set(after) if manifest.get(k)!=after.get(k))
+print("CC_ASSET_GATE="+json.dumps({"manifest":expected,"cache_before":before,"cache_after":{k:after.get(k) for k in keys},"files_present":existing,"all_files_present":all_files_present,"manifest_count":len(manifest),"mismatch_keys_before":diff_before,"mismatch_keys_after":diff_after},sort_keys=True))
 frappe.db.rollback()
 frappe.destroy()
 '''
@@ -115,13 +128,15 @@ def main() -> int:
             raise RuntimeError("Cache already current; nothing to change")
         if before["cache_before"] != KNOWN_STALE:
             raise RuntimeError("Cached asset mapping differs from the documented stale mapping")
+        if set(before["mismatch_keys_before"]) != KNOWN_MISMATCH_KEYS:
+            raise RuntimeError("Unexpected manifest/cache differences")
         after = probe(True)
-        if after["cache_after"] != after["manifest"]:
+        if after["cache_after"] != after["manifest"] or after["mismatch_keys_after"]:
             raise RuntimeError("Cache invalidation failed verification")
         check_served_assets(after["manifest"])
         result = {"status": "CACHE_INVALIDATED", **after}
     else:
-        result = {"status": "MATCH" if before["cache_after"] == before["manifest"] else "STALE", **before}
+        result = {"status": "MATCH" if not before["mismatch_keys_after"] else "STALE", **before}
     data_after, hooks_after, services_after = integrity()
     if data_after != data_before or hooks_after != hooks_before or services_after != services_before:
         raise RuntimeError("Synthetic data, security hooks or service identities changed")

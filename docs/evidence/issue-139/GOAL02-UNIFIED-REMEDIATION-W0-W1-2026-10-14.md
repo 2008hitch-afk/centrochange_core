@@ -12,6 +12,8 @@
 
 I file `assets.json` nei container backend e frontend mappano `desk.bundle.css`, `erpnext.bundle.css`, `report.bundle.css` su `P52FIUJ5`, `SX3UNIE7`, `H6YVEPG5`; tutti e tre i file esistono e sono serviti con HTTP 200 `text/css`. La cache Redis **bench-shared** `assets_json`, letta attraverso Frappe 16.50 `get_assets_json()`, contiene ancora `7IQ4MBII`, `2XFOQZJL`, `UX3MMGCD`. Il renderer Jinja `bundled_asset()` usa quella cache e genera gli URL vecchi; Nginx risponde 404 perché i file vecchi non esistono. La PR #133 ha cambiato i sei container applicativi preservando Redis, senza invalidare questa chiave al cambio immagine. Questo spiega perché hard refresh del browser non risolve.
 
+Il confronto completo di `assets.json` più `assets-rtl.json` mostra **69 mapping**, tutti con file fisici presenti; **24 mapping CSS** (12 normali e 12 RTL) differiscono dalla cache. Il gate richiede esattamente queste 24 differenze note prima della mutazione e zero differenze dopo.
+
 Fonti: [documentazione ufficiale Frappe Asset Bundling](https://docs.frappe.io/framework-git/client-side/asset-bundling) (hash, `assets.json`, `bundled_asset`), [Bench overview](https://docs.frappe.io/framework-git/administration/bench-overview) (cache site-specific). Verifica sul sorgente Frappe 16.50 installato: `frappe/utils/__init__.py:get_assets_json`, `frappe/utils/jinja_globals.py:bundled_asset`, `frappe/cache_manager.py:bench_cache_keys`, `frappe/utils/redis_wrapper.py:ClientCache.delete_value`. Il problema è la cache condivisa obsoleta, non CSS mancante nell'immagine né un solo problema browser.
 
 ## Correzione preparata e gate

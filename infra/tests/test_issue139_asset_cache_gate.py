@@ -38,33 +38,53 @@ class AssetGateTests(unittest.TestCase):
         self.assertNotIn("if True:", captured[0])
 
     def test_stale_cache_requires_explicit_flag(self):
-        state = {"manifest": MANIFEST, "cache_before": OLD, "cache_after": OLD}
+        state = {"manifest": MANIFEST, "cache_before": OLD, "cache_after": OLD,
+                 "mismatch_keys_before": sorted(gate.KNOWN_MISMATCH_KEYS),
+                 "mismatch_keys_after": sorted(gate.KNOWN_MISMATCH_KEYS)}
         with patch.object(gate, "image_and_scope"), patch.object(gate, "integrity", return_value=INTEGRITY), patch.object(gate, "probe", return_value=state) as probe, \
              patch.object(gate, "check_served_assets"), patch.object(sys, "argv", ["gate"]):
             self.assertEqual(gate.main(), 2)
             probe.assert_called_once_with()
 
     def test_invalidation_verifies_new_mapping(self):
-        before = {"manifest": MANIFEST, "cache_before": OLD, "cache_after": OLD}
-        after = {"manifest": MANIFEST, "cache_before": OLD, "cache_after": MANIFEST}
+        before = {"manifest": MANIFEST, "cache_before": OLD, "cache_after": OLD,
+                  "mismatch_keys_before": sorted(gate.KNOWN_MISMATCH_KEYS),
+                  "mismatch_keys_after": sorted(gate.KNOWN_MISMATCH_KEYS)}
+        after = {"manifest": MANIFEST, "cache_before": OLD, "cache_after": MANIFEST,
+                 "mismatch_keys_before": sorted(gate.KNOWN_MISMATCH_KEYS),
+                 "mismatch_keys_after": []}
         with patch.object(gate, "image_and_scope"), patch.object(gate, "integrity", return_value=INTEGRITY), patch.object(gate, "probe", side_effect=[before, after]) as probe, \
              patch.object(gate, "check_served_assets"), patch.object(sys, "argv", ["gate", "--invalidate"]):
             self.assertEqual(gate.main(), 0)
             self.assertEqual(probe.call_args_list[-1].args, (True,))
 
     def test_current_cache_cannot_be_invalidated(self):
-        current = {"manifest": MANIFEST, "cache_before": MANIFEST, "cache_after": MANIFEST}
+        current = {"manifest": MANIFEST, "cache_before": MANIFEST, "cache_after": MANIFEST,
+                   "mismatch_keys_before": [], "mismatch_keys_after": []}
         with patch.object(gate, "image_and_scope"), patch.object(gate, "integrity", return_value=INTEGRITY), patch.object(gate, "probe", return_value=current), \
              patch.object(gate, "check_served_assets"), patch.object(sys, "argv", ["gate", "--invalidate"]):
             with self.assertRaisesRegex(RuntimeError, "already current"):
                 gate.main()
 
     def test_post_invalidation_mismatch_fails(self):
-        state = {"manifest": MANIFEST, "cache_before": OLD, "cache_after": OLD}
+        state = {"manifest": MANIFEST, "cache_before": OLD, "cache_after": OLD,
+                 "mismatch_keys_before": sorted(gate.KNOWN_MISMATCH_KEYS),
+                 "mismatch_keys_after": sorted(gate.KNOWN_MISMATCH_KEYS)}
         with patch.object(gate, "image_and_scope"), patch.object(gate, "integrity", return_value=INTEGRITY), patch.object(gate, "probe", return_value=state), \
              patch.object(gate, "check_served_assets"), patch.object(sys, "argv", ["gate", "--invalidate"]):
             with self.assertRaisesRegex(RuntimeError, "failed verification"):
                 gate.main()
+
+    def test_unexpected_cached_difference_blocks_before_mutation(self):
+        state = {"manifest": MANIFEST, "cache_before": OLD, "cache_after": OLD,
+                 "mismatch_keys_before": ["unrecognized.bundle.css"],
+                 "mismatch_keys_after": ["unrecognized.bundle.css"]}
+        with patch.object(gate, "image_and_scope"), patch.object(gate, "integrity", return_value=INTEGRITY), \
+             patch.object(gate, "probe", return_value=state) as probe, \
+             patch.object(gate, "check_served_assets"), patch.object(sys, "argv", ["gate", "--invalidate"]):
+            with self.assertRaisesRegex(RuntimeError, "Unexpected manifest/cache"):
+                gate.main()
+            probe.assert_called_once_with()
 
 
 if __name__ == "__main__":
