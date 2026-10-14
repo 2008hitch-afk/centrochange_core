@@ -12,6 +12,7 @@
 
 - Helper Europe/Rome per calendario e intervalli su cambio ora legale/solare (5 test). Nessuna conversione del valore canonico DB/API. Le azioni seduta presentate dalla UI rispettano stato e ruolo; il backend rimane autoritativo (7 test).
 - I campi ora dell'Agenda (prenotazione, spostamento, disponibilità, assenza) propongono `HH:mm` 24 ore con validazione browser indipendente dalla lingua del sistema. Prova Chromium `en-US` e `it-IT`: `09:00` e `23:59` validi, `09:00 AM` e `24:00` rifiutati. È ancora una verifica del candidato, non della versione servita.
+- 44 messaggi di errore/validazione dei tre servizi di prenotazione, disponibilità e primo incontro sono resi in italiano direttamente sul server, mantenendo le condizioni e le classi di errore esistenti. La ricerca statica trova ancora numerosi messaggi inglesi nelle altre aree, soprattutto Finance: non si considera conclusa la localizzazione globale.
 - La cronologia eventi seduta è letta da API esistenti con isolamento per paziente/professionista; note e revisioni sono distinte. Due test offline controllano isolamento e forma dei dati.
 - La localizzazione globale di errori, picker, stampa e superfici native richiesta da #134 resta **non completata e non collaudata live**. Nessun PASS W3 globale.
 
