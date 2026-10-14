@@ -379,6 +379,23 @@ def browser(script, output):
     return data
 
 
+def targeted_regression():
+    result = run(['python3', str(REPO / 'infra/goal02_targeted_regression.py')],
+                 cwd=REPO, allow_fail=True)
+    if result.returncode:
+        private = re.search(r'/home/empv26/\.local/state/centrochange-single/goal02-install-runs/'
+                            r'targeted-regression-[A-Za-z0-9_-]+\.log', result.stderr)
+        location = private.group(0) if private else 'no private diagnostic file reported'
+        raise Stop(f'targeted regression failed (exit {result.returncode}); {location}')
+    try:
+        outcome = json.loads(result.stdout.strip().splitlines()[-1])
+    except (ValueError, IndexError):
+        raise Stop('targeted regression result missing or invalid') from None
+    require(outcome.get('status') == 'PASS' and outcome.get('persistent_rows_sha256_unchanged') is True,
+            'targeted regression PASS/integrity result missing')
+    return 'PASS'
+
+
 def write_report(path, report):
     atomic_bytes(path, (json.dumps(report, indent=2, sort_keys=True) + '\n').encode(), 0o600)
 
@@ -503,8 +520,7 @@ def apply(script_sha):
         run(['python3',str(REPO / 'infra/security_acceptance.py'),'--env-file',str(ENV),
              '--with-booking','--with-operations'],cwd=REPO)
         report['tests']['security_acceptance'] = 'PASS'
-        run(['python3',str(REPO / 'infra/goal02_targeted_regression.py')],cwd=REPO)
-        report['tests']['goal02_targeted_regression'] = 'PASS'
+        report['tests']['goal02_targeted_regression'] = targeted_regression()
         require(runtime_fingerprint() == before_data, 'post-test synthetic fingerprint changed')
         require(all(snapshot()[s] == before[s] for s in TECH), 'technical services changed after tests')
         report.update(status='LIVE_TECHNICAL_PASS', candidate_image=target_id,

@@ -34,6 +34,20 @@ class InstallContract(unittest.TestCase):
         self.assertNotIn('secret123', str(failure.exception))
         self.assertNotIn('user@example.invalid', str(failure.exception))
 
+    def test_targeted_regression_requires_integrity_result_and_reports_private_log(self):
+        passed = SimpleNamespace(returncode=0, stdout='{"status":"PASS","persistent_rows_sha256_unchanged":true}\n', stderr='')
+        with patch.object(module, 'run', return_value=passed):
+            self.assertEqual(module.targeted_regression(), 'PASS')
+        missing = SimpleNamespace(returncode=0, stdout='{"status":"PASS"}\n', stderr='')
+        with patch.object(module, 'run', return_value=missing):
+            with self.assertRaises(module.Stop):
+                module.targeted_regression()
+        failed = SimpleNamespace(returncode=1, stdout='', stderr='private diagnostic: /home/empv26/.local/state/centrochange-single/goal02-install-runs/targeted-regression-abc123.log')
+        with patch.object(module, 'run', return_value=failed):
+            with self.assertRaises(module.Stop) as error:
+                module.targeted_regression()
+        self.assertIn('targeted-regression-abc123.log', str(error.exception))
+
     def test_frappe_exec_uses_sites_cwd_and_stream_logging(self):
         # Frappe v16.50 logger.py uses ../logs relative to process cwd.
         bench = Path('/home/frappe/frappe-bench')

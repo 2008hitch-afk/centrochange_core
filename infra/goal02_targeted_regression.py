@@ -4,6 +4,27 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import tempfile
+
+
+PRIVATE_RUNS = Path('/home/empv26/.local/state/centrochange-single/goal02-install-runs')
+
+
+def private_failure_log(stdout, stderr, directory=PRIVATE_RUNS):
+    """Create a new root-owned diagnostic; never reuse a shared /tmp path."""
+    directory = Path(directory)
+    if not directory.is_dir() or directory.is_symlink():
+        raise RuntimeError('Private GOAL-02 evidence directory unavailable')
+    fd, name = tempfile.mkstemp(prefix='targeted-regression-', suffix='.log', dir=directory)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, 'w') as log:
+            log.write(stdout)
+            log.write(stderr)
+        return Path(name)
+    except Exception:
+        Path(name).unlink(missing_ok=True)
+        raise
 
 
 MODULES = (
@@ -58,12 +79,11 @@ try:
 finally:frappe.db.rollback();frappe.destroy()
 '''.replace('MODULES', repr(MODULES))
     result = subprocess.run(['docker', 'exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1', '-w',
-        '/home/frappe/frappe-bench', 'centrochange-dev-backend-1', 'env/bin/python'],
+        '/home/frappe/frappe-bench/sites', 'centrochange-dev-backend-1',
+        '/home/frappe/frappe-bench/env/bin/python'],
         input=code, capture_output=True, text=True)
-    log = Path('/tmp/cc-goal02-targeted-regression.log')
-    log.write_text(result.stdout + result.stderr)
-    os.chmod(log, 0o600)
     if result.returncode:
+        log = private_failure_log(result.stdout, result.stderr)
         raise RuntimeError('Targeted regression failed; private diagnostic: ' + str(log))
     line = next(line for line in reversed(result.stdout.splitlines()) if line.startswith('CC_GOAL02_JSON='))
     print(json.dumps(json.loads(line.split('=', 1)[1])))

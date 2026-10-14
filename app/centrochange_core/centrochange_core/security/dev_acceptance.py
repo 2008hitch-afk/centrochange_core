@@ -246,6 +246,20 @@ def destroy_http(fixture):
 		groups[protected]=frappe.get_all(protected,filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['Communication']=frappe.get_all('Communication',filters={'reference_doctype':'CC Payment Notice',
 		'reference_name':['in',groups['CC Payment Notice'] or ['']]},pluck='name')
+	groups['CC Booking Confirmation']=[]
+	# Public booking creates a simulated confirmation, its Communication and audit.
+	# The appointment is removed below; collect these exact dependents first.
+	if groups.get('Patient Appointment'):
+		from centrochange_core.security.fixture_cleanup import confirmation_dependents
+		appointments=groups['Patient Appointment']
+		confirmations=frappe.get_all('CC Booking Confirmation',filters={'appointment':['in',appointments]},
+			fields=['name','appointment','center','recipient','communication'],limit_page_length=0)
+		communications=frappe.get_all('Communication',filters={'reference_doctype':'Patient Appointment',
+			'reference_name':['in',appointments]},
+			fields=['name','reference_doctype','reference_name','recipients'],limit_page_length=0)
+		dependents=confirmation_dependents(appointments,fixture['centers'],confirmations,communications)
+		groups['CC Booking Confirmation']=dependents['CC Booking Confirmation']
+		groups['Communication']+=dependents['Communication']
 	vouchers=groups['Sales Invoice']+groups['Purchase Invoice']+groups['Payment Entry']
 	for ledger in ('GL Entry','Payment Ledger Entry'):
 		groups[ledger]=frappe.get_all(ledger,filters={'voucher_no':['in',vouchers or ['']]},pluck='name')
@@ -284,7 +298,7 @@ def destroy_http(fixture):
 	if fixture.get('catalog'):
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'Patient Appointment',
 			'reference_name':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
-		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package','CC Economic Source Link','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Incoming Invoice','CC Unpaid Threshold','CC Compensation Rule','CC Professional Expectation','CC Professional Comparison','CC Admin Exception','CC Fiscal Transaction','CC Fiscal Attempt','CC TS Input Review'):
+		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package','CC Economic Source Link','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Booking Confirmation','Communication','CC Incoming Invoice','CC Unpaid Threshold','CC Compensation Rule','CC Professional Expectation','CC Professional Comparison','CC Admin Exception','CC Fiscal Transaction','CC Fiscal Attempt','CC TS Input Review'):
 			groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':protected,'reference_name':['in',groups[protected] or ['']]},pluck='name')
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'CC Patient Assignment',
 			'reference_name':['in',groups.get('CC Patient Assignment') or ['']]},pluck='name')
