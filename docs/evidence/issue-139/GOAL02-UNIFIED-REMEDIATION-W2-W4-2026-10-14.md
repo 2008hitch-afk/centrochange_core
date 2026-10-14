@@ -32,6 +32,8 @@
 - `node infra/tests/issue139_fiscal_outcome.cjs`: 4 stati fiscali simulati PASS.
 - `node --check` sui JS modificati e sul browser runner, `compileall` sui moduli Python modificati, `git diff --check`: PASS.
 - Il CSS candidato è stato testato in Chromium senza scrivere al runtime. **I test W5 delle 128 combinazioni e 38 controlli sintetici sul candidato non sono stati eseguiti:** richiedono prima installazione autorizzata, preflight, checkpoint e rollback.
+- Il runner W5 riusato dalla #137 ora separa errori asset, API e realtime e misura i badge tagliati. Un errore API o socket.io resta FAIL; non viene attribuito falsamente a un bundle CSS. Il confronto completo sarà eseguito solo sulla versione candidata effettivamente servita.
+- Prova read-only di classificazione sulla Direzione DEV corrente: 23/23 route rimangono FAIL per realtime, 0 failure asset e 0 failure API, 0 richieste mutative inattese. Le risposte 400 della connessione socket.io vengono attribuite a realtime anziché a JS/CSS. **Questo è un baseline diagnostico, non il retest W5 del candidato.**
 
 ## Gate operativo ancora necessario
 

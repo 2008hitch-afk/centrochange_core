@@ -40,6 +40,15 @@ async function measure(page) {
     const form=document.querySelector('.form-page');
     const main=document.querySelector('#cc-main, .layout-main-section, .page-content');
     const technical=[...document.querySelectorAll('a,button')].filter(visible).filter(el=>/ERPNext|Marley|Frappe/i.test(el.innerText||el.getAttribute('aria-label')||'')).length;
+    const clippedBadges=[...document.querySelectorAll('.list-row-container .es-badge')].filter(visible).filter(badge=>{
+      const b=badge.getBoundingClientRect();
+      for(let parent=badge.parentElement;parent;parent=parent.parentElement){
+        if(!['hidden','clip'].includes(getComputedStyle(parent).overflowX))continue;
+        const r=parent.getBoundingClientRect();
+        if(b.left<r.left-2||b.right>r.right+2)return true;
+      }
+      return false;
+    }).length;
     const center=document.querySelector('#center');
     return {
       pathname:location.pathname+location.search,title:document.title,
@@ -48,6 +57,7 @@ async function measure(page) {
       bodyChars:body.length,overflowPx:Math.max(0,document.documentElement.scrollWidth-innerWidth),
       maxIconPx:Math.round(Math.max(0,...icons.map(x=>Math.max(x.box.width,x.box.height)))),
       oversizedIcons:icons.filter(x=>Math.max(x.box.width,x.box.height)>96).length,
+      clippedBadges,
       stylesheetCount:[...document.styleSheets].length,fontStatus:document.fonts.status,
       hasLoading:[...document.querySelectorAll('.loading, .cc-inline-loading')].some(visible),
       technicalBrandControls:technical,
@@ -77,12 +87,16 @@ async function run() {
     for(const item of menu){const key=safePath(item.href);if(!seen.has(key)){seen.add(key);routes.push({...item,key});}}
     const results=[];
     for(let i=0;i<routes.length;i++){
-      const item=routes[i], errors=[], assetErrors=[], assetConsoleErrors=[], failedRequests=[];
+      const item=routes[i], errors=[], assetErrors=[], assetConsoleErrors=[], apiErrors=[], realtimeErrors=[], resourceErrors=[], failedRequests=[];
       const onPageError=e=>errors.push(String(e.message).slice(0,300));
       const onConsole=m=>{
         if(m.type()!=='error')return;
         const message=m.text().slice(0,300);
-        if(/Refused to apply style|Refused to execute script|Failed to load resource/.test(message)) assetConsoleErrors.push(message);
+        if(/socket\.io|realtime/i.test(message)||safePathOnly(m.location().url||'').startsWith('/socket.io/')) realtimeErrors.push(message);
+        else if(/Refused to apply style|Refused to execute script/.test(message)||
+          /Failed to load resource/.test(message)&&/\.(?:css|js|svg|woff2?|png)(?:\?|$)/i.test(m.location().url||''))
+          assetConsoleErrors.push(message);
+        else if(/Failed to load resource/.test(message))resourceErrors.push({message,path:safePathOnly(m.location().url||'')});
         else errors.push(message);
       };
       const onResponse=r=>{
@@ -92,8 +106,14 @@ async function run() {
         if(r.status()>=400||(kind==='css'&&mime!=='text/css')||(kind==='js'&&!/javascript/.test(mime)))
           assetErrors.push({status:r.status(),path:safePath(r.url()),mime});
       };
+      const onApiResponse=r=>{if(r.status()>=400&&safePathOnly(r.url()).startsWith('/api/'))
+        apiErrors.push({status:r.status(),path:safePath(r.url())});};
+      const onOtherResponse=r=>{if(r.status()<400)return;const p=safePathOnly(r.url());
+        if(p.startsWith('/socket.io/'))realtimeErrors.push(`HTTP ${r.status()} ${p}`);
+        else if(!p.startsWith('/api/')&&!/\.(?:css|js|svg|woff2?|png)$/.test(p))
+          resourceErrors.push({status:r.status(),path:p});};
       const onFailed=req=>failedRequests.push({path:safePath(req.url()),reason:req.failure()?.errorText||'failed'});
-      page.on('pageerror',onPageError);page.on('console',onConsole);page.on('response',onResponse);page.on('requestfailed',onFailed);
+      page.on('pageerror',onPageError);page.on('console',onConsole);page.on('response',onResponse);page.on('response',onApiResponse);page.on('response',onOtherResponse);page.on('requestfailed',onFailed);
       let response,metrics=null, navigationError=null;
       try {
         response=await page.goto(new URL(item.href,base).href,{waitUntil:'domcontentloaded',timeout:30000});
@@ -103,7 +123,7 @@ async function run() {
       const file=slug(item.label,i)+`.png`;
       try {await page.screenshot({path:path.join(output,`${role}-${width}-${file}`),fullPage:true,animations:'disabled',timeout:15000});}
       catch(error){errors.push('screenshot: '+String(error.message).slice(0,150));}
-      page.off('pageerror',onPageError);page.off('console',onConsole);page.off('response',onResponse);page.off('requestfailed',onFailed);
+      page.off('pageerror',onPageError);page.off('console',onConsole);page.off('response',onResponse);page.off('response',onApiResponse);page.off('response',onOtherResponse);page.off('requestfailed',onFailed);
       const isNative=native.has(item.key.split('/').pop());
       const reasons=[];
       if(navigationError)reasons.push('NAVIGATION');
@@ -111,12 +131,16 @@ async function run() {
       if(metrics?.blank||!metrics?.main)reasons.push('BLANK_OR_MAIN_MISSING');
       if(isNative&&!metrics?.list&&!metrics?.form)reasons.push('NATIVE_LIST_FORM_MISSING');
       if(metrics?.oversizedIcons)reasons.push('OVERSIZED_ICONS');
+      if(metrics?.clippedBadges)reasons.push('CLIPPED_STATUS_BADGES');
       if(metrics?.overflowPx>3)reasons.push('HORIZONTAL_OVERFLOW');
       if(!metrics?.shell||!metrics?.navbar)reasons.push('SHELL_MISSING');
       if(assetErrors.length||assetConsoleErrors.length)reasons.push('ASSET_HTTP_OR_MIME_ERROR');
+      if(apiErrors.length)reasons.push('API_HTTP_ERROR');
+      if(realtimeErrors.length)reasons.push('REALTIME_ERROR');
+      if(resourceErrors.length)reasons.push('RESOURCE_HTTP_ERROR');
       if(errors.length)reasons.push('JS_ERROR');
       const row={label:item.label,route:item.key,native:isNative,http:response?.status()||null,
-        status:reasons.length?'FAIL':'PASS',reasons,metrics,errors,assetErrors,assetConsoleErrors,failedRequests,screenshot:file};
+        status:reasons.length?'FAIL':'PASS',reasons,metrics,errors,assetErrors,assetConsoleErrors,apiErrors,realtimeErrors,resourceErrors,failedRequests,screenshot:file};
       results.push(row);
       console.error(`${role} ${width} ${i+1}/${routes.length} ${item.label}: ${row.status}${reasons.length?' '+reasons.join(','):''}`);
     }
