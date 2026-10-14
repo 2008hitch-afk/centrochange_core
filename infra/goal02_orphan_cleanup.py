@@ -74,6 +74,7 @@ def check_present():
  assert frappe.db.count("CC Booking Confirmation",{"appointment":c.appointment})==1
  assert frappe.db.count("Communication",{"reference_doctype":"Patient Appointment","reference_name":c.appointment})==1
  assert frappe.db.count("CC Audit Event",{"reference_doctype":"CC Booking Confirmation","reference_name":c.name})==1
+ assert frappe.db.count("CC Audit Event",{"reference_doctype":"Communication","reference_name":m.name})==0
  for dt,field in (("CC Payment Notice","communication"),("Communication","in_reply_to"),("Email Queue","communication")):
   assert frappe.db.count(dt,{field:m.name})==0,(dt,field)
  assert frappe.db.count("CC Booking Confirmation",{"communication":m.name})==1
