@@ -10,7 +10,8 @@ export function enhanceSelect(select,search=null){
  if(select._combobox){select._combobox.configure(rows,selected,search);return;}
  const box=document.createElement('div');box.className='cc-combobox';
  const input=document.createElement('input');input.type='text';input.className='form-control';input.autocomplete='off';input.maxLength=140;
- const title='Cerca '+(professional?'professionista':'paziente');input.placeholder=title;input.setAttribute('aria-label',title);input.setAttribute('role','combobox');input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-expanded','false');
+ const label=select.closest('label')?.firstChild?.textContent.trim().toLocaleLowerCase('it-IT');
+ const title='Cerca '+(professional?'professionista':field==='patient'?'paziente':label||'voce');input.placeholder=title;input.setAttribute('aria-label',title);input.setAttribute('role','combobox');input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-expanded','false');
  const list=document.createElement('div');list.className='dropdown-menu cc-options';list.id='cc-options-'+(++sequence);list.setAttribute('role','listbox');input.setAttribute('aria-controls',list.id);list.hidden=true;
  const status=document.createElement('small');status.className='form-hint';status.setAttribute('role','status');
  select.before(box);box.append(input,list,status);select.hidden=true;select.tabIndex=-1;select.setAttribute('aria-hidden','true');input.required=select.required;select.required=false;
@@ -28,4 +29,7 @@ export function enhanceSelect(select,search=null){
  select._combobox={input,configure(items,value,callback){++select._searchGeneration;clearTimeout(timer);original=items;remote=callback;input.value=items.find(r=>r.name===value)?.label||'';input.setCustomValidity('');status.textContent='';close();}};
  select._searchInput=input;select._searchStatus=status;select._combobox.configure(rows,selected,search);
 }
-export function enhanceSelectors(root,patientSearch=null){root.querySelectorAll('select[name="patient"],select[name="practitioner"]').forEach(select=>enhanceSelect(select,select.name==='patient'?patientSearch:null));}
+export function enhanceSelectors(root,patientSearch=null){root.querySelectorAll('select').forEach(select=>{
+ if(['patient','practitioner'].includes(select.name)||select.options.length>8)
+  enhanceSelect(select,select.name==='patient'?patientSearch:null);
+});}

@@ -23,6 +23,7 @@
 - Report economico pazienti: il residuo zero non è più colorato come allarme; il rosso resta riservato a saldi positivi. Restano da verificare sulla versione installata i flussi Finanza, TS/SdI, la navigazione completa e tutti i ruoli.
 - Liste TS/SdI simulate: la colonna «Esito / verifica» distingue un esito acquisito, un problema classificato, l'assenza di tentativi e un tentativo da consultare; evita il trattino ambiguo segnalato dall'Owner. Quattro stati testati offline; il contenuto live resta da verificare.
 - Dettaglio seduta cancellata: la proiezione già autorizzata include ora il fatto `cc_late_cancellation`; la scheda distingue cancellazione tardiva, stato economico operativo e documento contabile, rinviando a Storico per autore e motivo. Non calcola un nuovo addebito e non modifica i valori canonici.
+- Selettori condivisi: un elenco breve resta `<select>` nativo; oltre otto opzioni usa il combobox ricercabile esistente, con etichetta del campo e selezione da tastiera. Le opzioni provengono ancora dalle API autorizzate; il widget non amplia i permessi.
 
 ## Test ed evidenze
 
@@ -30,6 +31,7 @@
 - `node infra/tests/issue139_rome_date.cjs`: 5 PASS; `node infra/tests/issue139_session_actions.cjs`: 7 PASS.
 - `node infra/browser/issue139_time_control.cjs`: `en-US` e `it-IT` PASS con Chromium reale.
 - `node infra/tests/issue139_fiscal_outcome.cjs`: 4 stati fiscali simulati PASS.
+- `node infra/browser/issue139_long_select.cjs`: desktop/mobile PASS per elenco breve nativo, ricerca, tastiera, stato vuoto e valore canonico selezionato.
 - `node --check` sui JS modificati e sul browser runner, `compileall` sui moduli Python modificati, `git diff --check`: PASS.
 - Il CSS candidato è stato testato in Chromium senza scrivere al runtime. **I test W5 delle 128 combinazioni e 38 controlli sintetici sul candidato non sono stati eseguiti:** richiedono prima installazione autorizzata, preflight, checkpoint e rollback.
 - Il runner W5 riusato dalla #137 ora separa errori asset, API e realtime e misura i badge tagliati. Un errore API o socket.io resta FAIL; non viene attribuito falsamente a un bundle CSS. Il confronto completo sarà eseguito solo sulla versione candidata effettivamente servita.
