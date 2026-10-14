@@ -461,6 +461,18 @@ def backup(output):
 
 def restore_backup(output, manifest, root_password):
     """Restore the original Site from the verified encrypted native checkpoint."""
+    # The pinned image has uid 1000 (frappe) with gid 0 (root), and no
+    # group named frappe. Refuse a changed identity before copying any files.
+    identity = run(['docker', 'exec', '-u', '0', 'centrochange-dev-backend-1',
+                    'id', '-u', 'frappe']).stdout.strip()
+    group = run(['docker', 'exec', '-u', '0', 'centrochange-dev-backend-1',
+                 'id', '-g', 'frappe']).stdout.strip()
+    root_group = run(['docker', 'exec', '-u', '0', 'centrochange-dev-backend-1',
+                      'getent', 'group', 'root']).stdout.strip()
+    frappe_group = run(['docker', 'exec', '-u', '0', 'centrochange-dev-backend-1',
+                        'getent', 'group', 'frappe'], check=False)
+    require(identity == '1000' and group == '0' and root_group.startswith('root:x:0:')
+            and frappe_group.returncode != 0, 'rollback image Unix identity drift')
     recovered = {}
     for kind, item in manifest.items():
         encrypted = output / item['file']
@@ -473,7 +485,7 @@ def restore_backup(output, manifest, root_password):
         remote = f'{BENCH}/sites/{SITE}/private/backups/{local.name}'
         run(['docker', 'cp', str(local), f'centrochange-dev-backend-1:{remote}'])
         run(['docker', 'exec', '-u', '0', 'centrochange-dev-backend-1',
-             'chown', 'frappe:frappe', remote])
+             'chown', 'frappe:root', remote])
         run(['docker', 'exec', '-u', '0', 'centrochange-dev-backend-1', 'chmod', '600', remote])
         recovered[kind] = remote
         local.unlink()
@@ -500,7 +512,7 @@ _restore(site="centrochange.local",sql_file_path=PATH_DB,db_root_password=passwo
     private_write(config, config_bytes)
     run(['docker', 'cp', str(config),
          f'centrochange-dev-backend-1:{BENCH}/sites/{SITE}/site_config.json'])
-    run(['docker', 'exec', '-u', '0', 'centrochange-dev-backend-1', 'chown', 'frappe:frappe',
+    run(['docker', 'exec', '-u', '0', 'centrochange-dev-backend-1', 'chown', 'frappe:root',
          f'{BENCH}/sites/{SITE}/site_config.json'])
     run(['docker', 'exec', '-u', '0', 'centrochange-dev-backend-1', 'chmod', '600',
          f'{BENCH}/sites/{SITE}/site_config.json'])

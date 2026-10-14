@@ -1,5 +1,6 @@
 """Safety invariants for the one-shot #139 installation gate; no Docker writes."""
 import importlib.util
+import hashlib
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -110,6 +111,56 @@ class InstallationGateTests(unittest.TestCase):
                           and 'frontend' in call[1] and 'up' in call[1])
             self.assertLess(database, reopen)
             self.assertEqual(calls.count('db'), 1)
+
+    def test_restore_backup_uses_pinned_unix_identity_and_both_real_chown_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            (output / 'backup.key').write_text('synthetic')
+            content = b'synthetic encrypted backup plaintext'
+            manifest = {}
+            for kind in ('db', 'public', 'private', 'config'):
+                filename = f'{kind}.gpg'
+                (output / filename).write_bytes(b'encrypted-placeholder')
+                manifest[kind] = {'file': filename, 'sha256': hashlib.sha256(content).hexdigest()}
+            calls = []
+
+            def command(args, **kwargs):
+                calls.append(args)
+                if args[-3:] == ['id', '-u', 'frappe']:
+                    return types.SimpleNamespace(stdout='1000\n', returncode=0)
+                if args[-3:] == ['id', '-g', 'frappe']:
+                    return types.SimpleNamespace(stdout='0\n', returncode=0)
+                if args[-3:] == ['getent', 'group', 'root']:
+                    return types.SimpleNamespace(stdout='root:x:0:\n', returncode=0)
+                if args[-3:] == ['getent', 'group', 'frappe']:
+                    return types.SimpleNamespace(stdout='', returncode=2)
+                return types.SimpleNamespace(stdout='', returncode=0)
+
+            with patch.object(gate, 'run', side_effect=command), \
+                 patch.object(gate, 'run_bytes', return_value=content):
+                gate.restore_backup(output, manifest, 'synthetic-root-password')
+            ownership = [args for args in calls if 'chown' in args]
+            self.assertEqual(len(ownership), 5)
+            self.assertTrue(all(args[-2] == 'frappe:root' for args in ownership))
+            self.assertTrue(any(args[-1].endswith('/site_config.json') for args in ownership))
+            self.assertFalse(any('frappe:frappe' in args for args in ownership))
+
+    def test_restore_backup_stops_before_copy_when_unix_identity_drifts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            calls = []
+
+            def command(args, **kwargs):
+                calls.append(args)
+                if args[-3:] == ['id', '-u', 'frappe']:
+                    return types.SimpleNamespace(stdout='1001\n', returncode=0)
+                return types.SimpleNamespace(stdout='0\n', returncode=0)
+
+            with patch.object(gate, 'run', side_effect=command), \
+                 patch.object(gate, 'run_bytes') as decrypt:
+                with self.assertRaisesRegex(gate.Stop, 'Unix identity drift'):
+                    gate.restore_backup(Path(directory), {}, 'synthetic')
+                decrypt.assert_not_called()
+            self.assertFalse(any('cp' in args for args in calls))
 
 
 if __name__ == '__main__':
