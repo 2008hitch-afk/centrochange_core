@@ -11,7 +11,7 @@ from centrochange_core.finance.guards import require_synthetic
 def _simulate(doc):
     # No sendmail/SMTP/provider/Email Queue invocation. Only an example.invalid sink.
     if not doc.recipient.endswith('@example.invalid'):
-        frappe.throw('Synthetic confirmation recipient required')
+        frappe.throw('Indica un destinatario demo per la conferma.')
     return frappe.get_doc({'doctype':'Communication','communication_type':'Communication',
         'communication_medium':'Email','sent_or_received':'Sent','subject':'Centro Change — Conferma primo incontro',
         'content':doc.message,'recipients':doc.recipient,'sender':'cc-public-booking-service@example.invalid',
@@ -41,12 +41,12 @@ def confirm(appointment,route,email):
     require_synthetic();lock()
     from centrochange_core.scheduling.public_booking import SERVICE_USER
     if frappe.session.user!=SERVICE_USER:
-        frappe.throw('Public confirmation service scope required',frappe.PermissionError)
+        frappe.throw('La conferma pubblica richiede il servizio autorizzato.',frappe.PermissionError)
     doc=frappe.get_doc('Patient Appointment',appointment)
     old=frappe.db.get_value('CC Booking Confirmation',{'appointment':appointment},'name',for_update=True)
     if old:return {'state':frappe.db.get_value('CC Booking Confirmation',old,'state'),'replay':True}
     if route not in ('Marco','Francesca') or not email.endswith('@example.invalid'):
-        frappe.throw('Synthetic first-meeting confirmation required')
+        frappe.throw('Seleziona una conferma sintetica del primo incontro.')
     date=frappe.utils.getdate(doc.appointment_date).strftime('%d/%m/%Y')
     time=str(frappe.utils.get_time(doc.appointment_time))[:5]
     message='<p>Primo incontro confermato per il '+date+' alle '+time+' con '+escape(route)+'.</p><p>Servizio: '+escape(re.sub(r'^CC-HTTP-[A-Za-z0-9]+\s+','',doc.cc_service_label))+' · '+str(int(doc.duration))+' minuti.</p><p>Conferma registrata in simulazione: nessuna email reale inviata.</p>'
@@ -65,7 +65,7 @@ def records(center):
 @atomic
 def retry(name,reason):
     require_manager();require_synthetic();lock()
-    if not reason or not reason.strip():frappe.throw('A retry reason is required')
+    if not reason or not reason.strip():frappe.throw('Indica il motivo del nuovo tentativo.')
     doc=frappe.get_doc('CC Booking Confirmation',name)
     result=deliver(name)
     append('BOOKING_CONFIRMATION_RETRIED',doc.doctype,name,None,{'state':result['state']},reason)
