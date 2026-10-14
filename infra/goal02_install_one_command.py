@@ -326,8 +326,11 @@ def preflight():
     actual = app_hashes(paths)
     for path in CHANGED:
         require(actual[path] == digest(git_file(BASE, path)), f'installed base differs at {path}')
-    for path in (CSS_FILE, 'hooks.py', 'security/dev_acceptance.py'):
+    for path in (CSS_FILE, 'hooks.py'):
         require(actual[path] == digest(git_file(SOURCE, path)), f'installed prerequisite differs at {path}')
+    require(actual['security/dev_acceptance.py'] ==
+            digest(git_file(AB_SOURCE, 'security/dev_acceptance.py')),
+            'installed pre-fix fixture source drift')
     require(actual[CSS_FILE] == CSS_SHA, 'live backend #79 CSS drift')
     require(len([x for x in before['backend']['mounts'] if x[3].endswith('/sites')]) == 1,
             'single Site volume not verified')
