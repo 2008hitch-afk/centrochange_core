@@ -49,6 +49,25 @@ def clone_compose(state):
             '-f', str(state / 'compose.yaml'), '-f', str(state / 'base-overlay.yaml')]
 
 
+def cleanup_clone_tags(state, image):
+    """Remove exact rehearsal tags only, after the clone is fully stopped."""
+    if command(['docker', 'ps', '-a', '--filter', f'label=com.docker.compose.project={PROJECT}', '-q']).stdout.strip():
+        raise RuntimeError('clone containers remain; image cleanup refused')
+    if command(['docker', 'volume', 'ls', '--filter', f'name=^{PROJECT}', '-q']).stdout.strip():
+        raise RuntimeError('clone volumes remain; image cleanup refused')
+    tags = [image]
+    for run_dir in (state / 'runs').glob('*'):
+        if not run_dir.is_dir() or not re.fullmatch(r'\d{8}T\d{6}Z-\d+', run_dir.name):
+            raise RuntimeError('unexpected clone checkpoint directory')
+        tags.extend(f'centrochange-single:issue139-rollback-{run_dir.name}-{name}'
+                    for name in ('backend', 'frontend', 'websocket', 'queue-short',
+                                 'queue-long', 'scheduler'))
+    for tag in tags:
+        if command(['docker', 'image', 'inspect', tag], check=False).returncode == 0:
+            command(['docker', 'image', 'rm', tag])
+    return len(tags)
+
+
 def setup_clone(state, gate, adapter, image):
     if command(['docker', 'ps', '-a', '--filter', f'label=com.docker.compose.project={PROJECT}', '-q']).stdout.strip():
         raise RuntimeError('isolated project already exists')
@@ -302,6 +321,11 @@ def main():
         if command(['docker', 'ps', '-a', '--filter', f'label=com.docker.compose.project={PROJECT}', '-q']).stdout.strip() or \
                 command(['docker', 'volume', 'ls', '--filter', f'name=^{PROJECT}', '-q']).stdout.strip():
             result['status'] = 'CLEANUP_FAILED'
+        else:
+            try:
+                result['clone_image_tags_cleaned'] = cleanup_clone_tags(state, image)
+            except Exception:
+                result['status'] = 'CLEANUP_FAILED'
         after_dev = {'services': dev.snapshot(), 'data': dev.runtime_fingerprint(),
                      'hooks': dev.hooks()}
         result['dev_unchanged'] = before_dev == after_dev

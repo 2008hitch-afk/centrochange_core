@@ -3,7 +3,9 @@ import importlib.util
 from pathlib import Path
 import sys
 import tempfile
+import types
 import unittest
+from unittest.mock import patch
 
 source = Path(__file__).resolve().parents[1] / 'issue139_rehearsal_scope.py'
 spec = importlib.util.spec_from_file_location('issue139_rehearsal_scope', source)
@@ -68,6 +70,26 @@ class RehearsalScopeTests(unittest.TestCase):
         runner = runner_source.read_text()
         self.assertIn("command = [sys.executable, '-I'", runner)
         self.assertIn("command += ['--isolated-project', args.isolated_project]", runner)
+
+    def test_clone_image_cleanup_uses_only_exact_rehearsal_tags(self):
+        spec = importlib.util.spec_from_file_location('issue139_full_rehearsal_test',
+                                                      source.with_name('issue139_full_rehearsal.py'))
+        rehearsal = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rehearsal)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'runs' / '20261014T220000Z-123').mkdir(parents=True)
+            calls = []
+            def command(args, **kwargs):
+                calls.append(args)
+                return types.SimpleNamespace(stdout='', returncode=0)
+            with patch.object(rehearsal, 'command', side_effect=command):
+                self.assertEqual(rehearsal.cleanup_clone_tags(root, IMAGE), 7)
+            removed = [row[-1] for row in calls if row[:3] == ['docker', 'image', 'rm']]
+            self.assertEqual(len(removed), 7)
+            self.assertEqual(removed[0], IMAGE)
+            self.assertTrue(all(value.startswith('centrochange-single:issue139-rollback-20261014T220000Z-123-')
+                                for value in removed[1:]))
 
 
 if __name__ == '__main__':
