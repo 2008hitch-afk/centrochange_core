@@ -30,6 +30,9 @@ export function enhanceSelect(select,search=null){
  select._searchInput=input;select._searchStatus=status;select._combobox.configure(rows,selected,search);
 }
 export function enhanceSelectors(root,patientSearch=null){root.querySelectorAll('select').forEach(select=>{
- if(['patient','practitioner'].includes(select.name)||select.options.length>8)
+ // Multiple selects carry set semantics (for example selecting several
+ // professional snapshots for a single comparison). Keep the native control;
+ // the single-value combobox must never collapse that selection to one row.
+ if(!select.multiple&&(['patient','practitioner'].includes(select.name)||select.options.length>8))
   enhanceSelect(select,select.name==='patient'?patientSearch:null);
 });}

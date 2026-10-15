@@ -2,6 +2,27 @@
 import frappe
 
 
+def financial_attachment_context(doc):
+    """Validate only the service-created private manual finance attachment."""
+    if not frappe.flags.get('cc_finance_attachment_write'):
+        return False
+    allowed = {'Sales Invoice', 'Purchase Invoice', 'Bank Transaction', 'CC Incoming Invoice'}
+    if doc.attached_to_doctype not in allowed or not doc.attached_to_name:
+        frappe.throw('Il tipo di documento non supporta allegati amministrativi.', frappe.PermissionError)
+    parent = frappe.get_doc(doc.attached_to_doctype, doc.attached_to_name)
+    center = parent.get('center') if parent.doctype == 'CC Incoming Invoice' else parent.get('cc_center')
+    if not center:
+        frappe.throw('Il documento non è collegato a una sede Centro Change.', frappe.PermissionError)
+    from centrochange_core.finance.guards import require_finance
+    require_finance(center, True)
+    parent.check_permission('read')
+    if parent.get('docstatus') == 2:
+        frappe.throw('Non puoi allegare file a un documento annullato.')
+    if not frappe.utils.cint(doc.is_private) or doc.is_remote_file:
+        frappe.throw('Gli allegati amministrativi devono restare privati e locali.', frappe.PermissionError)
+    return True
+
+
 def managed(doc):
     return doc.attached_to_doctype in ('CC Incoming Invoice','CC Fiscal Transaction') or doc.attached_to_doctype in ('Sales Invoice','Purchase Invoice') and bool(frappe.db.get_value(doc.attached_to_doctype,doc.attached_to_name,'cc_center'))
 
@@ -20,6 +41,8 @@ def protected(doc,method=None):
         frappe.throw('Il contenuto del documento finanziario non può essere sostituito.',frappe.PermissionError)
     if old and any(doc.get(field)!=old.get(field) for field in ('attached_to_doctype','attached_to_name','file_url','file_name','content_hash')):
         frappe.throw('Identità e riferimento del documento finanziario non possono cambiare.',frappe.PermissionError)
+    if doc.is_new() and financial_attachment_context(doc):
+        return
     if doc.is_new() and not (frappe.flags.get('cc_incoming_write') or frappe.flags.get('cc_accounting_write') or frappe.flags.get('cc_fiscal_write')):
         frappe.throw('I documenti finanziari richiedono il servizio di gestione della fonte.',frappe.PermissionError)
 
@@ -60,6 +83,8 @@ class FinancialFileMixin:
         # accounting flow delegates this precise private XML operation instead.
         if accounting_attachment_context(self):
             return
+        if financial_attachment_context(self):
+            return
         return super().validate_attachment_references()
 
     def check_permission(self, permtype='read', permlevel=None):
@@ -82,14 +107,16 @@ class FinancialFileMixin:
                 for origin in frappe.get_all('File',filters=match,fields=['attached_to_doctype','attached_to_name']):
                     if managed(origin):
                         frappe.throw('Il contenuto finanziario non può essere copiato in un allegato non protetto.',frappe.PermissionError)
-        protected(self)
+        if not financial_attachment_context(self):
+            protected(self)
         if managed(self) and self.file_url and self.is_remote_file:
             frappe.throw('I documenti finanziari devono restare file locali conservati, mai URL remoti.',frappe.PermissionError)
         return super().before_insert()
 
     def validate(self):
         # Native File.validate can move the physical file before doc-event hooks run.
-        protected(self)
+        if not financial_attachment_context(self):
+            protected(self)
         return super().validate()
 
     def on_trash(self):

@@ -129,8 +129,8 @@ def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None
 	from frappe.utils.password import update_password
 	if fixture_tag is not None and (fixture_tag != 'CC-HTTP-UAT0000001' or frappe.conf.get('cc_uat_demo') != 1):
 		frappe.throw('Explicit synthetic UAT configuration required')
-	if not commit and fixture_tag != 'CC-HTTP-UAT0000001':
-		frappe.throw('Deferred fixture commit is reserved for synthetic UAT')
+	if not commit and not frappe.in_test and fixture_tag != 'CC-HTTP-UAT0000001':
+		frappe.throw('Le fixture senza commit sono riservate ai test sintetici isolati')
 	public_route_name=None
 	if scheduling and public_route:
 		# The persistent UAT seed can already own Marco. Never replace its route.
@@ -242,6 +242,11 @@ def destroy_http(fixture):
 	groups['CC Economic Source Link']=frappe.get_all('CC Economic Source Link',filters={'appointment':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
 	for transaction in ('Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction'):
 		groups[transaction]=frappe.get_all(transaction,filters={'cc_center':['in',fixture['centers']]},pluck='name')
+	browser_pos=tag+' BROWSER POS'
+	if frappe.db.exists('Mode of Payment',browser_pos):
+		mode=frappe.get_doc('Mode of Payment',browser_pos)
+		assert mode.type=='Credit Card' and all(row.company==frappe.db.get_value('Branch',fixture['centers'][0],'cc_company') for row in mode.accounts)
+		groups['Mode of Payment']=[browser_pos]
 	groups['Bank Account']=frappe.get_all('Bank Account',filters={'cc_center':['in',fixture['centers']]},pluck='name')
 	groups['Account']=[frappe.db.get_value('Bank Account',name,'account') for name in groups['Bank Account']]
 	assert all((frappe.db.get_value('Account',name,'account_name') or '').startswith('CC DEV BANK '+tag) for name in groups['Account'])

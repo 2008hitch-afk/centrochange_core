@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """Audit installed services with real, uncommitted fixtures; never deploy code.
 
-Executed via stdin by the host wrapper. Only the obsolete language assertion in
-an acceptance module is adapted in process. Product modules remain untouched.
+Executed via stdin by the host wrapper. Acceptance modules execute their current
+versioned assertions directly; the probe never rewrites tests in memory.
 """
 import hashlib
 import importlib
 import json
-import pathlib
 import traceback
 
 import frappe
@@ -52,15 +51,6 @@ def no_commit(*args, **kwargs):
 frappe.db.commit = no_commit
 before = fingerprint()
 print("AUDIT_BASELINE=" + json.dumps(before, sort_keys=True), flush=True)
-
-# The pinned product now emits Italian. Keep the exact negative validation and
-# support both reviewed texts in this test only. No exception is swallowed.
-surface = importlib.import_module("centrochange_core.operations.surfaces_acceptance")
-source = pathlib.Path(surface.__file__).read_text()
-old = "assert 'Ambiguous or nonexistent' in str(error)"
-assert source.count(old) == 1
-source = source.replace(old, "assert ('Ambiguous or nonexistent' in str(error) or 'non esiste o è ambigua nel fuso Europe/Rome' in str(error))")
-exec(compile(source, surface.__file__ + " [audit locale assertion]", "exec"), surface.__dict__)
 
 modules = ["operations.integration_acceptance"]
 results = []

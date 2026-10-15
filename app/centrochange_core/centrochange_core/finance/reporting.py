@@ -41,7 +41,7 @@ def summary(center,start,end,customer=None,practitioner=None):
         # A fiscal invoice may compose several professionals. No invented allocation of its open balance.
         sales=[]
     purchases=[] if customer else _bounded('Purchase Invoice',{**base,**({'supplier':supplier or ''} if practitioner else {})},['name','posting_date','supplier','status','docstatus','currency','net_total','grand_total','outstanding_amount','is_return','return_against','amended_from','cc_incoming_source'])
-    payments=_bounded('Payment Entry',{**base,**({'party_type':'Customer','party':customer} if customer else {'party_type':'Supplier','party':supplier or ''} if practitioner else {})},['name','posting_date','party_type','party','payment_type','paid_amount','received_amount','paid_from_account_currency','paid_to_account_currency'])
+    payments=_bounded('Payment Entry',{**base,**({'party_type':'Customer','party':customer} if customer else {'party_type':'Supplier','party':supplier or ''} if practitioner else {})},['name','posting_date','party_type','party','payment_type','mode_of_payment','paid_amount','received_amount','paid_from_account_currency','paid_to_account_currency'])
     session_filters={'cc_center':center,'appointment_date':['between',[start,end]]}
     if practitioner:session_filters['practitioner']=practitioner
     sessions=_bounded('Patient Appointment',session_filters,['name','appointment_date','appointment_time','status','duration','patient','practitioner','cc_service_label','cc_closure_state','cc_economic_state','cc_performed','cc_paid','cc_price_snapshot','cc_currency_snapshot'])
@@ -72,10 +72,12 @@ def summary(center,start,end,customer=None,practitioner=None):
 @frappe.whitelist(methods=['GET'])
 def export_csv(center,start,end,customer=None,practitioner=None):
     data=summary(center,start,end,customer,practitioner);output=StringIO(newline='');writer=csv.writer(output)
-    writer.writerow(['kind','name','date','subject','currency','net','gross','outstanding'])
+    writer.writerow(['Tipo documento','Numero documento','Data registrazione','Soggetto','Valuta','Imponibile','Totale','Residuo','Metodo di pagamento'])
+    def date_it(value):
+        return frappe.utils.formatdate(value,'dd/MM/yyyy') if value else ''
     for key,kind,subject in [('sales_invoices','Sales Invoice','customer'),('purchase_invoices','Purchase Invoice','supplier')]:
-        for row in data[key]:writer.writerow([safe_cell(v) for v in [kind,row.name,row.posting_date,row[subject],row.currency,row.net_total,row.grand_total,row.outstanding_amount]])
-    for row in data['payments']:writer.writerow([safe_cell(v) for v in ['Payment Entry',row.name,row.posting_date,row.party,'EUR','',row.paid_amount,'']])
+        for row in data[key]:writer.writerow([safe_cell(v) for v in [kind,row.name,date_it(row.posting_date),row[subject],row.currency,row.net_total,row.grand_total,row.outstanding_amount,'']])
+    for row in data['payments']:writer.writerow([safe_cell(v) for v in ['Pagamento',row.name,date_it(row.posting_date),row.party,'EUR','',row.paid_amount,'',row.mode_of_payment]])
     frappe.response.update({'type':'download','filename':'centrochange-finance.csv','filecontent':output.getvalue(),'content_type':'text/csv; charset=utf-8'})
 
 
@@ -96,11 +98,27 @@ def bootstrap(center=None):
     users=current_rows('CC Center Membership',{'center':center,'active':1},pluck='user') if center else []
     practitioners=current_rows('Healthcare Practitioner',{'user_id':['in',users or ['']]},fields=['name','practitioner_name','supplier'])
     assignees=[u for u in users if allowed(u,True)]
+    payment_methods=[]
+    if center:
+        company=next((row.cc_company for row in scopes if row.name==center),None)
+        if company:
+            for mode in current_rows('Mode of Payment',{'enabled':1},fields=['name','type']):
+                matches=current_rows('Mode of Payment Account',{'parent':mode.name,'company':company},fields=['default_account'])
+                for mapping in matches:
+                    if not mapping.default_account:continue
+                    account=frappe.db.get_value('Account',mapping.default_account,['company','account_type','is_group','disabled','account_currency'],as_dict=True)
+                    currency=frappe.db.get_value('Company',company,'default_currency')
+                    if account and account.company==company and account.account_type in ('Bank','Cash') and not account.is_group and not account.disabled and account.account_currency in (None,'',currency):
+                        label=mode.name
+                        if mode.name.startswith('CC DEV PROFILE '):
+                            label={'Cash':'Contanti','Bank':'Bonifico','General':'Altro metodo'}.get(mode.type,'Metodo di pagamento')
+                        payment_methods.append({'name':mode.name,'type':mode.type,'label':label})
+                        break
     return {'centers':scopes,'center':center,'can_write':allowed(write=True),'is_manager':is_manager(),
         'customers':masters('Customer',['name','customer_name']),'suppliers':masters('Supplier',['name','supplier_name','tax_id']),
         'accounts':masters('Account',['name','root_type','account_type','is_group','disabled','company']),
         'items':_bounded('Item',{'disabled':0,'is_stock_item':0},['name','item_name','is_purchase_item','is_sales_item']),
-        'practitioners':practitioners,'assignees':assignees,'unpaid_policy':professional_economics.POLICY,
+        'practitioners':practitioners,'assignees':assignees,'payment_methods':payment_methods,'unpaid_policy':professional_economics.POLICY,
         'fiscal_verified':bool(frappe.db.get_single_value('CC Finance Settings','fiscal_configuration_verified')),'simulation_only':True}
 
 
@@ -176,7 +194,14 @@ def professional_view(center,start,end,practitioner):
 @frappe.whitelist(methods=['GET'])
 def professional_export(center,start,end,practitioner):
     data=professional_view(center,start,end,practitioner);output=StringIO(newline='');writer=csv.writer(output)
-    columns=['name','appointment_date','appointment_time','patient_label','cc_service_label','category','cc_price_snapshot','cc_currency_snapshot','cc_economic_state','cc_paid']
-    writer.writerow(columns)
-    for row in data['sessions']:writer.writerow([safe_cell(row.get(field)) for field in columns])
+    fields=['name','appointment_date','appointment_time','patient_label','cc_service_label','category','cc_price_snapshot','cc_currency_snapshot','cc_economic_state','cc_paid']
+    writer.writerow(['Identificativo seduta','Data','Ora','Paziente','Servizio','Stato seduta','Valore snapshot','Valuta','Stato economico','Pagamento registrato'])
+    categories={'cancelled':'Annullata','performed':'Svolta','future':'In programma','closed_not_performed':'Chiusa non svolta','pending':'Da completare'}
+    economy={'Due':'Dovuta','Non Due':'Non dovuta','Package Covered':'Coperta da pacchetto','Waived':'Rinuncia economica'}
+    for row in data['sessions']:
+        values=[row.get(field) for field in fields]
+        values[1]=frappe.utils.formatdate(values[1],'dd/MM/yyyy') if values[1] else ''
+        values[2]=str(values[2])[:5] if values[2] else ''
+        values[5]=categories.get(values[5],values[5]);values[8]=economy.get(values[8],values[8]);values[9]='Sì' if values[9] else 'No'
+        writer.writerow([safe_cell(value) for value in values])
     frappe.response.update({'type':'download','filename':'centrochange-professional.csv','filecontent':output.getvalue(),'content_type':'text/csv; charset=utf-8'})

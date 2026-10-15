@@ -182,14 +182,28 @@ def main():
         checks.append('all financial roles report native document totals reconcile and Accountant bootstrap is readonly')
         csv_bytes=download('t',rp+'export_csv?'+urllib.parse.urlencode(report_args),200)
         assert b'PRIVATE' not in csv_bytes and amended.encode() in csv_bytes
+        assert 'Tipo documento'.encode() in csv_bytes and b'Data registrazione' in csv_bytes
+        assert not b'posting_date' in csv_bytes and not b'kind,name,date' in csv_bytes
         future=call('t',rp+'summary?'+urllib.parse.urlencode({**report_args,'start':'2099-01-01','end':'2099-12-31'}))['message']
         assert future['totals']['expected_compensation'] is None
         checks.append('readonly Accountant scoped CSV excludes clinical bodies and future-session unknown expectations remain explicit')
+        native_prefix='/api/method/centrochange_core.finance.native_reports.'
+        native_args={'center':center,'start':'2026-10-05','end':'2026-10-05'}
+        for actor in ('m','s','f','t'):
+            for report_name in ('general_ledger','trial_balance'):
+                native=call(actor,native_prefix+'run?'+urllib.parse.urlencode({**native_args,'report':report_name}))['message']
+                assert native['read_only'] and native['center']==center and native['columns']
+        gl_csv=download('t',native_prefix+'export_csv?'+urllib.parse.urlencode({**native_args,'report':'general_ledger'}),200)
+        assert gl_csv and b'private' not in gl_csv.lower()
+        checks.append('General Ledger and Trial Balance visible to Direzione, Segreteria, Finance and read-only Accountant through bounded center-scoped service; Accountant CSV export')
         for actor in ('a','b'):
             call(actor,rp+'summary?'+urllib.parse.urlencode(report_args),expected=403)
             call(actor,rp+'bootstrap?'+urllib.parse.urlencode({'center':center}),expected=403)
             download(actor,rp+'export_csv?'+urllib.parse.urlencode(report_args),403)
+            for report_name in ('general_ledger','trial_balance'):
+                call(actor,native_prefix+'run?'+urllib.parse.urlencode({**native_args,'report':report_name}),expected=403)
         call('f',rp+'summary?'+urllib.parse.urlencode({**report_args,'center':fixture['centers'][1]}),expected=403)
+        call('f',native_prefix+'run?'+urllib.parse.urlencode({**native_args,'center':fixture['centers'][1],'report':'general_ledger'}),expected=403)
         call('f',rp+'records?'+urllib.parse.urlencode({'center':center,'doctype':'CC Private Note'}),expected=403)
         checks.append('professional reports bootstrap export, cross-center report and arbitrary private record projection denied')
         call('f',prefix+'intake',{'center':fixture['centers'][1],'xml':prepared['xml'],'reason':tag},expected=403)

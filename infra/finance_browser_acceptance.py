@@ -25,7 +25,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--env-file',required=True)
     parser.add_argument('--output-dir',default='/tmp/centrochange-browser-evidence')
-    parser.add_argument('--script',choices=('finance','threshold'),default='finance')
+    parser.add_argument('--script',choices=('finance','threshold','native_reports'),default='finance')
     args=parser.parse_args()
     repository=Path(__file__).resolve().parent.parent
     output=Path(args.output_dir).resolve()
@@ -44,6 +44,7 @@ def main():
     try:
         fixture=execute('centrochange_core.security.dev_acceptance.create_http',{'scheduling':True,'operations':True,'finance':True})
         fixture['incoming']=execute('centrochange_core.finance.incoming_acceptance.prepare_http',{'fixture':fixture})
+        fixture['receivable']=execute('centrochange_core.finance.receivables_acceptance.prepare_browser_invoice',{'fixture':fixture})
         descriptor,credential=tempfile.mkstemp(prefix='cc-browser-fixture-',suffix='.json')
         with os.fdopen(descriptor,'w') as stream:
             json.dump(fixture,stream)

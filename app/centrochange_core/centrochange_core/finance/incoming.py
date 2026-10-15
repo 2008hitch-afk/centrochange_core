@@ -236,9 +236,28 @@ def submit(name,reason):
 
 @frappe.whitelist(methods=['POST'])
 @atomic
-def pay(name,amount,posting_date,request_key,reason,reference=None,bank_account=None):
+def pay(name,amount,posting_date,request_key,reason,reference=None,bank_account=None,mode_of_payment=None):
     lock(); require_synthetic(); native=invoice(name,True)
-    fingerprint=sha256(serialize([name,str(amount),str(posting_date),reference,bank_account]).encode()).hexdigest()
+    company=frappe.get_doc('Company',native.company)
+    settings=frappe.get_doc('CC Finance Settings')
+    selected_mode=mode_of_payment
+    if selected_mode:
+        from centrochange_core.finance.native_adapter import payment_mode_account
+        method_account=payment_mode_account(selected_mode,native.company)
+        if bank_account and bank_account!=method_account:
+            frappe.throw('Il conto deve corrispondere al metodo di pagamento selezionato.',frappe.PermissionError)
+        bank=method_account
+    elif bank_account:
+        configured=frappe.db.get_value('Branch',native.cc_center,'cc_bank_account',for_update=True)
+        if not configured or frappe.db.get_value('Bank Account',configured,'account')!=bank_account:
+            frappe.throw('Il conto del pagamento deve corrispondere al conto della sede.',frappe.PermissionError)
+        bank=bank_account
+    else:
+        bank=settings.bank_account or company.default_cash_account
+    payload=[name,str(amount),str(posting_date),reference,bank_account]
+    if selected_mode:
+        payload.append(selected_mode)
+    fingerprint=sha256(serialize(payload).encode()).hexdigest()
     existing=frappe.db.get_value('Payment Entry',{'cc_request_key':key('supplier-payment',request_key)},for_update=True)
     if existing:
         payment=frappe.get_doc('Payment Entry',existing)
@@ -249,16 +268,9 @@ def pay(name,amount,posting_date,request_key,reason,reference=None,bank_account=
     amount=frappe.utils.flt(amount,2)
     if not isfinite(amount) or native.docstatus!=1 or native.is_return or amount<=0 or amount>native.outstanding_amount:
         frappe.throw('Il pagamento fornitore deve essere positivo e non superare il residuo aperto.')
-    company=frappe.get_doc('Company',native.company)
-    settings=frappe.get_doc('CC Finance Settings')
-    bank=bank_account or settings.bank_account or company.default_cash_account
-    if bank_account:
-        configured=frappe.db.get_value('Branch',native.cc_center,'cc_bank_account',for_update=True)
-        if not configured or frappe.db.get_value('Bank Account',configured,'account')!=bank_account:
-            frappe.throw('Il conto del pagamento deve corrispondere al conto della sede.',frappe.PermissionError)
     before_outstanding=native.outstanding_amount
     from centrochange_core.finance.native_adapter import payment_document
-    payment=payment_document(native,amount,bank)
+    payment=payment_document(native,amount,bank,selected_mode)
     payment.update({'posting_date':posting_date,'reference_no':reference or request_key,'reference_date':posting_date,
         'cc_center':native.cc_center,'cc_request_key':key('supplier-payment',request_key),'cc_request_hash':fingerprint})
     with internal_write('cc_accounting_write'):
