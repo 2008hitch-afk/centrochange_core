@@ -1,6 +1,8 @@
 # CENTROCHANGE-MVP-FUNCTIONAL-COMPLETION-REPORT
 
-**Esito: PARTIAL — candidato locale implementato e verifiche offline superate; le sei voci restano da collaudare sul runtime DEV.**
+**Esito aggiornato: PARTIAL — il candidato è stato provato sul DEV ma l’installazione singola è terminata in ROLLED_BACK durante la preparazione della fixture finance. Si veda il report live del 15 ottobre; sei voci restano senza accettazione funzionale live.**
+
+Addendum live: `CENTROCHANGE-MVP-LIVE-FUNCTIONAL-VALIDATION-REPORT-2026-10-15.md`.
 
 Data: 15 ottobre 2026 UTC. Branch locale dedicato `audit/mvp-functional-completion`, derivato dalla baseline dell’audit e dal candidato applicativo installato. Nessun deploy, reset, migrazione, riavvio, scrittura o test mutativo sul DEV; nessuna pubblicazione o modifica GitHub.
 
