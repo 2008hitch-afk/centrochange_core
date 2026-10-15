@@ -168,7 +168,7 @@ def parse_settings(raw):
 
 def compose_files(value):
     files = [Path(p) for p in value['COMPOSE_FILE'].split(':')]
-    require(files == [*(COMPOSE_DIR / n for n in COMPOSE_SHA), BASE_OVERLAY],
+    require(files == [*(COMPOSE_DIR / n for n in COMPOSE_SHA), BASE_OVERLAY, ACTIVE_OVERLAY],
             'ordinary Compose precedence drift')
     return files
 
