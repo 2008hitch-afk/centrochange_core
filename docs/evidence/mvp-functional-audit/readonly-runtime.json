@@ -1,0 +1,174 @@
+{
+  "centers": [
+    {
+      "cc_operational": 1,
+      "name": "CC-HTTP-UAT0000001 A"
+    },
+    {
+      "cc_operational": 0,
+      "name": "CC-HTTP-UAT0000001 B"
+    }
+  ],
+  "current_audit_trace": {
+    "events": [
+      {
+        "event_type": "APPOINTMENT_BOOKED",
+        "found": true,
+        "id": "t7ci2taf1o"
+      },
+      {
+        "event_type": "CENTER_OPERATIONAL_STATE",
+        "found": true,
+        "id": "kj9o31jihi"
+      },
+      {
+        "event_type": "SESSION_CANCELLED",
+        "found": true,
+        "id": "l4qlt0a71j"
+      }
+    ],
+    "six_roles_denied": true
+  },
+  "current_bank_trace": [
+    {
+      "documents": [
+        {
+          "allocated_amount": 60.0,
+          "document_type": "Sales Invoice",
+          "name": "ACC-SINV-2026-00001",
+          "payment": "ACC-PAY-2026-00009",
+          "subject": "CC-HTTP-UAT0000001 Beta"
+        }
+      ],
+      "movement": "ACC-BTN-2026-00001",
+      "native_balance": 0.0,
+      "native_invoice_exists": true,
+      "state": "Reconciled"
+    },
+    {
+      "documents": [],
+      "movement": "ACC-BTN-2026-00002",
+      "state": "Unmatched"
+    }
+  ],
+  "current_finance_totals": {
+    "billed_gross": 300.0,
+    "collected": 200.0,
+    "expected_compensation": null,
+    "indicative_margin": null,
+    "known_expected_compensation": 200.0,
+    "payable_outstanding": 100.0,
+    "performed": 7,
+    "purchase_net": 100.0,
+    "receivable_outstanding": 100.0,
+    "revenue_net": 300.0,
+    "sessions": 13,
+    "supplier_paid": 0,
+    "unresolved_expectations": 2
+  },
+  "finance_csv_human_output": {
+    "first_data": "Sales Invoice,ACC-SINV-2026-00003,2026-09-29,CC-HTTP-UAT0000001 Theta,EUR,100.0,100.0,100.0",
+    "header": "kind,name,date,subject,currency,net,gross,outstanding",
+    "row_count": 7
+  },
+  "inactive_center_operations_denied": [
+    "m",
+    "s",
+    "a",
+    "b",
+    "c",
+    "f",
+    "t"
+  ],
+  "manual_administrative_attachment_guard": [
+    {
+      "file_inserted": false,
+      "result": "DENIED: I documenti finanziari richiedono il servizio di gestione della fonte.",
+      "role": "m"
+    },
+    {
+      "file_inserted": false,
+      "result": "DENIED: I documenti finanziari richiedono il servizio di gestione della fonte.",
+      "role": "s"
+    },
+    {
+      "file_inserted": false,
+      "result": "DENIED: I documenti finanziari richiedono il servizio di gestione della fonte.",
+      "role": "f"
+    },
+    {
+      "file_inserted": false,
+      "result": "DENIED: I documenti finanziari richiedono il servizio di gestione della fonte.",
+      "role": "t"
+    }
+  ],
+  "payment_methods": [
+    {
+      "mode_of_payment": null,
+      "name": "ACC-PAY-2026-00001",
+      "payment_type": "Receive"
+    },
+    {
+      "mode_of_payment": null,
+      "name": "ACC-PAY-2026-00002",
+      "payment_type": "Receive"
+    },
+    {
+      "mode_of_payment": null,
+      "name": "ACC-PAY-2026-00009",
+      "payment_type": "Receive"
+    }
+  ],
+  "payment_signatures": {
+    "incoming.pay": "(name, amount, posting_date, request_key, reason, reference=None, bank_account=None)",
+    "receivables.pay": "(name, amount, posting_date, request_key, reason, reference=None, bank_account=None)"
+  },
+  "scheduler": {
+    "disabled": null,
+    "methods": [
+      {
+        "frequency": "Cron",
+        "last_execution": "2026-10-15 01:36:00.969791",
+        "method": "centrochange_core.finance.admin_queue.catch_up",
+        "stopped": 0
+      },
+      {
+        "frequency": "Cron",
+        "last_execution": "2026-10-15 01:36:01.316245",
+        "method": "centrochange_core.finance.collections.catch_up",
+        "stopped": 0
+      },
+      {
+        "frequency": "Cron",
+        "last_execution": "2026-10-15 01:36:03.209529",
+        "method": "centrochange_core.finance.sdi.catch_up",
+        "stopped": 0
+      },
+      {
+        "frequency": "Cron",
+        "last_execution": "2026-10-15 01:36:02.095487",
+        "method": "centrochange_core.finance.ts.catch_up",
+        "stopped": 0
+      },
+      {
+        "frequency": "Cron",
+        "last_execution": "2026-10-15 01:36:03.246638",
+        "method": "centrochange_core.operations.automation.catch_up",
+        "stopped": 0
+      },
+      {
+        "frequency": "Cron",
+        "last_execution": "2026-10-15 01:36:02.457444",
+        "method": "centrochange_core.operations.notifications.dispatch_pending",
+        "stopped": 0
+      }
+    ],
+    "paused": null
+  },
+  "versions": {
+    "builder": "1.35.1",
+    "erpnext": "16.50.0",
+    "frappe": "16.50.0",
+    "healthcare": "16.6.1"
+  }
+}

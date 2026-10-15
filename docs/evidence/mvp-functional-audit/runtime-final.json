@@ -1,0 +1,85 @@
+{
+  "baseline_equal": true,
+  "data": {
+    "communication_sha256": "b38c7b6334fd4010251e7258a593c49d5f4efd02c677b41860c2d08055e8c7e2",
+    "counts": {
+      "Bank Transaction": 2,
+      "CC Audit Event": 134,
+      "CC Booking Confirmation": 2,
+      "CC Fiscal Transaction": 4,
+      "CC Professional Comparison": 0,
+      "Healthcare Practitioner": 2,
+      "Patient": 9,
+      "Patient Appointment": 13,
+      "Payment Entry": 3,
+      "Purchase Invoice": 1,
+      "Sales Invoice": 4
+    },
+    "db_sha256": "a187c1635a89586646dccae5622cfc747604c4be238d77e198be44f7143bb1ec",
+    "sha256": "3d20b50fa303d52fb9b4a467b12425303a87fcb7b8d36ce82559e1a2c5174671"
+  },
+  "hooks": [
+    "centrochange_core.finance.request_guard.before_request",
+    "centrochange_core.security.diagnostics.before_request",
+    "centrochange_core.security.api.before_request",
+    "centrochange_core.operations.notes.request_guard",
+    "centrochange_core.operations.website_brand.client_language",
+    "centrochange_core.operations.website_brand.login_language"
+  ],
+  "services": [
+    {
+      "health": null,
+      "image": "sha256:2054c8d2ffe887e56bfd0a5a2a867449286e97bee76380119d3c6fcdb9e68cbc",
+      "name": "centrochange-dev-frontend-1",
+      "running": true
+    },
+    {
+      "health": null,
+      "image": "sha256:2054c8d2ffe887e56bfd0a5a2a867449286e97bee76380119d3c6fcdb9e68cbc",
+      "name": "centrochange-dev-queue-short-1",
+      "running": true
+    },
+    {
+      "health": null,
+      "image": "sha256:2054c8d2ffe887e56bfd0a5a2a867449286e97bee76380119d3c6fcdb9e68cbc",
+      "name": "centrochange-dev-websocket-1",
+      "running": true
+    },
+    {
+      "health": null,
+      "image": "sha256:2054c8d2ffe887e56bfd0a5a2a867449286e97bee76380119d3c6fcdb9e68cbc",
+      "name": "centrochange-dev-queue-long-1",
+      "running": true
+    },
+    {
+      "health": null,
+      "image": "sha256:2054c8d2ffe887e56bfd0a5a2a867449286e97bee76380119d3c6fcdb9e68cbc",
+      "name": "centrochange-dev-scheduler-1",
+      "running": true
+    },
+    {
+      "health": null,
+      "image": "sha256:2054c8d2ffe887e56bfd0a5a2a867449286e97bee76380119d3c6fcdb9e68cbc",
+      "name": "centrochange-dev-backend-1",
+      "running": true
+    },
+    {
+      "health": "healthy",
+      "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "name": "centrochange-dev-redis-cache-1",
+      "running": true
+    },
+    {
+      "health": "healthy",
+      "image": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "name": "centrochange-dev-redis-queue-1",
+      "running": true
+    },
+    {
+      "health": "healthy",
+      "image": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "name": "centrochange-dev-db-1",
+      "running": true
+    }
+  ]
+}

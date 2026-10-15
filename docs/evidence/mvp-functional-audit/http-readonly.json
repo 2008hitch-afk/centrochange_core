@@ -1,0 +1,173 @@
+{
+  "results": [
+    {
+      "role": "a",
+      "probe": "native_general_ledger_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "a",
+      "probe": "native_trial_balance_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "a",
+      "probe": "finance_summary",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "a",
+      "probe": "patient_search",
+      "status": 200,
+      "exception": null
+    },
+    {
+      "role": "b",
+      "probe": "native_general_ledger_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "b",
+      "probe": "native_trial_balance_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "b",
+      "probe": "finance_summary",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "b",
+      "probe": "patient_search",
+      "status": 200,
+      "exception": null
+    },
+    {
+      "role": "c",
+      "probe": "native_general_ledger_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "c",
+      "probe": "native_trial_balance_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "c",
+      "probe": "finance_summary",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "c",
+      "probe": "patient_search",
+      "status": 200,
+      "exception": null
+    },
+    {
+      "role": "f",
+      "probe": "native_general_ledger_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "f",
+      "probe": "native_trial_balance_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "f",
+      "probe": "finance_summary",
+      "status": 200,
+      "exception": null
+    },
+    {
+      "role": "f",
+      "probe": "patient_search",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "m",
+      "probe": "native_general_ledger_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "m",
+      "probe": "native_trial_balance_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "m",
+      "probe": "finance_summary",
+      "status": 200,
+      "exception": null
+    },
+    {
+      "role": "m",
+      "probe": "patient_search",
+      "status": 200,
+      "exception": null
+    },
+    {
+      "role": "s",
+      "probe": "native_general_ledger_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "s",
+      "probe": "native_trial_balance_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "s",
+      "probe": "finance_summary",
+      "status": 200,
+      "exception": null
+    },
+    {
+      "role": "s",
+      "probe": "patient_search",
+      "status": 200,
+      "exception": null
+    },
+    {
+      "role": "t",
+      "probe": "native_general_ledger_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "t",
+      "probe": "native_trial_balance_definition",
+      "status": 403,
+      "exception": "PermissionError"
+    },
+    {
+      "role": "t",
+      "probe": "finance_summary",
+      "status": 200,
+      "exception": null
+    },
+    {
+      "role": "t",
+      "probe": "patient_search",
+      "status": 403,
+      "exception": "PermissionError"
+    }
+  ],
+  "business_mutations": "NONE"
+}
