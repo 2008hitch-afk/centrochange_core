@@ -1,0 +1,7 @@
+id,original_status,candidate_status,implementation_delta,offline_test,live_functional_test,remaining_evidence
+CC-CAP-029,PARTIAL,PARTIAL,"Italian CSV headers; European dates; HH:mm; method of payment exported",PASS,"NOT RUN","Download rendered data and role visibility on pinned Frappe runtime"
+CC-CAP-042,PARTIAL,PARTIAL,"Native Mode of Payment selection; company/account validation; idempotent single payment; partial balance",PASS,"NOT RUN","Backend controller and Chromium payment flow on isolated fixtures"
+CC-CAP-047,PARTIAL,PARTIAL,"Allowlisted read-only General Ledger and Trial Balance, forced active-center company/cost-center scope",PASS,"NOT RUN","ERPNext 16.50 report execution, roles, filters, CSV and cross-center denial"
+CC-CAP-050,PARTIAL,PARTIAL,"Obsolete RC22 IDs and English expectation corrected; isolated rollback fixture; no test-source rewrite",PASS,"NOT RUN","Run all updated Frappe acceptance suites and browser workflow, inspect all former 14 nonzero results"
+SCOPE-DOC,PARTIAL,PARTIAL,"Native private File attachment service for approved administrative documents with audit",PASS,"NOT RUN","Upload, persistence, authorized download, cross-role denial, exact fixture cleanup"
+UAT-GLOBAL,PARTIAL,PARTIAL,"Italian exports and mobile multi-select layout/semantics addressed in source",PASS,"NOT RUN","Chromium desktop/mobile screenshots, all roles, Owner visual review"
