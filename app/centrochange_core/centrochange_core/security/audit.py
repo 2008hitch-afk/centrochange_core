@@ -43,7 +43,7 @@ def atomic(function):
 
 def append(event, doctype, name, before, after, reason):
 	if not reason or not reason.strip():
-		frappe.throw("A business reason is required")
+		frappe.throw("Indica il motivo operativo.")
 	with internal_write("cc_audit_write"):
 		return frappe.get_doc({
 			"doctype": "CC Audit Event", "event_type": event,
@@ -56,4 +56,4 @@ def append(event, doctype, name, before, after, reason):
 
 def immutable(doc, method=None):
 	if method == "on_trash" or not doc.is_new() or not frappe.flags.get("cc_audit_write"):
-		frappe.throw("Business audit events are append-only and service-controlled", frappe.PermissionError)
+		frappe.throw("Gli eventi di audit sono storici e gestiti solo dal servizio previsto.", frappe.PermissionError)

@@ -14,7 +14,7 @@ def get_context(context):
     assigned = set(roles())
     operational = is_manager() or bool(assigned & {'CC Professional', 'CC Secretariat'})
     if not enabled() or not (operational or allowed()):
-        frappe.throw('Validation guide access denied', frappe.PermissionError)
+        frappe.throw('Non hai accesso alla guida di validazione.', frappe.PermissionError)
     context.operational = operational
     context.finance = allowed()
     context.manager = is_manager()

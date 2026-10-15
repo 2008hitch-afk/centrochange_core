@@ -13,15 +13,15 @@ def protected(doc,method=None):
     if method=='on_trash':
         if frappe.flags.get('cc_fixture_file_cleanup') or doc.attached_to_doctype in ('Sales Invoice','Purchase Invoice') and frappe.flags.get('cc_accounting_write'):
             return
-        frappe.throw('Retained financial payloads cannot be deleted manually',frappe.PermissionError)
+        frappe.throw('I documenti finanziari conservati non possono essere cancellati manualmente.',frappe.PermissionError)
     if not frappe.utils.cint(doc.is_private):
-        frappe.throw('Financial payload attachments must remain private',frappe.PermissionError)
+        frappe.throw('Gli allegati finanziari devono restare privati.',frappe.PermissionError)
     if old and doc.get('content') is not None:
-        frappe.throw('Financial payload bytes cannot be replaced',frappe.PermissionError)
+        frappe.throw('Il contenuto del documento finanziario non può essere sostituito.',frappe.PermissionError)
     if old and any(doc.get(field)!=old.get(field) for field in ('attached_to_doctype','attached_to_name','file_url','file_name','content_hash')):
-        frappe.throw('Financial payload identity/reference cannot be changed',frappe.PermissionError)
+        frappe.throw('Identità e riferimento del documento finanziario non possono cambiare.',frappe.PermissionError)
     if doc.is_new() and not (frappe.flags.get('cc_incoming_write') or frappe.flags.get('cc_accounting_write') or frappe.flags.get('cc_fiscal_write')):
-        frappe.throw('Financial payloads require the source-controlled service',frappe.PermissionError)
+        frappe.throw('I documenti finanziari richiedono il servizio di gestione della fonte.',frappe.PermissionError)
 
 
 def accounting_attachment_context(doc, deleting=False):
@@ -33,24 +33,24 @@ def accounting_attachment_context(doc, deleting=False):
     if not frappe.flags.get('cc_accounting_write') or doc.attached_to_doctype != 'Sales Invoice':
         return False
     if not doc.attached_to_name or not isinstance(doc.attached_to_name, (str, int)):
-        frappe.throw('A canonical invoice attachment reference is required')
+        frappe.throw('Indica il riferimento canonico dell’allegato fattura.')
     from centrochange_core.finance.guards import require_finance, require_synthetic
     invoice = frappe.get_doc('Sales Invoice', doc.attached_to_name)
     require_finance(invoice.cc_center, True)
     invoice.check_permission('read')
     if not invoice.cc_center or invoice.company != require_synthetic() or invoice.cc_fiscal_profile != 'SYNTHETIC_UNVERIFIED':
-        frappe.throw('Managed synthetic invoice attachment required', frappe.PermissionError)
+        frappe.throw('Seleziona un allegato fattura demo gestito.', frappe.PermissionError)
     if not frappe.utils.cint(doc.is_private) or doc.is_remote_file or not str(doc.file_name).endswith('.xml'):
-        frappe.throw('Native accounting attachment must be private local XML', frappe.PermissionError)
+        frappe.throw('L’allegato contabile nativo deve essere un XML locale e privato.', frappe.PermissionError)
     from frappe.database.schema import SPECIAL_CHAR_PATTERN
     if doc.attached_to_field and SPECIAL_CHAR_PATTERN.search(doc.attached_to_field):
-        frappe.throw('Invalid attachment reference field')
+        frappe.throw('Il riferimento dell’allegato non è valido.')
     if deleting:
         from erpnext.regional.italy.utils import get_e_invoice_attachments
         if invoice.docstatus != 2 or doc.name not in {row.name for row in get_e_invoice_attachments(invoice)}:
-            frappe.throw('Only native XML of the cancelled invoice can be removed', frappe.PermissionError)
+            frappe.throw('Puoi rimuovere solo l’XML nativo della fattura annullata.', frappe.PermissionError)
     elif invoice.docstatus != 1:
-        frappe.throw('Native XML requires a submitted invoice', frappe.PermissionError)
+        frappe.throw('L’XML nativo richiede una fattura contabilizzata.', frappe.PermissionError)
     return True
 
 
@@ -81,10 +81,10 @@ class FinancialFileMixin:
             for match in filters:
                 for origin in frappe.get_all('File',filters=match,fields=['attached_to_doctype','attached_to_name']):
                     if managed(origin):
-                        frappe.throw('Financial payload bytes cannot be copied to an unprotected attachment',frappe.PermissionError)
+                        frappe.throw('Il contenuto finanziario non può essere copiato in un allegato non protetto.',frappe.PermissionError)
         protected(self)
         if managed(self) and self.file_url and self.is_remote_file:
-            frappe.throw('Financial payloads must be local retained bytes, never remote URLs',frappe.PermissionError)
+            frappe.throw('I documenti finanziari devono restare file locali conservati, mai URL remoti.',frappe.PermissionError)
         return super().before_insert()
 
     def validate(self):

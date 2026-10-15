@@ -1,0 +1,25 @@
+# #139 candidate. Applied only by issue139_install_gate.py after a distinct Owner gate.
+# The existing #79 overlay remains in the Compose chain for exact rollback.
+services:
+  backend:
+    image: centrochange-single:issue139-realtime-v2
+    pull_policy: never
+  frontend:
+    image: centrochange-single:issue139-realtime-v2
+    pull_policy: never
+    networks:
+      centrochange-dev-net:
+        aliases:
+          - centrochange.local
+  websocket:
+    image: centrochange-single:issue139-realtime-v2
+    pull_policy: never
+  queue-short:
+    image: centrochange-single:issue139-realtime-v2
+    pull_policy: never
+  queue-long:
+    image: centrochange-single:issue139-realtime-v2
+    pull_policy: never
+  scheduler:
+    image: centrochange-single:issue139-realtime-v2
+    pull_policy: never

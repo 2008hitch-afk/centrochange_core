@@ -14,15 +14,15 @@ def digest(value):return sha256(serialize(value).encode()).hexdigest()
 
 def number(value):
     try: result=Decimal(str(value))
-    except (InvalidOperation,ValueError):frappe.throw('An explicit finite economic amount is required')
-    if not result.is_finite() or result<0 or result>Decimal('1000000000'):frappe.throw('Economic amount is out of range')
+    except (InvalidOperation,ValueError):frappe.throw('Indica un importo economico valido.')
+    if not result.is_finite() or result<0 or result>Decimal('1000000000'):frappe.throw('L’importo economico è fuori dai limiti consentiti.')
     return result
 
 
 def _practitioner(practitioner,center):
     user=frappe.db.get_value('Healthcare Practitioner',practitioner,'user_id',for_update=True)
     if not user or not current_rows('CC Center Membership',{'user':user,'center':center,'active':1},pluck='name'):
-        frappe.throw('Professional center context is unavailable',frappe.PermissionError)
+        frappe.throw('Il contesto del professionista nella sede non è disponibile.',frappe.PermissionError)
 
 
 @frappe.whitelist(methods=['POST'])
@@ -31,17 +31,17 @@ def configure_rule(center,practitioner,service_item,valid_from,basis,value,curre
     lock();require_finance_manager();require_synthetic();_practitioner(practitioner,center)
     value=number(value)
     if basis not in ('Fixed Amount','Percentage') or basis=='Percentage' and value>100:
-        frappe.throw('Choose an explicit supported compensation basis')
+        frappe.throw('Seleziona una base di compenso supportata.')
     start=frappe.utils.getdate(valid_from);end=frappe.utils.getdate(valid_to) if valid_to else None
     if not valid_from or end and end<start or currency!='EUR' or not request_key or len(request_key)>140:
-        frappe.throw('Explicit rule dates currency and request key are required')
+        frappe.throw('Indica date, valuta e identificativo della regola.')
     item=frappe.get_doc('Item',service_item)
-    if item.disabled or item.is_stock_item:frappe.throw('An enabled service item is required')
+    if item.disabled or item.is_stock_item:frappe.throw('Seleziona un servizio attivo.')
     data=dict(center=center,practitioner=practitioner,service_item=service_item,valid_from=start,valid_to=end,
         basis=basis,value=float(value),currency=currency)
     old=frappe.db.get_value('CC Compensation Rule',{'request_key':request_key},['name','payload_hash'],as_dict=True,for_update=True)
     if old:
-        if old.payload_hash!=digest(data):frappe.throw('Rule replay differs from the recorded request')
+        if old.payload_hash!=digest(data):frappe.throw('La regola è già stata registrata con dati diversi.')
         return {'name':old.name,'replay':True}
     with internal_write('cc_operation_write'):
         doc=frappe.get_doc({'doctype':'CC Compensation Rule',**data,'request_key':request_key,'payload_hash':digest(data),'recorded_by':frappe.session.user}).insert(ignore_permissions=True)
@@ -71,12 +71,12 @@ def configure_threshold(center,practitioner,max_unpaid_sessions_compensated,requ
     lock();require_finance_manager();require_synthetic();_practitioner(practitioner,center)
     raw=str(max_unpaid_sessions_compensated)
     if not raw.isascii() or not raw.isdigit() or len(raw)>10 or int(raw)>2147483647:
-        frappe.throw('An explicit non-negative integer threshold is required')
-    if not request_key or len(request_key)>140:frappe.throw('An explicit request key is required')
+        frappe.throw('Indica una soglia intera pari o superiore a zero.')
+    if not request_key or len(request_key)>140:frappe.throw('Indica un identificativo per la richiesta.')
     data={'center':center,'practitioner':practitioner,'max_unpaid_sessions_compensated':int(raw)}
     old=frappe.db.get_value('CC Unpaid Threshold',{'request_key':request_key},['name','payload_hash'],as_dict=True,for_update=True)
     if old:
-        if old.payload_hash!=digest(data):frappe.throw('Threshold replay differs from the recorded request')
+        if old.payload_hash!=digest(data):frappe.throw('La soglia è già stata registrata con dati diversi.')
         return {'name':old.name,'replay':True}
     previous=threshold(practitioner)
     with internal_write('cc_operation_write'):
@@ -123,9 +123,9 @@ def _capture(src,reason,rule=None,override=False):
     if rule:
         doc=frappe.get_doc('CC Compensation Rule',rule,for_update=True)
         if (doc.center,doc.practitioner,doc.service_item,doc.currency)!=(src.center,src.practitioner,src.service_item,src.currency):
-            frappe.throw('Explicit compensation rule and source context differ')
+            frappe.throw('La regola di compenso non corrisponde alla seduta selezionata.')
         if not doc.valid_from<=frappe.utils.getdate(src.session_date) or doc.valid_to and doc.valid_to<frappe.utils.getdate(src.session_date):
-            frappe.throw('Rule is not valid for the source session date')
+            frappe.throw('La regola non è valida nella data della seduta.')
         snapshot={k:doc.get(k) for k in ('name','valid_from','valid_to','basis','value','currency')}
     else:problem='Compensation Rule Unset'
     if not performed:problem='Eligibility Requires Review'
@@ -193,7 +193,7 @@ def override(expectation,reason):
     current=latest_expectations(old.center).get(old.appointment)
     if current.manual_override:
         return {'name':current.name,'replay':True,'state':current.state,'amount':current.amount}
-    if old.name!=current.name or current.state!='SUSPENDED':frappe.throw('Choose the current suspended session expectation')
+    if old.name!=current.name or current.state!='SUSPENDED':frappe.throw('Seleziona il compenso sospeso corrente della seduta.')
     result=_capture(frappe.get_doc('CC Economic Source Link',old.source,for_update=True),reason,old.rule,True)
     from centrochange_core.finance.admin_queue import _refresh
     _refresh(old.center,reason)
@@ -215,13 +215,13 @@ def compare(purchase_invoice,expectations,reason):
     lock();require_synthetic()
     invoice=frappe.get_doc('Purchase Invoice',purchase_invoice,for_update=True);require_finance(invoice.cc_center,True)
     ids=frappe.parse_json(expectations) if isinstance(expectations,str) else expectations
-    if not isinstance(ids,list) or not ids or len(ids)>500 or len(set(ids))!=len(ids):frappe.throw('Choose distinct expected session snapshots')
-    if invoice.docstatus!=1 or invoice.is_return:frappe.throw('A submitted ordinary native Purchase Invoice is required')
+    if not isinstance(ids,list) or not ids or len(ids)>500 or len(set(ids))!=len(ids):frappe.throw('Seleziona sedute attese distinte.')
+    if invoice.docstatus!=1 or invoice.is_return:frappe.throw('Seleziona una fattura fornitore ordinaria e contabilizzata.')
     rows=[frappe.get_doc('CC Professional Expectation',name,for_update=True) for name in sorted(ids)]
     contexts={(r.center,r.practitioner,r.supplier,r.currency) for r in rows}
     if len(contexts)!=1 or next(iter(contexts))!=(invoice.cc_center,rows[0].practitioner,invoice.supplier,invoice.currency):
-        frappe.throw('Expected and received professional context differ',frappe.PermissionError)
-    if len({r.appointment for r in rows})!=len(rows):frappe.throw('A session cannot count twice in one comparison')
+        frappe.throw('Il contesto del compenso atteso non corrisponde alla fattura ricevuta.',frappe.PermissionError)
+    if len({r.appointment for r in rows})!=len(rows):frappe.throw('Una seduta non può comparire due volte nello stesso confronto.')
     known=all(r.state=='OK' for r in rows);expected=sum(number(r.amount) for r in rows) if known else None
     received=number(invoice.net_total)
     data={'center':invoice.cc_center,'practitioner':rows[0].practitioner,'purchase_invoice':invoice.name,

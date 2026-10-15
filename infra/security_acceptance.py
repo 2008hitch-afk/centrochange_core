@@ -10,9 +10,10 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+BACKEND='centrochange-dev-backend-1'
 
 def execute(method, kwargs=None):
-    command=['docker','exec','centrochange-dev-backend-1','bench','--site','centrochange.local','execute',method]
+    command=['docker','exec',BACKEND,'bench','--site','centrochange.local','execute',method]
     if kwargs:
         command += ['--kwargs',repr(kwargs)]
     result=subprocess.run(command,text=True,capture_output=True)
@@ -26,10 +27,19 @@ def main():
     parser.add_argument('--env-file',required=True)
     parser.add_argument('--with-booking',action='store_true')
     parser.add_argument('--with-operations',action='store_true')
+    parser.add_argument('--isolated-project',choices=['cc139-w5-isolated'])
     args=parser.parse_args()
+    global BACKEND
+    if args.isolated_project:
+        BACKEND=args.isolated_project+'-backend-1'
+        inspected=json.loads(subprocess.run(['docker','inspect','--format',
+            '{{json .Config.Labels}}',BACKEND],check=True,text=True,capture_output=True).stdout)
+        assert inspected['com.docker.compose.project']==args.isolated_project
+        assert subprocess.run(['docker','inspect',BACKEND],check=True,
+                              capture_output=True).returncode==0
     config=dict(line.split('=',1) for line in Path(args.env_file).read_text().splitlines() if line and not line.startswith('#'))
     assert config['SITE_NAME']=='centrochange.local'
-    base='http://127.0.0.1:'+config['HTTP_PORT']
+    base='http://'+('127.0.0.2' if args.isolated_project else '127.0.0.1')+':'+config['HTTP_PORT']
     fixture=None
     checks=[]
     def session(user,password):

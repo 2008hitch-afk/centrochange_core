@@ -17,17 +17,17 @@ def digest(value):return sha256(serialize(value).encode()).hexdigest()
 def guard():
     require_synthetic()
     if frappe.utils.cint(frappe.db.get_single_value('CC Finance Settings','simulation_only'))!=1:
-        frappe.throw('Only the synthetic SIMULATED fiscal route is authorized',frappe.PermissionError)
+        frappe.throw('È autorizzata soltanto la simulazione fiscale con dati sintetici.',frappe.PermissionError)
 
 
 def protected(doc,method=None):
     old=doc.get_doc_before_save()
     if method=='on_trash' or not frappe.flags.get('cc_fiscal_write'):
-        frappe.throw('Fiscal transactions require audited adapter services',frappe.PermissionError)
+        frappe.throw('Le operazioni fiscali richiedono i servizi tracciati previsti.',frappe.PermissionError)
     if old and (any(doc.get(k)!=old.get(k) for k in RAW) or old.payload_file and doc.payload_file!=old.payload_file):
-        frappe.throw('Fiscal source payload and version identity are immutable',frappe.PermissionError)
+        frappe.throw('Documento fiscale originale e identità della versione non possono essere modificati.',frappe.PermissionError)
     if doc.route!='SIMULATED' or doc.configuration_ref!='SYNTHETIC_UNVERIFIED':
-        frappe.throw('Real fiscal transport configuration is not authorized',frappe.PermissionError)
+        frappe.throw('La configurazione per invii fiscali reali non è autorizzata.',frappe.PermissionError)
 
 
 def transaction(name,write=False):
@@ -36,8 +36,8 @@ def transaction(name,write=False):
 
 def retain(data,payload,reason):
     raw=payload.encode('utf-8') if isinstance(payload,str) else payload
-    if not raw or len(raw)>1024*1024:frappe.throw('Retained fiscal payload must be bounded nonempty local bytes')
-    if sha256(raw).hexdigest()!=data['payload_hash']:frappe.throw('Fiscal payload digest differs')
+    if not raw or len(raw)>1024*1024:frappe.throw('Il documento fiscale conservato deve essere locale, non vuoto e nei limiti previsti.')
+    if sha256(raw).hexdigest()!=data['payload_hash']:frappe.throw('L’impronta del documento fiscale non corrisponde.')
     with internal_write('cc_fiscal_write'):
         doc=frappe.get_doc({'doctype':'CC Fiscal Transaction',**data,'route':'SIMULATED','configuration_ref':'SYNTHETIC_UNVERIFIED','recorded_by':frappe.session.user}).insert(ignore_permissions=True)
         file=frappe.get_doc({'doctype':'File','file_name':'CC-FISCAL-'+doc.payload_hash+'.payload','attached_to_doctype':doc.doctype,'attached_to_name':doc.name,'is_private':1,'content':raw}).insert(ignore_permissions=True)
@@ -56,14 +56,14 @@ def replay(request_key,request_hash,version_key,center):
     old=frappe.db.get_value('CC Fiscal Transaction',{'request_key':request_key},['name','center','request_hash'],as_dict=True,for_update=True)
     if old:
         require_finance(old.center,True)
-        if old.center!=center or old.request_hash!=request_hash:frappe.throw('Fiscal idempotency key payload differs')
+        if old.center!=center or old.request_hash!=request_hash:frappe.throw('La richiesta fiscale è già stata usata con dati diversi.')
         return frappe.get_doc('CC Fiscal Transaction',old.name,for_update=True)
     name=frappe.db.get_value('CC Fiscal Transaction',{'version_key':version_key},for_update=True)
     if name:
         doc=frappe.get_doc('CC Fiscal Transaction',name,for_update=True)
-        if doc.center!=center:frappe.throw('Fiscal message belongs to a different center',frappe.PermissionError)
+        if doc.center!=center:frappe.throw('Il messaggio fiscale appartiene a un’altra sede.',frappe.PermissionError)
         require_finance(doc.center,True)
-        if doc.request_hash!=request_hash:frappe.throw('Existing fiscal version has a different correction/input context')
+        if doc.request_hash!=request_hash:frappe.throw('La versione fiscale esistente ha dati o contesto di correzione diversi.')
         return doc
 
 
@@ -85,9 +85,9 @@ def permission(doc,user=None,ptype=None):return bool(ptype in ('read','select') 
 @frappe.whitelist(methods=['GET'])
 def records(center,domain):
     require_finance(center)
-    if domain not in ('SDI','TS'):frappe.throw('Unsupported fiscal domain')
+    if domain not in ('SDI','TS'):frappe.throw('Il tipo di simulazione fiscale non è supportato.')
     rows=current_rows('CC Fiscal Transaction',{'center':center,'domain':domain},fields=['name','direction','reference_doctype','reference_name','status','attempt_count','retryable','error_class','external_protocol','corrects'])
-    if len(rows)>500:frappe.throw('Narrow the fiscal workspace before listing more than 500 records')
+    if len(rows)>500:frappe.throw('Riduci la ricerca fiscale per visualizzare meno di 500 record.')
     for row in rows:
         if row.reference_doctype=='Sales Invoice':
             invoice=frappe.db.get_value('Sales Invoice',row.reference_name,['customer','cc_center'],as_dict=True)

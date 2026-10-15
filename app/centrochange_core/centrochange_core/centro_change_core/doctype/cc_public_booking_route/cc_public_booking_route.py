@@ -7,4 +7,4 @@ class CCPublicBookingRoute(Document):
 		from centrochange_core.security.guards import require_manager
 		require_manager()
 		if self.route not in ('Marco','Francesca'):
-			frappe.throw('Only approved first-meeting aliases are allowed')
+			frappe.throw('Sono consentiti solo i percorsi primo incontro approvati.')

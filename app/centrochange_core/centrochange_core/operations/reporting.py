@@ -39,7 +39,7 @@ def safe_cell(value):
 def export_csv(center,start,end):
     data=agenda(center,start,end)
     if data['truncated']:
-        frappe.throw('Narrow the date interval before exporting; rows must not be silently omitted')
+        frappe.throw('Riduci l’intervallo prima di esportare: i risultati non vengono omessi senza avviso.')
     columns=['appointment_date','appointment_time','patient_name','practitioner_name','cc_service_label','duration',
         'cc_closure_state','cc_economic_state','cc_paid','cc_price_snapshot','cc_currency_snapshot']
     output=StringIO(newline='')

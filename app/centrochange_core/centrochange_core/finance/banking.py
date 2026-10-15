@@ -17,7 +17,7 @@ def configure_bank(center,reason,account=None):
     lock(); require_finance_manager(); company=require_synthetic()
     branch=frappe.get_doc('Branch',center,for_update=True)
     if branch.cc_company!=company:
-        frappe.throw('Configure the native center accounting mapping first')
+        frappe.throw('Configura prima i conti contabili nativi della sede.')
     existing=branch.cc_bank_account
     if existing and (not account or frappe.db.get_value('Bank Account',existing,'account')==account):
         return {'bank_account':existing,'replay':True}
@@ -27,7 +27,7 @@ def configure_bank(center,reason,account=None):
             'parent_account':parent,'account_type':'Bank','account_currency':'EUR','is_group':0}).insert(ignore_permissions=True).name
     chart=frappe.get_doc('Account',account)
     if chart.company!=company or chart.is_group or chart.disabled or chart.account_type!='Bank':
-        frappe.throw('An enabled native bank GL account for the synthetic company is required')
+        frappe.throw('Serve un conto bancario contabile attivo della società demo.')
     bank='CC SYNTHETIC BANK'
     if not frappe.db.exists('Bank',bank):
         frappe.get_doc({'doctype':'Bank','bank_name':bank}).insert(ignore_permissions=True)
@@ -44,7 +44,7 @@ def bank_doc(name,write=False):
     doc=frappe.get_doc('Bank Transaction',name,for_update=True)
     require_finance(doc.cc_center,write)
     if not doc.cc_source_key:
-        frappe.throw('A managed source movement is required')
+        frappe.throw('Seleziona un movimento bancario gestito da Centro Change.')
     return doc
 
 
@@ -61,27 +61,27 @@ def import_movements(center,movements,reason):
     if isinstance(movements,str):
         movements=frappe.parse_json(movements)
     if not isinstance(movements,list) or not movements or len(movements)>200:
-        frappe.throw('Import 1–200 explicit synthetic movements')
+        frappe.throw('Importa da 1 a 200 movimenti sintetici espliciti.')
     bank=frappe.db.get_value('Branch',center,'cc_bank_account',for_update=True)
     if not bank or frappe.db.get_value('Bank Account',bank,'cc_center')!=center:
-        frappe.throw('Configure the center native bank account first')
+        frappe.throw('Configura prima il conto bancario nativo della sede.')
     rows=[]
     for movement in movements:
         if not isinstance(movement,dict) or set(movement)-{'external_id','date','deposit','withdrawal','description','reference','customer','supplier'}:
-            frappe.throw('Unsupported bank movement input')
+            frappe.throw('I dati del movimento bancario non sono supportati.')
         external=movement.get('external_id')
         if not isinstance(external,str) or not external.strip() or len(external)>160:
-            frappe.throw('A bounded statement movement identity is required')
+            frappe.throw('Indica un riferimento bancario valido e di lunghezza limitata.')
         deposit,withdrawal=(frappe.utils.flt(movement.get(k),2) for k in ('deposit','withdrawal'))
         if not isfinite(deposit) or not isfinite(withdrawal) or deposit<0 or withdrawal<0 or bool(deposit)==bool(withdrawal):
-            frappe.throw('A movement must contain one positive deposit or withdrawal')
+            frappe.throw('Il movimento deve avere un solo importo positivo in entrata o in uscita.')
         if any(not isinstance(movement.get(field) or '',str) or len(movement.get(field) or '')>size for field,size in [('description',500),('reference',160)]):
-            frappe.throw('Bank description/reference must be bounded text')
+            frappe.throw('Descrizione e riferimento bancario devono avere una lunghezza valida.')
         if not movement.get('date'):
-            frappe.throw('An explicit bank movement date is required')
+            frappe.throw('Indica la data del movimento bancario.')
         customer=movement.get('customer');supplier=movement.get('supplier')
         if customer and (supplier or withdrawal) or supplier and deposit:
-            frappe.throw('Bank party must match the movement direction')
+            frappe.throw('Il soggetto deve essere coerente con entrata o uscita del movimento.')
         if customer:
             frappe.get_doc('Customer',customer).check_permission('read')
         if supplier:
@@ -96,7 +96,7 @@ def import_movements(center,movements,reason):
         if existing:
             doc=bank_doc(existing,True)
             if doc.cc_source_hash!=fingerprint:
-                frappe.throw('Statement source identity has different immutable content; use an audited correction')
+                frappe.throw('Il riferimento bancario identifica dati diversi: usa una correzione tracciata.')
             rows.append(projection(doc,True)); continue
         with internal_write('cc_accounting_write'):
             doc=frappe.get_doc({'doctype':'Bank Transaction',**snapshot,'cc_source_key':source,'cc_source_hash':fingerprint}).insert(ignore_permissions=True)
@@ -114,12 +114,12 @@ def reconciled_documents(doc):
         if allocation.payment_document!='Payment Entry':continue
         payment=frappe.get_doc('Payment Entry',allocation.payment_entry)
         if payment.cc_center!=doc.cc_center or payment.docstatus!=1:
-            frappe.throw('Bank allocation context requires review')
+            frappe.throw('Verifica il contesto prima di riconciliare il movimento.')
         for ref in payment.references:
             if ref.reference_doctype not in ('Sales Invoice','Purchase Invoice'):continue
             invoice=frappe.get_doc(ref.reference_doctype,ref.reference_name)
             if invoice.cc_center!=doc.cc_center:
-                frappe.throw('Bank invoice context requires review')
+                frappe.throw('Verifica il documento prima della riconciliazione bancaria.')
             subject=invoice.get('customer') or invoice.get('supplier')
             rows.append({'name':invoice.name,'document_type':ref.reference_doctype,'subject':subject,
                 'allocated_amount':ref.allocated_amount,'payment':payment.name})
@@ -140,7 +140,7 @@ def candidates(name):
     rows=current_rows(document_type,filters=filters,fields=['name','supplier' if doc.withdrawal else 'customer','outstanding_amount','due_date','posting_date'])
     rows.sort(key=lambda row:(row.posting_date,row.name))
     if len(rows)>100:
-        frappe.throw('Narrow the bank movement customer/reference before matching')
+        frappe.throw('Specifica meglio soggetto o riferimento prima di cercare un documento.')
     exact=[row for row in rows if row.name==doc.reference_number]
     if exact:
         rows=exact
@@ -155,10 +155,10 @@ def reconcile(name,invoice,reason):
     if doc.docstatus==1 and doc.unallocated_amount==0:
         payments=[p.payment_entry for p in doc.payment_entries if p.payment_document=='Payment Entry']
         if len(payments)!=1 or not frappe.db.exists('Payment Entry Reference',{'parent':payments[0],'reference_doctype':document_type,'reference_name':invoice}):
-            frappe.throw('A reconciled movement cannot be replayed against a different invoice')
+            frappe.throw('Un movimento già riconciliato non può essere abbinato a un documento diverso.')
         return {'movement':projection(doc,True),'payment':payments[0]}
     if invoice not in [r.name for r in candidates(name)['invoices']]:
-        frappe.throw('Choose a current eligible own-center invoice for reconciliation')
+        frappe.throw('Seleziona una fattura idonea della stessa sede.')
     bank_account=frappe.db.get_value('Bank Account',doc.bank_account,'account')
     from centrochange_core.finance.incoming import pay as pay_supplier
     pay=pay_supplier if doc.withdrawal else receivables.pay
@@ -170,7 +170,7 @@ def reconcile(name,invoice,reason):
         doc.save(ignore_permissions=True)
     doc.reload()
     if doc.unallocated_amount!=0:
-        frappe.throw('Native bank allocation did not fully reconcile the selected movement')
+        frappe.throw('La riconciliazione nativa non ha coperto tutto il movimento selezionato.')
     append('BANK_MOVEMENT_RECONCILED',doc.doctype,name,None,{'invoice':invoice,'payment':payment,'allocated':doc.allocated_amount},reason)
     return {'movement':projection(doc),'payment':payment}
 
@@ -194,7 +194,7 @@ def cancel(name,reason):
 
 def protected(doc,method=None):
     if not frappe.flags.get('cc_accounting_write'):
-        frappe.throw('Bank mutations require the audited native service',frappe.PermissionError)
+        frappe.throw('Le modifiche bancarie richiedono il servizio nativo tracciato.',frappe.PermissionError)
     old=doc.get_doc_before_save()
     def normalized(field,value):
         if field=='date':
@@ -203,9 +203,9 @@ def protected(doc,method=None):
             return frappe.utils.flt(value,2)
         return str(value or '')
     if old and doc.doctype=='Bank Transaction' and any(normalized(field,doc.get(field))!=normalized(field,old.get(field)) for field in SOURCE_FIELDS):
-        frappe.throw('Imported bank movement source is immutable')
+        frappe.throw('La fonte del movimento importato non può essere modificata.')
     if old and doc.doctype=='Bank Account' and any(doc.get(f)!=old.get(f) for f in ('cc_center','account','company','bank')):
-        frappe.throw('Bank mapping corrections must retain historical native accounts')
+        frappe.throw('La correzione dei conti bancari deve conservare i riferimenti storici.')
 
 
 @frappe.whitelist(methods=['GET'])
@@ -213,5 +213,5 @@ def unresolved(center):
     require_finance(center)
     names=frappe.get_all('Bank Transaction',filters={'cc_center':center,'docstatus':1,'unallocated_amount':['>',0]},pluck='name',limit_page_length=101)
     if len(names)>100:
-        frappe.throw('Narrow unresolved bank movements')
+        frappe.throw('Riduci la ricerca dei movimenti bancari da riconciliare.')
     return [{'movement':projection(bank_doc(name)), 'matching':candidates(name)} for name in names]

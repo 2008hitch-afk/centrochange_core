@@ -1,0 +1,10 @@
+# #139 W1: resolve the client Origin hostname inside the existing private network.
+# Frappe 16.50 realtime authenticates by fetching Origin + /api/method/...;
+# Nginx sends Origin http://centrochange.local, so the websocket container
+# needs that name to resolve to the existing frontend. Apply only at Owner gate.
+services:
+  frontend:
+    networks:
+      centrochange-dev-net:
+        aliases:
+          - centrochange.local

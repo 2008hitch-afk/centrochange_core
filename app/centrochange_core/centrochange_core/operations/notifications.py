@@ -59,7 +59,7 @@ def retry(name,reason):
     lock()
     require_manager()
     if not reason or not reason.strip():
-        frappe.throw('A retry reason is required')
+        frappe.throw('Indica il motivo del nuovo tentativo.')
     doc=frappe.get_doc('CC Notification',name,for_update=True)
     if doc.state=='Sent':
         return {'name':name,'replay':True}

@@ -19,22 +19,22 @@ class PatientMixin:
 		super().validate()
 		previous = self.get_doc_before_save()
 		if self.customer != (previous.customer if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
-			frappe.throw('Patient/Customer mappings require the audited finance bridge',frappe.PermissionError)
+			frappe.throw('Il collegamento paziente-cliente richiede il servizio Finance tracciato.',frappe.PermissionError)
 		if not frappe.flags.get('cc_patient_intake_write') and any((self.get(k) or None)!=((previous.get(k) or None) if previous else None) for k in ('cc_intake_key','cc_intake_hash')):
-			frappe.throw('Patient intake identity requires its audited service',frappe.PermissionError)
+			frappe.throw('L’identità del paziente richiede il servizio di ingresso tracciato.',frappe.PermissionError)
 		from centrochange_core.scheduling.public_booking import SERVICE_USER
 		public=frappe.flags.get('cc_public_ingress') and frappe.session.user==SERVICE_USER
 		if not public:
 			if previous:
 				require_patient(self.name,'write')
 			elif not is_manager() and (not enabled() or not centers() or 'CC Secretariat' not in roles() or 'CC Professional' in roles()):
-				frappe.throw('Operational patient creation permission required',frappe.PermissionError)
+				frappe.throw('Non hai il permesso di creare pazienti operativi.',frappe.PermissionError)
 		for field in CLINICAL_FIELDS:
 			if self.get(field) and (not previous or self.get(field) != previous.get(field)):
-				frappe.throw("Clinical content belongs in contextual guarded records, not the shared patient identity")
+				frappe.throw("Le informazioni cliniche appartengono a record riservati, non all’anagrafica condivisa.")
 
 	def on_trash(self):
-		frappe.throw("Patient deletion requires a separately governed retention process", frappe.PermissionError)
+		frappe.throw("La cancellazione del paziente richiede una procedura di conservazione separata.", frappe.PermissionError)
 
 
 class PractitionerMixin:
@@ -42,13 +42,13 @@ class PractitionerMixin:
 		self.user_id = self.user_id or None
 		previous = self.get_doc_before_save()
 		if self.supplier != (previous.supplier if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
-			frappe.throw('Professional/Supplier mappings require the audited finance bridge',frappe.PermissionError)
+			frappe.throw('Il collegamento professionista-fornitore richiede il servizio Finance tracciato.',frappe.PermissionError)
 		if not previous:
 			require_manager()
 		elif (previous.user_id != self.user_id or previous.status != self.status) and not frappe.flags.get("cc_permission_write"):
-			frappe.throw("Practitioner lifecycle changes must use the controlled service", frappe.PermissionError)
+			frappe.throw("Le modifiche allo stato del professionista richiedono il servizio autorizzato.", frappe.PermissionError)
 		if self.user_id and (not enabled(self.user_id) and self.status == "Active"):
-			frappe.throw("Active practitioner requires an enabled principal")
+			frappe.throw("Un professionista attivo richiede un account abilitato.")
 		super().validate()
 
 	def on_update(self):
@@ -76,7 +76,7 @@ class UserMixin:
 		before={row.role for row in previous.roles if row.role.startswith('CC ')} if previous else set()
 		after={row.role for row in self.roles if row.role.startswith('CC ')}
 		if before!=after and frappe.session.user!='Administrator' and not frappe.flags.get('cc_user_roles_write'):
-			frappe.throw('Centro Change role changes require controlled identity provisioning',frappe.PermissionError)
+			frappe.throw('Le modifiche ai ruoli richiedono la procedura autorizzata di gestione account.',frappe.PermissionError)
 
 	def _is_cc_user(self):
 		previous=self.get_doc_before_save()

@@ -102,7 +102,7 @@ def projection(doc,replay=False):
 def intake(center,xml,reason):
     lock(); company=require_synthetic(); require_finance(center,True)
     if not isinstance(xml,str) or not xml or len(xml.encode('utf-8'))>1048576:
-        frappe.throw('A bounded fictional UTF-8 XML payload is required')
+        frappe.throw('Fornisci un file XML demo UTF-8 valido e nei limiti previsti.')
     digest=sha256(xml.encode('utf-8')).hexdigest()
     existing=frappe.db.get_value('CC Incoming Invoice',{'payload_sha':digest},for_update=True)
     if existing:
@@ -113,7 +113,7 @@ def intake(center,xml,reason):
         duplicate=frappe.db.get_value('CC Incoming Invoice',{'semantic_key':identity},for_update=True)
         if duplicate:
             source(duplicate,True)
-            frappe.throw('Invoice identity already has different immutable XML; review an explicit correction')
+            frappe.throw('La fattura identifica un XML diverso: verifica una correzione esplicita.')
         state='Needs Supplier Mapping' if parsed['document_type']=='TD01' else 'Unsupported Document'
         problem=None if state=='Needs Supplier Mapping' else 'Document type requires explicit native correction review'
     except (ValueError,ET.ParseError):
@@ -134,12 +134,12 @@ def intake(center,xml,reason):
 def bind_supplier(name,supplier,reason):
     lock(); require_synthetic(); doc=source(name,True)
     if doc.state not in ('Needs Supplier Mapping','Needs Classification'):
-        frappe.throw('Only a valid unprocessed source can be mapped')
+        frappe.throw('Puoi collegare solo una fonte valida e non ancora elaborata.')
     target=frappe.get_doc('Supplier',supplier,for_update=True)
     if not is_manager():
         target.check_permission('read')
     if target.disabled or target.tax_id!=doc.issuer_id:
-        frappe.throw('Explicit supplier fiscal identity must match the immutable XML issuer')
+        frappe.throw('L’identità fiscale del fornitore deve corrispondere all’emittente XML.')
     if doc.supplier==supplier:
         return projection(doc,True)
     before=doc.supplier
@@ -152,7 +152,7 @@ def bind_supplier(name,supplier,reason):
 def invoice(name,write=False):
     doc=frappe.get_doc('Purchase Invoice',name,for_update=True)
     if not doc.cc_center or not doc.cc_incoming_source:
-        frappe.throw('A managed native payable is required')
+        frappe.throw('Seleziona una fattura fornitore nativa gestita.')
     require_finance(doc.cc_center,write)
     return doc
 
@@ -171,38 +171,38 @@ def draft(name,items,expense_account,posting_date,due_date,request_key,reason,ta
         items=frappe.parse_json(items)
     facts=frappe.parse_json(doc.lines_json or '[]')
     if not isinstance(items,list) or len(items)!=len(facts) or not facts:
-        frappe.throw('Review one explicit native purchase item per retained source line')
+        frappe.throw('Verifica un servizio di acquisto nativo per ogni riga XML conservata.')
     fingerprint=sha256(serialize([name,items,expense_account,str(posting_date),str(due_date),tax_account]).encode()).hexdigest()
     existing=frappe.db.get_value('Purchase Invoice',{'cc_request_key':key('payable',request_key)},for_update=True)
     if existing:
         native=invoice(existing,True)
         if native.cc_request_hash!=fingerprint:
-            frappe.throw('Idempotency key payload differs')
+            frappe.throw('La richiesta è già stata usata con dati diversi.')
         return balance(native,True)
     if doc.state!='Needs Classification' or not doc.supplier:
-        frappe.throw('Complete supplier mapping and classification before drafting')
+        frappe.throw('Completa il collegamento e la classificazione del fornitore prima della bozza.')
     if doc.purchase_invoice:
-        frappe.throw('Source already has a native payable')
+        frappe.throw('La fonte ha già una fattura fornitore nativa.')
     expense=frappe.get_doc('Account',expense_account)
     if expense.company!=company or expense.disabled or expense.is_group or expense.root_type!='Expense':
-        frappe.throw('Review an enabled native expense account for the synthetic company')
+        frappe.throw('Verifica un conto di spesa nativo attivo per la società demo.')
     center=frappe.get_doc('Branch',doc.center)
     if center.cc_company!=company or not center.cc_cost_center:
-        frappe.throw('Complete the native center accounting mapping')
+        frappe.throw('Completa la configurazione contabile nativa della sede.')
     rows=[]
     for item_code,fact in zip(items,facts,strict=True):
         item=frappe.get_doc('Item',item_code)
         if item.disabled or item.is_stock_item or not item.is_purchase_item:
-            frappe.throw('Review enabled non-stock purchase service items')
+            frappe.throw('Verifica servizi di acquisto attivi che non usano magazzino.')
         rows.append({'item_code':item.name,'description':escape(fact['description']),'qty':float(_money(fact['qty'])),
             'rate':float(_money(fact['rate'])),'expense_account':expense_account,'cost_center':center.cc_cost_center})
     taxes=[]
     if doc.tax_total:
         if not tax_account:
-            frappe.throw('Explicit native tax account classification is required')
+            frappe.throw('Indica esplicitamente il conto fiscale nativo.')
         tax=frappe.get_doc('Account',tax_account)
         if tax.company!=company or tax.is_group or tax.disabled or tax.account_type!='Tax':
-            frappe.throw('Review an enabled native tax account')
+            frappe.throw('Verifica un conto fiscale nativo attivo.')
         taxes=[{'charge_type':'Actual','account_head':tax_account,'tax_amount':doc.tax_total,'description':'SYNTHETIC reviewed incoming tax'}]
     with internal_write('cc_accounting_write'):
         native=frappe.get_doc({'doctype':'Purchase Invoice','company':company,'supplier':doc.supplier,'currency':doc.currency,
@@ -210,7 +210,7 @@ def draft(name,items,expense_account,posting_date,due_date,request_key,reason,ta
             'bill_date':doc.invoice_date,'cc_center':doc.center,'cc_incoming_source':doc.name,'cc_request_key':key('payable',request_key),
             'cc_request_hash':fingerprint,'cc_fiscal_profile':'SYNTHETIC_UNVERIFIED','items':rows,'taxes':taxes}).insert(ignore_permissions=True)
     if abs(native.grand_total-doc.total)>0.01:
-        frappe.throw('Native draft total differs from immutable XML facts')
+        frappe.throw('Il totale della bozza non corrisponde ai dati XML conservati.')
     with internal_write('cc_incoming_write'):
         doc.purchase_invoice=native.name;doc.state='Drafted';doc.reviewed_by=frappe.session.user;doc.save(ignore_permissions=True)
     append('PAYABLE_DRAFT_REVIEWED',native.doctype,native.name,None,{'source':name,'supplier':doc.supplier,'total':native.grand_total},reason)
@@ -224,7 +224,7 @@ def submit(name,reason):
     if native.docstatus==1:
         return balance(native,True)
     if native.docstatus!=0:
-        frappe.throw('Explicitly review a native payable draft before posting')
+        frappe.throw('Verifica esplicitamente la bozza fornitore prima della contabilizzazione.')
     with internal_write('cc_accounting_write'):
         native.flags.ignore_permissions=True; native.submit()
     doc=source(native.cc_incoming_source,True)
@@ -243,19 +243,19 @@ def pay(name,amount,posting_date,request_key,reason,reference=None,bank_account=
     if existing:
         payment=frappe.get_doc('Payment Entry',existing)
         if payment.cc_request_hash!=fingerprint:
-            frappe.throw('Idempotency key payload differs')
+            frappe.throw('La richiesta è già stata usata con dati diversi.')
         return {'payment':existing,'invoice':balance(native,True)}
     from math import isfinite
     amount=frappe.utils.flt(amount,2)
     if not isfinite(amount) or native.docstatus!=1 or native.is_return or amount<=0 or amount>native.outstanding_amount:
-        frappe.throw('Supplier payment must allocate a positive finite amount within native open balance')
+        frappe.throw('Il pagamento fornitore deve essere positivo e non superare il residuo aperto.')
     company=frappe.get_doc('Company',native.company)
     settings=frappe.get_doc('CC Finance Settings')
     bank=bank_account or settings.bank_account or company.default_cash_account
     if bank_account:
         configured=frappe.db.get_value('Branch',native.cc_center,'cc_bank_account',for_update=True)
         if not configured or frappe.db.get_value('Bank Account',configured,'account')!=bank_account:
-            frappe.throw('Payment bank must match the configured center account',frappe.PermissionError)
+            frappe.throw('Il conto del pagamento deve corrispondere al conto della sede.',frappe.PermissionError)
     before_outstanding=native.outstanding_amount
     from centrochange_core.finance.native_adapter import payment_document
     payment=payment_document(native,amount,bank)
@@ -275,7 +275,7 @@ def cancel(name,reason):
     if native.docstatus==2:
         return balance(native,True)
     if native.docstatus!=1:
-        frappe.throw('Only a submitted native payable can be cancelled')
+        frappe.throw('Puoi annullare solo una fattura fornitore contabilizzata.')
     with internal_write('cc_accounting_write'):
         native.flags.ignore_permissions=True;native.cancel()
     doc=source(native.cc_incoming_source,True)
@@ -292,25 +292,25 @@ def position(name):
 
 def protected_source(doc,method=None):
     if method=='on_trash' or not frappe.flags.get('cc_incoming_write'):
-        frappe.throw('Incoming fiscal sources are retained and service-controlled',frappe.PermissionError)
+        frappe.throw('Le fonti fiscali ricevute sono conservate e gestite dal servizio previsto.',frappe.PermissionError)
     old=doc.get_doc_before_save()
     if old and any(serialize(doc.get(field))!=serialize(old.get(field)) for field in RAW_FIELDS):
-        frappe.throw('Incoming fiscal payload and extracted source facts are immutable')
+        frappe.throw('L’XML ricevuto e i dati estratti non possono essere modificati.')
     if old and old.payload_file and doc.payload_file!=old.payload_file:
-        frappe.throw('Immutable payload reference cannot change')
+        frappe.throw('Il riferimento al file conservato non può cambiare.')
 
 
 def protected_invoice(doc,method=None):
     if not frappe.flags.get('cc_accounting_write'):
-        frappe.throw('Payable mutations require explicit audited review',frappe.PermissionError)
+        frappe.throw('Le modifiche alle fatture fornitore richiedono verifica e tracciamento.',frappe.PermissionError)
     src=frappe.get_doc('CC Incoming Invoice',doc.cc_incoming_source)
     if (doc.cc_center,doc.company,doc.supplier,doc.currency)!=(src.center,src.company,src.supplier,src.currency) or doc.cc_fiscal_profile!='SYNTHETIC_UNVERIFIED':
-        frappe.throw('Native payable must retain the reviewed immutable source context')
+        frappe.throw('La fattura fornitore deve conservare il contesto della fonte verificata.')
     facts=frappe.parse_json(src.lines_json)
     if len(doc.items)!=len(facts) or any(abs(item.qty-float(_money(fact['qty'])))>0.000001 or abs(item.rate-float(_money(fact['rate'])))>0.000001 for item,fact in zip(doc.items,facts,strict=True)):
-        frappe.throw('Native payable quantities/rates must retain XML source facts')
+        frappe.throw('Quantità e prezzi della fattura devono corrispondere all’XML conservato.')
     if abs(doc.grand_total-src.total)>0.01:
-        frappe.throw('Native payable total must retain XML source facts')
+        frappe.throw('Il totale della fattura deve corrispondere all’XML conservato.')
 
 
 def names(user=None):
@@ -334,20 +334,20 @@ def permission(doc,user=None,ptype=None):
 def amend(name,expense_account,posting_date,due_date,request_key,reason):
     lock(); require_synthetic(); original=invoice(name,True)
     if original.docstatus!=2 or original.is_return:
-        frappe.throw('Only a cancelled original native payable can be amended')
+        frappe.throw('Puoi rettificare solo una fattura fornitore originale annullata.')
     fingerprint=sha256(serialize([name,expense_account,str(posting_date),str(due_date)]).encode()).hexdigest()
     existing=frappe.db.get_value('Purchase Invoice',{'cc_request_key':key('payable-amend',request_key)},for_update=True)
     if existing:
         native=invoice(existing,True)
         if native.cc_request_hash!=fingerprint:
-            frappe.throw('Idempotency key payload differs')
+            frappe.throw('La richiesta è già stata usata con dati diversi.')
         return balance(native,True)
     doc=source(original.cc_incoming_source,True)
     if doc.state!='Cancelled' or doc.purchase_invoice!=name:
-        frappe.throw('Source already has an active replacement payable')
+        frappe.throw('La fonte ha già una fattura fornitore sostitutiva attiva.')
     expense=frappe.get_doc('Account',expense_account)
     if expense.company!=original.company or expense.is_group or expense.disabled or expense.root_type!='Expense':
-        frappe.throw('Explicitly review a native expense classification')
+        frappe.throw('Verifica esplicitamente la classificazione della spesa.')
     native=frappe.copy_doc(original)
     native.update({'docstatus':0,'amended_from':name,'posting_date':posting_date,'due_date':due_date,
         'cc_request_key':key('payable-amend',request_key),'cc_request_hash':fingerprint})

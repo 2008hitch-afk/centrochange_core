@@ -12,13 +12,13 @@ from centrochange_core.operations.reporting import safe_cell
 
 def _interval(start,end):
     a,b=frappe.utils.getdate(start),frappe.utils.getdate(end)
-    if not start or not end or b<a or (b-a).days>366:frappe.throw('Choose a date interval of at most 366 days')
+    if not start or not end or b<a or (b-a).days>366:frappe.throw('Seleziona un intervallo di massimo 366 giorni.')
     return a,b
 
 
 def _bounded(doctype,filters,fields):
     rows=current_rows(doctype,filters,fields=fields)
-    if len(rows)>500:frappe.throw('Narrow the report filters; more than 500 composing records')
+    if len(rows)>500:frappe.throw('Riduci i filtri del report: ci sono oltre 500 record.')
     return rows
 
 
@@ -28,13 +28,13 @@ def summary(center,start,end,customer=None,practitioner=None):
     base={'cc_center':center,'posting_date':['between',[start,end]],'docstatus':1}
     if customer:
         from centrochange_core.finance.permissions import master_names
-        if not is_manager() and customer not in master_names('Customer'):frappe.throw('Customer scope denied',frappe.PermissionError)
-        if practitioner:frappe.throw('Choose a customer or a professional projection separately')
+        if not is_manager() and customer not in master_names('Customer'):frappe.throw('Non hai accesso ai dati di questo cliente.',frappe.PermissionError)
+        if practitioner:frappe.throw('Consulta separatamente il report cliente o professionista.')
     supplier=None
     if practitioner:
         users=current_rows('CC Center Membership',{'center':center},pluck='user')
         if practitioner not in current_rows('Healthcare Practitioner',{'user_id':['in',users or ['']]},pluck='name'):
-            frappe.throw('Professional report context denied',frappe.PermissionError)
+            frappe.throw('Non hai accesso al report di questo professionista.',frappe.PermissionError)
         supplier=frappe.db.get_value('Healthcare Practitioner',practitioner,'supplier')
     sales=_bounded('Sales Invoice',{**base,**({'customer':customer} if customer else {})},['name','posting_date','customer','currency','net_total','grand_total','outstanding_amount','is_return','return_against','amended_from'])
     if practitioner:
@@ -48,7 +48,7 @@ def summary(center,start,end,customer=None,practitioner=None):
     if customer:
         patients=set(current_rows('Patient',{'customer':customer},pluck='name'));sessions=[r for r in sessions if r.patient in patients]
     currencies={r.currency for r in sales+purchases}
-    if currencies-{'EUR'}:frappe.throw('Separate currency reporting is required before combining these documents')
+    if currencies-{'EUR'}:frappe.throw('I documenti in valute diverse richiedono report separati.')
     expected_rows=_bounded('CC Professional Expectation',{'center':center},['name','appointment','practitioner','source','state','amount','amount_known','currency','creation','sequence'])
     session_ids={r.name for r in sessions};latest={}
     for row in sorted(expected_rows,key=lambda r:(r.sequence or 0,r.creation,r.name)):
@@ -81,9 +81,13 @@ def export_csv(center,start,end,customer=None,practitioner=None):
 
 @frappe.whitelist(methods=['GET'])
 def bootstrap(center=None):
-    if not allowed():frappe.throw('Finance workspace access denied',frappe.PermissionError)
-    scopes=current_rows('Branch',{} if is_manager() else {'name':['in',centers() or ['']]},fields=['name','branch','cc_company','cc_cost_center','cc_bank_account'])
+    if not allowed():frappe.throw('Non hai accesso alla Finanza.',frappe.PermissionError)
+    from centrochange_core.security.guards import operational_centers
+    available=operational_centers()
+    scopes=current_rows('Branch',{'name':['in',[row.name for row in available] or ['']]},fields=['name','branch','cc_company','cc_cost_center','cc_bank_account'])
     center=center or (scopes[0].name if scopes else None)
+    if center and center not in [row.name for row in scopes]:
+        frappe.throw('La sede non è disponibile per le operazioni.',frappe.PermissionError)
     if center:require_finance(center)
     from centrochange_core.finance.permissions import master_names
     def masters(dt,fields):
@@ -109,11 +113,11 @@ def records(center,doctype):
         'Bank Transaction':['name','docstatus','date','deposit','withdrawal','unallocated_amount','reference_number'],
         'CC Economic Source Link':['name','appointment','session_date','practitioner','patient','price','currency','performed','economic_state'],
         'CC Professional Expectation':['name','appointment','practitioner','state','amount','amount_known','problem','rule']}
-    if doctype not in allowed_types:frappe.throw('Unsupported workspace record type')
+    if doctype not in allowed_types:frappe.throw('Il tipo di documento richiesto non è supportato.')
     field='center' if doctype.startswith('CC ') else 'cc_center'
     if doctype=='CC Professional Expectation':
         latest=professional_economics.latest_expectations(center)
-        if len(latest)>500:frappe.throw('Narrow the report filters; more than 500 composing records')
+        if len(latest)>500:frappe.throw('Riduci i filtri del report: ci sono oltre 500 record.')
         result=[]
         for r in latest.values():
             row={k:r.get(k) for k in allowed_types[doctype]}
@@ -132,7 +136,7 @@ def professional_view(center,start,end,practitioner):
     # Reuse the existing authorized practitioner selector, including active membership.
     context=bootstrap(center)
     identity=next((r for r in context['practitioners'] if r.name==practitioner),None)
-    if not identity:frappe.throw('Professional report context denied',frappe.PermissionError)
+    if not identity:frappe.throw('Non hai accesso al report di questo professionista.',frappe.PermissionError)
     data=summary(center,start,end,practitioner=practitioner)
     from datetime import datetime
     from zoneinfo import ZoneInfo
@@ -152,7 +156,7 @@ def professional_view(center,start,end,practitioner):
         sessions.append({**dict(row),'appointment_time':str(get_time(row.appointment_time)),'category':category,'patient_label':label,'can_open':can_open})
     sessions.sort(key=lambda r:(str(r['appointment_date']),r['appointment_time'],r['name']))
     expectations=data['expectations']
-    if any(r.currency!='EUR' for r in expectations):frappe.throw('Separate currency reporting required')
+    if any(r.currency!='EUR' for r in expectations):frappe.throw('Le valute diverse richiedono report separati.')
     unresolved=[r for r in expectations if r.state!='OK']
     missing=[r['name'] for r in sessions if r['cc_performed'] and r['name'] not in {e.appointment for e in expectations}]
     comparisons=[]

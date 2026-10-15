@@ -7,4 +7,4 @@ class CCNotification(Document):
 			frappe.throw("Notifications are service-controlled",frappe.PermissionError)
 	def on_trash(self):
 		import frappe
-		frappe.throw("Notification history cannot be deleted",frappe.PermissionError)
+		frappe.throw("La cronologia delle notifiche non può essere cancellata.",frappe.PermissionError)

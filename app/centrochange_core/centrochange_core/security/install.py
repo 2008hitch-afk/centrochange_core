@@ -35,7 +35,11 @@ def configure():
 			("cc_currency_snapshot","Currency Snapshot","Link",{"options":"Currency"}),
 			("cc_price_list_snapshot","Price List Snapshot","Link",{"options":"Price List"}),
 			("cc_item_price_source","Item Price Source","Link",{"options":"Item Price"}),
-		]],], "Branch": [{"fieldname":"cc_price_list","label":"Centro Change Selling Price List","fieldtype":"Link","options":"Price List"}],
+		]],], "Branch": [
+			{"fieldname":"cc_price_list","label":"Centro Change Selling Price List","fieldtype":"Link","options":"Price List"},
+			{"fieldname":"cc_operational","label":"Sede operativa","fieldtype":"Check","default":"0",
+			 "description":"Una sede non operativa resta consultabile nello storico, ma non accetta nuove operazioni."},
+		],
 	"Appointment Type": [{"fieldname":"cc_service_item","label":"Centro Change Service Item","fieldtype":"Link","options":"Item"}, {"fieldname":"cc_first_meeting","label":"Centro Change First Meeting","fieldtype":"Check","default":"0"}],
 	"Practitioner Schedule": [
 		{"fieldname":"cc_practitioner", "label":"Centro Change Practitioner", "fieldtype":"Link", "options":"Healthcare Practitioner"},
