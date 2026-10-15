@@ -92,6 +92,7 @@ class InstallationGateTests(unittest.TestCase):
         self.assertIn("== {BRANCH_A: 1, BRANCH_B: 0}", executor)
         self.assertIn("'center_a': 'already active and audited; preserved'", executor)
         self.assertIn("'center_b': 'inactive; preserved'", executor)
+        self.assertIn("'rm', '-f', '--', remote", executor)
 
     def test_owner_window_names_one_functional_update_without_migration(self):
         with tempfile.TemporaryDirectory() as directory:

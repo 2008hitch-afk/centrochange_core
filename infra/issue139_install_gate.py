@@ -469,30 +469,38 @@ def backup(output):
     paths = {kind: f'{site_dir}/{name}' for kind, name in names.items()}
     for path in paths.values():
         run(['docker', 'exec', 'centrochange-dev-backend-1', 'test', '!', '-e', path])
-    command = ['docker', 'exec', '-w', BENCH, 'centrochange-dev-backend-1',
-               'bench', '--site', SITE, 'backup', '--with-files', '--compress',
-               '--backup-path-db', paths['db'], '--backup-path-files', paths['public'],
-               '--backup-path-private-files', paths['private'], '--backup-path-conf', paths['config']]
-    run(command)
-    key = output / 'backup.key'
-    private_write(key, secrets.token_urlsafe(48).encode() + b'\n')
     manifest = {}
-    for kind, source in paths.items():
-        raw = output / names[kind]
-        run(['docker', 'cp', f'centrochange-dev-backend-1:{source}', str(raw)])
-        os.chmod(raw, 0o600)
-        payload = raw.read_bytes()
-        encrypted = output / (names[kind] + '.gpg')
-        run(['gpg', '--batch', '--yes', '--pinentry-mode', 'loopback',
-             '--passphrase-file', str(key), '--symmetric', '--cipher-algo', 'AES256',
-             '--output', str(encrypted), str(raw)])
-        decrypted = run_bytes(['gpg', '--batch', '--quiet', '--pinentry-mode', 'loopback',
-                               '--passphrase-file', str(key), '--decrypt', str(encrypted)])
-        require(sha(decrypted) == sha(payload), f'{kind}: encrypted backup verify failed')
-        manifest[kind] = {'file': encrypted.name, 'sha256': sha(payload), 'bytes': len(payload)}
-        raw.unlink()
-        run(['docker', 'exec', 'centrochange-dev-backend-1', 'rm', '--', source])
-    report_write(output / 'backup-manifest.json', manifest)
+    try:
+        command = ['docker', 'exec', '-w', BENCH, 'centrochange-dev-backend-1',
+                   'bench', '--site', SITE, 'backup', '--with-files', '--compress',
+                   '--backup-path-db', paths['db'], '--backup-path-files', paths['public'],
+                   '--backup-path-private-files', paths['private'], '--backup-path-conf', paths['config']]
+        run(command)
+        key = output / 'backup.key'
+        private_write(key, secrets.token_urlsafe(48).encode() + b'\n')
+        for kind, source in paths.items():
+            raw = output / names[kind]
+            run(['docker', 'cp', f'centrochange-dev-backend-1:{source}', str(raw)])
+            os.chmod(raw, 0o600)
+            payload = raw.read_bytes()
+            encrypted = output / (names[kind] + '.gpg')
+            run(['gpg', '--batch', '--yes', '--pinentry-mode', 'loopback',
+                 '--passphrase-file', str(key), '--symmetric', '--cipher-algo', 'AES256',
+                 '--output', str(encrypted), str(raw)])
+            decrypted = run_bytes(['gpg', '--batch', '--quiet', '--pinentry-mode', 'loopback',
+                                   '--passphrase-file', str(key), '--decrypt', str(encrypted)])
+            require(sha(decrypted) == sha(payload), f'{kind}: encrypted backup verify failed')
+            manifest[kind] = {'file': encrypted.name, 'sha256': sha(payload), 'bytes': len(payload)}
+            raw.unlink()
+        report_write(output / 'backup-manifest.json', manifest)
+    finally:
+        # A backup failure must not leave plaintext dump/files in the shared Site.
+        cleanup_failures = []
+        for remote in paths.values():
+            result = run(['docker', 'exec', 'centrochange-dev-backend-1', 'rm', '-f', '--', remote], check=False)
+            if result.returncode:
+                cleanup_failures.append(remote)
+        require(not cleanup_failures, 'exact temporary Site backup cleanup failed')
     return manifest
 
 
