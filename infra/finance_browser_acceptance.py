@@ -71,7 +71,10 @@ def main():
                 if execute('centrochange_core.security.dev_acceptance.pending_contacts',{'users':users})['pending']==0:
                     break
                 time.sleep(1)
-            print(json.dumps(execute('centrochange_core.security.dev_acceptance.recover_http',{'tag':fixture['tag']})))
+            cleanup=execute('centrochange_core.security.dev_acceptance.recover_http',{'tag':fixture['tag']})
+            print(json.dumps(cleanup))
+            if cleanup.get('cleanup')!='PASS':
+                raise RuntimeError('Exact synthetic browser fixture cleanup did not pass')
 
 
 if __name__=='__main__':

@@ -115,7 +115,10 @@ class MvpFunctionalCompletionTests(unittest.TestCase):
         cleanup=source('app/centrochange_core/centrochange_core/security/dev_acceptance.py')
         self.assertIn("browser_pos=tag+' BROWSER POS'",cleanup)
         self.assertIn("finance.attachments.attach",browser)
+        self.assertIn('authorizedBytes.equals(pdf)',browser)
         self.assertIn('native_reports.run',source('infra/browser/native_reports.cjs'))
+        self.assertIn("cleanup.get('cleanup')!='PASS'",runner)
+        self.assertIn("cleanup.get('cleanup')!='PASS'",source('infra/reporting_acceptance.py'))
 
 
 if __name__=='__main__':
