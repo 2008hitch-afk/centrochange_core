@@ -14,10 +14,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SPEC = importlib.util.spec_from_file_location('gate', ROOT / 'infra/issue139_install_gate.py')
 gate = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(gate)
-IMAGE = 'sha256:47d753955c81033b11317381b5fdc63aa5e438cec304e57e93a0b6c0215b6758'
+IMAGE = 'sha256:e2df539cc99fee6965102f539c0969dbec98d2ad59bf7c0d9631d4e03774acdb'
 SCRIPT = ROOT / 'infra/mvp_pos_retained_runtime.py'
 DEMO = gate.STATE / 'demo-owner.json'
-BACKUP = gate.STATE / 'issue139-install-runs/20261019T162921Z-3278557'
+BACKUP = gate.STATE / 'issue139-install-runs/20261019T201455Z-3466982'
 
 
 def runtime(stage, tag, invoice='', payment='', evidence=None):
@@ -77,7 +77,7 @@ def main():
     assert len(services) == 9 and all(services[name]['image'] == IMAGE for name in gate.APP)
     assert module.hooks() == module.GUARDS
     before = module.runtime_fingerprint()
-    assert before['sha256'] == '3e5d431eb9cb4ed37f500e52f654cf1fbc7d75907286313dcfda70102fccaef6'
+    assert before['sha256'] == 'f5cea384c350dc8780818ccec752a314885085b8f14afb49a9c34115fa68b517'
     permissions = gate.permission_fingerprint(module)
     prior = preexisting_records(module)
     assert DEMO.is_file() and DEMO.stat().st_mode & 0o077 == 0
