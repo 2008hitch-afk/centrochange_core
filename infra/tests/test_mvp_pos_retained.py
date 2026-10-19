@@ -27,6 +27,7 @@ class RetainedPosFixture(unittest.TestCase):
         self.assertIn('2099-01-12', RUNTIME)
         self.assertIn("p.docstatus<2", RUNTIME)
         self.assertIn('frappe.db.rollback()', RUNTIME)
+        self.assertIn('open administrative exception has a missing source', RUNTIME)
 
     def test_host_checks_backup_baseline_and_preexisting_documents(self):
         tree = ast.parse(HOST)

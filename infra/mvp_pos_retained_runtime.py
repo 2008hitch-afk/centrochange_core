@@ -66,6 +66,13 @@ try:
         from centrochange_core.scheduling.booking import book
         from centrochange_core.operations import lifecycle
 
+        # A native voucher hook refreshes this queue on submit. Reject an
+        # orphaned dynamic link before creating any synthetic documents.
+        exceptions = frappe.get_all('CC Admin Exception',
+            filters={'center': center.name, 'state': ['!=', 'Closed']},
+            fields=['reference_doctype', 'reference_name'], limit_page_length=0)
+        assert all(frappe.db.exists(row.reference_doctype, row.reference_name)
+            for row in exceptions), 'open administrative exception has a missing source'
         assert not frappe.db.exists('Patient', {'uid': tag})
         assert not frappe.db.exists('Mode of Payment', tag + ' Carta POS')
         schedules = frappe.get_all('Practitioner Schedule', filters={'cc_center': center.name, 'disabled': 0},
@@ -86,7 +93,12 @@ try:
         profile = frappe.get_doc('Appointment Type', service[0])
         assert profile.cc_service_item and float(profile.default_duration) > 0
         assert frappe.db.get_value('Branch', center.name, 'cc_price_list')
-        assert frappe.get_doc('CC Finance Settings').sales_tax_template
+        finance_settings = frappe.get_doc('CC Finance Settings')
+        assert finance_settings.sales_tax_template and finance_settings.receipt_mode
+        assert frappe.db.get_value('Mode of Payment', finance_settings.receipt_mode, 'mode_of_payment_code')
+        assert frappe.db.exists('Dynamic Link', {'parenttype': 'Address',
+            'link_doctype': 'Company', 'link_name': center.cc_company})
+        assert frappe.db.count('Sales Taxes and Charges', {'parent': finance_settings.sales_tax_template})
         assert not frappe.db.exists('Patient Appointment', {
             'appointment_date': '2099-01-12', 'appointment_time': '15:00:00',
             'practitioner': practitioner, 'cc_center': center.name,
@@ -108,6 +120,12 @@ try:
             'customer_type': 'Individual', 'customer_group': sorted(groups)[0],
             'territory': sorted(territories)[0],
             'fiscal_code': 'SYNTHETICDEV00000'}).insert(ignore_permissions=True)
+        frappe.get_doc({'doctype': 'Address', 'address_title': tag + ' synthetic billing',
+            'address_type': 'Billing', 'address_line1': 'Via SYNTHETIC DEV 0',
+            'city': 'Roma', 'state': 'Roma', 'pincode': '00100', 'country': 'Italy',
+            'country_code': 'IT', 'is_primary_address': 1,
+            'links': [{'link_doctype': 'Customer', 'link_name': customer.name}],
+        }).insert(ignore_permissions=True)
         bridge.map_patient(patient.name, center.name, tag + ' synthetic POS customer', customer.name)
         appointment = book(patient.name, practitioner, center.name, service[0], '2099-01-12',
             '15:00:00', tag + '-booking', tag + ' synthetic POS booking')['name']
@@ -128,7 +146,8 @@ try:
         assert frappe.db.get_value('CC Economic Source Link', source, 'economic_state') == 'Due'
         mode = tag + ' Carta POS'
         frappe.get_doc({'doctype': 'Mode of Payment', 'mode_of_payment': mode, 'type': 'Bank',
-            'enabled': 1, 'accounts': [{'company': center.cc_company, 'default_account': bank_account}]}).insert(ignore_permissions=True)
+            'enabled': 1, 'mode_of_payment_code': 'MP08-Carta di pagamento',
+            'accounts': [{'company': center.cc_company, 'default_account': bank_account}]}).insert(ignore_permissions=True)
         today = frappe.utils.today()
         due = frappe.utils.add_days(today, 14)
         invoice = receivables.draft([source], today, due, tag + '-invoice', tag + ' synthetic POS invoice')['name']
