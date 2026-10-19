@@ -38,7 +38,7 @@ async function measure(page) {
     const body=document.body.innerText || '';
     const shell=document.querySelector('#cc-desk-sidebar'), nav=document.querySelector('#cc-desk-global-nav');
     const activeSidebarLinks=[...document.querySelectorAll('#cc-desk-sidebar a.active')]
-      .filter(visible).map(el=>el.textContent.trim());
+      .map(el=>el.textContent.trim());
     const list=document.querySelector('.list-row-head, .list-row-container, .listview-body');
     const form=document.querySelector('.form-page');
     const main=document.querySelector('#cc-main, .layout-main-section, .page-content');

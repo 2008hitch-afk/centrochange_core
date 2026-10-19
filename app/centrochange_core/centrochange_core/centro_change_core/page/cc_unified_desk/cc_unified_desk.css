@@ -9,6 +9,7 @@
 .cc-client #cc-main{max-width:100%;min-width:0}
 .cc-client .cc-desk-surface.finance-page .page-body{padding:1.25rem}
 .cc-client .calendar-shell{max-height:calc(100dvh - 210px);min-height:430px}
+.cc-client .cc-calendar-mobile-hint{display:none}
 .cc-client .cc-desk-surface .sidebar{display:none!important}
 .cc-client .cc-desk-surface .app-shell{grid-template-columns:minmax(0,1fr)}
 .cc-client .cc-desk-home-surface{background:#f6faf9;min-height:calc(100dvh - 112px)}
@@ -29,7 +30,7 @@
 .cc-client .cc-desk-home-summary>div{display:flex;align-items:baseline;gap:.45rem;min-width:10rem;padding:.65rem .8rem;background:#fff;border:1px solid #d7e7e3;border-radius:.5rem}
 .cc-client .cc-desk-home-summary strong{color:#12665f;font-size:1.15rem}
 @media(max-width:991.98px){.cc-client .cc-desk-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){.cc-client .calendar-shell{min-height:430px;max-height:65dvh}.cc-client .cc-desk-home{padding:1rem .75rem}.cc-client .cc-desk-home-grid{grid-template-columns:minmax(0,1fr)}.cc-client .cc-desk-surface.finance-page .page-body{padding:1rem}}
+@media(max-width:700px){.cc-client .cc-calendar-mobile-hint{display:block;margin:.35rem 0 .55rem;color:#536d69;font-size:.82rem}.cc-client .calendar-shell{min-height:430px;max-height:65dvh}.cc-client .cc-desk-home{padding:1rem .75rem}.cc-client .cc-desk-home-grid{grid-template-columns:minmax(0,1fr)}.cc-client .cc-desk-surface.finance-page .page-body{padding:1rem}}
 
 .cc-client .cc-desk-surface:not(.cc-desk-home-surface){min-height:calc(100dvh - 64px);background:#f6faf9}
 .cc-client .cc-desk-surface .page-wrapper{margin-left:0}

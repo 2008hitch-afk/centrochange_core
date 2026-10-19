@@ -4,6 +4,11 @@
   if (frappe.session.user === "Administrator" || !(frappe.user_roles || []).some(role => role.startsWith("CC "))) return;
   const esc = value => frappe.utils.escape_html(String(value ?? ""));
   const demo = value => String(value ?? "").replace(/^CC-HTTP-UAT\d+\s+/, "");
+  // Retained, canceled accounting fixtures keep their canonical customer and
+  // document IDs. Give the client list a readable subject; the document ID
+  // remains visible in its native column and the full form/audit is intact.
+  const patient = value => /^CC-MVP-POS-[\w-]+$/.test(String(value ?? ""))
+    ? "Paziente dimostrativo POS" : demo(value);
   const service = value => {
     const label=demo(value);
     return label.toLowerCase()==="session" ? "Seduta" : label;
@@ -31,7 +36,7 @@
     item_name:service,item_code:service,
     price_list:value=>({"Standard Selling":"Listino vendite standard","Standard Buying":"Listino acquisti standard"})[value]||(/^CC-HTTP-UAT\d+\s+PRICE$/.test(value)?"Listino Centro Change":value)
   });
-  apply("Sales Invoice","Fatture pazienti",{customer:demo,customer_name:demo});
+  apply("Sales Invoice","Fatture pazienti",{customer:patient,customer_name:patient});
   apply("Purchase Invoice","Fatture professionisti",{supplier:professional,supplier_name:professional});
   apply("Bank Transaction","Movimenti bancari",{
     bank_account:bank,
