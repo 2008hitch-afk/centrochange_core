@@ -33,7 +33,40 @@ class MvpFunctionalCompletionTests(unittest.TestCase):
         acceptance=source('app/centrochange_core/centrochange_core/finance/receivables_acceptance.py')
         self.assertIn('single manual card/POS receipt',acceptance)
         self.assertIn('Synthetic POS retry',acceptance)
-        self.assertIn("'type':'Credit Card'",acceptance)
+        self.assertNotIn("'type':'Credit Card'",acceptance)
+        self.assertIn('_mode_of_payment_type_for_account',acceptance)
+
+    def test_synthetic_card_mode_uses_pinned_erpnext_native_type(self):
+        relative='app/centrochange_core/centrochange_core/finance/receivables_acceptance.py'
+        tree=ast.parse(source(relative))
+        helper=next(node for node in ast.walk(tree)
+                    if isinstance(node,ast.FunctionDef) and node.name=='_mode_of_payment_type_for_account')
+        account_type_lookup=any(isinstance(node,ast.Call) and isinstance(node.func,ast.Attribute)
+                                and node.func.attr=='get_value' and len(node.args)>=3
+                                and isinstance(node.args[0],ast.Constant) and node.args[0].value=='Account'
+                                and isinstance(node.args[2],ast.Constant) and node.args[2].value=='account_type'
+                                for node in ast.walk(helper))
+        allowed_values=any(isinstance(node,ast.Compare) and isinstance(node.ops[0],ast.NotIn)
+                           and isinstance(node.comparators[0],ast.Tuple)
+                           and {item.value for item in node.comparators[0].elts
+                                if isinstance(item,ast.Constant)}=={'Bank','Cash'}
+                           for node in ast.walk(helper))
+        self.assertTrue(account_type_lookup)
+        self.assertTrue(allowed_values)
+        mode_docs=[]
+        for node in ast.walk(tree):
+            if not isinstance(node,ast.Dict):
+                continue
+            values={key.value:value for key,value in zip(node.keys,node.values)
+                    if isinstance(key,ast.Constant) and isinstance(key.value,str)}
+            if isinstance(values.get('doctype'),ast.Constant) and values['doctype'].value=='Mode of Payment':
+                mode_docs.append(values)
+        self.assertEqual(len(mode_docs),2)
+        for doc in mode_docs:
+            mode_type=doc.get('type')
+            self.assertIsInstance(mode_type,ast.Call)
+            self.assertIsInstance(mode_type.func,ast.Name)
+            self.assertEqual(mode_type.func.id,'_mode_of_payment_type_for_account')
 
     def test_native_reports_remain_allowlisted_and_center_scoped(self):
         reports=source('app/centrochange_core/centrochange_core/finance/native_reports.py')
@@ -111,7 +144,8 @@ class MvpFunctionalCompletionTests(unittest.TestCase):
         self.assertIn('fixture.receivable.invoice',browser)
         fixture=source('app/centrochange_core/centrochange_core/finance/receivables_acceptance.py')
         self.assertIn("fixture.get('finance',{}).get('source')",fixture)
-        self.assertIn("'type':'Credit Card'",fixture)
+        self.assertNotIn("'type':'Credit Card'",fixture)
+        self.assertIn("'type':_mode_of_payment_type_for_account(account)",fixture)
         cleanup=source('app/centrochange_core/centrochange_core/security/dev_acceptance.py')
         self.assertIn("browser_pos=tag+' BROWSER POS'",cleanup)
         self.assertIn("finance.attachments.attach",browser)

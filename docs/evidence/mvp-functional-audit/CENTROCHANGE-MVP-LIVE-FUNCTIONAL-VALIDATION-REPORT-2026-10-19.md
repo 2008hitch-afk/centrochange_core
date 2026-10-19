@@ -1,6 +1,49 @@
 # CENTROCHANGE-MVP-LIVE-FUNCTIONAL-VALIDATION-REPORT
 
-**Esito del singolo aggiornamento autorizzato: `ROLLED_BACK`.** Il candidato è stato costruito, avviato e ha superato i controlli asset e Socket.IO. La suite browser W5 non è partita: Chromium non caricava otto librerie di sistema mancanti nella directory QA temporanea. L'executor ha eseguito il rollback previsto e verificato. Nessun fixture funzionale è stato creato.
+## Aggiornamento finale — 2026-10-19
+
+**Esito dell'unico aggiornamento DEV autorizzato: `ROLLED_BACK` con recupero verificato.** Chromium è stato riparato nell'ambiente QA con sole dipendenze runtime mancanti; l'immagine candidata ha superato 128/128 route read-only, 22/22 verifiche List/Form desktop/mobile, Administrator, asset e Socket.IO. La prima preparazione del flusso finanziario si è fermata prima del test POS per un valore Enum non valido nella fixture nativa `Mode of Payment`. La fixture ha eseguito cleanup PASS; l'executor ha ripristinato il backup verificato e tutti i nove servizi sono tornati alla baseline.
+
+### Chromium
+
+Ambiente QA Ubuntu 26.04, utente `empv26`, Node/Playwright `1.58.2`, Chromium headless shell `1208`. `ldd` dopo l'installazione mirata non mostra librerie mancanti. Nelle stesse variabili (`NODE_PATH`, `LD_LIBRARY_PATH`, `HOME`, `PATH`) e con la stessa regola di risoluzione host dell'executor, Chromium ha aperto `/login` su `centrochange.local:8082` (HTTP 200), ha trovato il form, ha salvato uno screenshot privato e si è chiuso correttamente. APT ha installato soltanto i pacchetti runtime richiesti e tre dipendenze dirette; 0 aggiornati, 0 rimossi. Nessun servizio/container ha richiesto restart.
+
+### Diagnosi del fallimento finanziario
+
+La catena di eccezione sanitizzata del fixture identifica `frappe.exceptions.ValidationError` durante `Mode of Payment.insert()` in `prepare_browser_invoice`. Il candidato impostava `type="Credit Card"`. Il DocType `Mode of Payment` dell'ERPNext `16.50.0` effettivamente installato espone le opzioni `Cash`, `Bank`, `General`, `Phone`; la documentazione ERPNext descrive il campo come categoria del metodo e chiarisce che il conto mappato/il Payment Entry determinano la registrazione contabile. Il metodo si chiama `CC-HTTP-… BROWSER POS`, ma il campo di classificazione deve essere il tipo del conto selezionato (`Bank` o `Cash`). La prova ha fallito prima che la fattura browser fosse creata e prima del POS.
+
+La fixture temporanea è stata recuperata con `cleanup: PASS`. La correzione locale non installata aggiunge `_mode_of_payment_type_for_account()`, ricava il tipo dal conto reale sintetico e rifiuta conti non Bank/Cash; entrambi i punti di creazione del metodo POS ora lo usano. La regressione offline impedisce di reintrodurre `Credit Card` come Enum e verifica che entrambi i fixture ricavino il valore dal conto. Fonti: [documentazione ufficiale ERPNext Mode of Payment](https://docs.frappe.io/erpnext/mode-of-payment); schema runtime pinned letto dal container Frappe/ERPNext 16.50.0.
+
+### Installazione, prove e recupero
+
+- Branch locale `audit/mvp-functional-completion`; PR #141/#140 restano DRAFT e non sono state aggiornate su GitHub.
+- HEAD dell'executor al momento dell'unico aggiornamento: `09e1cad00320bd1456d204a98b56e1680d9dc0e2`; SHA-256 executor `933ab9698e02d529a544667dbfdbc2a958e02a22100540cd3f4dccc39a496e06`.
+- Candidato installato per la prova: `d41ac305c6c5f86c37fd0b64e4e588255c467478`; immagine costruita `sha256:3fdc9a94d985fb9971dfc4c45d18dacc7be63db3da56de207bd3fd0f4465996a` (non attiva dopo il rollback).
+- Run privato `20261019T082643Z-2882304`. Gate privato: 08:25:40–12:25:40 UTC operativa, recupero fino alle 13:25:40 UTC.
+- Preflight attuale `DRY_RUN_PASS`: 9 servizi, un Site, Centro A attivo, Centro B inattivo, sei hook/guard, CSS #79 e cache asset corretti; schema, permessi e configurazione coerenti.
+- Backup privato cifrato verificato di database, file pubblici, file privati e `site_config.json`; SHA-256 e decifratura/formato verificati dall'executor. Rollback `rollback_failure: null`.
+- Postcheck: 9/9 servizi running sulla baseline `centrochange-single:issue139-realtime-v2`; DB e Redis healthy; `/api/method/ping` HTTP 200; fingerprint Owner `caba48b14430cd975213fde6273aada780aecd6e6604ad4fbb5ccda8bfc4eae0`, Communication `a13e25cf97b4bfa76856038614ec3e99380c086fc83c322db0958490ff19ac81`, schema e permessi invariati. Centro A/B restano rispettivamente operativo/inattivo.
+- L'immagine residua dell'esecuzione precedente, inattiva e senza container dipendenti (`sha256:737d351e…`), è stata conservata con un tag d'archivio; nessun layer è stato cancellato. La nuova immagine candidata di questo tentativo resta non attiva.
+
+### Risultati effettivi delle capability
+
+| Gruppo | Esito effettivo |
+|---|---|
+| 40 capability precedentemente PASS | PASS storico conservato dall'audit; non dichiarato come nuovo PASS live in questo aggiornamento |
+| POS / CC-CAP-042 | PARTIAL — preparazione fattura fallita per Enum fixture non valido; cleanup e rollback PASS; nessun test POS o saldo eseguito |
+| Libro giornale / Bilancio di verifica — CC-CAP-047 | PARTIAL/BLOCKED — test nativo non avviato dopo il fallimento precedente |
+| Allegati amministrativi — SCOPE-DOC | PARTIAL/BLOCKED — upload/download/permessi non avviati |
+| Localizzazione ed export — CC-CAP-029 | PARTIAL/BLOCKED — export non avviato; le route della webapp sono state renderizzate |
+| Fixture e suite aggiornate — CC-CAP-050 | PARTIAL — 79 test offline PASS dopo la correzione locale; preparazione live fallita ma cleanup esatto PASS; suite backend di sicurezza 38 controlli non avviata |
+| Ruoli/browser/mobile — UAT-GLOBAL | PARTIAL — W5 read-only 128/128 e List/Form 22/22 PASS su candidato; operazioni browser con salvataggi non eseguite |
+
+Il fix POS è **solo nel worktree locale** dopo il rollback, non installato. Sono stati rieseguiti `python3 -I -m unittest discover -s infra/tests -p 'test_*.py'` (79/79 PASS), `compileall`, `node --check infra/browser/finance.cjs` e `git diff --check` (PASS). Non è stata eseguita una seconda installazione. Pertanto nessuna delle sei voci PARTIAL diventa PASS funzionale in questo risultato: il conteggio resta 40/46 PASS con sei non verificate/completate; i 38 test sicurezza live, POS, GL/TB, allegati ed export non sono stati raggiunti.
+
+**Prossimo gate minimo:** una nuova autorizzazione Owner per un singolo aggiornamento del candidato corretto, necessaria perché l'unico aggiornamento autorizzato è stato consumato e ripristinato. Nessun merge, produzione o GOAL-03.
+
+## Esito del tentativo precedente (08:05 UTC)
+
+**Esito del precedente singolo aggiornamento autorizzato: `ROLLED_BACK`.** Il candidato è stato costruito, avviato e ha superato i controlli asset e Socket.IO. La suite browser W5 non è partita: Chromium non caricava otto librerie di sistema mancanti nella directory QA temporanea. L'executor ha eseguito il rollback previsto e verificato. Nessun fixture funzionale è stato creato nel tentativo precedente.
 
 ## Risultato
 

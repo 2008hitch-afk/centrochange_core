@@ -6,6 +6,14 @@ from centrochange_core.finance import dev_acceptance,bridge,receivables as ar
 from centrochange_core.security.audit import internal_write
 
 
+def _mode_of_payment_type_for_account(account):
+	"""Use ERPNext's native Cash/Bank type for the synthetic POS ledger."""
+	account_type=frappe.db.get_value('Account',account,'account_type')
+	if account_type not in ('Bank','Cash'):
+		frappe.throw('Il conto del pagamento sintetico deve essere di tipo banca o cassa.')
+	return account_type
+
+
 @security.synthetic_test
 def prepare_browser_invoice(fixture):
 	"""Create one exact-tagged native invoice for browser tests; recovery owns its IDs."""
@@ -21,7 +29,7 @@ def prepare_browser_invoice(fixture):
 	settings=frappe.get_doc('CC Finance Settings')
 	account=settings.bank_account or frappe.db.get_value('Company',company,'default_cash_account')
 	mode=tag+' BROWSER POS'
-	frappe.get_doc({'doctype':'Mode of Payment','mode_of_payment':mode,'type':'Credit Card','enabled':1,
+	frappe.get_doc({'doctype':'Mode of Payment','mode_of_payment':mode,'type':_mode_of_payment_type_for_account(account),'enabled':1,
 		'accounts':[{'company':company,'default_account':account}]}).insert(ignore_permissions=True)
 	invoice=ar.draft([source],'2026-10-05','2026-10-31',tag+'-browser-invoice',tag)['name']
 	ar.submit(invoice,tag+' browser invoice')
@@ -75,7 +83,7 @@ def checks(fixture):
     pos_account=settings.bank_account or company.default_cash_account
     assert pos_account and frappe.db.get_value('Account',pos_account,'account_type') in ('Bank','Cash')
     pos_method='CC SYNTHETIC POS '+frappe.generate_hash(length=8)
-    frappe.get_doc({'doctype':'Mode of Payment','mode_of_payment':pos_method,'type':'Credit Card','enabled':1,
+    frappe.get_doc({'doctype':'Mode of Payment','mode_of_payment':pos_method,'type':_mode_of_payment_type_for_account(pos_account),'enabled':1,
         'accounts':[{'company':doc.company,'default_account':pos_account}]}).insert()
     pos=ar.pay(name,5,'2026-10-05','synthetic-pos-single','Synthetic manual card/POS payment',mode_of_payment=pos_method)
     pos_entry=frappe.get_doc('Payment Entry',pos['payment'])
