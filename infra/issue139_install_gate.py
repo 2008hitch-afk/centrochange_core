@@ -30,10 +30,10 @@ import urllib.request
 REPO = Path(__file__).resolve().parent.parent
 STATE = Path('/home/empv26/.local/state/centrochange-single')
 ENV = STATE / 'runtime.env'
-SOURCE = '17100e64bfbb178da4ef27278603cca6567037d5'
-BASE_SOURCE = '3429f7d292c8c5961a119a6e97dccb02e0a86eec'
-BASE_IMAGE = 'sha256:65b73c46610f086a1bfe156b17072e007cfc3cfa00501a3c6c2a64d3ef7bccf4'
-BASE_TAG = 'centrochange-single:mvp-devfirst-3429f7d'
+SOURCE = 'a03386c41a78692fd4b6d370ec56b1d21d613841'
+BASE_SOURCE = '17100e64bfbb178da4ef27278603cca6567037d5'
+BASE_IMAGE = 'sha256:47d753955c81033b11317381b5fdc63aa5e438cec304e57e93a0b6c0215b6758'
+BASE_TAG = 'centrochange-single:mvp-devfirst-17100e6'
 BASE_ENV_SHA = '46cdc4dd93f2e199298b708e25abba1c8d6fbe2a7a5895f2cdfbaa2b3f712600'
 BASE_OVERLAY_SHA = 'b5801f44bd42ca45fdf1d6a8097810e36399ab982be67899b98796b7762b5d68'
 COMPOSE_SHA = {
@@ -52,11 +52,11 @@ TECH = ('db', 'redis-cache', 'redis-queue')
 PROJECT = 'centrochange-dev'
 NETWORK_NAME = 'centrochange-dev-net'
 LOOPBACK_IP = '127.0.0.1'
-IMAGE = 'centrochange-single:mvp-devfirst-17100e6'
+IMAGE = 'centrochange-single:mvp-devfirst-a03386c'
 PLAYWRIGHT_PACKAGE = Path('/tmp/cc-browser-qa/node_modules/playwright/package.json')
 CHROMIUM = Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell')
 BROWSER_LIBS = '/tmp/cc-browser-libs/usr/lib/x86_64-linux-gnu'
-ACTIVE_OVERLAY_SHA = 'f7b04daee3db5a04cf6c4ca48d7126425891c70d182d0be5fbcf11ce1baa7a47'
+ACTIVE_OVERLAY_SHA = 'feea2e0523fb4e3fbd6acf2f9d711e59dfa0adc8b94541e76af96d46d328cbfb'
 APP_PREFIX = 'app/centrochange_core/centrochange_core/'
 IMAGE_PREFIX = '/home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/'
 BENCH = '/home/frappe/frappe-bench'
@@ -68,11 +68,11 @@ DEPENDENCY_SHA = {
     'infra/browser/mvp_devfirst_readonly.cjs': '1d93bce1d200db259595fc5ba331b3eaa42481fda4e78836b26bf129e1c5261a',
     'infra/browser/issue139_asset_response.cjs': '30ab0eaa9a15674d4d67f42837b25d3e009727ae796b36903a5de315b5dc3b0a',
     'infra/issue139_frontend.conf.template': '8335c04ce44258137b84a511f790f207614e3f25135910fc22aa77f25c81d48b',
-    'infra/compose.issue139_candidate.yaml': 'feea2e0523fb4e3fbd6acf2f9d711e59dfa0adc8b94541e76af96d46d328cbfb',
+    'infra/compose.issue139_candidate.yaml': '520530eaad77a358545ac9db64e3a7c2bb3f49241d0678353e44be49cc6d2202',
     'infra/issue139_asset_cache_gate.py': '417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361',
     'infra/goal02_install_one_command.py': '607578830188ab47a5c9d062e0848d5ef2c38c8a5422b503326f30d166592ac5',
     'infra/issue137_safe_security_run.py': '13e820df9f55e92807719751789e50d96187b091f4e515f20c2b196241da9783',
-    'infra/security_acceptance.py': 'a8eec5aaad2d33bb138f5a06198369c39f1cc55d2f5927a06a7074ad23d57bf2',
+    'infra/security_acceptance.py': '071dfd7d52754855ed22c1e22b865db7174b875510776351b03917eaa7fb2324',
     'infra/browser/issue137_owner_uat_sweep.cjs': '62fa5855a3e8216c18015ba5fc399f614872577a249c615aa44889bb2baf17c9',
     'infra/browser/issue139_native_renderer.cjs': '1f7f2ade73f2eb046ce328f0ebf1f5aebe41fc80fb584f01bd9c4efabc208487',
     'infra/browser/issue139_admin_readonly.cjs': 'ba6b6eb45736018451f5b96a646fdf0255bf4b1ec28ba192b556af788767ad9a',
