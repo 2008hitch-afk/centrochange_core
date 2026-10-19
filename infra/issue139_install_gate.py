@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import pwd
+import re
 import secrets
 import shutil
 import socket
@@ -51,6 +52,9 @@ PROJECT = 'centrochange-dev'
 NETWORK_NAME = 'centrochange-dev-net'
 LOOPBACK_IP = '127.0.0.1'
 IMAGE = 'centrochange-single:mvp-functional-d41ac30'
+PLAYWRIGHT_PACKAGE = Path('/tmp/cc-browser-qa/node_modules/playwright/package.json')
+CHROMIUM = Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell')
+BROWSER_LIBS = '/tmp/cc-browser-libs/usr/lib/x86_64-linux-gnu'
 ACTIVE_OVERLAY_SHA = '7b8eb76ed9e8e6b044ab859b6e09c87d969e9d655a725f3a01e83d3884202713'
 APP_PREFIX = 'app/centrochange_core/centrochange_core/'
 IMAGE_PREFIX = '/home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/'
@@ -111,6 +115,24 @@ def host_telemetry():
     return {'oom_kill': int(vm.get('oom_kill', '0')),
             'memory_full_avg10': pressure['memory'], 'io_full_avg10': pressure['io'],
             'docker_free_bytes': shutil.disk_usage('/var/lib/docker').free}
+
+
+def check_browser_libraries(output, returncode=0):
+    missing = sorted(set(re.findall(r'^\s*(\S+)\s+=>\s+not found\s*$', output, re.MULTILINE)))
+    require(returncode == 0 and not missing,
+            'W5 Chromium shared libraries unavailable: ' + ', '.join(missing or ['ldd failed']))
+    return {'missing_shared_libraries': []}
+
+
+def browser_runtime_preflight():
+    require(PLAYWRIGHT_PACKAGE.is_file() and CHROMIUM.is_file() and os.access(CHROMIUM, os.X_OK),
+            'W5 Playwright/Chromium executable unavailable')
+    package = json.loads(PLAYWRIGHT_PACKAGE.read_text())
+    require(package.get('version') == '1.58.2', 'W5 Playwright version drift')
+    result = run(['runuser', '-u', 'empv26', '--', '/usr/bin/env',
+                  f'LD_LIBRARY_PATH={BROWSER_LIBS}', 'ldd', str(CHROMIUM)], check=False)
+    libraries = check_browser_libraries(result.stdout + '\n' + result.stderr, result.returncode)
+    return {'playwright': package['version'], 'chromium': str(CHROMIUM), **libraries}
 
 
 def run(args, *, input_text=None, cwd=None, check=True):
@@ -305,9 +327,7 @@ def preflight(executor_sha=None):
     fixture = STATE / 'demo-owner.json'
     require(fixture.is_file() and fixture.stat().st_mode & 0o077 == 0,
             'private synthetic account fixture unsafe or missing')
-    require(Path('/tmp/cc-browser-qa/node_modules/playwright/package.json').is_file()
-            and Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell').is_file(),
-            'W5 Chromium prerequisites unavailable')
+    browser_runtime = browser_runtime_preflight()
     evidence_root = STATE / 'browser-evidence'
     require(evidence_root.is_dir() and evidence_root.stat().st_uid == pwd.getpwnam('empv26').pw_uid
             and evidence_root.stat().st_mode & 0o077 == 0,
@@ -363,7 +383,7 @@ print("CC_SITES="+json.dumps(sorted(x.name for x in p.iterdir() if (x/"site_conf
             'schema': schema, 'permissions': permissions,
             'branch': branch, 'module': module, 'settings': value,
             'overlay_bytes': ACTIVE_OVERLAY.read_bytes(), 'overlay_stat': ACTIVE_OVERLAY.stat(),
-            'host': host_telemetry()}
+            'host': host_telemetry(), 'browser_runtime': browser_runtime}
 
 
 def private_dir():
