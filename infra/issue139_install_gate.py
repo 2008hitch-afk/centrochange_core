@@ -71,6 +71,7 @@ DEPENDENCY_SHA = {
     'infra/browser/issue139_native_renderer.cjs': '1f7f2ade73f2eb046ce328f0ebf1f5aebe41fc80fb584f01bd9c4efabc208487',
     'infra/browser/issue139_admin_readonly.cjs': 'ba6b6eb45736018451f5b96a646fdf0255bf4b1ec28ba192b556af788767ad9a',
     'infra/finance_browser_acceptance.py': '0dedbb7f6061e9bf39204f0064a697e7a9d70e01433ad3e9fe5bf960e6c900b6',
+    'infra/fixture_command.py': '8cd336c031c72c8bb3dad974020107e4e771b1e186b6dab01a8613f6f31f7566',
     'infra/reporting_acceptance.py': 'c9ba1eed489a49aa0bc5d578c44db3be2e40ee2f438fa15cbf34a6b7e5537fa0',
     'infra/browser/finance.cjs': '3053e7e926b412198cf59a908e380ae16930a1e434419583993fa59398ee4c1c',
     'infra/browser/native_reports.cjs': 'c8ad7ab0aaf2e90cd30f9bb25cf414370f6d4e95f080e3b51b63fee9550b7860',
