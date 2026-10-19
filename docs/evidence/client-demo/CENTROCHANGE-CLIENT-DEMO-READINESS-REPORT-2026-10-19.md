@@ -1,31 +1,54 @@
 # Centro Change — Client Demo Readiness Report, 19 October 2026
 
-**Esito: `CLIENT_DEMO_READY: NO`; Owner screen-share walkthrough possible with disclosed visual limits.** Functional MVP is documented as 46/46 technical PASS, but visual acceptance is open. This report does not change the installed DEV or claim customer approval.
+**Result: `CLIENT_DEMO_READY = YES` for an Owner-led screen-share using synthetic DEV data.** This is neither client acceptance nor production readiness. Direct client login remains outside this authorization.
 
-## Baseline and publication
+## Runtime and integrity
 
-- Branch `audit/mvp-functional-completion`, original local HEAD `b0e14e0be22ee5c431ad4abb74fb931634335276`; PR #141 remains DRAFT and depends on #140 DRAFT. The original HEAD and the [functional completion report](../mvp-functional-audit/CENTROCHANGE-MVP-DEV-FIRST-COMPLETION-2026-10-19.md) were published without force push or merge.
-- The demo guide, screenshots, source-only sidebar correction and added assertion are in commit `7f2a4395ce406247e45049c2db35845c2cf040ce` on [PR #141](https://github.com/2008hitch-afk/centrochange_core/pull/141); that commit is **not** the installed DEV image.
-- Installed DEV source `a03386c41a78692fd4b6d370ec56b1d21d613841`; six application services use `centrochange-single:mvp-devfirst-a03386c-v3`, image `sha256:e2df539cc99fee6965102f539c0969dbec98d2ad59bf7c0d9631d4e03774acdb`. Nine services running, HTTP ping 200. No installation, restart, migration or data mutation was performed for this report.
-- The [completion matrix](../mvp-functional-audit/capability-matrix-completion.csv) has six prior PARTIAL entries now evidenced PASS; 40 older PASS retain their original evidence. The 46 functions were not rerun as a new campaign.
+- Branch `audit/mvp-functional-completion`; PR #141 remains DRAFT and depends on #140. The cumulative application source installed is `cf0eff79a74de4ec36cb20611e5c518de5ba7f8e` (the operational wrapper and this evidence follow it on the same branch). No merge occurred.
+- One authorized DEV update ran with pinned `infra/client_demo_install.py` SHA-256 `de987af2fe13e6ee9358b8e03816828eb3d83130052ff9b855b179b6efd6e7fb`. Its private gate began at `2026-10-19T21:01:11Z` with a four-hour operation limit and one-hour recovery reserve. No second image update or rollback occurred.
+- Six application services now run `centrochange-single:client-demo-cf0eff7`, image `sha256:5a9351bf68eb7e76b805a14ebcf966de57420546dfd11c8ed41b2f4a82119834`. Database and both Redis services were preserved. All nine project services run; Frappe ping returned HTTP 200. Centro A remains active and Centro B inactive.
+- The four-part encrypted backup was verified before activation. Essential authentication, Administrator, assets, Socket.IO origin checks and direct API denials passed. The monitored synthetic data fingerprint stayed `82dc3825e195bbcd9300f0a6787c043b9f105db324752f06ea3aae23afec7ecd` before activation, after activation and after the final browser sweep. The sweep wrote no records.
+- The prior [MVP completion evidence](../mvp-functional-audit/CENTROCHANGE-MVP-DEV-FIRST-COMPLETION-2026-10-19.md) documents **46/46 technical capability PASS**, including a real synthetic partial POS payment, private attachment persistence, report rows/export and server-side role denial. This presentation update did not rerun those write workflows. Its separate mutative finance/security fixture suites remain `BLOCKED` by the executor's documented cleanup risk; historical PASS is not presented as a fresh rerun.
 
-## Current Chromium evidence
+## Corrections and observed result
 
-The existing read-only Owner UAT sweep was run against the actually served DEV with a new Chromium context and private demo accounts. Eight role/viewport combinations covered Direzione desktop/mobile, Segreteria mobile, Professionista Alfa mobile, Beta desktop, C mobile, Finance desktop and Commercialista desktop. **87/87 route renders passed the existing structural checks**; zero unexpected mutations, JavaScript errors, missing CSS/JS assets, blank main regions, oversized icons, clipped status badges or horizontal page overflow. JSON and full-page screenshots are retained privately at `~/.local/state/centrochange-single/browser-evidence/client-demo-20261019/`. This is navigation/rendering evidence, not a new functional write test.
+| Problem | Cause | Correction | Live proof |
+|---|---|---|---|
+| Two active sidebar links for one destination | «Inizio» and «Agenda» (or Finance home) shared a route and both matched | Pick one active destination; navigation structure unchanged | Fresh Chromium m desktop/mobile and f desktop: exactly one active link; 87/87 role/route sweep PASS |
+| Canceled POS fixtures dominated invoice list with raw customer codes | Native Sales Invoice list used canonical synthetic customer values as subject | Frappe List View formatter gives a readable presentation label; canonical IDs and accounting history stay intact | Fresh Chromium list shows “Paziente dimostrativo POS”, cancellation status and canonical document ID, desktop/mobile |
+| New list formatter initially did not appear | Frappe 16.50 `doctype_form_meta::Sales Invoice` client cache retained old `__list_js` after image activation | Versioned, bounded `infra/client_demo_refresh_meta.py` invalidated only that cache key after verifying the source; no DB record or service changed | New login returned updated formatter; browser inspection and screenshot PASS |
+| Mobile weekly Agenda did not explain horizontal navigation | Seven-day grid exceeds phone width by design | Added an Italian scroll hint and keyboard focus/accessibility label | At 390 px Chromium scrolled to later days; screenshot shows hint and calendar |
+| Initial browser proof raced native list loading | It checked the header before asynchronous invoice rows rendered | Post-install proof waits for actual row data and text | `infra/browser/client_demo_readiness_post.cjs`: 3/3 sessions PASS, zero page errors |
 
-Representative synthetic screenshots: [Agenda desktop](agenda-desktop-before.png), [Agenda mobile](agenda-mobile-before.png), [Fatture pazienti](fatture-native-before.png), [Banca](banca-desktop.png), [Ricerca pazienti mobile](ricerca-professionista-mobile.png). Screenshots were inspected visually in addition to automated DOM checks.
+The pinned one-shot executor and its original test checksum remain unchanged after installation. The post-install proof and cache refresh are separate versioned files. No second deployment was used to correct test timing or cache.
 
-### Observed limits
+## Browser coverage and screenshots
 
-1. **Sidebar active state, confirmed:** Agenda highlights both «Inizio» and «Agenda». The same duplicate destination exists for finance-only home. Cause: both links share one URL and the renderer marks every matching link active. A source-only correction now gives the destination a single active state and uses its title; the new sweep assertion fails if the active count differs from one. `node --check` and `git diff --check` pass. **This correction is not installed on DEV and has no live PASS yet.**
-2. **Native invoice list, confirmed:** the recent canceled POS fixture rows show `CC-MVP-POS-*` as prominent names; search controls expose `ID` and comparison symbols, and a date header is truncated at 1440 px. This does not break accounting or access but is unsuitable as the opening customer finance example. Show human-readable Beta/Gamma/Theta examples and keep canceled test history for audit. A presentation-only native customization and fresh visual verification are still needed before declaring polished demo readiness; do not rename or delete accounting history merely to improve a screenshot.
-3. **Mobile Agenda, review item:** the weekly grid is horizontally scrollable at 390 px and initially displays only the first two day columns. No document-level overflow was measured, but the client should confirm that this interaction is understandable.
-4. **Italian/localization, PARTIAL visual review:** current representative custom screens use Italian dates, labels and 24-hour times; existing live CSV tests covered six exports. A full customer-facing copy review across every native form, error, empty state and print/export view was not completed in this pass. Technical IDs remain visible in the native invoice list. Issue #134 and #75 acceptance remain open.
+The read-only Owner UAT sweep was rerun on the **installed image** in fresh Chromium contexts: Direzione desktop/mobile 23+23 routes, Segreteria mobile 14, Professionals A/B/C 4+4+4, Finance desktop 10, Commercialista desktop 5. **87/87 route renders PASS, zero unexpected writes.** Checks include visible content, asset/JS failures, layout overflow, status badges, navigation and active sidebar state. The targeted post-install proof adds Agenda landing, Finance landing, mobile calendar scrolling and native invoice subject.
 
-## Demo workflow coverage
+Actual after-update screenshots: [Agenda desktop](agenda-desktop-after.png), [Agenda mobile](agenda-mobile-after.png), [Fatture pazienti desktop](fatture-native-after.png), [Fatture pazienti mobile](fatture-native-mobile-after.png). The [before screenshots](agenda-desktop-before.png) remain for comparison. Full sweep JSON and other screenshots are retained privately at `~/.local/state/centrochange-single/browser-evidence/client-demo-post-deploy-sweep/`.
 
-The [runbook](../../uat/CLIENT-DEMO-RUNBOOK-2026-10-19.md) specifies 12 linked scenarios and their roles. Current Chromium read-only navigation reached the relevant top-level screens; earlier capability evidence documents underlying functional operations, including POS partial payment, private attachment persistence and server-side role denial. **12/12 scenarios have a documented route and functional evidence path; 0/12 were re-executed end-to-end as fresh write workflows in this demo-readiness pass.** This distinction prevents route PASS from being mistaken for current-session business-process PASS. A guided Owner screen-share can use the existing synthetic records and prior evidence without changing Owner data.
+## Twelve customer walkthrough paths
 
-## Decision and next gate
+The [runbook](../../uat/CLIENT-DEMO-RUNBOOK-2026-10-19.md) gives sequence, roles, synthetic examples and expected results. All twelve paths have a currently reachable browser surface in the post-update sweep plus corresponding prior functional evidence; **none was re-executed as a new end-to-end write transaction during this visual deployment**.
 
-The DEV is accessible now to the Owner through the existing private SSH tunnel, but this report does **not** declare a polished direct client demo ready. A single cumulative UI candidate is required for the one-active-link correction and any agreed native-list presentation refinement. Its installation needs one separate operational authorization, followed by targeted Chromium visual checks; no new full 46-capability campaign is indicated. Direct client login additionally needs a separate security/access decision. PR #141 remains DRAFT; no merge, production, GOAL-03 or customer acceptance is implied.
+| Path | Current browser | Functional evidence to reuse |
+|---|---|---|
+| 1 Login → Agenda | PASS desktop/mobile | Agenda/booking acceptance |
+| 2 Patient search and registry | PASS | Patient assignment and access tests |
+| 3 Professionals and availability | PASS | Availability and role tests |
+| 4 Book, reschedule, cancel | PASS route | Synthetic booking lifecycle tests |
+| 5 Session, private notes, history | PASS route | Note revision and authorization tests |
+| 6 Services, tariffs, packages | PASS lists/forms | Catalog and pricing tests |
+| 7 Invoice, POS, outstanding balance | PASS invoice/payment routes | [Live synthetic POS proof](../mvp-functional-audit/CENTROCHANGE-MVP-DEV-FIRST-COMPLETION-2026-10-19.md) |
+| 8 Bank and reconciliation | PASS | Traceability/reconciliation tests |
+| 9 Administrative attachment | PASS document route | Private attachment persistence/denial tests |
+| 10 Reports and accounting | PASS routes | General ledger/trial balance rows and CSV in this installation |
+| 11 Simulated SdI and TS | PASS | Simulation contract tests; no real transmission |
+| 12 Access management and audit | PASS | Server-side role/denial and audit tests |
+
+## Presentation limits and access
+
+- Native invoice columns still shorten long names on a phone; native filter controls expose `ID` and compact symbols. Subject, status and date remain legible for a guided demo. Start with Beta/Gamma/Theta examples; retain canceled synthetic POS rows in history. This is a visual polish item under #75/#134, not an accounting failure.
+- Italian customer surfaces and date/time samples were checked, but no complete copy audit of every native form, error, print and export was performed. **UI/UX and localization are `PARTIAL` for final Owner visual acceptance**, while the guided demo is usable. No `OWNER VISUAL PASS` is claimed.
+- Use the private SSH tunnel from the [runbook](../../uat/CLIENT-DEMO-RUNBOOK-2026-10-19.md). Credentials stay in the existing private channel; do not send them to the client. Present first by Owner screen sharing. Client observations and acceptance must be recorded explicitly.

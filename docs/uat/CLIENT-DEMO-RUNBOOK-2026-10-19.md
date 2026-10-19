@@ -8,7 +8,7 @@ Nella propria sessione SSH: `ssh -N -L 8082:127.0.0.1:8082 empv26@srv2033673`. A
 
 ## Sequenza consigliata
 
-Usare i record dimostrativi leggibili Alfa, Beta, Gamma e Theta; non presentare le fatture di prova `CC-MVP-POS-*` annullate come operazioni del cliente. Prima di ogni modifica, verificare che il record sia sintetico e che l'azione sia reversibile; in caso contrario mostrare la prova precedente e il risultato corrente in sola lettura.
+Usare i record dimostrativi leggibili Alfa, Beta, Gamma e Theta. In Fatture pazienti, filtrare per stato «Pagata» o «In ritardo» per aprire un esempio Beta, Gamma o Theta. Le fatture di prova POS annullate sono ora presentate con un soggetto leggibile ma restano nello storico: non mostrarle come operazioni del cliente. Prima di ogni modifica, verificare che il record sia sintetico e che l'azione sia reversibile; in caso contrario mostrare la prova precedente e il risultato corrente in sola lettura.
 
 | Passo | Ruolo | Mostrare | Risultato da spiegare |
 |---|---|---|---|
@@ -34,5 +34,5 @@ Per ogni passo chiedere: l'operatore trova la funzione, capisce cosa vede, sa qu
 - DEV privato con dati sintetici; Centro A operativo, Centro B inattivo. Nessuna produzione o conformità fiscale dimostrata.
 - SdI, TS, notifiche esterne e carta/POS non contattano provider reali.
 - Le fatture tecniche di prova annullate restano nello storico contabile per tracciabilità.
-- La review visiva della sidebar e delle liste native è ancora aperta; vedere il [rapporto demo](../evidence/client-demo/CENTROCHANGE-CLIENT-DEMO-READINESS-REPORT-2026-10-19.md).
+- Il DEV aggiornato mostra una sola voce attiva nella sidebar e un soggetto leggibile nelle fatture sintetiche. Sui telefoni la lista nativa tronca alcuni nomi lunghi e mostra controlli compatti; usare la scheda di dettaglio per il testo completo. La review visiva Owner resta aperta; vedere il [rapporto demo](../evidence/client-demo/CENTROCHANGE-CLIENT-DEMO-READINESS-REPORT-2026-10-19.md).
 - Accesso diretto del cliente richiede una decisione separata su rete, isolamento e consegna sicura delle credenziali.
