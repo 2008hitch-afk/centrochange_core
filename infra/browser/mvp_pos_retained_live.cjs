@@ -55,15 +55,23 @@ async function login(page, role, destination) {
     await page.getByRole('button', {name: 'Fatture pazienti', exact: true}).click();
     await row.waitFor();
     await row.click();
+    await page.waitForFunction(name => document.querySelector('#detail')?.textContent?.includes(name), invoice);
     assert((await page.locator('#detail').innerText()).includes(invoice));
     await page.screenshot({path: process.env.CC_POS_EVIDENCE + '/after-refresh.png', fullPage: true});
-    await page.locator('#logout').click();
-    await login(page, 'a', '/centrochange');
-    const denied = await page.evaluate(async name => (await fetch(
+    await context.close();
+    const professionalContext = await browser.newContext({viewport: {width: 1440, height: 900},
+      locale: 'it-IT', timezoneId: 'Europe/Rome'});
+    const professionalPage = await professionalContext.newPage();
+    const professionalErrors = [];
+    professionalPage.on('pageerror', error => professionalErrors.push(error.message));
+    await login(professionalPage, 'a', '/centrochange');
+    const denied = await professionalPage.evaluate(async name => (await fetch(
       '/api/method/centrochange_core.finance.receivables.position?name=' + encodeURIComponent(name))).status,
       invoice);
     assert(denied === 403, `Professional direct invoice API returned ${denied}`);
     assert.deepStrictEqual(errors, []);
+    assert.deepStrictEqual(professionalErrors, []);
+    await professionalContext.close();
     console.log('CC_POS_BROWSER=' + JSON.stringify({status: 'PASS', payment: payment.payment,
       browser_reload: true, professional_denied: true, js_errors: 0}));
   } finally {

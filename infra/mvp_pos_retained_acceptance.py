@@ -112,7 +112,7 @@ def main():
     assert len(services) == 9 and all(services[name]['image'] == IMAGE for name in gate.APP)
     assert module.hooks() == module.GUARDS
     before = module.runtime_fingerprint()
-    assert before['sha256'] == '421f95e3f53cf6cfcb2fbdb5deaa90bae7dbaaf9df510294163767be66893372'
+    assert before['sha256'] == 'd7a0c44d69d1720022ccd8f703339b712ee0119a7cc5b229b865c4b2b3d8aa37'
     permissions = gate.permission_fingerprint(module)
     prior = preexisting_records(module)
     assert DEMO.is_file() and DEMO.stat().st_mode & 0o077 == 0

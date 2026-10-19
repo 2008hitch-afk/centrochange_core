@@ -52,6 +52,8 @@ class RetainedPosFixture(unittest.TestCase):
         self.assertIn('.form-login button[type="submit"]', BROWSER)
         self.assertNotIn('.form-login .btn-login', BROWSER)
         self.assertIn("name: 'Registra pagamento', exact: true}).waitFor()", BROWSER)
+        self.assertIn("page.waitForFunction(name => document.querySelector('#detail')", BROWSER)
+        self.assertIn('const professionalContext = await browser.newContext(', BROWSER)
 
 
 if __name__ == '__main__':
