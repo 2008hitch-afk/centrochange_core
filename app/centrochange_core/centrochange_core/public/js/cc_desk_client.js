@@ -117,7 +117,12 @@
       host.prepend(sidebar);
     }
     const groups = menu(roles);
-    const currentLink = groups.flatMap(group => group.links).find(([, href]) => active(href));
+    // Inizio deliberately opens the same view as Agenda (or Finanza). Keep
+    // the shortcut, but give the destination a single active menu item.
+    const isActiveLink = (label, href) => active(href) &&
+      (label !== "Inizio" || !groups.some(group => group.links.some(([otherLabel, otherHref]) =>
+        otherLabel !== "Inizio" && otherHref === href)));
+    const currentLink = groups.flatMap(group => group.links).find(([label, href]) => isActiveLink(label, href));
     const title = currentLink?.[0] || nativeLabels[nativeRoute()] || "Centro Change";
     const isMobile = window.matchMedia("(max-width: 991.98px)").matches;
     const expanded = sidebar.classList.contains("show");
@@ -146,7 +151,7 @@
       const collapsible = ["Amministrazione", "Gestione"].includes(group.title);
       const section = document.createElement(collapsible ? "details" : "section");
       section.className = "cc-sidebar-group";
-      if (collapsible) section.open = group.links.some(([, href]) => active(href)) ||
+      if (collapsible) section.open = group.links.some(([label, href]) => isActiveLink(label, href)) ||
         (group.title === "Amministrazione" && !roles.has("CC Manager"));
       const heading = document.createElement(collapsible ? "summary" : "h2");
       heading.className = "cc-sidebar-group-title";
@@ -161,7 +166,7 @@
         anchor.title = label;
         anchor.innerHTML = `<span class="nav-link-icon"><img src="${icon(image)}" alt=""></span><span class="nav-link-title"></span>`;
         anchor.querySelector(".nav-link-title").textContent = label;
-        if (active(href)) {
+        if (isActiveLink(label, href)) {
           anchor.classList.add("active");
           anchor.setAttribute("aria-current", "page");
         }

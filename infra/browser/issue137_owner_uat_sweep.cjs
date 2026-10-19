@@ -37,6 +37,8 @@ async function measure(page) {
     const icons=[...document.querySelectorAll('svg, .icon, .icon img, .sidebar-item-icon img')].filter(visible).map(el=>({tag:el.tagName,box:rect(el)}));
     const body=document.body.innerText || '';
     const shell=document.querySelector('#cc-desk-sidebar'), nav=document.querySelector('#cc-desk-global-nav');
+    const activeSidebarLinks=[...document.querySelectorAll('#cc-desk-sidebar a.active')]
+      .filter(visible).map(el=>el.textContent.trim());
     const list=document.querySelector('.list-row-head, .list-row-container, .listview-body');
     const form=document.querySelector('.form-page');
     const main=document.querySelector('#cc-main, .layout-main-section, .page-content');
@@ -54,6 +56,7 @@ async function measure(page) {
     return {
       pathname:location.pathname+location.search,title:document.title,
       shell:rect(shell),navbar:rect(nav),list:rect(list),form:rect(form),main:rect(main),
+      activeSidebarLinks,
       pageHead:rect(document.querySelector('.page-head')),blank:body.trim().length<30,
       bodyChars:body.length,overflowPx:Math.max(0,document.documentElement.scrollWidth-innerWidth),
       maxIconPx:Math.round(Math.max(0,...icons.map(x=>Math.max(x.box.width,x.box.height)))),
@@ -136,6 +139,7 @@ async function run() {
       if(metrics?.clippedBadges)reasons.push('CLIPPED_STATUS_BADGES');
       if(metrics?.overflowPx>3)reasons.push('HORIZONTAL_OVERFLOW');
       if(!metrics?.shell||!metrics?.navbar)reasons.push('SHELL_MISSING');
+      if(metrics?.activeSidebarLinks?.length!==1)reasons.push('SIDEBAR_ACTIVE_COUNT');
       if(assetErrors.length||assetConsoleErrors.length)reasons.push('ASSET_HTTP_OR_MIME_ERROR');
       if(apiErrors.length)reasons.push('API_HTTP_ERROR');
       if(realtimeErrors.length)reasons.push('REALTIME_ERROR');
