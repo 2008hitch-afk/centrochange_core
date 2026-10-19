@@ -1,0 +1,9 @@
+{
+  "unit": "44 capability attive + 2 requisiti espliciti di scope/UAT; non numero test",
+  "mvp_total": 46,
+  "status_counts": {
+    "PASS": 40,
+    "PARTIAL": 6,
+    "FUTURE/OUT OF SCOPE": 6
+  }
+}

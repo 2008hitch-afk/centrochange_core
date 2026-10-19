@@ -125,14 +125,16 @@ def patient_export(center,start,end,key=None,patient=None):
     from io import StringIO
     from centrochange_core.operations.reporting import safe_cell
     data=patient_view(center,start,end,key,patient);output=StringIO(newline='');writer=csv.writer(output)
-    writer.writerow(['kind','name','date','subject','amount','currency','due_date','effective_due_date'])
+    writer.writerow(['Tipo','Riferimento','Data','Soggetto','Importo','Valuta','Scadenza','Scadenza effettiva','Metodo di pagamento'])
+    def date_it(value):
+        return frappe.utils.formatdate(value,'dd/MM/yyyy') if value else ''
     def write(row):writer.writerow([safe_cell(v) for v in row])
     if 'rows' in data:
-        for row in data['rows']:write(['Customer position',row['key'],'current',row['customer_label'],row['totals']['outstanding'],'EUR',row['next_due_date'],''])
+        for row in data['rows']:write(['Posizione cliente',row['key'],'corrente',row['customer_label'],row['totals']['outstanding'],'EUR',date_it(row['next_due_date']),'',''])
     else:
-        for row in data['sessions']:write(['Session',row['name'],row['appointment_date'],row['patient_label'],row['cc_price_snapshot'],row['cc_currency_snapshot'],'',''])
-        for row in data['invoices']:write(['Invoiced',row['name'],row['posting_date'],row['customer'],row['grand_total'],row['currency'],row['due_date'],''])
-        for row in data['payments']:write(['Collected',row['name'],row['posting_date'],row['party'],row['collected_amount'],'EUR','',''])
-        for row in data['open_invoices']:write(['Outstanding',row['name'],row['posting_date'],row['customer'],row['outstanding_amount'],row['currency'],row['original_due_date'],row['effective_due_date']])
-        for row in data['overdue_invoices']:write(['Overdue',row['name'],row['posting_date'],row['customer'],row['outstanding_amount'],row['currency'],row['original_due_date'],row['effective_due_date']])
+        for row in data['sessions']:write(['Seduta',row['name'],date_it(row['appointment_date']),row['patient_label'],row['cc_price_snapshot'],row['cc_currency_snapshot'],'','',''])
+        for row in data['invoices']:write(['Fatturato',row['name'],date_it(row['posting_date']),row['customer'],row['grand_total'],row['currency'],date_it(row['due_date']),'',''])
+        for row in data['payments']:write(['Incasso',row['name'],date_it(row['posting_date']),row['party'],row['collected_amount'],'EUR','','',row.get('mode_of_payment') or ''])
+        for row in data['open_invoices']:write(['Residuo',row['name'],date_it(row['posting_date']),row['customer'],row['outstanding_amount'],row['currency'],date_it(row['original_due_date']),date_it(row['effective_due_date']),''])
+        for row in data['overdue_invoices']:write(['Scaduto',row['name'],date_it(row['posting_date']),row['customer'],row['outstanding_amount'],row['currency'],date_it(row['original_due_date']),date_it(row['effective_due_date']),''])
     frappe.response.update({'type':'download','filename':'patient-customer-report.csv','filecontent':output.getvalue(),'content_type':'text/csv; charset=utf-8'})

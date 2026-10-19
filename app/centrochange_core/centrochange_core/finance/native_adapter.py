@@ -25,7 +25,40 @@ def sales_taxes(center, company):
     return project('Sales Taxes and Charges Template', name)
 
 
-def payment_document(invoice, amount, bank_account):
+def payment_mode_account(mode_name, company):
+    """Resolve a native payment method to its reviewed account for this company."""
+    if not mode_name or not company:
+        frappe.throw('Seleziona un metodo di pagamento configurato per la società.')
+    mode = frappe.get_doc('Mode of Payment', mode_name)
+    if not mode.enabled:
+        frappe.throw('Il metodo di pagamento selezionato non è attivo.', frappe.PermissionError)
+    rows = [row for row in mode.accounts if row.company == company and row.default_account]
+    if len(rows) != 1:
+        frappe.throw('Il metodo di pagamento non ha un conto attivo per la società selezionata.')
+    account = frappe.get_doc('Account', rows[0].default_account)
+    default_currency = frappe.db.get_value('Company', company, 'default_currency')
+    if (account.company != company or account.disabled or account.is_group
+            or account.account_type not in ('Bank', 'Cash')
+            or account.account_currency not in (None, '', default_currency)):
+        frappe.throw('Il conto del metodo di pagamento non è valido per la società e la valuta.', frappe.PermissionError)
+    return account.name
+
+
+def payment_mode_for_account(account_name, company):
+    """Return a unique enabled native method mapped to an already-selected account."""
+    if not account_name or not company:
+        return None
+    methods=frappe.get_all('Mode of Payment',filters={'enabled':1},pluck='name',limit_page_length=0)
+    matches=[]
+    for name in methods:
+        if frappe.db.exists('Mode of Payment Account',{'parent':name,'company':company,'default_account':account_name}):
+            matches.append(name)
+    if len(matches)>1:
+        frappe.throw('Più metodi di pagamento usano lo stesso conto: seleziona un metodo esplicito.')
+    return matches[0] if matches else None
+
+
+def payment_document(invoice, amount, bank_account, mode_of_payment=None):
     """Unsaved native EUR invoice payment, restricted to reviewed CC documents.
 
     No user switch, flag-based permission bypass, SQL, or posting here. Native
@@ -68,7 +101,8 @@ def payment_document(invoice, amount, bank_account):
         'paid_from': party_account if receive else bank.name, 'paid_to': bank.name if receive else party_account,
         'paid_from_account_currency': 'EUR', 'paid_to_account_currency': 'EUR',
         'source_exchange_rate': 1, 'target_exchange_rate': 1,
-        'paid_amount': amount, 'received_amount': amount, 'mode_of_payment': invoice.get('mode_of_payment'),
+        'paid_amount': amount, 'received_amount': amount,
+        'mode_of_payment': mode_of_payment or invoice.get('mode_of_payment'),
         'letter_head': invoice.get('letter_head')})
     payment.append('references', {'reference_doctype': invoice.doctype, 'reference_name': invoice.name,
         'due_date': invoice.due_date, 'total_amount': invoice.grand_total,

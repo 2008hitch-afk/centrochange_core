@@ -7,19 +7,9 @@ from pathlib import Path
 import subprocess
 import tempfile
 import time
+from fixture_command import execute_fixture
 
 IMAGE='centrochange-browser-qa:1.58.2'
-
-
-def execute(method,kwargs=None):
-    args=['docker','exec','centrochange-dev-backend-1','bench','--site','centrochange.local','execute',method]
-    if kwargs is not None:
-        args+=['--kwargs',repr(kwargs)]
-    result=subprocess.run(args,capture_output=True,text=True)
-    if result.returncode:
-        raise RuntimeError('Private DEV fixture command failed: '+method)
-    return json.loads(result.stdout.strip())
-
 
 def main():
     parser=argparse.ArgumentParser()
@@ -42,7 +32,7 @@ def main():
     credential=None
     reports=[]
     try:
-        fixture=execute('centrochange_core.security.dev_acceptance.create_http',{'scheduling':True,'operations':True,'public_route':not args.operational_only})
+        fixture=execute_fixture('centrochange_core.security.dev_acceptance.create_http',{'scheduling':True,'operations':True,'public_route':not args.operational_only},diagnostic_dir=output)
         descriptor,credential=tempfile.mkstemp(prefix='cc-browser-fixture-',suffix='.json')
         with os.fdopen(descriptor,'w') as stream:
             json.dump(fixture,stream)
@@ -59,9 +49,9 @@ def main():
             if report['status']!='PASS':
                 raise RuntimeError('Browser '+script+' did not pass')
             reports.append(report)
-        notice=execute('centrochange_core.security.dev_acceptance.queue_notice_fixture',{'tag':fixture['tag'],'user':fixture['users']['a']['name']})
+        notice=execute_fixture('centrochange_core.security.dev_acceptance.queue_notice_fixture',{'tag':fixture['tag'],'user':fixture['users']['a']['name']},diagnostic_dir=output)
         for _ in range(30):
-            delivered=execute('centrochange_core.security.dev_acceptance.notice_fixture_status',notice)
+            delivered=execute_fixture('centrochange_core.security.dev_acceptance.notice_fixture_status',notice,diagnostic_dir=output)
             if delivered['state']=='Sent':
                 break
             time.sleep(1)
@@ -75,10 +65,10 @@ def main():
         if fixture:
             users=[row['name'] for row in fixture['users'].values()]
             for _ in range(30):
-                if execute('centrochange_core.security.dev_acceptance.pending_contacts',{'users':users})['pending']==0:
+                if execute_fixture('centrochange_core.security.dev_acceptance.pending_contacts',{'users':users},diagnostic_dir=output)['pending']==0:
                     break
                 time.sleep(1)
-            print(json.dumps(execute('centrochange_core.security.dev_acceptance.recover_http',{'tag':fixture['tag']})))
+            print(json.dumps(execute_fixture('centrochange_core.security.dev_acceptance.recover_http',{'tag':fixture['tag']},diagnostic_dir=output)))
 
 
 if __name__=='__main__':

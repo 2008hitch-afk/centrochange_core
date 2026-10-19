@@ -2,6 +2,7 @@
 import importlib.util
 import hashlib
 import json
+import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
@@ -17,6 +18,27 @@ spec.loader.exec_module(gate)
 
 
 class InstallationGateTests(unittest.TestCase):
+    def test_candidate_template_is_world_readable_and_probed_as_runtime_user(self):
+        source = SOURCE.read_text()
+        self.assertIn('COPY --chmod=0644 issue139_frontend.conf.template', source)
+        self.assertIn("'--read-only', '--user', 'frappe',", source)
+        self.assertIn("'--entrypoint', 'cat', IMAGE, IMAGE_FRONTEND_TEMPLATE", source)
+        self.assertNotIn("'--read-only', '--user', '0',\n                                   '--entrypoint', 'cat'", source)
+
+    def test_frontend_nginx_config_is_checked_isolated_before_dev_stop(self):
+        source = SOURCE.read_text()
+        build = source[source.index('def build_candidate('):source.index('def backup(')]
+        execute = source[source.index('def execute('):source.index('def recover(')]
+        self.assertIn("'--network', 'none'", build)
+        self.assertIn("'--read-only', '--user', 'frappe'", build)
+        self.assertIn("('/etc/nginx/conf.d', '/tmp', '/run', '/var/lib/nginx')", build)
+        self.assertIn("'--entrypoint', 'sh', IMAGE, '-c'", build)
+        self.assertIn('nginx -t', build)
+        self.assertIn('isolated candidate frontend did not remain running', build)
+        self.assertIn("'docker', 'rm', '-f', probe_name", build)
+        self.assertLess(execute.index('candidate_id = build_candidate(paths, output)'),
+                        execute.index("'application_stop_started'"))
+
     def test_security_runner_keeps_isolated_python_in_both_processes(self):
         command = gate.security_command('data-sha', 'communication-sha')
         self.assertEqual(command[:2], [gate.sys.executable, '-I'])
@@ -56,23 +78,54 @@ class InstallationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(gate.Stop, 'redis-cache'):
             gate.compare_compose(baseline, candidate)
 
-    def test_candidate_env_append_is_exact_and_rollback_restores_bytes(self):
+    def test_persistent_candidate_overlay_replaces_only_its_versioned_content_and_rollback_restores(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            current = root / 'runtime.env'
-            old_overlay = root / 'old.yaml'
-            new_overlay = root / 'new.yaml'
-            original = f'COMPOSE_FILE=base:{old_overlay}\nSECRET=unchanged\n'.encode()
-            current.write_bytes(original)
-            current.chmod(0o600)
-            stat = current.stat()
-            with patch.object(gate, 'ENV', current), patch.object(gate, 'BASE_OVERLAY', old_overlay), \
-                 patch.object(gate, 'ACTIVE_OVERLAY', new_overlay):
-                gate.change_env_for_candidate(original)
-                self.assertEqual(current.read_bytes().count(str(new_overlay).encode()), 1)
-                self.assertIn(b'SECRET=unchanged', current.read_bytes())
-                gate.restore_env(original, stat)
-                self.assertEqual(current.read_bytes(), original)
+            active = root / 'active.yaml'
+            candidate = root / 'candidate.yaml'
+            active.write_text('old versioned overlay\n')
+            candidate.write_text('new versioned overlay\n')
+            active.chmod(0o600)
+            prior_bytes = active.read_bytes()
+            stat = active.stat()
+            fake = {'settings': {'COMPOSE_FILE': 'base:' + str(active)}}
+            with patch.object(gate, 'ACTIVE_OVERLAY', active), patch.object(gate, 'OVERLAY', candidate):
+                gate.select_candidate_overlay(fake)
+                self.assertEqual(active.read_bytes(), candidate.read_bytes())
+                self.assertEqual(active.stat().st_mode & 0o777, 0o600)
+                pre = {'files': [], 'overlay_bytes': prior_bytes,
+                       'overlay_stat': types.SimpleNamespace(st_mode=stat.st_mode,
+                           st_uid=stat.st_uid, st_gid=stat.st_gid),
+                       'settings': {}, 'services': {}}
+                # Exercise the exact checkpoint restoration primitive independently
+                # from Docker, then prove subsequent regular Compose reads the old overlay.
+                gate.private_write(active, pre['overlay_bytes'])
+                active.chmod(pre['overlay_stat'].st_mode & 0o777)
+                os.chown(active, pre['overlay_stat'].st_uid, pre['overlay_stat'].st_gid)
+                self.assertEqual(active.read_bytes(), prior_bytes)
+
+    def test_candidate_is_app_only_and_preserves_already_migrated_centers(self):
+        source = gate.run(['git', 'diff', '--name-only', gate.BASE_SOURCE, gate.SOURCE, '--', gate.APP_PREFIX]).stdout.splitlines()
+        self.assertTrue(source)
+        self.assertTrue(all(path.startswith(gate.APP_PREFIX) for path in source), source)
+        executor = SOURCE.read_text()
+        self.assertNotIn("'bench', '--site', SITE, 'migrate'", executor)
+        self.assertIn("== {BRANCH_A: 1, BRANCH_B: 0}", executor)
+        self.assertIn("'center_a': 'already active and audited; preserved'", executor)
+        self.assertIn("'center_b': 'inactive; preserved'", executor)
+        self.assertIn("'rm', '-f', '--', remote", executor)
+
+    def test_owner_window_names_one_functional_update_without_migration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'gate.json'
+            now = datetime.now(timezone.utc)
+            payload = {'issue': 139, 'candidate': gate.SOURCE, 'executor_sha256': 'a' * 64,
+                       'authorize': 'DEV_FIRST_MVP_SCOPED_UPDATE_AND_LIVE_TESTS',
+                       'window_start_utc': (now - timedelta(minutes=1)).isoformat(),
+                       'operation_deadline_utc': (now + timedelta(hours=3)).isoformat(),
+                       'recovery_deadline_utc': (now + timedelta(hours=4)).isoformat()}
+            path.write_text(json.dumps(payload)); path.chmod(0o600)
+            self.assertIn('operation_end', gate.validate_owner_gate(path, 'a' * 64))
 
     def test_execution_rejects_unmatched_owner_gate_before_preflight(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -96,7 +149,7 @@ class InstallationGateTests(unittest.TestCase):
             path = Path(directory) / 'gate.json'
             now = datetime.now(timezone.utc)
             payload = {'issue': 139, 'candidate': gate.SOURCE, 'executor_sha256': '0' * 64,
-                       'authorize': 'ONE_DEV_INSTALL_WITH_MIGRATION_AND_W5',
+                       'authorize': 'DEV_FIRST_MVP_SCOPED_UPDATE_AND_LIVE_TESTS',
                        'window_start_utc': (now - timedelta(minutes=1)).isoformat(),
                        'operation_deadline_utc': (now + timedelta(hours=5)).isoformat(),
                        'recovery_deadline_utc': (now + timedelta(hours=6)).isoformat()}
@@ -116,14 +169,20 @@ class InstallationGateTests(unittest.TestCase):
                 snapshot=lambda: services,
                 runtime_fingerprint=lambda: {'sha256': 'old'},
                 hooks=lambda: ['guard'], GUARDS=['guard'])
+            active = overlay
+            active.write_text('candidate')
+            baseline_env = Path(directory) / 'runtime.env'
+            baseline_env.write_bytes(b'baseline')
             pre = {'files': [Path('/baseline.yaml')], 'settings': {'DB_PASSWORD': 'synthetic'},
                    'module': module, 'services': services, 'data': {'sha256': 'old'},
-                   'schema': {'sha256': 'schema'}, 'permissions': {'sha256': 'permissions'}}
+                   'schema': {'sha256': 'schema'}, 'permissions': {'sha256': 'permissions'},
+                   'overlay_bytes': b'baseline overlay',
+                   'overlay_stat': types.SimpleNamespace(st_mode=0o600, st_uid=os.getuid(), st_gid=os.getgid())}
             def compose(_files, *args):
                 calls.append(('compose', args))
             with patch.object(gate, 'ACTIVE_OVERLAY', overlay), \
+                 patch.object(gate, 'ENV', baseline_env), \
                  patch.object(gate, 'compose', side_effect=compose), \
-                 patch.object(gate, 'restore_env', side_effect=lambda *_: calls.append('env')), \
                  patch.object(gate, 'restore_backup', side_effect=lambda *_: calls.append('db')), \
                  patch.object(gate, 'schema_fingerprint', return_value=pre['schema']), \
                  patch.object(gate, 'permission_fingerprint', return_value=pre['permissions']):
@@ -135,6 +194,7 @@ class InstallationGateTests(unittest.TestCase):
                           and 'frontend' in call[1] and 'up' in call[1])
             self.assertLess(database, reopen)
             self.assertEqual(calls.count('db'), 1)
+            self.assertEqual(overlay.read_bytes(), b'baseline overlay')
 
     def test_restore_backup_uses_pinned_unix_identity_and_both_real_chown_paths(self):
         with tempfile.TemporaryDirectory() as directory:

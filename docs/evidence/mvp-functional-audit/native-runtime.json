@@ -1,0 +1,85 @@
+{
+  "integrity": {
+    "changed_tables": [],
+    "unchanged": true
+  },
+  "tests": [
+    {
+      "checks": [
+        "native insert",
+        "native save",
+        "reload exact value"
+      ],
+      "doctype": "Patient",
+      "record": "CC AUDIT 0ddce7ca7c SYNTHETIC",
+      "role": "Administrator",
+      "status": "PASS"
+    },
+    {
+      "checks": [
+        "native insert",
+        "native save",
+        "reload exact value"
+      ],
+      "doctype": "Healthcare Practitioner",
+      "record": "CC AUDIT 0ddce7ca7c",
+      "role": "Administrator",
+      "status": "PASS"
+    },
+    {
+      "checks": [
+        "native insert",
+        "native save",
+        "reload exact value"
+      ],
+      "doctype": "Item",
+      "record": "CC AUDIT 0ddce7ca7c",
+      "role": "Administrator",
+      "status": "PASS"
+    },
+    {
+      "checks": [
+        "native insert",
+        "native save",
+        "reload exact value"
+      ],
+      "doctype": "Item Price",
+      "record": "c3fpc30btj",
+      "role": "Administrator",
+      "status": "PASS"
+    },
+    {
+      "checks": [
+        "native insert",
+        "native save",
+        "reload exact value"
+      ],
+      "doctype": "Appointment Type",
+      "record": "CC AUDIT 0ddce7ca7c",
+      "role": "Administrator",
+      "status": "PASS"
+    },
+    {
+      "checks": [
+        "native insert",
+        "native save",
+        "reload exact value"
+      ],
+      "doctype": "CC Center Service",
+      "record": "c3fgtmfiv6",
+      "role": "Administrator",
+      "status": "PASS"
+    },
+    {
+      "checks": [
+        "native insert",
+        "native save",
+        "reload exact value"
+      ],
+      "doctype": "CC Package Template",
+      "record": "c3fnsb2gph",
+      "role": "Administrator",
+      "status": "PASS"
+    }
+  ]
+}

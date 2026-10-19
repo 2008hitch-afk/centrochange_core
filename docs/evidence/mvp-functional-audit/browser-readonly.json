@@ -1,0 +1,24 @@
+[
+  {
+    "width": 1440,
+    "status": "PASS",
+    "checks": [
+      "actual bank document and amount",
+      "reconciled state excludes repeat match",
+      "cancel requires explicit confirmation and reason",
+      "comparison readable date and canonical IDs"
+    ],
+    "business_mutations": 0
+  },
+  {
+    "width": 390,
+    "status": "PASS",
+    "checks": [
+      "actual bank document and amount",
+      "reconciled state excludes repeat match",
+      "cancel requires explicit confirmation and reason",
+      "comparison readable date and canonical IDs"
+    ],
+    "business_mutations": 0
+  }
+]

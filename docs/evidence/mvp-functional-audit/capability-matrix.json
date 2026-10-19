@@ -1,0 +1,522 @@
+[
+  {
+    "id": "CC-CAP-001",
+    "title": "Runtime e isolamento DEV",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "infra/compose.yaml",
+    "roles": "Tecnico",
+    "status": "PASS",
+    "test": "Nove servizi, immagini e hook; baseline installata e W5 riusati",
+    "evidence": "runtime-final.json"
+  },
+  {
+    "id": "CC-CAP-002",
+    "title": "Identità professionista e utente",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "security/lifecycle.py",
+    "roles": "Direzione; setup tecnico",
+    "status": "PASS",
+    "test": "Creazione nativa, assegnazioni, cambio principal e disabilitazione con revoca",
+    "evidence": "integrated-runtime.json; native-runtime.json"
+  },
+  {
+    "id": "CC-CAP-003",
+    "title": "Anagrafica paziente centrale",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/workspace.py",
+    "roles": "Segreteria/Direzione; setup tecnico",
+    "status": "PASS",
+    "test": "Intake e UID univoco, replay, rollback creazione non valida, salvataggio nativo",
+    "evidence": "integrated-runtime.json; native-runtime.json"
+  },
+  {
+    "id": "CC-CAP-004",
+    "title": "Assegnazione paziente/professionista",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "security/lifecycle.py",
+    "roles": "Direzione/Segreteria secondo azione",
+    "status": "PASS",
+    "test": "Riassegnazione e revoca effettive; accessi precedenti negati",
+    "evidence": "integrated-runtime.json; supplemental-suites.json"
+  },
+  {
+    "id": "CC-CAP-005",
+    "title": "Segregazione appuntamenti",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "security/permissions.py",
+    "roles": "Professionisti assegnati",
+    "status": "PASS",
+    "test": "Own/cross record, liste, API, revoca centro; HTTP W5 sulla stessa immagine",
+    "evidence": "integrated-runtime.json; W5"
+  },
+  {
+    "id": "CC-CAP-006",
+    "title": "Appuntamento e seduta canonica",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "scheduling/booking.py; operations/lifecycle.py",
+    "roles": "Operativi autorizzati",
+    "status": "PASS",
+    "test": "Prenota, sposta, cancella, chiude; stessa identità, replay e stati controllati",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-007",
+    "title": "Disponibilità ricorrente e assenze",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "scheduling/availability.py",
+    "roles": "Professionista proprio; Direzione",
+    "status": "PASS",
+    "test": "Creazione/modifica orari, assenza nativa, cancellazione assenza, disponibilità ripristinata",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-008",
+    "title": "Collisioni e concorrenza",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "scheduling/booking.py",
+    "roles": "Operativi autorizzati",
+    "status": "PASS",
+    "test": "Conflitti paziente/professionista; W5 HTTP: una sola prenotazione concorrente e una unità pacchetto",
+    "evidence": "integrated-runtime.json; W5"
+  },
+  {
+    "id": "CC-CAP-009",
+    "title": "Primo incontro pubblico limitato",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "scheduling/public_booking.py",
+    "roles": "Guest, route approvate",
+    "status": "PASS",
+    "test": "HTTP reale W5: route vincolata, creazione una volta, replay, route arbitraria/disabilitata negata",
+    "evidence": "W5; supplemental-suites.json"
+  },
+  {
+    "id": "CC-CAP-010",
+    "title": "Sedute successive solo backend",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "scheduling/public_booking.py; security/api.py",
+    "roles": "Operativi autenticati",
+    "status": "PASS",
+    "test": "W5 nega prenotazione pubblica successiva e bypass portale Marley",
+    "evidence": "W5"
+  },
+  {
+    "id": "CC-CAP-011",
+    "title": "Catalogo servizi centrale per sede",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "scheduling/booking.py; centro_change_core/doctype/cc_center_service",
+    "roles": "Setup tecnico; consultazione autorizzata",
+    "status": "PASS",
+    "test": "Item e tipo seduta creati/salvati; servizio disabilitato rifiutato; CC Center Service salvato",
+    "evidence": "native-runtime.json; integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-012",
+    "title": "Listini e prezzi",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "scheduling/booking.py",
+    "roles": "Setup tecnico; uso operativo",
+    "status": "PASS",
+    "test": "Item Price salvato e riletto; selezione tariffa alla data prenotazione",
+    "evidence": "native-runtime.json; integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-013",
+    "title": "Snapshot servizio/durata/prezzo",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "scheduling/booking.py",
+    "roles": "Operativi autorizzati",
+    "status": "PASS",
+    "test": "Cambio tariffa/catalogo non riscrive seduta; tampering rifiutato; spostamento conserva snapshot",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-014",
+    "title": "Pagato operativo e metodo informativo",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/lifecycle.py",
+    "roles": "Operativi autorizzati secondo stato",
+    "status": "PASS",
+    "test": "Correzioni ordinate e audit, replay, separazione dall'incasso contabile",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-016",
+    "title": "Pacchetti e ledger",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/packages.py",
+    "roles": "Operativi autorizzati",
+    "status": "PASS",
+    "test": "Assegna, riserva, consuma, rilascia, rettifica; concorrenza ultima unità e audit",
+    "evidence": "integrated-runtime.json; native-runtime.json; W5"
+  },
+  {
+    "id": "CC-CAP-017",
+    "title": "Note organizzative",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/notes.py",
+    "roles": "Operativi autorizzati",
+    "status": "PASS",
+    "test": "Note operative nel contesto; storico e isolamento; contenuti esclusi dalla stampa allowlist",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-018",
+    "title": "Note professionali riservate",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/notes.py",
+    "roles": "Solo autore professionista autorizzato",
+    "status": "PASS",
+    "test": "Revisioni append-only; altri professionisti, Segreteria, Direzione e Administrator senza corpo riservato",
+    "evidence": "integrated-runtime.json; supplemental-suites.json; W5"
+  },
+  {
+    "id": "CC-CAP-019",
+    "title": "Scheda paziente unificata",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/workspace.py",
+    "roles": "Operativi autorizzati",
+    "status": "PASS",
+    "test": "Anagrafica, agenda, storico e note nel medesimo scope; reporting contabile separato",
+    "evidence": "integrated-runtime.json; supplemental-suites.json"
+  },
+  {
+    "id": "CC-CAP-020",
+    "title": "Storico paziente",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/workspace.py",
+    "roles": "Operativi autorizzati",
+    "status": "PASS",
+    "test": "Feed non vuoto con revisioni proprie, esclusione note altrui e controllo centro",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-022",
+    "title": "Chiusura giornaliera",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/lifecycle.py",
+    "roles": "Professionista/operativi autorizzati",
+    "status": "PASS",
+    "test": "Chiusura e stato economico, consumo unità una volta, modifica chiusa negata",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-023",
+    "title": "Reminder ore 21",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/automation.py",
+    "roles": "Job e destinatario autorizzato",
+    "status": "PASS",
+    "test": "Clock sintetico locale, catch-up/replay una volta; Notification Log locale realmente inserita",
+    "evidence": "integrated-runtime.json; readonly-runtime.json"
+  },
+  {
+    "id": "CC-CAP-024",
+    "title": "Auto-lock ore 07",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/automation.py",
+    "roles": "Job; correzione autorizzata",
+    "status": "PASS",
+    "test": "Boundary e retry, blocco server delle azioni professionista, scheduler configurato",
+    "evidence": "integrated-runtime.json; readonly-runtime.json"
+  },
+  {
+    "id": "CC-CAP-025",
+    "title": "Disdetta 48h e rinuncia economica",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/lifecycle.py",
+    "roles": "Operativi; deroga solo autorizzati",
+    "status": "PASS",
+    "test": "48h esatte tempestiva; un microsecondo meno tardiva/dovuta; DST; rinuncia conserva fatto storico",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-026",
+    "title": "Riapertura e correzioni governate",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/lifecycle.py",
+    "roles": "Segreteria/Direzione secondo policy",
+    "status": "PASS",
+    "test": "Riapertura auditata/idempotente e dinieghi; escluso spostamento storico #78 per DECISION-059",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-027",
+    "title": "Notifiche e comunicazioni simulate",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/notifications.py; operations/booking_confirmation.py",
+    "roles": "Destinatario; recovery Direzione",
+    "status": "PASS",
+    "test": "Communication primo incontro, failure/retry/replay; Notification Log; nessun Email Queue/invio reale",
+    "evidence": "supplemental-suites.json; integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-028",
+    "title": "Reporting operativo",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/reporting.py",
+    "roles": "Scope operativo del ruolo",
+    "status": "PASS",
+    "test": "Totali confrontati con record Agenda, stampa senza note, CSV formula-safe",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-029",
+    "title": "Export e stampa autorizzati",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/reporting.py; finance/reporting.py",
+    "roles": "Ruoli autorizzati",
+    "status": "PARTIAL",
+    "test": "Controlli di accesso e dati corretti; CSV umano conserva intestazioni inglesi e date ISO, contro #134",
+    "evidence": "integrated-runtime.json; readonly-runtime.json"
+  },
+  {
+    "id": "CC-CAP-030",
+    "title": "Dashboard direzionale",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/reporting.py; finance/reporting.py",
+    "roles": "Direzione; Finance per contabilità",
+    "status": "PASS",
+    "test": "Aggregati riconciliati; unknown distinti da zero; margine non inventato senza policy",
+    "evidence": "integrated-runtime.json; readonly-runtime.json"
+  },
+  {
+    "id": "CC-CAP-033",
+    "title": "Modello generale permessi",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "security/guards.py; security/permissions.py",
+    "roles": "Sette ruoli, Guest, Administrator",
+    "status": "PASS",
+    "test": "Matrice ruoli, revoca, centro inattivo, segregazione clinica/contabile e setup tecnico",
+    "evidence": "supplemental-suites.json; readonly-runtime.json; http-readonly.json; W5"
+  },
+  {
+    "id": "CC-CAP-034",
+    "title": "Audit business immutabile",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "security/audit.py; security/audit_view.py",
+    "roles": "Direzione per registro",
+    "status": "PASS",
+    "test": "Modifica/cancellazione audit negate; attore/motivo/prima-dopo; eventi attuali trovati e altri ruoli negati",
+    "evidence": "integrated-runtime.json; readonly-runtime.json"
+  },
+  {
+    "id": "CC-CAP-035",
+    "title": "Backup DB/file/config",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "infra/issue139_install_gate.py",
+    "roles": "Tecnico",
+    "status": "PASS",
+    "test": "Backup cifrato e recupero completo già provati nella rehearsal/installazione 14 ottobre; non ripetuti",
+    "evidence": "W5; THIRD-DEV-INSTALLATION-READINESS-REPORT"
+  },
+  {
+    "id": "CC-CAP-038",
+    "title": "Autorizzazione API/web",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "security/api.py; finance/request_guard.py",
+    "roles": "Tutti i ruoli",
+    "status": "PASS",
+    "test": "REST/direct/API/export e Guest; controlli server attivi; sei hook presenti",
+    "evidence": "http-readonly.json; runtime-final.json; W5"
+  },
+  {
+    "id": "CC-CAP-039",
+    "title": "Regressione anti-leakage",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "security/dev_acceptance.py; infra/security_acceptance.py",
+    "roles": "Sette ruoli/Guest",
+    "status": "PASS",
+    "test": "38 test HTTP attuali riusati, note/finance/cross-center e namespace protetti",
+    "evidence": "W5; supplemental-suites.json"
+  },
+  {
+    "id": "CC-CAP-040",
+    "title": "Deploy riproducibile",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "infra/issue139_install_gate.py",
+    "roles": "Tecnico",
+    "status": "PASS",
+    "test": "Immagine e candidato identificati, backup/installazione/rollback già provati; nessuna modifica audit al runtime",
+    "evidence": "runtime-final.json; W5"
+  },
+  {
+    "id": "CC-CAP-041",
+    "title": "Bridge e master contabili",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "finance/bridge.py",
+    "roles": "Finance/Segreteria/Direzione; Commercialista lettura",
+    "status": "PASS",
+    "test": "Patient/Customer, Practitioner/Supplier, centro/Cost Center; correzione append-only e snapshot",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-042",
+    "title": "Fatture pazienti, crediti e incassi",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "finance/receivables.py; finance/native_adapter.py",
+    "roles": "Finance/Segreteria/Direzione",
+    "status": "PARTIAL",
+    "test": "Bozza/GL, singola/aggregata, incasso parziale/totale, credito/cancel/reissue PASS; metodo carta/POS per singolo pagamento non coperto dal servizio/UI",
+    "evidence": "integrated-runtime.json; readonly-runtime.json"
+  },
+  {
+    "id": "CC-CAP-043",
+    "title": "Banca, scadenze e solleciti base",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "finance/banking.py; finance/collections.py",
+    "roles": "Finance/Segreteria/Direzione",
+    "status": "PASS",
+    "test": "Import dedupe, match/ambiguità, pagamento, reversal, blocco insoluti, differimento con debito invariato",
+    "evidence": "integrated-runtime.json; browser-readonly.json; readonly-runtime.json"
+  },
+  {
+    "id": "CC-CAP-044",
+    "title": "XML ricevuti e fatture professionisti",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "finance/incoming.py",
+    "roles": "Finance/Segreteria/Direzione; Commercialista lettura",
+    "status": "PASS",
+    "test": "XML privato, mapping, doppioni/XXE, bozza/submit, pagamento, annullo/rettifica, IVA sintetica",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-045",
+    "title": "Compensi e confronto ricevuto",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "finance/professional_economics.py",
+    "roles": "Finance/Direzione; Commercialista lettura",
+    "status": "PASS",
+    "test": "Soglie N=0/1/2/5 per coppia, sospensione/override, rivalutazione incasso/storno, confronto OK/REVIEW",
+    "evidence": "integrated-runtime.json; supplemental-suites.json; browser-readonly.json"
+  },
+  {
+    "id": "CC-CAP-046",
+    "title": "Coda amministrativa",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "finance/admin_queue.py",
+    "roles": "Amministrativi autorizzati",
+    "status": "PASS",
+    "test": "Condizioni deduplicate, assegnazione, priorità, scadenza, rinvio/riapparizione, chiusura automatica e riapertura",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-047",
+    "title": "Report Finance, ruoli e audit",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "finance/reporting.py; finance/patient_reporting.py; finance/request_guard.py",
+    "roles": "Finance/Segreteria/Direzione/Commercialista",
+    "status": "PARTIAL",
+    "test": "Viste Centro/Professionista/Paziente riconciliate; General Ledger e Trial Balance nativi non raggiungibili dai ruoli cliente",
+    "evidence": "integrated-runtime.json; supplemental-suites.json; http-readonly.json"
+  },
+  {
+    "id": "CC-CAP-048",
+    "title": "Adapter SdI simulato indipendente",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "finance/sdi.py; finance/fiscal.py",
+    "roles": "Finance/Direzione secondo azione",
+    "status": "PASS",
+    "test": "XML/protocollo simulato, successo/rifiuto/retry/limite, correzione, inbound e payload privato",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-049",
+    "title": "Adapter TS ordinario simulato",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "finance/ts.py; finance/fiscal.py",
+    "roles": "Revisione Direzione; azioni Finance consentite",
+    "status": "PASS",
+    "test": "Eligibilità/opposizione persistenti per versione, retry/correzione, esiti e coda; nessun invio reale",
+    "evidence": "integrated-runtime.json"
+  },
+  {
+    "id": "CC-CAP-050",
+    "title": "Verifica integrata e readiness MVP",
+    "source": "CAPABILITY-EVALUATION-MATRIX + MVP-IMPLEMENTATION-CAPABILITY-MAP; Discovery/decisioni approvate",
+    "implementation": "operations/integration_acceptance.py; infra/integrated_acceptance.py",
+    "roles": "Tecnico e successiva review Owner",
+    "status": "PARTIAL",
+    "test": "189 controlli backend reali PASS dopo adattamento test; vecchi gate falliscono per lingua/ID e il viaggio HTTP/browser completo con commit non è riprovato in sicurezza",
+    "evidence": "integrated-runtime.json; initial-suite-results.json"
+  },
+  {
+    "id": "SCOPE-DOC",
+    "title": "Allegati amministrativi manuali: PDF, ricevute, scansioni",
+    "source": "SCOPE-DELTA-001 REV3 § Non-structured documents; DECISION-034",
+    "implementation": "finance/files.py; File nativo",
+    "roles": "Amministrativi autorizzati",
+    "status": "PARTIAL",
+    "test": "Guard prima insert rifiuta nuovo PDF privato su fattura; nessun servizio ordinario di allegato individuato. XML fiscali invece presenti e provati.",
+    "evidence": "readonly-runtime.json"
+  },
+  {
+    "id": "UAT-GLOBAL",
+    "title": "Interfaccia operativa coerente, italiana e utilizzabile",
+    "source": "Issue #136/#134/#75; requisiti trasversali Owner",
+    "implementation": "public/js; public/css; centro_change_core/page/cc_unified_desk",
+    "roles": "Sette ruoli cliente",
+    "status": "PARTIAL",
+    "test": "128 route e 22 List/Form già PASS; confronto mobile taglia le etichette, CSV inglese/ISO e altri residui. Review Owner non sostituita.",
+    "evidence": "browser-readonly.json; screenshots/comparison-390.png; W5"
+  },
+  {
+    "id": "CC-CAP-015",
+    "title": "Percorso accounting storico sostituito da 041–050",
+    "source": "MVP capability map; decisioni scope",
+    "implementation": "Rinvio/sostituzione approvati",
+    "roles": "Non pertinente al gate corrente",
+    "status": "FUTURE/OUT OF SCOPE",
+    "test": "Non incluso nel totale MVP. Prove restore recenti non autorizzano GOAL-03.",
+    "evidence": "docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml"
+  },
+  {
+    "id": "CC-CAP-021",
+    "title": "Patient Progress/clinical analytics",
+    "source": "MVP capability map; decisioni scope",
+    "implementation": "Rinvio/sostituzione approvati",
+    "roles": "Non pertinente al gate corrente",
+    "status": "FUTURE/OUT OF SCOPE",
+    "test": "Non incluso nel totale MVP. Prove restore recenti non autorizzano GOAL-03.",
+    "evidence": "docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml"
+  },
+  {
+    "id": "CC-CAP-031",
+    "title": "Sito pubblico branded completo",
+    "source": "MVP capability map; decisioni scope",
+    "implementation": "Rinvio/sostituzione approvati",
+    "roles": "Non pertinente al gate corrente",
+    "status": "FUTURE/OUT OF SCOPE",
+    "test": "Non incluso nel totale MVP. Prove restore recenti non autorizzano GOAL-03.",
+    "evidence": "docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml"
+  },
+  {
+    "id": "CC-CAP-032",
+    "title": "Builder/Git per sito pubblico rinviato",
+    "source": "MVP capability map; decisioni scope",
+    "implementation": "Rinvio/sostituzione approvati",
+    "roles": "Non pertinente al gate corrente",
+    "status": "FUTURE/OUT OF SCOPE",
+    "test": "Non incluso nel totale MVP. Prove restore recenti non autorizzano GOAL-03.",
+    "evidence": "docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml"
+  },
+  {
+    "id": "CC-CAP-036",
+    "title": "DR completo come requisito di release produzione",
+    "source": "MVP capability map; decisioni scope",
+    "implementation": "Rinvio/sostituzione approvati",
+    "roles": "Non pertinente al gate corrente",
+    "status": "FUTURE/OUT OF SCOPE",
+    "test": "Non incluso nel totale MVP. Prove restore recenti non autorizzano GOAL-03.",
+    "evidence": "docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml"
+  },
+  {
+    "id": "CC-CAP-037",
+    "title": "Qualifica upgrade come requisito di release produzione",
+    "source": "MVP capability map; decisioni scope",
+    "implementation": "Rinvio/sostituzione approvati",
+    "roles": "Non pertinente al gate corrente",
+    "status": "FUTURE/OUT OF SCOPE",
+    "test": "Non incluso nel totale MVP. Prove restore recenti non autorizzano GOAL-03.",
+    "evidence": "docs/MVP-IMPLEMENTATION-CAPABILITY-MAP-v0.1.yaml"
+  }
+]

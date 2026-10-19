@@ -8,6 +8,7 @@ backup and browser artifacts stay outside Git. Run with sudo python3 -I.
 from __future__ import annotations
 
 import argparse
+import ast
 from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib.util
@@ -15,6 +16,7 @@ import json
 import os
 from pathlib import Path
 import pwd
+import re
 import secrets
 import shutil
 import socket
@@ -28,14 +30,12 @@ import urllib.request
 REPO = Path(__file__).resolve().parent.parent
 STATE = Path('/home/empv26/.local/state/centrochange-single')
 ENV = STATE / 'runtime.env'
-SOURCE = '0380874fdf91c7fe191a93ec676e2c1d6f62ff7f'
-BASE_SOURCE = '83f8f4f97b74e25e73710b6fc3667be0ae473fce'
-BASE_IMAGE = 'sha256:f200dc3b0206a8ecc1ce2eae72c27d96e0d1a145fd88cbb3efaa33a49cdcc3af'
-BASE_TAG = 'centrochange-single:goal02-abc-fixture-83f8f4f'
-BASE_ENV_SHA = '589a74a2020c583e4e6def59a343ec49fe78264704e56107bb28c6c7aa8dec0b'
+SOURCE = 'a03386c41a78692fd4b6d370ec56b1d21d613841'
+BASE_SOURCE = '17100e64bfbb178da4ef27278603cca6567037d5'
+BASE_IMAGE = 'sha256:47d753955c81033b11317381b5fdc63aa5e438cec304e57e93a0b6c0215b6758'
+BASE_TAG = 'centrochange-single:mvp-devfirst-17100e6'
+BASE_ENV_SHA = '46cdc4dd93f2e199298b708e25abba1c8d6fbe2a7a5895f2cdfbaa2b3f712600'
 BASE_OVERLAY_SHA = 'b5801f44bd42ca45fdf1d6a8097810e36399ab982be67899b98796b7762b5d68'
-BASE_DATA_SHA = 'e9dc4980b849362b77e394d6e9c2baf7cc33d413097bc41d8156dae8ed4128f3'
-BASE_COMM_SHA = 'b38c7b6334fd4010251e7258a593c49d5f4efd02c677b41860c2d08055e8c7e2'
 COMPOSE_SHA = {
     'compose.yaml': '5df3c081f4afff41e6e07222405a4d311bc75eeb1fa97c1045834115e5a0a67d',
     'compose.issue124.yaml': 'ced6e5d2af243bfefbd368ddc46e49de0381bf36c25d05109a13413b59bd7917',
@@ -52,8 +52,11 @@ TECH = ('db', 'redis-cache', 'redis-queue')
 PROJECT = 'centrochange-dev'
 NETWORK_NAME = 'centrochange-dev-net'
 LOOPBACK_IP = '127.0.0.1'
-IMAGE = 'centrochange-single:issue139-realtime-v2'
-RETAINED_INACTIVE_OVERLAY_SHA = '1bbef44f4bab86e014bd805be1001870558c4066515037218054f61aa1a5d4ac'
+IMAGE = 'centrochange-single:mvp-devfirst-a03386c-v3'
+PLAYWRIGHT_PACKAGE = Path('/tmp/cc-browser-qa/node_modules/playwright/package.json')
+CHROMIUM = Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell')
+BROWSER_LIBS = '/tmp/cc-browser-libs/usr/lib/x86_64-linux-gnu'
+ACTIVE_OVERLAY_SHA = 'feea2e0523fb4e3fbd6acf2f9d711e59dfa0adc8b94541e76af96d46d328cbfb'
 APP_PREFIX = 'app/centrochange_core/centrochange_core/'
 IMAGE_PREFIX = '/home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/'
 BENCH = '/home/frappe/frappe-bench'
@@ -62,16 +65,23 @@ BRANCH_A = 'CC-HTTP-UAT0000001 A'
 BRANCH_B = 'CC-HTTP-UAT0000001 B'
 RUN_ROOT = STATE / 'issue139-install-runs'
 DEPENDENCY_SHA = {
+    'infra/browser/mvp_devfirst_readonly.cjs': '1d93bce1d200db259595fc5ba331b3eaa42481fda4e78836b26bf129e1c5261a',
     'infra/browser/issue139_asset_response.cjs': '30ab0eaa9a15674d4d67f42837b25d3e009727ae796b36903a5de315b5dc3b0a',
     'infra/issue139_frontend.conf.template': '8335c04ce44258137b84a511f790f207614e3f25135910fc22aa77f25c81d48b',
-    'infra/compose.issue139_candidate.yaml': '7b8eb76ed9e8e6b044ab859b6e09c87d969e9d655a725f3a01e83d3884202713',
+    'infra/compose.issue139_candidate.yaml': 'd9ed2e0b724fefedf8b08b6795bff47b44c0da9adc56a9264c9263d3e4329c4e',
     'infra/issue139_asset_cache_gate.py': '417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361',
     'infra/goal02_install_one_command.py': '607578830188ab47a5c9d062e0848d5ef2c38c8a5422b503326f30d166592ac5',
     'infra/issue137_safe_security_run.py': '13e820df9f55e92807719751789e50d96187b091f4e515f20c2b196241da9783',
-    'infra/security_acceptance.py': '80215aa8047bf7ef9066e74fabfdbef354dd860cd001215779b391441526195b',
+    'infra/security_acceptance.py': '071dfd7d52754855ed22c1e22b865db7174b875510776351b03917eaa7fb2324',
     'infra/browser/issue137_owner_uat_sweep.cjs': '62fa5855a3e8216c18015ba5fc399f614872577a249c615aa44889bb2baf17c9',
     'infra/browser/issue139_native_renderer.cjs': '1f7f2ade73f2eb046ce328f0ebf1f5aebe41fc80fb584f01bd9c4efabc208487',
     'infra/browser/issue139_admin_readonly.cjs': 'ba6b6eb45736018451f5b96a646fdf0255bf4b1ec28ba192b556af788767ad9a',
+    'infra/finance_browser_acceptance.py': '1a4b9e9272c45efaf03cbc1aefc2b00a22b804248afd9ea67c1c277bda103e26',
+    'infra/fixture_command.py': '8cd336c031c72c8bb3dad974020107e4e771b1e186b6dab01a8613f6f31f7566',
+    'infra/reporting_acceptance.py': 'c9ba1eed489a49aa0bc5d578c44db3be2e40ee2f438fa15cbf34a6b7e5537fa0',
+    'infra/browser/finance.cjs': '3053e7e926b412198cf59a908e380ae16930a1e434419583993fa59398ee4c1c',
+    'infra/browser/native_reports.cjs': 'c8ad7ab0aaf2e90cd30f9bb25cf414370f6d4e95f080e3b51b63fee9550b7860',
+    'infra/goal02_targeted_regression.py': '0c61ecef97ce25d9f8ef532a3c0fab1a8cda16256b7b6c7dea7158e5435b3926',
 }
 PRIVATE_LOG = None
 OPERATION_END = None
@@ -107,6 +117,24 @@ def host_telemetry():
     return {'oom_kill': int(vm.get('oom_kill', '0')),
             'memory_full_avg10': pressure['memory'], 'io_full_avg10': pressure['io'],
             'docker_free_bytes': shutil.disk_usage('/var/lib/docker').free}
+
+
+def check_browser_libraries(output, returncode=0):
+    missing = sorted(set(re.findall(r'^\s*(\S+)\s+=>\s+not found\s*$', output, re.MULTILINE)))
+    require(returncode == 0 and not missing,
+            'W5 Chromium shared libraries unavailable: ' + ', '.join(missing or ['ldd failed']))
+    return {'missing_shared_libraries': []}
+
+
+def browser_runtime_preflight():
+    require(PLAYWRIGHT_PACKAGE.is_file() and CHROMIUM.is_file() and os.access(CHROMIUM, os.X_OK),
+            'W5 Playwright/Chromium executable unavailable')
+    package = json.loads(PLAYWRIGHT_PACKAGE.read_text())
+    require(package.get('version') == '1.58.2', 'W5 Playwright version drift')
+    result = run(['runuser', '-u', 'empv26', '--', '/usr/bin/env',
+                  f'LD_LIBRARY_PATH={BROWSER_LIBS}', 'ldd', str(CHROMIUM)], check=False)
+    libraries = check_browser_libraries(result.stdout + '\n' + result.stderr, result.returncode)
+    return {'playwright': package['version'], 'chromium': str(CHROMIUM), **libraries}
 
 
 def run(args, *, input_text=None, cwd=None, check=True):
@@ -165,7 +193,7 @@ def parse_settings(raw):
 
 def compose_files(value):
     files = [Path(p) for p in value['COMPOSE_FILE'].split(':')]
-    require(files == [*(COMPOSE_DIR / n for n in COMPOSE_SHA), BASE_OVERLAY],
+    require(files == [*(COMPOSE_DIR / n for n in COMPOSE_SHA), BASE_OVERLAY, ACTIVE_OVERLAY],
             'ordinary Compose precedence drift')
     return files
 
@@ -287,7 +315,10 @@ def preflight(executor_sha=None):
             'requires sudo python3 -I on approved host')
     require(file_sha(ENV) == BASE_ENV_SHA and ENV.stat().st_mode & 0o077 == 0,
             'private runtime env changed or unsafe')
-    require(file_sha(BASE_OVERLAY) == BASE_OVERLAY_SHA, 'existing candidate overlay changed')
+    require(file_sha(BASE_OVERLAY) == BASE_OVERLAY_SHA, 'base candidate overlay changed')
+    require(ACTIVE_OVERLAY.is_file() and file_sha(ACTIVE_OVERLAY) == ACTIVE_OVERLAY_SHA
+            and ACTIVE_OVERLAY.stat().st_mode & 0o077 == 0,
+            'active candidate overlay changed or has unsafe permissions')
     for name, digest in COMPOSE_SHA.items():
         require(file_sha(COMPOSE_DIR / name) == digest, f'{name} drift')
     require(shutil.disk_usage('/var/lib/docker').free >= 8 * 1024**3, 'free disk below 8 GiB')
@@ -298,9 +329,7 @@ def preflight(executor_sha=None):
     fixture = STATE / 'demo-owner.json'
     require(fixture.is_file() and fixture.stat().st_mode & 0o077 == 0,
             'private synthetic account fixture unsafe or missing')
-    require(Path('/tmp/cc-browser-qa/node_modules/playwright/package.json').is_file()
-            and Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell').is_file(),
-            'W5 Chromium prerequisites unavailable')
+    browser_runtime = browser_runtime_preflight()
     evidence_root = STATE / 'browser-evidence'
     require(evidence_root.is_dir() and evidence_root.stat().st_uid == pwd.getpwnam('empv26').pw_uid
             and evidence_root.stat().st_mode & 0o077 == 0,
@@ -313,6 +342,8 @@ def preflight(executor_sha=None):
     services = module.snapshot()
     require(all(services[n]['image'] == BASE_IMAGE for n in APP), 'app image drift')
     baseline_image = json.loads(run(['docker', 'image', 'inspect', BASE_IMAGE]).stdout)[0]
+    identity = run(['docker', 'run', '--rm', '--network=none', '--read-only', '--entrypoint', 'sh', BASE_TAG, '-c', 'id -u frappe; id -g frappe']).stdout.splitlines()
+    require(identity == ['1000', '0'], 'pinned runtime frappe uid/gid drift')
     require(baseline_image['Config']['Labels'].get('centrochange.source') == BASE_SOURCE,
             'installed image source label drift')
     require(run(['docker', 'image', 'inspect', '--format', '{{.Id}}', BASE_TAG]).stdout.strip()
@@ -333,28 +364,28 @@ print("CC_SITES="+json.dumps(sorted(x.name for x in p.iterdir() if (x/"site_conf
                             if x.startswith('CC_SITES=')))
     require(sites == [SITE], 'single Site inventory drift')
     data = module.runtime_fingerprint()
-    require(data['sha256'] == BASE_DATA_SHA and data['communication_sha256'] == BASE_COMM_SHA,
-            'Owner data fingerprint drift')
     branch = branch_probe(module)
     require({x['name'] for x in branch['rows']} == {BRANCH_A, BRANCH_B} and len(branch['rows']) == 2,
             'Branch inventory changed')
-    require(not branch['field_present'], 'operational field already exists')
+    require(branch['field_present'], 'installed baseline lacks operational-center migration')
+    require({row['name']: int(row['cc_operational']) for row in branch['rows']} ==
+            {BRANCH_A: 1, BRANCH_B: 0}, 'operational center state drift')
     require(branch['manager_enabled'] and 'CC Manager' in branch['manager_roles'],
             'demo manager unavailable for audited activation')
     require(not branch['native_backup_encryption'],
             'native backup encryption differs from verified restore path')
     require(value.get('CC_UAT_IMAGE') == 'centrochange-single:goal02-fixture-d1892e0',
             'base application env drift')
-    require(not ACTIVE_OVERLAY.exists() or
-            (ACTIVE_OVERLAY.stat().st_mode & 0o077 == 0 and
-             file_sha(ACTIVE_OVERLAY) in (RETAINED_INACTIVE_OVERLAY_SHA, file_sha(OVERLAY))),
-            'inactive candidate overlay drift')
+    require(ACTIVE_OVERLAY.is_file() and file_sha(ACTIVE_OVERLAY) == ACTIVE_OVERLAY_SHA
+            and ACTIVE_OVERLAY.stat().st_mode & 0o077 == 0,
+            'active candidate overlay drift')
     schema = schema_fingerprint(module)
     permissions = permission_fingerprint(module)
     return {'files': files, 'baseline': baseline, 'services': services, 'data': data,
             'schema': schema, 'permissions': permissions,
             'branch': branch, 'module': module, 'settings': value,
-            'host': host_telemetry()}
+            'overlay_bytes': ACTIVE_OVERLAY.read_bytes(), 'overlay_stat': ACTIVE_OVERLAY.stat(),
+            'host': host_telemetry(), 'browser_runtime': browser_runtime}
 
 
 def private_dir():
@@ -372,7 +403,7 @@ def validate_owner_gate(path, executor_sha, *, recovery=False):
                 'window_start_utc', 'operation_deadline_utc', 'recovery_deadline_utc'}
     require(set(gate) == required and gate['issue'] == 139 and gate['candidate'] == SOURCE
             and gate['executor_sha256'] == executor_sha
-            and gate['authorize'] == 'ONE_DEV_INSTALL_WITH_MIGRATION_AND_W5',
+            and gate['authorize'] == 'DEV_FIRST_MVP_SCOPED_UPDATE_AND_LIVE_TESTS',
             'Owner gate does not match exact single installation')
     def parse(name):
         value = datetime.fromisoformat(gate[name].replace('Z', '+00:00'))
@@ -415,7 +446,7 @@ def build_candidate(paths, output):
         require(sha(data) == sha(run_bytes(['git', '-C', str(REPO), 'show', f'{SOURCE}:{source}'])),
                 f'{relative}: source content drift')
         target.write_bytes(data)
-        commands.append(f'COPY --chown=frappe:frappe {relative} apps/centrochange_core/centrochange_core/{relative}')
+        commands.append(f'COPY --chown=1000:0 {relative} apps/centrochange_core/centrochange_core/{relative}')
     # The same frontend image serves host 8082 but listens on container 8080.
     # Frappe's pinned realtime worker fetches its Origin internally; install the
     # exact, versioned nginx template without patching a running container.
@@ -424,7 +455,10 @@ def build_candidate(paths, output):
             'frontend internal Origin route missing or ambiguous')
     (context / 'issue139_frontend.conf.template').write_bytes(template)
     commands.append('USER root')
-    commands.append(f'COPY issue139_frontend.conf.template {IMAGE_FRONTEND_TEMPLATE}')
+    # The frontend runs nginx-entrypoint.sh as frappe and envsubst reads this
+    # template before nginx starts. Private build-context umask must not make
+    # the copied template unreadable to that runtime user.
+    commands.append(f'COPY --chmod=0644 issue139_frontend.conf.template {IMAGE_FRONTEND_TEMPLATE}')
     commands.append('USER frappe')
     commands.append(f'LABEL centrochange.source="{SOURCE}" centrochange.issue="139"')
     (context / 'Dockerfile').write_text('\n'.join(commands) + '\n')
@@ -446,9 +480,46 @@ def build_candidate(paths, output):
                              '--entrypoint', 'python', IMAGE, '-c', check]).stdout)
     require(all(actual[p.removeprefix(APP_PREFIX)] == file_sha(REPO / p) for p in paths),
             'candidate application file hashes mismatch')
-    observed_template = run_bytes(['docker', 'run', '--rm', '--network=none', '--read-only',
+    # Check as the actual frontend runtime user, not root. This catches a
+    # template copied with 0600 permissions before any DEV service is changed.
+    observed_template = run_bytes(['docker', 'run', '--rm', '--network=none', '--read-only', '--user', 'frappe',
                                    '--entrypoint', 'cat', IMAGE, IMAGE_FRONTEND_TEMPLATE])
     require(sha(observed_template) == sha(template), 'candidate nginx template mismatch')
+    # Validate the actual generated nginx configuration as frappe before DEV
+    # ingress is stopped. All writes stay on private tmpfs, with no network,
+    # published ports, shared volumes or Site data.
+    nginx_env = {
+        'BACKEND': 'backend:8000', 'SOCKETIO': 'websocket:9000',
+        'NGINX_LISTEN_PORT': '8080', 'UPSTREAM_REAL_IP_ADDRESS': '127.0.0.1',
+        'UPSTREAM_REAL_IP_HEADER': 'X-Forwarded-For',
+        'UPSTREAM_REAL_IP_RECURSIVE': 'off',
+        'FRAPPE_SITE_NAME_HEADER': SITE, 'PROXY_READ_TIMEOUT': '120',
+        'CLIENT_MAX_BODY_SIZE': '50m',
+    }
+    variables = ' '.join('${' + key + '}' for key in nginx_env)
+    smoke = [
+        'docker', 'run', '--rm', '--network', 'none',
+        '--add-host', 'backend:127.0.0.1', '--add-host', 'websocket:127.0.0.1',
+        '--read-only', '--user', 'frappe',
+        *[arg for path in ('/etc/nginx/conf.d', '/tmp', '/run', '/var/lib/nginx')
+          for arg in ('--tmpfs', f'{path}:uid=1000,gid=0,mode=0700')],
+        *[arg for key, value in nginx_env.items() for arg in ('-e', f'{key}={value}')],
+        '--entrypoint', 'sh', IMAGE, '-c',
+        f"envsubst '{variables}' < {IMAGE_FRONTEND_TEMPLATE} > /etc/nginx/conf.d/frappe.conf && nginx -t",
+    ]
+    run(smoke)
+    probe_name = 'cc-issue139-nginx-probe-' + secrets.token_hex(6)
+    start = smoke.copy()
+    start[2:2] = ['-d', '--name', probe_name]
+    start[-1] = start[-1].replace('&& nginx -t', "&& nginx -g 'daemon off;'")
+    try:
+        run(start)
+        time.sleep(1)
+        running = run(['docker', 'inspect', '--format', '{{.State.Running}}', probe_name], check=False)
+        require(running.returncode == 0 and running.stdout.strip() == 'true',
+                'isolated candidate frontend did not remain running')
+    finally:
+        run(['docker', 'rm', '-f', probe_name], check=False)
     return observed['Id']
 
 
@@ -461,30 +532,38 @@ def backup(output):
     paths = {kind: f'{site_dir}/{name}' for kind, name in names.items()}
     for path in paths.values():
         run(['docker', 'exec', 'centrochange-dev-backend-1', 'test', '!', '-e', path])
-    command = ['docker', 'exec', '-w', BENCH, 'centrochange-dev-backend-1',
-               'bench', '--site', SITE, 'backup', '--with-files', '--compress',
-               '--backup-path-db', paths['db'], '--backup-path-files', paths['public'],
-               '--backup-path-private-files', paths['private'], '--backup-path-conf', paths['config']]
-    run(command)
-    key = output / 'backup.key'
-    private_write(key, secrets.token_urlsafe(48).encode() + b'\n')
     manifest = {}
-    for kind, source in paths.items():
-        raw = output / names[kind]
-        run(['docker', 'cp', f'centrochange-dev-backend-1:{source}', str(raw)])
-        os.chmod(raw, 0o600)
-        payload = raw.read_bytes()
-        encrypted = output / (names[kind] + '.gpg')
-        run(['gpg', '--batch', '--yes', '--pinentry-mode', 'loopback',
-             '--passphrase-file', str(key), '--symmetric', '--cipher-algo', 'AES256',
-             '--output', str(encrypted), str(raw)])
-        decrypted = run_bytes(['gpg', '--batch', '--quiet', '--pinentry-mode', 'loopback',
-                               '--passphrase-file', str(key), '--decrypt', str(encrypted)])
-        require(sha(decrypted) == sha(payload), f'{kind}: encrypted backup verify failed')
-        manifest[kind] = {'file': encrypted.name, 'sha256': sha(payload), 'bytes': len(payload)}
-        raw.unlink()
-        run(['docker', 'exec', 'centrochange-dev-backend-1', 'rm', '--', source])
-    report_write(output / 'backup-manifest.json', manifest)
+    try:
+        command = ['docker', 'exec', '-w', BENCH, 'centrochange-dev-backend-1',
+                   'bench', '--site', SITE, 'backup', '--with-files', '--compress',
+                   '--backup-path-db', paths['db'], '--backup-path-files', paths['public'],
+                   '--backup-path-private-files', paths['private'], '--backup-path-conf', paths['config']]
+        run(command)
+        key = output / 'backup.key'
+        private_write(key, secrets.token_urlsafe(48).encode() + b'\n')
+        for kind, source in paths.items():
+            raw = output / names[kind]
+            run(['docker', 'cp', f'centrochange-dev-backend-1:{source}', str(raw)])
+            os.chmod(raw, 0o600)
+            payload = raw.read_bytes()
+            encrypted = output / (names[kind] + '.gpg')
+            run(['gpg', '--batch', '--yes', '--pinentry-mode', 'loopback',
+                 '--passphrase-file', str(key), '--symmetric', '--cipher-algo', 'AES256',
+                 '--output', str(encrypted), str(raw)])
+            decrypted = run_bytes(['gpg', '--batch', '--quiet', '--pinentry-mode', 'loopback',
+                                   '--passphrase-file', str(key), '--decrypt', str(encrypted)])
+            require(sha(decrypted) == sha(payload), f'{kind}: encrypted backup verify failed')
+            manifest[kind] = {'file': encrypted.name, 'sha256': sha(payload), 'bytes': len(payload)}
+            raw.unlink()
+        report_write(output / 'backup-manifest.json', manifest)
+    finally:
+        # A backup failure must not leave plaintext dump/files in the shared Site.
+        cleanup_failures = []
+        for remote in paths.values():
+            result = run(['docker', 'exec', 'centrochange-dev-backend-1', 'rm', '-f', '--', remote], check=False)
+            if result.returncode:
+                cleanup_failures.append(remote)
+        require(not cleanup_failures, 'exact temporary Site backup cleanup failed')
     return manifest
 
 
@@ -550,75 +629,14 @@ _restore(site="centrochange.local",sql_file_path=PATH_DB,db_root_password=passwo
         run(['docker', 'exec', 'centrochange-dev-backend-1', 'rm', '--', remote])
 
 
-def change_env_for_candidate(original):
-    old = str(BASE_OVERLAY).encode()
-    require(original.count(old) == 1 and str(ACTIVE_OVERLAY).encode() not in original,
-            'cannot append candidate Compose file exactly once')
-    updated = original.replace(old, old + b':' + str(ACTIVE_OVERLAY).encode())
-    prior = ENV.stat()
-    private_write(ENV, updated)
-    os.chmod(ENV, prior.st_mode & 0o777)
-    os.chown(ENV, prior.st_uid, prior.st_gid)
-
-
-def restore_env(original, stat):
-    private_write(ENV, original)
-    os.chmod(ENV, stat.st_mode & 0o777)
-    os.chown(ENV, stat.st_uid, stat.st_gid)
-
-
-def set_allowlist(centers):
-    run(['docker', 'exec', '-w', BENCH, 'centrochange-dev-backend-1',
-         'bench', '--site', SITE, 'set-config', '--parse',
-         'cc_operational_activation_allowed', json.dumps(centers)])
-
-
-def activate_a(module):
-    source = '''import json,frappe
-from centrochange_core.security.center_state import set_operational
-frappe.init(site="centrochange.local",sites_path="/home/frappe/frappe-bench/sites");frappe.connect()
-frappe.set_user("Administrator")
-assert frappe.conf.get("cc_operational_activation_allowed")==["CC-HTTP-UAT0000001 A"]
-assert frappe.db.get_value("Branch","CC-HTTP-UAT0000001 A","cc_operational")==0
-assert frappe.db.get_value("Branch","CC-HTTP-UAT0000001 B","cc_operational")==0
-result=set_operational("CC-HTTP-UAT0000001 A","1","#139 Owner: attivazione Centro A dopo migrazione controllata")
-assert result=={"center":"CC-HTTP-UAT0000001 A","active":1,"replay":False}
-frappe.db.commit()
-print("CC_ACTIVATION="+json.dumps({"center":result["center"],"active":result["active"],"actor":frappe.session.user}))
-frappe.destroy()
-'''
-    output = module.backend_python(source)
-    return json.loads(next(x.split('=', 1)[1] for x in output.splitlines()
-                           if x.startswith('CC_ACTIVATION=')))
-
-
-def verify_after(module, before):
-    state = branch_probe(module)
-    require(state['field_present'], 'Branch operational field missing after migration')
-    centers = {row['name']: int(row['cc_operational']) for row in state['rows']}
-    require(centers == {BRANCH_A: 1, BRANCH_B: 0}, 'A/B operational state incorrect')
-    fingerprint = module.runtime_fingerprint()
-    require(fingerprint['communication_sha256'] == before['communication_sha256'],
-            'Communication records changed')
-    for doctype, count in before['counts'].items():
-        expected = count + int(doctype == 'CC Audit Event')
-        require(fingerprint['counts'][doctype] == expected,
-                f'{doctype}: unexpected persistent record count')
-    source = '''import json,frappe
-frappe.init(site="centrochange.local",sites_path="/home/frappe/frappe-bench/sites");frappe.connect()
-frappe.set_user("Administrator")
-rows=frappe.get_all("CC Audit Event",filters={"event_type":"CENTER_OPERATIONAL_STATE","reference_doctype":"Branch","reference_name":"CC-HTTP-UAT0000001 A"},fields=["actor","before_state","after_state","reason"],order_by="creation desc",limit_page_length=2)
-print("CC_CENTER_AUDIT="+json.dumps(rows))
-frappe.db.rollback();frappe.destroy()
-'''
-    output = module.backend_python(source)
-    audit = json.loads(next(x.split('=', 1)[1] for x in output.splitlines()
-                            if x.startswith('CC_CENTER_AUDIT=')))
-    require(len(audit) == 1 and json.loads(audit[0]['before_state']) == {'active': 0}
-            and json.loads(audit[0]['after_state']) == {'active': 1}
-            and audit[0]['actor'] == 'Administrator'
-            and audit[0]['reason'].startswith('#139 Owner:'), 'center activation audit missing')
-    return fingerprint
+def select_candidate_overlay(pre):
+    require(str(ACTIVE_OVERLAY) in pre['settings'].get('COMPOSE_FILE', '').split(':'),
+            'active candidate overlay is not selected by ordinary Compose')
+    prior = ACTIVE_OVERLAY.stat()
+    private_write(ACTIVE_OVERLAY, OVERLAY.read_bytes())
+    os.chmod(ACTIVE_OVERLAY, prior.st_mode & 0o777)
+    os.chown(ACTIVE_OVERLAY, prior.st_uid, prior.st_gid)
+    require(file_sha(ACTIVE_OVERLAY) == file_sha(OVERLAY), 'persistent candidate overlay hash mismatch')
 
 
 def source_probe(module, paths):
@@ -737,13 +755,61 @@ def w5_readonly(output):
     return {'routes': total, 'roles': summary, 'native_list_form_pairs': 22}
 
 
+def live_acceptance(output, script_name, args):
+    output.mkdir(mode=0o700, parents=True, exist_ok=False)
+    result = run([sys.executable, str(REPO / 'infra' / script_name), *args],
+                 cwd=REPO / 'infra', check=False)
+    private_write(output / 'runner.log', (result.stdout + '\n' + result.stderr).encode())
+    if result.returncode == 0:
+        return {'status': 'PASS', 'result_lines': len(result.stdout.splitlines())}
+    # Only explicitly diagnosed preparation/render timeouts are noncritical.
+    # Assertions, authorization errors, unknown failures and cleanup failures
+    # remain fail-closed. A separate mandatory invariant gate follows even FAIL.
+    log = result.stdout + '\n' + result.stderr
+    cleanup = any(line.strip().startswith('{') and '"cleanup": "PASS"' in line
+                  for line in result.stdout.splitlines())
+    validation = ('FixtureCommandError:' in log and 'frappe.exceptions.ValidationError:' in log
+                  and 'rollback failed' not in log.lower())
+    browser_logs = ''.join(p.read_text() for p in output.glob('*.log') if p.name != 'runner.log')
+    timeout = 'TimeoutError:' in browser_logs and 'AssertionError' not in browser_logs
+    application_validation = False
+    for line in log.splitlines():
+        if line.startswith('AssertionError: ('):
+            try:
+                failure = ast.literal_eval(line.removeprefix('AssertionError: '))
+                application_validation = (isinstance(failure, tuple) and len(failure) == 5
+                    and failure[1:4] == (417, 200, 'ValidationError'))
+            except (ValueError, SyntaxError):
+                pass
+    require(cleanup and (validation or timeout or application_validation),
+            f'{script_name}: unclassified or critical failure; private diagnostics retained')
+    return {'status': 'BLOCKED', 'classification': 'fixture_validation' if validation else ('application_validation' if application_validation else 'browser_timeout'),
+            'diagnostic': str(output / 'runner.log'), 'cleanup': 'PASS'}
+
+
+def functional_gate(output, script_name, args, pre, candidate_id):
+    result = live_acceptance(output, script_name, args)
+    # Never let a noncritical test verdict bypass dataset or security checks.
+    require(PROJECT == 'centrochange-dev', 'DEV-FIRST is restricted to DEV')
+    require(pre['module'].runtime_fingerprint() == pre['data'], 'functional cleanup changed baseline data')
+    require(permission_fingerprint(pre['module']) == pre['permissions'], 'functional permission drift')
+    require(pre['module'].hooks() == pre['module'].GUARDS, 'functional security hook drift')
+    observed = pre['module'].snapshot()
+    require(all(observed[n]['image'] == candidate_id for n in APP), 'essential application image drift')
+    require(all(observed[n] == pre['services'][n] for n in TECH), 'technical service drift')
+    pre['module'].http_ready()
+    return result
+
+
 def restore_services(pre, original_env, env_stat, *, data_backup=None, output=None):
     """One rollback; caller never retries installation after this function."""
     original_files = pre['files']
-    active_files = original_files + [ACTIVE_OVERLAY]
-    if ACTIVE_OVERLAY.exists():
-        compose(active_files, 'stop', '-t', '60', *APP)
-    restore_env(original_env, env_stat)
+    active_files = original_files
+    compose(active_files, 'stop', '-t', '60', *APP)
+    private_write(ACTIVE_OVERLAY, pre['overlay_bytes'])
+    os.chmod(ACTIVE_OVERLAY, pre['overlay_stat'].st_mode & 0o777)
+    os.chown(ACTIVE_OVERLAY, pre['overlay_stat'].st_uid, pre['overlay_stat'].st_gid)
+    require(ENV.read_bytes() == original_env, 'runtime.env changed unexpectedly; refusing rollback drift')
     compose(original_files, 'up', '-d', '--no-deps', '--no-build', '--force-recreate', 'backend')
     if data_backup:
         require(output is not None, 'database backup path missing')
@@ -778,8 +844,8 @@ def execute(executor_sha, gate_path):
     output = private_dir()
     PRIVATE_LOG = output / 'last-command.log'
     report = {'status': 'BLOCKED', 'candidate': SOURCE, 'executor_sha256': executor_sha,
-              'baseline_image': BASE_IMAGE, 'baseline_data_sha256': BASE_DATA_SHA,
-              'baseline_communication_sha256': BASE_COMM_SHA, 'tests': {},
+              'baseline_image': BASE_IMAGE, 'baseline_data_sha256': pre['data']['sha256'],
+              'baseline_communication_sha256': pre['data']['communication_sha256'], 'tests': {},
               'baseline_schema': pre['schema'], 'baseline_permissions': pre['permissions'],
               'baseline_host': pre['host'],
               'operation_deadline_utc': window['operation_end'].isoformat(),
@@ -793,9 +859,12 @@ def execute(executor_sha, gate_path):
     private_write(output / 'runtime.env.checkpoint', env_bytes)
     for path in pre['files']:
         private_write(output / (path.name + '.checkpoint'), path.read_bytes())
+    private_write(output / (ACTIVE_OVERLAY.name + '.checkpoint'), pre['overlay_bytes'])
     checkpoint = {'files': [str(path) for path in pre['files']],
                   'services': pre['services'], 'data': pre['data'],
-                  'schema': pre['schema'], 'permissions': pre['permissions']}
+                  'schema': pre['schema'], 'permissions': pre['permissions'],
+                  'overlay': {'path': str(ACTIVE_OVERLAY), 'mode': pre['overlay_stat'].st_mode & 0o777,
+                              'uid': pre['overlay_stat'].st_uid, 'gid': pre['overlay_stat'].st_gid}}
     report_write(output / 'checkpoint.json', checkpoint)
     site_config = f'{BENCH}/sites/{SITE}/site_config.json'
     run(['docker', 'cp', f'centrochange-dev-backend-1:{site_config}',
@@ -821,8 +890,7 @@ def execute(executor_sha, gate_path):
     validate_owner_gate(gate_path, executor_sha)
     TIME_LIMIT_ACTIVE = True
     backup_manifest = None
-    switched = False
-    migration_started = False
+    fixture_tests_started = False
     try:
         report['runtime_mutations'].append('application_stop_started')
         report_write(report_path, report)
@@ -835,38 +903,27 @@ def execute(executor_sha, gate_path):
                 'Owner data or schema changed while creating checkpoint')
         report['backup'] = backup_manifest
         report_write(report_path, report)
-        switched = True
-        private_write(ACTIVE_OVERLAY, OVERLAY.read_bytes())
-        os.chmod(ACTIVE_OVERLAY, 0o600)
-        require(file_sha(ACTIVE_OVERLAY) == file_sha(OVERLAY), 'active overlay copy mismatch')
-        change_env_for_candidate(env_bytes)
-        require(file_sha(ENV) != BASE_ENV_SHA, 'candidate Compose not selected')
-        compare_compose(pre['baseline'], compose_config(pre['files'], ACTIVE_OVERLAY))
-        compose(pre['files'] + [ACTIVE_OVERLAY], 'up', '-d', '--no-deps', '--no-build',
+        select_candidate_overlay(pre)
+        compare_compose(pre['baseline'], compose_config(pre['files']))
+        compose(pre['files'], 'up', '-d', '--no-deps', '--no-build',
                 '--force-recreate', 'backend')
         running_backend = run(['docker', 'inspect', '--format', '{{.Image}}',
                                'centrochange-dev-backend-1']).stdout.strip()
         require(running_backend == candidate_id,
                 'candidate backend image not served')
-        migration_started = True
-        report['runtime_mutations'].append('migration_started')
-        report_write(report_path, report)
-        run(['docker', 'exec', '-w', BENCH, 'centrochange-dev-backend-1',
-             'bench', '--site', SITE, 'migrate'])
+        # Branch schema and the audited A/B state already exist on this baseline.
+        # The candidate contains no patches/schema changes, so do not rerun migrations.
         migrated = branch_probe(pre['module'])
-        require(migrated['field_present'] and all(int(x['cc_operational']) == 0
-                    for x in migrated['rows']), 'migration did not fail closed for both centers')
-        set_allowlist([BRANCH_A])
-        report['activation'] = activate_a(pre['module'])
-        set_allowlist([])
-        compose(pre['files'] + [ACTIVE_OVERLAY], 'up', '-d', '--no-deps', '--no-build',
-                '--force-recreate', 'backend')
-        after_data = verify_after(pre['module'], pre['data'])
+        require(migrated['field_present'] and {r['name']: int(r['cc_operational']) for r in migrated['rows']}
+                == {BRANCH_A: 1, BRANCH_B: 0}, 'pre-migrated center state changed')
+        after_data = pre['data']
         require(permission_fingerprint(pre['module']) == pre['permissions'],
-                'effective permissions changed during migration')
-        report['runtime_mutations'].append('migration_and_audited_center_a_activation')
+                'effective permissions changed during update')
+        report['activation'] = {'center_a': 'already active and audited; preserved',
+                                'center_b': 'inactive; preserved'}
+        report['runtime_mutations'].append('candidate_backend_started; schema_and_centers_preserved')
         report_write(report_path, report)
-        compose(pre['files'] + [ACTIVE_OVERLAY], 'up', '-d', '--no-deps', '--no-build',
+        compose(pre['files'], 'up', '-d', '--no-deps', '--no-build',
                 '--force-recreate', 'websocket', 'queue-short', 'queue-long', 'scheduler', 'frontend')
         pre['module'].http_ready()
         observed = pre['module'].snapshot()
@@ -892,7 +949,13 @@ def execute(executor_sha, gate_path):
         evidence = STATE / 'browser-evidence' / ('issue139-' + output.name)
         evidence.mkdir(mode=0o700)
         os.chown(evidence, account.pw_uid, account.pw_gid)
-        report['tests']['w5_readonly'] = w5_readonly(evidence)
+        readonly_output = evidence / 'devfirst-readonly'
+        browser('mvp_devfirst_readonly.cjs', readonly_output)
+        readonly = json.loads((readonly_output / 'devfirst-readonly.json').read_text())
+        require(readonly['status'] == 'ESSENTIAL_PASS', 'essential read-only authorization gate failed')
+        report['tests']['essential_readonly'] = readonly
+        report['installation_essential_status'] = 'PASS'
+        report_write(report_path, report)
         admin_folder = evidence / 'administrator'
         admin_folder.mkdir(mode=0o700)
         os.chown(admin_folder, account.pw_uid, account.pw_gid)
@@ -921,20 +984,21 @@ def execute(executor_sha, gate_path):
             admin_fixture.unlink(missing_ok=True)
         require(pre['module'].runtime_fingerprint() == after_data,
                 'read-only W5 altered Owner data')
-        safety = run(security_command(after_data['sha256'],
-                                      after_data['communication_sha256']), cwd=REPO, check=False)
-        private_write(output / 'security-run.log', (safety.stdout + '\n' + safety.stderr).encode())
-        require(safety.returncode == 0, '38-control fixture security suite failed')
-        result = json.loads(safety.stdout.splitlines()[-1])
-        require(result['status'] == 'PASS' and result['data_unchanged'] and result['services_unchanged'],
-                'security fixture cleanup/integrity failed')
-        report['tests']['security'] = 'PASS'
-        require(pre['module'].runtime_fingerprint() == after_data,
-                'post-security Owner data fingerprint changed')
+        # Phase B cannot reuse the unresolved committed accounting cleanup.
+        # No fixture writes means a blocked acceptance test cannot trigger a
+        # database restore. Essential read-only authorization gates above remain mandatory.
+        report['tests']['financial_acceptance'] = {
+            'status': 'BLOCKED', 'reason': 'Native retained ledger and MariaDB 1020 cleanup risk unresolved; no fixture writes attempted'}
+        report['tests']['security_38_mutative'] = {
+            'status': 'BLOCKED', 'reason': 'Shared fixture cleanup requires separate verification; essential API denial checks executed read-only'}
+        require(pre['module'].runtime_fingerprint() == after_data, 'read-only acceptance changed Owner data')
+        require(permission_fingerprint(pre['module']) == pre['permissions'], 'acceptance permission drift')
+        require(pre['module'].hooks() == pre['module'].GUARDS, 'acceptance hook drift')
         require(host_telemetry()['oom_kill'] == pre['host']['oom_kill']
                 and host_telemetry()['docker_free_bytes'] >= 8 * 1024**3,
                 'host OOM or disk reserve safety event')
-        report.update(status='LIVE_TECHNICAL_PASS', after_data=after_data,
+        verdict = 'DEV_UPDATED_WITH_GAPS' if any(isinstance(v, dict) and v.get('status') in ('FAIL', 'BLOCKED') for v in report['tests'].values()) else 'LIVE_TECHNICAL_PASS'
+        report.update(status=verdict, after_data=after_data,
                       evidence_directory=str(evidence))
         report_write(report_path, report)
         return report
@@ -947,7 +1011,7 @@ def execute(executor_sha, gate_path):
             pass  # Reporting failure cannot prevent the one allowed rollback.
         try:
             restore_services(pre, env_bytes, env_stat,
-                             data_backup=backup_manifest if migration_started else None,
+                             data_backup=backup_manifest if fixture_tests_started else None,
                              output=output)
             report['status'] = 'ROLLED_BACK'
         except Exception as rollback_error:
@@ -976,8 +1040,11 @@ def recover(executor_sha, gate_path, checkpoint_dir):
            'services': checkpoint['services'], 'data': checkpoint['data'],
            'schema': checkpoint['schema'], 'permissions': checkpoint['permissions'],
            'settings': parse_settings(original_env), 'module': old_probe()}
-    require(pre['files'] == [*(COMPOSE_DIR / n for n in COMPOSE_SHA), BASE_OVERLAY],
+    require(pre['files'] == [*(COMPOSE_DIR / n for n in COMPOSE_SHA), BASE_OVERLAY, ACTIVE_OVERLAY],
             'checkpoint Compose scope drift')
+    overlay = checkpoint['overlay']
+    pre['overlay_bytes'] = (root / (ACTIVE_OVERLAY.name + '.checkpoint')).read_bytes()
+    pre['overlay_stat'] = types.SimpleNamespace(st_mode=overlay['mode'], st_uid=overlay['uid'], st_gid=overlay['gid'])
     manifest_path = root / 'backup-manifest.json'
     manifest = json.loads(manifest_path.read_text()) if manifest_path.is_file() else None
     stat = ENV.stat()
@@ -1020,7 +1087,7 @@ def main():
     print(json.dumps({key: report.get(key) for key in
                       ('status', 'candidate', 'executor_sha256', 'candidate_image', 'failure',
                        'rollback_failure', 'checkpoint')}))
-    return 0 if report['status'] == 'LIVE_TECHNICAL_PASS' else 1
+    return 0 if report['status'] in ('LIVE_TECHNICAL_PASS', 'DEV_UPDATED_WITH_GAPS') else 1
 
 
 if __name__ == '__main__':

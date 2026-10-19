@@ -1,0 +1,240 @@
+[
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/CLIENT-CONTEXT-MANIFEST.yaml",
+    "sha256": "9a08aea628fcef9d06c1685fac34e7e51a5d40bff5748b315682181519d6bb23",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/CLIENT-CONTEXT-MANIFEST.yaml"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/delivery/IMPLEMENTATION-001.yaml",
+    "sha256": "bfc745625e8ee076bf947080a0e040ec0e2a648d3ba68481712947e9554093f9",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/delivery/IMPLEMENTATION-001.yaml"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/discovery/CLIENT-REQUESTS-SNAPSHOT.md",
+    "sha256": "e8b37c4f827e0aa0c3c4686f408f906d780a12d186529b8881f536ea78eb7585",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/discovery/CLIENT-REQUESTS-SNAPSHOT.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/discovery/RUN-001-CLIENT-EVIDENCE.md",
+    "sha256": "039bf26296aaa9bd95bed4a2332799db3dd468d8d2cc672eda1703594c6429af",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/discovery/RUN-001-CLIENT-EVIDENCE.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/solution/EXECUTABLE-SOLUTION-BASELINE-001.md",
+    "sha256": "689eea1c6acb5477ac1678ee68559ac190ad4c9b3b650cc32be345875d24d65e",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/solution/EXECUTABLE-SOLUTION-BASELINE-001.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/solution/ROLE-PERMISSION-ACCEPTANCE-MATRIX-001.md",
+    "sha256": "4fd9170d40906443c7224ea767e955d2d72c7dfdf5a083e927296302f4d3f0e1",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/solution/ROLE-PERMISSION-ACCEPTANCE-MATRIX-001.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/solution/WORKFLOW-STATE-MODEL-001.md",
+    "sha256": "ba0ea81ab69e11e93dee63ac70f468f1238f505e88b2487c60d29534adc53a1d",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/solution/WORKFLOW-STATE-MODEL-001.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/scope/SCOPE-DELTA-001-CONSOLIDATED-REV3-2026-09-24.md",
+    "sha256": "a66870750c7fc3e77c37f538ff5335ece129c48d1ef1508e6988cef0546e73d0",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/scope/SCOPE-DELTA-001-CONSOLIDATED-REV3-2026-09-24.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-003-step-1-complete-operational-release.md",
+    "sha256": "e3402fc97d2b09d8dff851dfbc3e35c150076f7de75b5aa04078d42a2fea217e",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-003-step-1-complete-operational-release.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-005-multi-center-architecture.md",
+    "sha256": "c052ba3d6c257c941482f877fd1cfccce07f3768ba281547c30090e5b2875e44",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-005-multi-center-architecture.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-006-central-patient-master.md",
+    "sha256": "503369fe6f75730bdb097698bc46b729dfa83da9fef492ecd15fee953fdc176e",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-006-central-patient-master.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-007-central-professional-master.md",
+    "sha256": "f9deae5a0b526f7b3a9041095467f4807f3beea454471b347f86de4fd385cefc",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-007-central-professional-master.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-008-central-service-pricing-model.md",
+    "sha256": "d0712a89846188b25f5cb534fe4e507bf2ecf0977d35b210b870870fc769bea3",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-008-central-service-pricing-model.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-009-canonical-appointment-session.md",
+    "sha256": "fa9d80db96d8a44f566ab45948b33ff0646f0b42896344b1ea09f2541a407c71",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-009-canonical-appointment-session.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-010-operational-settlement-model.md",
+    "sha256": "d637adf996a1c8e48d84773a2a014bb583e60b7d300183d145d72b4619f1bb8f",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-010-operational-settlement-model.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-011-package-ledger-model.md",
+    "sha256": "d54db29ebec224f7beee3113929a850490ef289220e53b73a40be4edaa4e0a8b",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-011-package-ledger-model.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-012-48h-boundary.md",
+    "sha256": "77121336e2fad0e8c9ecf740f3016580ae5663dc518e6a7a32908f819e1dfbda",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-012-48h-boundary.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-018-patient-cross-center-discoverability.md",
+    "sha256": "4b95948710f0d264a077e5288d7aa7b60f263c0830836de537044ae5d3fd660e",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-018-patient-cross-center-discoverability.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-027-finance-accounting-scope-delta.md",
+    "sha256": "5d8511f5fee1e8ca81af64bc2ef6a3ecdd504f51078fe9cc15baa97660e05b64",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-027-finance-accounting-scope-delta.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-029-incoming-einvoice-core-promotion.md",
+    "sha256": "de7b011e87cb80055114b7b0e30eac2131ecda61d3470c0253fdeeb33453f71e",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-029-incoming-einvoice-core-promotion.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-030-sdi-ts-independent-adapters.md",
+    "sha256": "ec455d5b7b031cd5b1763830f17120e697df4cde60f5acf40e9c7a639868e160",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-030-sdi-ts-independent-adapters.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-031-bank-pos-professional-core-boundary.md",
+    "sha256": "2ca4a2392aa04aa2895d66f43a494795836fa00f1a38d8db52b8436f1d986c88",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-031-bank-pos-professional-core-boundary.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-032-overdue-dunning-payment-links-core-boundary.md",
+    "sha256": "fa03daeeb295988750b5a27720595b66d4d090b14b24ebde07d2030be40e856c",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-032-overdue-dunning-payment-links-core-boundary.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-033-reporting-dashboard-core-boundary.md",
+    "sha256": "414fc6213bbfd4c29ab00dbe25dea0ad91b1573f63a196cdd3db845323d82ff5",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-033-reporting-dashboard-core-boundary.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-034-document-supplier-commercialista-core-boundary.md",
+    "sha256": "4870b00469755c6a74fddc942f9a63afe9e40bdced3b2449fd13e99418670ad6",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-034-document-supplier-commercialista-core-boundary.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-045-ts-inclusion-commercialista-clarification.md",
+    "sha256": "71f4e7af0542c45f0c80fbc259b87cf5e26e7f49d918c4c91216e1879dcc7d37",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-045-ts-inclusion-commercialista-clarification.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-052-authorize-implementation-and-wp00.md",
+    "sha256": "cabd4af8a8d7ffc0a4475a60f2f0a0277293ef34a3d1c27b1f55aefa1197ddff",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-052-authorize-implementation-and-wp00.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-053-session-price-snapshot-booking-date.md",
+    "sha256": "d41924b4549af51796d4e1c3f1d56505f24d141bc1433c6b5c0a8a7979706fd2",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-053-session-price-snapshot-booking-date.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-054-professional-unpaid-session-threshold-policy.md",
+    "sha256": "a83dc6f7538c04cdf7ab61b86a7acf8825d7fe5d971a941d788d3947e89d169f",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-054-professional-unpaid-session-threshold-policy.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-055-accept-goal-01-mvp-dev-end-to-end.md",
+    "sha256": "e00de1b2c6e96c6b793d2c2e4d9da27be52dd3139049e85d3fee9531e1cf5995",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-055-accept-goal-01-mvp-dev-end-to-end.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-056-authorize-goal-02-mvp-client-uat.md",
+    "sha256": "40904a6fbfe65518e65c86970d49860d484c20f046cb28f12b14142f198a6517",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-056-authorize-goal-02-mvp-client-uat.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-057-accept-ui-draft-and-defer-final-polish.md",
+    "sha256": "6d1549d133fc2e7ed6d4614021aae00f190653620a5c5b4e2ecbf1a26d200012",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-057-accept-ui-draft-and-defer-final-polish.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-058-governed-historical-same-day-session-time-correction.md",
+    "sha256": "fa4e1af5fe2beee3da48ee5d013c67c2918dabdc41301b4aa0a0a3839632f745",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-058-governed-historical-same-day-session-time-correction.md"
+  },
+  {
+    "repository": "2008hitch-afk/hitch-client-discovery",
+    "commit": "32f70bb7b615bc27ac5eb28de4c90d3db07e76c6",
+    "path": "clients/HC-0005/decisions/DECISION-059-defer-historical-appointment-time-correction.md",
+    "sha256": "c27fda0d9841c8d48254e765e9186c23ba0bd0dd957ceecfe22cc6a88425aca6",
+    "url": "https://github.com/2008hitch-afk/hitch-client-discovery/blob/32f70bb7b615bc27ac5eb28de4c90d3db07e76c6/clients/HC-0005/decisions/DECISION-059-defer-historical-appointment-time-correction.md"
+  }
+]

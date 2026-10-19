@@ -1,5 +1,6 @@
 """Offline checks for the privileged executor. No Docker or DEV writes."""
 import importlib.util
+import hashlib
 import os
 from pathlib import Path
 import tempfile
@@ -70,12 +71,21 @@ class ExecutorTests(unittest.TestCase):
 
     def test_checkpoint_requires_all_compose_and_env_hash(self):
         with tempfile.TemporaryDirectory() as folder:
-            checkpoint = Path(folder)
-            for name in deploy.COMPOSE_NAMES:
-                (checkpoint / name).write_bytes((deploy.COMPOSE_DIR / name).read_bytes())
+            root = Path(folder)
+            checkpoint = root / 'checkpoint'
+            checkpoint.mkdir(mode=0o700)
+            compose = root / 'source-compose'
+            compose.mkdir(mode=0o700)
+            expected = {}
+            for index, name in enumerate(deploy.COMPOSE_NAMES):
+                content = f'# deterministic checkpoint fixture {index}\n'
+                (compose / name).write_text(content)
+                (checkpoint / name).write_bytes((compose / name).read_bytes())
+                expected[name] = hashlib.sha256(content.encode()).hexdigest()
             (checkpoint / 'runtime.env.sha256').write_text(deploy.ORIGINAL_ENV_SHA + '  runtime.env\n')
             checkpoint.chmod(0o700)
-            with patch.object(deploy, 'CHECKPOINT', checkpoint):
+            with patch.object(deploy, 'CHECKPOINT', checkpoint), patch.object(deploy, 'COMPOSE_DIR', compose), \
+                 patch.object(deploy, 'COMPOSE_SHA', expected):
                 deploy.checkpoint_preflight(deploy.ORIGINAL_ENV_SHA, owner_uid=os.getuid())
                 (checkpoint / deploy.COMPOSE_NAMES[0]).write_text('drift')
                 with self.assertRaises(deploy.Stop):

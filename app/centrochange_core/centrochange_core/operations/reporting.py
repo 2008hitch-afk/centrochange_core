@@ -40,13 +40,18 @@ def export_csv(center,start,end):
     data=agenda(center,start,end)
     if data['truncated']:
         frappe.throw('Riduci l’intervallo prima di esportare: i risultati non vengono omessi senza avviso.')
-    columns=['appointment_date','appointment_time','patient_name','practitioner_name','cc_service_label','duration',
+    fields=['appointment_date','appointment_time','patient_name','practitioner_name','cc_service_label','duration',
         'cc_closure_state','cc_economic_state','cc_paid','cc_price_snapshot','cc_currency_snapshot']
+    columns=['Data','Ora','Paziente','Professionista','Servizio','Durata (minuti)',
+        'Stato seduta','Stato economico','Pagamento registrato','Prezzo snapshot','Valuta']
     output=StringIO(newline='')
     writer=csv.writer(output)
     writer.writerow(columns)
     for row in data['appointments']:
-        writer.writerow([safe_cell(row.get(field)) for field in columns])
+        values=[row.get(field) for field in fields]
+        values[0]=frappe.utils.formatdate(values[0],'dd/MM/yyyy') if values[0] else ''
+        values[1]=str(values[1])[:5] if values[1] else ''
+        writer.writerow([safe_cell(value) for value in values])
     frappe.response.update({'type':'download','filename':'centrochange-agenda.csv','filecontent':output.getvalue(),
         'content_type':'text/csv; charset=utf-8'})
 

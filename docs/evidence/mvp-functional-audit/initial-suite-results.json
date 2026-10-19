@@ -1,0 +1,154 @@
+{
+  "baseline": {
+    "communication_sha256": "b38c7b6334fd4010251e7258a593c49d5f4efd02c677b41860c2d08055e8c7e2",
+    "counts": {
+      "Bank Transaction": 2,
+      "CC Audit Event": 134,
+      "CC Booking Confirmation": 2,
+      "CC Fiscal Transaction": 4,
+      "CC Professional Comparison": 0,
+      "Healthcare Practitioner": 2,
+      "Patient": 9,
+      "Patient Appointment": 13,
+      "Payment Entry": 3,
+      "Purchase Invoice": 1,
+      "Sales Invoice": 4
+    },
+    "db_sha256": "a187c1635a89586646dccae5622cfc747604c4be238d77e198be44f7143bb1ec",
+    "sha256": "3d20b50fa303d52fb9b4a467b12425303a87fcb7b8d36ce82559e1a2c5174671"
+  },
+  "results": [
+    {
+      "exit": 0,
+      "fingerprint_unchanged": true,
+      "seconds": 1.8,
+      "suite": "operations.search_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 1.9,
+      "suite": "finance.bank_trace_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 1.7,
+      "suite": "finance.expectation_ui_acceptance"
+    },
+    {
+      "exit": 0,
+      "fingerprint_unchanged": true,
+      "seconds": 2.3,
+      "suite": "finance.professional_view_acceptance"
+    },
+    {
+      "exit": 0,
+      "fingerprint_unchanged": true,
+      "seconds": 2.6,
+      "suite": "finance.patient_report_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 2.6,
+      "suite": "security.audit_view_acceptance"
+    },
+    {
+      "exit": 0,
+      "fingerprint_unchanged": true,
+      "seconds": 2.7,
+      "suite": "security.desk_boundary_acceptance"
+    },
+    {
+      "exit": 0,
+      "fingerprint_unchanged": true,
+      "seconds": 3.0,
+      "suite": "security.final_review_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 1.8,
+      "suite": "scheduling.reopen_acceptance"
+    },
+    {
+      "exit": 0,
+      "fingerprint_unchanged": true,
+      "seconds": 3.5,
+      "suite": "operations.confirmation_acceptance"
+    },
+    {
+      "exit": 0,
+      "fingerprint_unchanged": true,
+      "seconds": 4.5,
+      "suite": "scheduling.dev_acceptance"
+    },
+    {
+      "exit": 0,
+      "fingerprint_unchanged": true,
+      "seconds": 5.9,
+      "suite": "operations.dev_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 3.8,
+      "suite": "operations.integration_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 3.8,
+      "suite": "operations.surfaces_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 3.8,
+      "suite": "finance.dev_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 3.9,
+      "suite": "finance.receivables_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 4.0,
+      "suite": "finance.banking_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 3.7,
+      "suite": "finance.incoming_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 4.0,
+      "suite": "finance.professional_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 3.9,
+      "suite": "finance.reporting_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 3.9,
+      "suite": "finance.sdi_acceptance"
+    },
+    {
+      "exit": 1,
+      "fingerprint_unchanged": true,
+      "seconds": 4.0,
+      "suite": "finance.ts_acceptance"
+    }
+  ]
+}

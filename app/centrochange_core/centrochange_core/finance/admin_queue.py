@@ -68,6 +68,22 @@ def refresh(center,reason):
     return _refresh(center,reason)
 
 
+def _save_resolved_condition(doc):
+    """Retain an orphaned queue fact while closing its no-longer-current condition."""
+    if not frappe.db.exists(doc.reference_doctype, doc.reference_name):
+        # Frappe validates Dynamic Link targets on ordinary saves. A deleted
+        # synthetic source must not prevent unrelated accounting hooks from
+        # refreshing the queue. This exception is limited to auto-closure;
+        # preserve the original reference and audit, and verify all other links.
+        if not frappe.db.exists('DocType', doc.reference_doctype) or not frappe.db.exists('Branch', doc.center) or (
+            doc.assignee and not frappe.db.exists('User', doc.assignee)
+        ):
+            frappe.throw('La condizione amministrativa ha altri collegamenti non validi.')
+        doc.resolution_reason = 'La fonte della condizione non esiste più; riferimento storico conservato'
+        doc.flags.ignore_links = True
+    doc.save(ignore_permissions=True)
+
+
 def _refresh(center,reason):
     at=_at();conditions=_conditions(center)
     existing={d.condition_key:d for d in [frappe.get_doc('CC Admin Exception',n,for_update=True) for n in current_rows('CC Admin Exception',{'center':center},pluck='name')]}
@@ -88,7 +104,9 @@ def _refresh(center,reason):
         for key,doc in existing.items():
             if key not in conditions and doc.state!='Closed':
                 before={'state':doc.state};doc.state='Closed';doc.resolved_at=at;doc.defer_until=None;doc.resolution_reason='Underlying condition resolved'
-                doc.save(ignore_permissions=True);append('ADMIN_EXCEPTION_AUTO_CLOSED',doc.doctype,doc.name,before,{'state':doc.state},reason);changed.append(doc.name)
+                _save_resolved_condition(doc)
+                append('ADMIN_EXCEPTION_AUTO_CLOSED',doc.doctype,doc.name,before,
+                    {'state':doc.state,'resolution_reason':doc.resolution_reason},reason);changed.append(doc.name)
     return {'changed':changed,'conditions':len(conditions)}
 
 

@@ -75,3 +75,11 @@
 /* Shared calendar tracks; scoped grid wins over Tabler native calendar-header flex. */
 @media(max-width:900px){.calendar-shell{--cc-calendar-professional-track:100px}}
 .schedule-slot-row{display:grid;grid-template-columns:minmax(100px,1.5fr) minmax(90px,1fr) minmax(90px,1fr) auto;align-items:end;gap:8px;margin:8px 0}.schedule-slot-row label{min-width:0}.schedule-slot-row button{padding:10px}.schedule-slot-row input,.schedule-slot-row select{width:100%}@media(max-width:600px){.schedule-slot-row{grid-template-columns:1fr 1fr}.schedule-slot-row label:first-child{grid-column:1/-1}.schedule-slot-row button{grid-column:1/-1}}
+
+/* MVP functional follow-up: finance attachments and long multi-selects remain usable on narrow screens. */
+.finance-page .cc-finance-attachments{min-width:0;max-width:100%;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--line);overflow-wrap:anywhere}
+.finance-page .cc-finance-attachment-form{display:grid;gap:.75rem;min-width:0;max-width:100%}
+.finance-page .cc-finance-attachment-form label{display:grid;gap:.35rem;min-width:0}
+.finance-page .cc-modal select[multiple],.finance-page #modal-fields select[multiple]{display:block;width:100%;max-width:100%;min-width:0;min-height:12rem;white-space:normal;overflow:auto}
+.finance-page .cc-modal,.finance-page #modal-form,.finance-page #modal-fields{min-width:0;max-width:100%}
+@media(max-width:560px){.finance-page .cc-finance-attachments{padding-inline:.25rem}.finance-page .cc-finance-attachment-form button{width:100%}.finance-page #modal-fields select[multiple]{min-height:10rem}}
