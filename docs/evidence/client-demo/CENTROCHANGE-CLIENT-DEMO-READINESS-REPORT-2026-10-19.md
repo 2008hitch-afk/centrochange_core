@@ -5,6 +5,7 @@
 ## Baseline and publication
 
 - Branch `audit/mvp-functional-completion`, original local HEAD `b0e14e0be22ee5c431ad4abb74fb931634335276`; PR #141 remains DRAFT and depends on #140 DRAFT. The original HEAD and the [functional completion report](../mvp-functional-audit/CENTROCHANGE-MVP-DEV-FIRST-COMPLETION-2026-10-19.md) were published without force push or merge.
+- The demo guide, screenshots, source-only sidebar correction and added assertion are in commit `7f2a4395ce406247e45049c2db35845c2cf040ce` on [PR #141](https://github.com/2008hitch-afk/centrochange_core/pull/141); that commit is **not** the installed DEV image.
 - Installed DEV source `a03386c41a78692fd4b6d370ec56b1d21d613841`; six application services use `centrochange-single:mvp-devfirst-a03386c-v3`, image `sha256:e2df539cc99fee6965102f539c0969dbec98d2ad59bf7c0d9631d4e03774acdb`. Nine services running, HTTP ping 200. No installation, restart, migration or data mutation was performed for this report.
 - The [completion matrix](../mvp-functional-audit/capability-matrix-completion.csv) has six prior PARTIAL entries now evidenced PASS; 40 older PASS retain their original evidence. The 46 functions were not rerun as a new campaign.
 
