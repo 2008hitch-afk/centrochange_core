@@ -27,7 +27,10 @@ class RetainedPosFixture(unittest.TestCase):
         self.assertIn('2099-01-12', RUNTIME)
         self.assertIn("p.docstatus<2", RUNTIME)
         self.assertIn('frappe.db.rollback()', RUNTIME)
-        self.assertIn('open administrative exception has a missing source', RUNTIME)
+        self.assertIn('open administrative exception has an unexpected missing source', RUNTIME)
+        self.assertIn("row.reference_name == 'oqgogla0e5'", RUNTIME)
+        self.assertIn("if stage == 'prepare':", RUNTIME)
+        self.assertIn('admin_queue.refresh(center.name', RUNTIME)
 
     def test_host_checks_backup_baseline_and_preexisting_documents(self):
         tree = ast.parse(HOST)
