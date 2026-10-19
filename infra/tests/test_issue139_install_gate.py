@@ -25,6 +25,20 @@ class InstallationGateTests(unittest.TestCase):
         self.assertIn("'--entrypoint', 'cat', IMAGE, IMAGE_FRONTEND_TEMPLATE", source)
         self.assertNotIn("'--read-only', '--user', '0',\n                                   '--entrypoint', 'cat'", source)
 
+    def test_frontend_nginx_config_is_checked_isolated_before_dev_stop(self):
+        source = SOURCE.read_text()
+        build = source[source.index('def build_candidate('):source.index('def backup(')]
+        execute = source[source.index('def execute('):source.index('def recover(')]
+        self.assertIn("'--network', 'none'", build)
+        self.assertIn("'--read-only', '--user', 'frappe'", build)
+        self.assertIn("('/etc/nginx/conf.d', '/tmp', '/run', '/var/lib/nginx')", build)
+        self.assertIn("'--entrypoint', 'sh', IMAGE, '-c'", build)
+        self.assertIn('nginx -t', build)
+        self.assertIn('isolated candidate frontend did not remain running', build)
+        self.assertIn("'docker', 'rm', '-f', probe_name", build)
+        self.assertLess(execute.index('candidate_id = build_candidate(paths, output)'),
+                        execute.index("'application_stop_started'"))
+
     def test_security_runner_keeps_isolated_python_in_both_processes(self):
         command = gate.security_command('data-sha', 'communication-sha')
         self.assertEqual(command[:2], [gate.sys.executable, '-I'])

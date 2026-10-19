@@ -52,7 +52,7 @@ TECH = ('db', 'redis-cache', 'redis-queue')
 PROJECT = 'centrochange-dev'
 NETWORK_NAME = 'centrochange-dev-net'
 LOOPBACK_IP = '127.0.0.1'
-IMAGE = 'centrochange-single:mvp-devfirst-a03386c-v2'
+IMAGE = 'centrochange-single:mvp-devfirst-a03386c-v3'
 PLAYWRIGHT_PACKAGE = Path('/tmp/cc-browser-qa/node_modules/playwright/package.json')
 CHROMIUM = Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell')
 BROWSER_LIBS = '/tmp/cc-browser-libs/usr/lib/x86_64-linux-gnu'
@@ -68,7 +68,7 @@ DEPENDENCY_SHA = {
     'infra/browser/mvp_devfirst_readonly.cjs': '1d93bce1d200db259595fc5ba331b3eaa42481fda4e78836b26bf129e1c5261a',
     'infra/browser/issue139_asset_response.cjs': '30ab0eaa9a15674d4d67f42837b25d3e009727ae796b36903a5de315b5dc3b0a',
     'infra/issue139_frontend.conf.template': '8335c04ce44258137b84a511f790f207614e3f25135910fc22aa77f25c81d48b',
-    'infra/compose.issue139_candidate.yaml': '7ee8d138e2f62728b418cb8b8cf6101d0333f4211dfb8fba7385b96728dfb4e5',
+    'infra/compose.issue139_candidate.yaml': 'd9ed2e0b724fefedf8b08b6795bff47b44c0da9adc56a9264c9263d3e4329c4e',
     'infra/issue139_asset_cache_gate.py': '417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361',
     'infra/goal02_install_one_command.py': '607578830188ab47a5c9d062e0848d5ef2c38c8a5422b503326f30d166592ac5',
     'infra/issue137_safe_security_run.py': '13e820df9f55e92807719751789e50d96187b091f4e515f20c2b196241da9783',
@@ -485,6 +485,41 @@ def build_candidate(paths, output):
     observed_template = run_bytes(['docker', 'run', '--rm', '--network=none', '--read-only', '--user', 'frappe',
                                    '--entrypoint', 'cat', IMAGE, IMAGE_FRONTEND_TEMPLATE])
     require(sha(observed_template) == sha(template), 'candidate nginx template mismatch')
+    # Validate the actual generated nginx configuration as frappe before DEV
+    # ingress is stopped. All writes stay on private tmpfs, with no network,
+    # published ports, shared volumes or Site data.
+    nginx_env = {
+        'BACKEND': 'backend:8000', 'SOCKETIO': 'websocket:9000',
+        'NGINX_LISTEN_PORT': '8080', 'UPSTREAM_REAL_IP_ADDRESS': '127.0.0.1',
+        'UPSTREAM_REAL_IP_HEADER': 'X-Forwarded-For',
+        'UPSTREAM_REAL_IP_RECURSIVE': 'off',
+        'FRAPPE_SITE_NAME_HEADER': SITE, 'PROXY_READ_TIMEOUT': '120',
+        'CLIENT_MAX_BODY_SIZE': '50m',
+    }
+    variables = ' '.join('${' + key + '}' for key in nginx_env)
+    smoke = [
+        'docker', 'run', '--rm', '--network', 'none',
+        '--add-host', 'backend:127.0.0.1', '--add-host', 'websocket:127.0.0.1',
+        '--read-only', '--user', 'frappe',
+        *[arg for path in ('/etc/nginx/conf.d', '/tmp', '/run', '/var/lib/nginx')
+          for arg in ('--tmpfs', f'{path}:uid=1000,gid=0,mode=0700')],
+        *[arg for key, value in nginx_env.items() for arg in ('-e', f'{key}={value}')],
+        '--entrypoint', 'sh', IMAGE, '-c',
+        f"envsubst '{variables}' < {IMAGE_FRONTEND_TEMPLATE} > /etc/nginx/conf.d/frappe.conf && nginx -t",
+    ]
+    run(smoke)
+    probe_name = 'cc-issue139-nginx-probe-' + secrets.token_hex(6)
+    start = smoke.copy()
+    start[2:2] = ['-d', '--name', probe_name]
+    start[-1] = start[-1].replace('&& nginx -t', "&& nginx -g 'daemon off;'")
+    try:
+        run(start)
+        time.sleep(1)
+        running = run(['docker', 'inspect', '--format', '{{.State.Running}}', probe_name], check=False)
+        require(running.returncode == 0 and running.stdout.strip() == 'true',
+                'isolated candidate frontend did not remain running')
+    finally:
+        run(['docker', 'rm', '-f', probe_name], check=False)
     return observed['Id']
 
 
