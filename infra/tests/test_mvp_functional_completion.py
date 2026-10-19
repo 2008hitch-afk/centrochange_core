@@ -98,6 +98,9 @@ class MvpFunctionalCompletionTests(unittest.TestCase):
         self.assertIn('require_finance(center, write)',attachments)
         self.assertIn('doc.check_permission(\'read\')',attachments)
         self.assertIn('save_file(safe_name, raw, parent.doctype, parent.name, is_private=1)',attachments)
+        # Frappe 16.50 exposes is_remote_file as a File property, not a SQL column.
+        self.assertIn("'file_url': ['like', '/private/files/%']",attachments)
+        self.assertNotIn("'is_remote_file': 0",attachments)
         self.assertIn('MAX_BYTES = 5 * 1024 * 1024',attachments)
         self.assertIn("'.pdf': (b'%PDF-',)",attachments)
         self.assertIn("'.png': (b'\\x89PNG",attachments)

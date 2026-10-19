@@ -46,7 +46,9 @@ def _filters(report, branch, start, end):
         "company": branch.cc_company,
         "from_date": start,
         "to_date": end,
-        "cost_center": frappe.as_json([branch.cc_cost_center]),
+        # GL parses JSON; Trial Balance expects native cost-center names/list.
+        "cost_center": ([branch.cc_cost_center] if report == "trial_balance"
+                        else frappe.as_json([branch.cc_cost_center])),
     })
     if report == "trial_balance":
         # Native ERPNext supports unrestricted fiscal years as well as

@@ -39,7 +39,7 @@ def list_for_document(doctype, name):
     doc, _center = _parent(doctype, name)
     files = frappe.get_all('File', filters={
         'attached_to_doctype': doc.doctype, 'attached_to_name': doc.name,
-        'is_private': 1, 'is_remote_file': 0,
+        'is_private': 1, 'file_url': ['like', '/private/files/%'],
     }, fields=['name', 'file_name', 'file_url', 'creation'], order_by='creation asc')
     return [{'name': row.name, 'file_name': row.file_name, 'file_url': row.file_url,
              'creation': row.creation} for row in files]

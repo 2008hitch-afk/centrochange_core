@@ -65,7 +65,7 @@ BRANCH_A = 'CC-HTTP-UAT0000001 A'
 BRANCH_B = 'CC-HTTP-UAT0000001 B'
 RUN_ROOT = STATE / 'issue139-install-runs'
 DEPENDENCY_SHA = {
-    'infra/browser/mvp_devfirst_readonly.cjs': '6cdf0e2e941f65077781cece9f24d53f0d186784a089d6482d8d7c1bbfbe704e',
+    'infra/browser/mvp_devfirst_readonly.cjs': '1d93bce1d200db259595fc5ba331b3eaa42481fda4e78836b26bf129e1c5261a',
     'infra/browser/issue139_asset_response.cjs': '30ab0eaa9a15674d4d67f42837b25d3e009727ae796b36903a5de315b5dc3b0a',
     'infra/issue139_frontend.conf.template': '8335c04ce44258137b84a511f790f207614e3f25135910fc22aa77f25c81d48b',
     'infra/compose.issue139_candidate.yaml': '866a1cea822c778ba77afd40ee6836ee8ff3666fa7834de5d948f859b03702c0',

@@ -10,7 +10,7 @@ try{
   const ctx=await browser.newContext({viewport:{width:['s','c','t'].includes(role)?390:1440,height:900},locale:'it-IT'}),p=await ctx.newPage();
   try{
    if(role!=='guest'){
-    await p.goto(base+'/login');await p.locator('#login_email').fill(f.users[role].name);await p.locator('#login_password').fill(f.users[role].password);await p.locator('.form-login .btn-login').click();await p.waitForURL(u=>/^\/(app|desk)/.test(new URL(u).pathname));
+    await p.goto(base+'/login');await p.locator('#login_email').fill(f.users[role].name);await p.locator('#login_password').fill(f.users[role].password);await p.getByRole('button',{name:'Continua',exact:true}).click();await p.waitForURL(u=>/^\/(app|desk)/.test(new URL(u).pathname));
     check(report.critical,role+':login',true);
     try{await p.locator('#cc-desk-sidebar').waitFor({timeout:15000});await p.screenshot({path:path.join(out,role+'.png'),fullPage:true});check(report.functional,role+':shell',true);}catch(e){check(report.functional,role+':shell',false,{error:e.name});}
    }else await p.goto(base+'/login');
@@ -25,7 +25,7 @@ try{
    args.set('center',f.centers[1]);const cross=await get(prefix+'run?'+args);
    check(report.critical,role+':inactive-center-denied',[401,403].includes(cross.status),{http:cross.status});
    if(!['guest','a','b','c'].includes(role)){
-    args.set('center',f.centers[0]);const csv=await get(prefix+'export_csv?'+args);check(report.functional,role+':csv',csv.status===200&&csv.text.length>10&&!csv.data?.exc_type,{http:csv.status,bytes:csv.text.length});
+    args.set('center',f.centers[0]);args.set('report','general_ledger');const csv=await get(prefix+'export_csv?'+args);check(report.functional,role+':csv',csv.status===200&&csv.text.length>10&&!csv.data?.exc_type,{http:csv.status,bytes:csv.text.length});
    }
    if(!['a'].includes(role)){
     const note=await get('/api/resource/CC%20Private%20Note/'+encodeURIComponent(f.private_note));
