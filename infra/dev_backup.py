@@ -16,6 +16,44 @@ CONTAINER='centrochange-dev-backend-1'
 SITE='centrochange.local'
 
 
+def _new_gpg_home():
+    """Create a short private GnuPG home; long state paths exceed Unix socket limits."""
+    home=Path(tempfile.mkdtemp(prefix='ccg-',dir='/tmp'))
+    os.chmod(home,0o700)
+    socket=home/'S.gpg-agent'
+    if len(os.fsencode(socket))>=100:
+        shutil.rmtree(home)
+        raise RuntimeError('GnuPG agent socket path exceeds the supported Unix socket length')
+    return home
+
+
+def run_gpg(args,*,redact=()):
+    result=subprocess.run(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    if result.returncode:
+        detail=result.stderr.decode('utf-8','replace').strip()
+        for value in sorted((str(p) for p in redact),key=len,reverse=True):
+            detail=detail.replace(value,'[PRIVATE_PATH]')
+        raise RuntimeError(f'GnuPG failed with exit {result.returncode}: {detail[:1000]}')
+    return result.stdout
+
+
+def encrypt_and_verify(archive,key,encrypted,home):
+    archive,key,encrypted,home=map(Path,(archive,key,encrypted,home))
+    run_gpg(['gpg','--homedir',str(home),'--batch','--yes','--pinentry-mode','loopback',
+        '--passphrase-file',str(key),'--symmetric','--cipher-algo','AES256','--output',str(encrypted),str(archive)],
+        redact=(archive.parent,key,archive,encrypted))
+    if not encrypted.is_file() or encrypted.stat().st_size==0:
+        raise RuntimeError('GnuPG reported success without producing an encrypted backup')
+    os.chmod(encrypted,0o600)
+    verified=run_gpg(['gpg','--homedir',str(home),'--batch','--quiet','--pinentry-mode','loopback',
+        '--passphrase-file',str(key),'--decrypt',str(encrypted)],
+        redact=(archive.parent,key,archive,encrypted))
+    payload=archive.read_bytes()
+    if hashlib.sha256(verified).digest()!=hashlib.sha256(payload).digest():
+        raise RuntimeError('Encrypted archive integrity verification failed')
+    return verified
+
+
 def run(args):
     result=subprocess.run(args,text=True,capture_output=True)
     if result.returncode:
@@ -41,7 +79,7 @@ def backup(destination):
     archive=job/'backup.tar'
     key=job/'dev-only.key'
     encrypted=job/'backup.tar.gpg'
-    home=job/'gnupg'
+    home=None
     inventory=[]
     try:
         run(['docker','exec',CONTAINER,'bench','--site',SITE,'backup','--with-files','--compress','--backup-path',remote])
@@ -66,15 +104,9 @@ def backup(destination):
         os.chmod(archive,0o600)
         with os.fdopen(os.open(key,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600),'w') as stream:
             stream.write(secrets.token_urlsafe(64))
-        home.mkdir(mode=0o700)
-        run(['gpg','--homedir',str(home),'--batch','--yes','--pinentry-mode','loopback','--passphrase-file',str(key),
-             '--symmetric','--cipher-algo','AES256','--output',str(encrypted),str(archive)])
-        os.chmod(encrypted,0o600)
+        home=_new_gpg_home()
         # Integrity verification decrypts through a pipe; no second raw archive remains.
-        verified=subprocess.run(['gpg','--homedir',str(home),'--batch','--pinentry-mode','loopback',
-            '--passphrase-file',str(key),'--decrypt',str(encrypted)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-        if verified.returncode or hashlib.sha256(verified.stdout).digest()!=hashlib.sha256(archive.read_bytes()).digest():
-            raise RuntimeError('Encrypted archive integrity verification failed')
+        encrypt_and_verify(archive,key,encrypted,home)
         report={'status':'PASS','site':SITE,'components':inventory,'encrypted_sha256':hashlib.sha256(encrypted.read_bytes()).hexdigest(),
             'encrypted_size':encrypted.stat().st_size,'raw_files_removed':True,'restore_tested':False,
             'backup_directory':str(job),'key_policy':'0600 local DEV-only key; production key custody and retention remain gated'}
@@ -85,6 +117,8 @@ def backup(destination):
         if raw.exists():
             shutil.rmtree(raw)
         archive.unlink(missing_ok=True)
+        if home and home.exists():
+            shutil.rmtree(home)
         # This exact generated DEV-only directory contains only this invocation's native output.
         run(['docker','exec',CONTAINER,'rm','-rf','--',remote])
 
