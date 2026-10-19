@@ -4,6 +4,8 @@
 
 Addendum live: `CENTROCHANGE-MVP-LIVE-FUNCTIONAL-VALIDATION-REPORT-2026-10-15.md`.
 
+Aggiornamento live del 19 ottobre (singolo tentativo autorizzato, poi rollback): `CENTROCHANGE-MVP-LIVE-FUNCTIONAL-VALIDATION-REPORT-2026-10-19.md`.
+
 Data: 15 ottobre 2026 UTC. Branch locale dedicato `audit/mvp-functional-completion`, derivato dalla baseline dell’audit e dal candidato applicativo installato. Nessun deploy, reset, migrazione, riavvio, scrittura o test mutativo sul DEV; nessuna pubblicazione o modifica GitHub.
 
 ## Baseline e conteggi
