@@ -52,7 +52,7 @@ TECH = ('db', 'redis-cache', 'redis-queue')
 PROJECT = 'centrochange-dev'
 NETWORK_NAME = 'centrochange-dev-net'
 LOOPBACK_IP = '127.0.0.1'
-IMAGE = 'centrochange-single:mvp-devfirst-a03386c'
+IMAGE = 'centrochange-single:mvp-devfirst-a03386c-v2'
 PLAYWRIGHT_PACKAGE = Path('/tmp/cc-browser-qa/node_modules/playwright/package.json')
 CHROMIUM = Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell')
 BROWSER_LIBS = '/tmp/cc-browser-libs/usr/lib/x86_64-linux-gnu'
@@ -68,7 +68,7 @@ DEPENDENCY_SHA = {
     'infra/browser/mvp_devfirst_readonly.cjs': '1d93bce1d200db259595fc5ba331b3eaa42481fda4e78836b26bf129e1c5261a',
     'infra/browser/issue139_asset_response.cjs': '30ab0eaa9a15674d4d67f42837b25d3e009727ae796b36903a5de315b5dc3b0a',
     'infra/issue139_frontend.conf.template': '8335c04ce44258137b84a511f790f207614e3f25135910fc22aa77f25c81d48b',
-    'infra/compose.issue139_candidate.yaml': '520530eaad77a358545ac9db64e3a7c2bb3f49241d0678353e44be49cc6d2202',
+    'infra/compose.issue139_candidate.yaml': '7ee8d138e2f62728b418cb8b8cf6101d0333f4211dfb8fba7385b96728dfb4e5',
     'infra/issue139_asset_cache_gate.py': '417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361',
     'infra/goal02_install_one_command.py': '607578830188ab47a5c9d062e0848d5ef2c38c8a5422b503326f30d166592ac5',
     'infra/issue137_safe_security_run.py': '13e820df9f55e92807719751789e50d96187b091f4e515f20c2b196241da9783',
@@ -477,7 +477,9 @@ def build_candidate(paths, output):
                              '--entrypoint', 'python', IMAGE, '-c', check]).stdout)
     require(all(actual[p.removeprefix(APP_PREFIX)] == file_sha(REPO / p) for p in paths),
             'candidate application file hashes mismatch')
-    observed_template = run_bytes(['docker', 'run', '--rm', '--network=none', '--read-only',
+    # The pinned frontend template is root:root 0600. Inspect as root in an
+    # ephemeral read-only container; the application runtime is untouched.
+    observed_template = run_bytes(['docker', 'run', '--rm', '--network=none', '--read-only', '--user', '0',
                                    '--entrypoint', 'cat', IMAGE, IMAGE_FRONTEND_TEMPLATE])
     require(sha(observed_template) == sha(template), 'candidate nginx template mismatch')
     return observed['Id']
