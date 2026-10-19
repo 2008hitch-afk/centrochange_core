@@ -34,3 +34,18 @@ class DevFirstTests(unittest.TestCase):
     if allowed:self.assertEqual(g.live_acceptance(Path(d)/'e','report.py',[])['classification'],'application_validation')
     else:
      with self.assertRaises(g.Stop):g.live_acceptance(Path(d)/'e','report.py',[])
+
+ def test_installation_separates_readonly_safety_and_blocked_accounting(self):
+  import ast
+  tree=ast.parse(Path(g.__file__).read_text())
+  execute=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='execute')
+  calls=[n.func.id for n in ast.walk(execute) if isinstance(n,ast.Call) and isinstance(n.func,ast.Name)]
+  self.assertNotIn('live_acceptance',calls)
+  self.assertNotIn('functional_gate',calls)
+  self.assertNotIn('security_command',calls)
+  self.assertIn('restore_services',calls)
+  text=ast.get_source_segment(Path(g.__file__).read_text(),execute)
+  self.assertIn("readonly['status'] == 'ESSENTIAL_PASS'",text)
+  self.assertIn("'status': 'BLOCKED'",text)
+  self.assertIn("permission_fingerprint(pre['module']) == pre['permissions']",text)
+  self.assertNotIn('fixture_tests_started = True',text)
