@@ -21,7 +21,7 @@ const results=[];
         ]){
           const query=new URLSearchParams({center:fixture.centers[0],start:'2026-01-01',end:'2026-12-31',...extra});
           const result=await page.evaluate(async url=>{const response=await fetch(url);const body=await response.text();return {status:response.status,type:response.headers.get('content-type')||'',header:body.split(/\r?\n/)[0],europeanDate:/\b\d{2}\/\d{2}\/\d{4}\b/.test(body),isoDate:/\b20\d{2}-\d{2}-\d{2}\b/.test(body),rows:body.split(/\r?\n/).length-1};},'/api/method/'+method+'?'+query);
-          results.push({role,kind,status:result.status,csv:result.type.startsWith('text/csv'),italianHeader:/Identificativo seduta|Data|Ora|Conto|Debito|Credito|Saldo/.test(result.header),europeanDate:result.europeanDate,isoDate:result.isoDate,rows:result.rows});
+          results.push({role,kind,status:result.status,csv:result.type.startsWith('text/csv'),header:result.status===200?result.header:null,italianHeader:/Identificativo seduta|Data|Ora|Conto|Dare|Avere|Saldo/.test(result.header),europeanDate:result.europeanDate,isoDate:result.isoDate,rows:result.rows});
         }
       }finally{await context.close();}
     }

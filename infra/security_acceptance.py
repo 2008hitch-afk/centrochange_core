@@ -5,11 +5,13 @@ import http.cookiejar
 import json
 import os
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fixture_command import execute_fixture
 
 BACKEND='centrochange-dev-backend-1'

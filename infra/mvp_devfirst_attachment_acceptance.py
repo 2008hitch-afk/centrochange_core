@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location('gate', ROOT / 'infra/issue139_install_gate.py')
 g = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(g)
-IMAGE = 'sha256:65b73c46610f086a1bfe156b17072e007cfc3cfa00501a3c6c2a64d3ef7bccf4'
+IMAGE = 'sha256:47d753955c81033b11317381b5fdc63aa5e438cec304e57e93a0b6c0215b6758'
 RUN = Path('/home/empv26/.local/state/centrochange-single/browser-evidence/mvp-devfirst-3429f7d-targeted')
 
 

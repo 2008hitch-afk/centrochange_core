@@ -4,6 +4,7 @@ import ast
 from pathlib import Path
 import sys
 import tempfile
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -17,6 +18,12 @@ METHOD = "centrochange_core.finance.receivables_acceptance.prepare_browser_invoi
 
 
 class FixtureCommandTests(unittest.TestCase):
+    def test_security_suite_imports_its_fixture_driver_under_isolated_python(self):
+        result = subprocess.run([sys.executable, "-I", str(ROOT / "infra/security_acceptance.py"), "--help"],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--with-operations", result.stdout)
+
     def test_traceback_keeps_exception_cause_and_context_but_redacts_values(self):
         raw = '''Traceback (most recent call last):
   File "/home/frappe/frappe-bench/apps/centrochange_core/finance/receivables_acceptance.py", line 24, in prepare_browser_invoice

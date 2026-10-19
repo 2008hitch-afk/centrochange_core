@@ -56,28 +56,28 @@ let stage='startup';
           await row.waitFor();
           await row.click();
           stage='f:attachment-upload';
-          const upload=await page.evaluate(async ({tag,pdf})=>{
-            const source=await fetch('/api/method/centrochange_core.finance.reporting.records?'+new URLSearchParams({center:document.querySelector('#center').value,doctype:'CC Incoming Invoice'})).then(r=>r.json());
-            const found=source.message.find(row=>row.invoice_number===tag);
-            if(!found)throw new Error('Synthetic source unavailable');
-            const response=await fetch('/api/method/centrochange_core.finance.attachments.attach',{method:'POST',credentials:'same-origin',
-              headers:{'Content-Type':'application/json','X-Frappe-CSRF-Token':document.querySelector('meta[name=csrf-token]').content},
-              body:JSON.stringify({doctype:'CC Incoming Invoice',name:found.name,file_name:tag+'.pdf',content_base64:pdf,reason:tag})});
-            return {status:response.status,body:await response.json(),name:found.name};
-          },{tag,pdf:pdf.toString('base64')});
-          if(upload.status!==200||!upload.body.message?.private)throw new Error('Private upload rejected: '+upload.status+' '+String(upload.body.exc_type||'unknown').slice(0,80)+' '+String(upload.body.exception||'').split('\\n').at(-1).slice(0,100));
-          sourceName=upload.name;
+          sourceName=await row.getAttribute('data-name');
+          const form=page.locator('#detail .cc-finance-attachment-form');
+          await form.locator('[name=file]').setInputFiles({name:tag+'.pdf',mimeType:'application/pdf',buffer:pdf});
+          await form.locator('[name=reason]').fill(tag);
+          const uploadResponse=page.waitForResponse(r=>r.url().includes('finance.attachments.attach')&&r.request().method()==='POST');
+          await form.getByRole('button',{name:'Allega documento',exact:true}).click();
+          const response=await uploadResponse;
+          const upload={status:response.status(),body:await response.json()};
+          if(upload.status!==200||!upload.body.message?.private)throw new Error('Private upload rejected: '+upload.status+' '+String(upload.body.exc_type||'unknown').slice(0,80));
           stage='f:attachment-save';
           privateUrl=upload.body.message.file_url;
           if(!privateUrl.startsWith('/private/files/'))throw new Error('Attachment is not private');
           checks.push({role,step:'create-and-associate',pass:true});
+          await page.locator('#detail .cc-finance-attachments a[href="'+privateUrl+'"]').waitFor();
+          checks.push({role,step:'visible-in-detail',pass:true});
           const ownDownload=await page.evaluate(async url=>{const r=await fetch(url);return {status:r.status,bytes:(await r.arrayBuffer()).byteLength};},privateUrl);
           checks.push({role,step:'private-file-download',status:ownDownload.status,bytes:ownDownload.bytes,pass:ownDownload.status===200&&ownDownload.bytes===pdf.length});
           await page.reload();
           stage='f:refresh';
           await page.getByRole('button',{name:'XML ricevuti',exact:true}).click();
           await page.locator('#finance-content tr[data-name]').filter({hasText:tag}).click();
-          const saved=await page.evaluate(async name=>{const r=await fetch('/api/method/centrochange_core.finance.attachments.list_for_document?'+new URLSearchParams({doctype:'CC Incoming Invoice',name}));return {status:r.status,rows:(await r.json()).message||[]};},upload.name);
+          const saved=await page.evaluate(async name=>{const r=await fetch('/api/method/centrochange_core.finance.attachments.list_for_document?'+new URLSearchParams({doctype:'CC Incoming Invoice',name}));return {status:r.status,rows:(await r.json()).message||[]};},sourceName);
           checks.push({role,step:'persist-after-refresh',pass:saved.status===200&&saved.rows.some(row=>row.file_name.startsWith(tag)&&row.file_name.endsWith('.pdf')&&row.file_url===privateUrl)});
         }else if(role==='t'){
           stage='t:read-detail';
