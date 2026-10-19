@@ -15,7 +15,7 @@ async function login(page, role, destination) {
   await page.goto(`${base}/login?redirect-to=${destination}`);
   await page.locator('#login_email').fill(fixture.users[role].name);
   await page.locator('#login_password').fill(fixture.users[role].password);
-  await page.locator('.form-login .btn-login').click();
+  await page.locator('.form-login button[type="submit"]').click();
   await page.waitForURL(`**${destination}`);
 }
 
@@ -34,6 +34,7 @@ async function login(page, role, destination) {
     const row = page.locator(`#finance-content tr[data-name="${invoice}"]`);
     await row.waitFor();
     await row.click();
+    await page.getByRole('button', {name: 'Registra pagamento', exact: true}).waitFor();
     const before = await page.locator('#detail').innerText();
     assert(before.includes(invoice) && before.includes('Residuo'));
     await page.screenshot({path: process.env.CC_POS_EVIDENCE + '/before.png', fullPage: true});

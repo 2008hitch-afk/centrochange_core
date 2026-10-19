@@ -7,6 +7,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIME = (ROOT / 'infra/mvp_pos_retained_runtime.py').read_text()
 HOST = (ROOT / 'infra/mvp_pos_retained_acceptance.py').read_text()
+BROWSER = (ROOT / 'infra/browser/mvp_pos_retained_live.cjs').read_text()
 
 
 class RetainedPosFixture(unittest.TestCase):
@@ -25,6 +26,8 @@ class RetainedPosFixture(unittest.TestCase):
         self.assertIn("'customer_type': 'Individual'", RUNTIME)
         self.assertIn("'type': 'Bank'", RUNTIME)
         self.assertIn('2099-01-12', RUNTIME)
+        self.assertIn("frappe.utils.add_days('2099-01-12', 7 * week)", RUNTIME)
+        self.assertIn("'appointment_date': appointment_date", RUNTIME)
         self.assertIn("p.docstatus<2", RUNTIME)
         self.assertIn('frappe.db.rollback()', RUNTIME)
         self.assertIn('open administrative exception has an unexpected missing source', RUNTIME)
@@ -40,7 +43,15 @@ class RetainedPosFixture(unittest.TestCase):
             self.assertIn(required, called)
         self.assertIn("runtime('preflight'", HOST)
         self.assertIn("runtime('finalize'", HOST)
+        self.assertIn('permission_scope_after_fixture(module, tag)', HOST)
+        self.assertIn("'preexisting_permissions':", HOST)
+        self.assertIn("'fixture_shares':", HOST)
         self.assertNotIn('recover_http', HOST)
+
+    def test_browser_uses_live_login_control_and_waits_for_invoice_actions(self):
+        self.assertIn('.form-login button[type="submit"]', BROWSER)
+        self.assertNotIn('.form-login .btn-login', BROWSER)
+        self.assertIn("name: 'Registra pagamento', exact: true}).waitFor()", BROWSER)
 
 
 if __name__ == '__main__':

@@ -70,6 +70,41 @@ print("CC_PRIOR="+json.dumps(data,sort_keys=True));frappe.db.rollback();frappe.d
                            if row.startswith('CC_PRIOR=')))
 
 
+def permission_scope_after_fixture(module, tag):
+    """Prove the old permission matrix is unchanged; allow only this Patient's shares."""
+    code = '''import hashlib,json,frappe
+frappe.init(site="centrochange.local",sites_path="/home/frappe/frappe-bench/sites");frappe.connect()
+frappe.set_user("Administrator")
+tag=TAG
+rights=("read","write","create","delete","submit","cancel","amend","report","export","import","share","print","email","select")
+spec={"Custom DocPerm":["parent","role","permlevel",*rights],"Has Role":["parent","role"],"User Permission":["user","allow","for_value","apply_to_all_doctypes"],"DocShare":["user","share_doctype","share_name","read","write","share","submit"]}
+rows={}; fixture=[]
+for dt,fields in spec.items():
+    values=frappe.get_all(dt,fields=fields,limit_page_length=0)
+    if dt=="DocShare":
+        fixture=[r for r in values if r.share_name==tag]
+        values=[r for r in values if r.share_name!=tag]
+    rows[dt]=sorted([tuple(str(row.get(field) or "") for field in fields) for row in values])
+value=json.dumps(rows,sort_keys=True,separators=(",",":"))
+fixture_users={r.user for r in fixture}
+valid=len(fixture)==2 and SECRETARY in fixture_users and len(fixture_users & {ALFA,BETA})==1 and all(
+    r.share_doctype=="Patient" and int(r.read)==1 and int(r.share)==0 and int(r.submit)==0
+    for r in fixture)
+print("CC_PERMISSIONS_SCOPED="+json.dumps({"sha256":hashlib.sha256(value.encode()).hexdigest(),
+    "fixture_shares_valid":valid,"fixture_share_count":len(fixture)}))
+frappe.db.rollback();frappe.destroy()
+'''
+    fixture = json.loads(DEMO.read_text())
+    users = (fixture.get('fixture') or fixture)['users']
+    code = (code.replace('TAG', json.dumps(tag))
+        .replace('SECRETARY', json.dumps(users['s']['name']))
+        .replace('ALFA', json.dumps(users['a']['name']))
+        .replace('BETA', json.dumps(users['b']['name'])))
+    output = module.backend_python(code)
+    return json.loads(next(row.split('=', 1)[1] for row in output.splitlines()
+                           if row.startswith('CC_PERMISSIONS_SCOPED=')))
+
+
 def main():
     assert os.geteuid() == 0 and sys.flags.isolated
     module = gate.old_probe()
@@ -77,7 +112,7 @@ def main():
     assert len(services) == 9 and all(services[name]['image'] == IMAGE for name in gate.APP)
     assert module.hooks() == module.GUARDS
     before = module.runtime_fingerprint()
-    assert before['sha256'] == 'f5cea384c350dc8780818ccec752a314885085b8f14afb49a9c34115fa68b517'
+    assert before['sha256'] == '421f95e3f53cf6cfcb2fbdb5deaa90bae7dbaaf9df510294163767be66893372'
     permissions = gate.permission_fingerprint(module)
     prior = preexisting_records(module)
     assert DEMO.is_file() and DEMO.stat().st_mode & 0o077 == 0
@@ -140,9 +175,11 @@ def main():
         current = preexisting_records(module)
         prior_unchanged = all(current[kind].get(name) == values
             for kind, rows in prior.items() for name, values in rows.items())
+        scoped_permissions = permission_scope_after_fixture(module, tag)
         controls = {'services': module.snapshot() == services,
             'hooks': module.hooks() == module.GUARDS,
-            'permissions': gate.permission_fingerprint(module) == permissions,
+            'preexisting_permissions': scoped_permissions['sha256'] == permissions['sha256'],
+            'fixture_shares': scoped_permissions['fixture_shares_valid'],
             'same_database': after['db_sha256'] == before['db_sha256'],
             'preexisting_records': prior_unchanged,
             'communications': after['communication_sha256'] == before['communication_sha256']}

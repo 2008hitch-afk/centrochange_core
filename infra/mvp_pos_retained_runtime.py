@@ -116,10 +116,16 @@ try:
         assert frappe.db.exists('Dynamic Link', {'parenttype': 'Address',
             'link_doctype': 'Company', 'link_name': center.cc_company})
         assert frappe.db.count('Sales Taxes and Charges', {'parent': finance_settings.sales_tax_template})
-        assert not frappe.db.exists('Patient Appointment', {
-            'appointment_date': '2099-01-12', 'appointment_time': '15:00:00',
-            'practitioner': practitioner, 'cc_center': center.name,
-        })
+        # Canceled native vouchers and their source appointment remain for
+        # audit. Select the first unoccupied synthetic Monday instead of
+        # assuming the first fixture date is reusable forever.
+        appointment_date = next((day for day in (
+            frappe.utils.add_days('2099-01-12', 7 * week) for week in range(52))
+            if not frappe.db.exists('Patient Appointment', {
+                'appointment_date': day, 'appointment_time': '15:00:00',
+                'practitioner': practitioner, 'cc_center': center.name,
+            })), None)
+        assert appointment_date, 'no unoccupied synthetic POS appointment date'
         groups = frappe.get_all('Customer Group', filters={'is_group': 0}, pluck='name')
         territories = frappe.get_all('Territory', filters={'is_group': 0}, pluck='name')
         assert groups and territories
@@ -127,7 +133,8 @@ try:
             print('CC_POS_STAGE=' + json.dumps({'stage': 'preflight', 'status': 'PASS',
                 'center': center.name, 'practitioner': practitioner,
                 'bank_account_type': frappe.db.get_value('Account', bank_account, 'account_type'),
-                'ledger_retained': True, 'known_orphan_count': len(orphaned)}))
+                'ledger_retained': True, 'known_orphan_count': len(orphaned),
+                'appointment_date': appointment_date}))
             frappe.db.rollback()
             sys.exit(0)
 
@@ -144,7 +151,7 @@ try:
             'links': [{'link_doctype': 'Customer', 'link_name': customer.name}],
         }).insert(ignore_permissions=True)
         bridge.map_patient(patient.name, center.name, tag + ' synthetic POS customer', customer.name)
-        appointment = book(patient.name, practitioner, center.name, service[0], '2099-01-12',
+        appointment = book(patient.name, practitioner, center.name, service[0], appointment_date,
             '15:00:00', tag + '-booking', tag + ' synthetic POS booking')['name']
         assert not frappe.db.sql('''select i.name from `tabSales Invoice Item` i
             join `tabSales Invoice` p on p.name=i.parent
