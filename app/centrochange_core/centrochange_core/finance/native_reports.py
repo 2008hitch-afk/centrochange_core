@@ -18,6 +18,28 @@ from centrochange_core.operations.reporting import safe_cell
 
 REPORTS = {"general_ledger", "trial_balance"}
 MAX_ROWS = 2000
+COLUMN_LABELS = {
+    'GL Entry': 'Registrazione contabile', 'Account': 'Conto',
+    'Account Name': 'Nome conto', 'Account Number': 'Numero conto',
+    'Debit': 'Dare', 'Credit': 'Avere', 'Balance': 'Saldo',
+    'Opening (Dr)': 'Saldo iniziale (Dare)', 'Opening (Cr)': 'Saldo iniziale (Avere)',
+    'Closing (Dr)': 'Saldo finale (Dare)', 'Closing (Cr)': 'Saldo finale (Avere)',
+    'Voucher Type': 'Tipo documento', 'Voucher Subtype': 'Sottotipo documento',
+    'Voucher No': 'Numero documento', 'Against Account': 'Contropartita',
+    'Against Voucher Type': 'Tipo documento collegato',
+    'Against Voucher': 'Documento collegato', 'Tipo Partner': 'Tipo soggetto',
+    'Party': 'Soggetto', 'Supplier Invoice No': 'Numero fattura fornitore',
+}
+
+
+def _column_label(value):
+    value = frappe._(value)
+    if value in COLUMN_LABELS:
+        return COLUMN_LABELS[value]
+    match = re.fullmatch(r'(Debit|Credit|Balance) \(([^)]+)\)', value)
+    if match:
+        return f'{COLUMN_LABELS[match.group(1)]} ({match.group(2)})'
+    return value
 
 
 def _scope(center, start, end):
@@ -75,7 +97,7 @@ def _run(report, branch, start, end):
         frappe.throw("Riduci il periodo del report: i risultati superano il limite consentito.")
     from frappe.desk.query_report import get_column_as_dict
     columns=[get_column_as_dict(column) for column in columns]
-    labels = [frappe._(column.get("label") or column.get("fieldname") or "Dato") for column in columns]
+    labels = [_column_label(column.get("label") or column.get("fieldname") or "Dato") for column in columns]
     normalized = []
     for row in rows:
         if isinstance(row, dict):
