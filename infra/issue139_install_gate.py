@@ -8,6 +8,7 @@ backup and browser artifacts stay outside Git. Run with sudo python3 -I.
 from __future__ import annotations
 
 import argparse
+import ast
 from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib.util
@@ -29,7 +30,7 @@ import urllib.request
 REPO = Path(__file__).resolve().parent.parent
 STATE = Path('/home/empv26/.local/state/centrochange-single')
 ENV = STATE / 'runtime.env'
-SOURCE = '5b0cdf33b3327c8e7d90917e98de384b4fc34b81'
+SOURCE = '0b399651b11e375fbf8ab0327fb4552877e1109c'
 BASE_SOURCE = '0380874fdf91c7fe191a93ec676e2c1d6f62ff7f'
 BASE_IMAGE = 'sha256:2054c8d2ffe887e56bfd0a5a2a867449286e97bee76380119d3c6fcdb9e68cbc'
 BASE_TAG = 'centrochange-single:issue139-realtime-v2'
@@ -51,7 +52,7 @@ TECH = ('db', 'redis-cache', 'redis-queue')
 PROJECT = 'centrochange-dev'
 NETWORK_NAME = 'centrochange-dev-net'
 LOOPBACK_IP = '127.0.0.1'
-IMAGE = 'centrochange-single:mvp-devfirst-5b0cdf3'
+IMAGE = 'centrochange-single:mvp-devfirst-0b39965'
 PLAYWRIGHT_PACKAGE = Path('/tmp/cc-browser-qa/node_modules/playwright/package.json')
 CHROMIUM = Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell')
 BROWSER_LIBS = '/tmp/cc-browser-libs/usr/lib/x86_64-linux-gnu'
@@ -66,7 +67,7 @@ RUN_ROOT = STATE / 'issue139-install-runs'
 DEPENDENCY_SHA = {
     'infra/browser/issue139_asset_response.cjs': '30ab0eaa9a15674d4d67f42837b25d3e009727ae796b36903a5de315b5dc3b0a',
     'infra/issue139_frontend.conf.template': '8335c04ce44258137b84a511f790f207614e3f25135910fc22aa77f25c81d48b',
-    'infra/compose.issue139_candidate.yaml': '3bd007f3ddf3dce4f464121ba087bd6d2b625aa58f708dd5fea547e0c738b0ee',
+    'infra/compose.issue139_candidate.yaml': '5921281798d37e8e34d8677afca86454f04ae28e67dff0b5c916b48cdb3916ea',
     'infra/issue139_asset_cache_gate.py': '417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361',
     'infra/goal02_install_one_command.py': '607578830188ab47a5c9d062e0848d5ef2c38c8a5422b503326f30d166592ac5',
     'infra/issue137_safe_security_run.py': '13e820df9f55e92807719751789e50d96187b091f4e515f20c2b196241da9783',
@@ -730,9 +731,18 @@ def live_acceptance(output, script_name, args):
                   and 'rollback failed' not in log.lower())
     browser_logs = ''.join(p.read_text() for p in output.glob('*.log') if p.name != 'runner.log')
     timeout = 'TimeoutError:' in browser_logs and 'AssertionError' not in browser_logs
-    require(cleanup and (validation or timeout),
+    application_validation = False
+    for line in log.splitlines():
+        if line.startswith('AssertionError: ('):
+            try:
+                failure = ast.literal_eval(line.removeprefix('AssertionError: '))
+                application_validation = (isinstance(failure, tuple) and len(failure) == 5
+                    and failure[1:4] == (417, 200, 'ValidationError'))
+            except (ValueError, SyntaxError):
+                pass
+    require(cleanup and (validation or timeout or application_validation),
             f'{script_name}: unclassified or critical failure; private diagnostics retained')
-    return {'status': 'BLOCKED', 'classification': 'fixture_validation' if validation else 'browser_timeout',
+    return {'status': 'BLOCKED', 'classification': 'fixture_validation' if validation else ('application_validation' if application_validation else 'browser_timeout'),
             'diagnostic': str(output / 'runner.log'), 'cleanup': 'PASS'}
 
 
@@ -932,14 +942,17 @@ def execute(executor_sha, gate_path):
         report['tests']['finance_pos_browser'] = functional_gate(finance_output, 'finance_browser_acceptance.py',
             ['--env-file', str(ENV), '--output-dir', str(finance_output), '--script', 'finance'], pre, candidate_id)
         require(pre['module'].runtime_fingerprint() == after_data, 'POS fixture cleanup changed baseline data')
+        report_write(report_path, report)
         native_output = evidence / 'native-reports-browser'
         report['tests']['native_reports_browser'] = functional_gate(native_output, 'finance_browser_acceptance.py',
             ['--env-file', str(ENV), '--output-dir', str(native_output), '--script', 'native_reports'], pre, candidate_id)
         require(pre['module'].runtime_fingerprint() == after_data, 'native report fixture cleanup changed baseline data')
+        report_write(report_path, report)
         report_output = evidence / 'reporting-api'
         report['tests']['reporting_api'] = functional_gate(report_output, 'reporting_acceptance.py',
             ['--env-file', str(ENV)], pre, candidate_id)
         require(pre['module'].runtime_fingerprint() == after_data, 'reporting fixture cleanup changed baseline data')
+        report_write(report_path, report)
         safety = run(security_command(after_data['sha256'],
                                       after_data['communication_sha256']), cwd=REPO, check=False)
         private_write(output / 'security-run.log', (safety.stdout + '\n' + safety.stderr).encode())

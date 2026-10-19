@@ -26,3 +26,11 @@ class DevFirstTests(unittest.TestCase):
   with patch.object(g,'live_acceptance',return_value={'status':'BLOCKED'}),patch.object(g,'permission_fingerprint',return_value='changed'):
    with self.assertRaisesRegex(g.Stop,'permission drift'):
     g.functional_gate(None,'fixture.py',[],{'module':module,'data':{},'permissions':'original'},'image')
+
+ def test_application_validation_is_not_authorization_bypass(self):
+  for actual,expected,allowed in [(417,200,True),(200,403,False),(200,417,False)]:
+   result=types.SimpleNamespace(returncode=1,stdout='{"cleanup": "PASS"}',stderr="AssertionError: "+repr(('/api/report',actual,expected,'ValidationError','sanitized')))
+   with tempfile.TemporaryDirectory() as d,patch.object(g,'run',return_value=result):
+    if allowed:self.assertEqual(g.live_acceptance(Path(d)/'e','report.py',[])['classification'],'application_validation')
+    else:
+     with self.assertRaises(g.Stop):g.live_acceptance(Path(d)/'e','report.py',[])
