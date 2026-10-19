@@ -1,0 +1,108 @@
+{
+  "date_utc": "2026-10-19",
+  "baseline_image_sha256": "5a9351bf68eb7e76b805a14ebcf966de57420546dfd11c8ed41b2f4a82119834",
+  "existing_sweep": {
+    "route_checks": 87,
+    "roles_and_widths": {
+      "a-390": {
+        "routes": 4,
+        "render_pass": 4
+      },
+      "b-1440": {
+        "routes": 4,
+        "render_pass": 4
+      },
+      "c-390": {
+        "routes": 4,
+        "render_pass": 4
+      },
+      "f-1440": {
+        "routes": 10,
+        "render_pass": 10
+      },
+      "m-1440": {
+        "routes": 23,
+        "render_pass": 23
+      },
+      "m-390": {
+        "routes": 23,
+        "render_pass": 23
+      },
+      "s-390": {
+        "routes": 14,
+        "render_pass": 14
+      },
+      "t-1440": {
+        "routes": 5,
+        "render_pass": 5
+      }
+    }
+  },
+  "new_native_readonly": {
+    "list_to_form_checks": 11,
+    "render_pass": 11,
+    "routes": [
+      {
+        "doctype_route": "patient",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "healthcare-practitioner",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "sales-invoice",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "purchase-invoice",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "payment-entry",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "bank-transaction",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "item",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "item-price",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "appointment-type",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "cc-center-service",
+        "status": "PASS"
+      },
+      {
+        "doctype_route": "cc-package-template",
+        "status": "PASS"
+      }
+    ]
+  },
+  "new_task_probe": {
+    "professional_a_desktop_mobile": true,
+    "professional_c_desktop": true,
+    "manager_sales_invoice": true,
+    "database_writes": 0
+  },
+  "prototype_chromium": {
+    "checks": 16,
+    "pass": 16,
+    "widths": [
+      390,
+      1440
+    ],
+    "js_errors": 0,
+    "horizontal_overflow": 0
+  },
+  "interpretation": "Rendering/interaction checks only; human usability decision open."
+}
