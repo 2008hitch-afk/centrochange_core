@@ -3,23 +3,20 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import http.cookiejar
 import json
+import os
 import subprocess
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from fixture_command import execute_fixture
 
 BACKEND='centrochange-dev-backend-1'
 
 def execute(method, kwargs=None):
-    command=['docker','exec',BACKEND,'bench','--site','centrochange.local','execute',method]
-    if kwargs:
-        command += ['--kwargs',repr(kwargs)]
-    result=subprocess.run(command,text=True,capture_output=True)
-    if result.returncode:
-        raise RuntimeError(result.stdout + result.stderr)
-    return json.loads(result.stdout)
+    diagnostic_dir=os.environ.get('CC_FIXTURE_DIAGNOSTIC_DIR')
+    return execute_fixture(method,kwargs,backend=BACKEND,diagnostic_dir=diagnostic_dir)
 
 
 def main():

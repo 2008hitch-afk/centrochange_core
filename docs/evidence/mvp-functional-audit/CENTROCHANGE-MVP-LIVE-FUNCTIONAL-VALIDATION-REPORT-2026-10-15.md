@@ -68,3 +68,37 @@ I 40 PASS sono quelli già attribuiti dall’audit del 14 ottobre; questa esecuz
 - L’esecuzione non ha modificato il checkout `~/src/centrochange_core` della linea #78 né i dati del DEV dopo il rollback.
 
 Il runner ha bisogno di una correzione diagnostica versionata che conservi un errore Frappe sicuro e limitato (classe e messaggio sanitizzato) quando `bench execute` fallisce. Tale causa va identificata e testata prima di proporre qualsiasi altra installazione. Questo report non autorizza né avvia un nuovo tentativo.
+
+## Follow-up: diagnosi diagnostica fixture — 19 ottobre 2026
+
+### Punto in cui si perdeva l'eccezione
+
+La versione live osservata è Frappe/ERPNext 16.50.0 e Bench 5.31.0. Nel sorgente Frappe effettivamente installato, `/home/frappe/frappe-bench/apps/frappe/frappe/commands/utils.py`, `execute()` avvolge la chiamata `frappe.get_attr(method)(...)` in un `except Exception` e, se il metodo fallisce, tenta di valutare la stringa del metodo come espressione Python. Questo secondo errore può sostituire l'eccezione originale. Il gestore CLI stampa la traceback disponibile (`frappe/utils/bench_helper.py::handle_exception`). Il vecchio `infra/finance_browser_acceptance.py::execute()` catturava stdout/stderr con `subprocess.run(..., capture_output=True)` e poi sollevava solo `Private DEV fixture command failed: <method>`, scartando anche l'output CLI.
+
+Il log privato del run del 15 ottobre contiene solo il traceback del wrapper e `cleanup: PASS`; i log Bench/container non conservano la risposta stderr catturata dal processo host. L'eccezione Frappe originale è quindi irrecuperabile retroattivamente. Il guasto funzionale interno a `prepare_browser_invoice` resta **non determinabile**: non è provato che dipendesse da fixture, impostazioni ERPNext, permessi, dati contabili mancanti o da un difetto applicativo.
+
+Consultazione tecnica: documentazione ufficiale [`bench execute`](https://docs.frappe.io/framework/user/en/bench/reference/execute) e sorgente Frappe 16.50.0 verificata nel container attivo. L'evidenza runtime prevale per il comportamento pinned.
+
+### Verifiche in sola lettura
+
+Senza creare fixture né modificare record, il runtime ha restituito: `cc_synthetic_dev` attivo; sessione iniziale Administrator; una sede operativa; `CC Finance Settings.bank_account` non configurato ma conto cassa Company predefinito presente, esistente, attivo, non-gruppo e di tipo Cash. Pertanto è disponibile il fallback documentato nel fixture; ciò non prova che le successive validazioni della fattura passino.
+
+Il nuovo invocatore ha superato sul DEV un probe read-only consentito (`pending_contacts` con lista vuota): `{"pending": 0}`. I nove container erano avviati, DB/Redis healthy e HTTP locale `200`. Nessun metodo di fixture mutativo, deploy, restart, operazione Docker mutativa o comando GitHub è stato eseguito in questo follow-up.
+
+Il fingerprint attuale letto due volte nel follow-up è stabile: dati `caba48b14430cd975213fde6273aada780aecd6e6604ad4fbb5ccda8bfc4eae0`; Communication `a13e25cf97b4bfa76856038614ec3e99380c086fc83c322db0958490ff19ac81`; 137 CC Audit Event. Il report rollback del 15 ottobre registrava fingerprint diversi e 135 CC Audit Event. Poiché il follow-up è stato solo read-only, non attribuiamo la differenza intervenuta al nostro lavoro; non si può attestare uguaglianza col checkpoint del 15 ottobre dopo le attività Owner intervenute.
+
+### Correzione locale
+
+`infra/fixture_command.py` invoca direttamente, in un processo Python del bench con `FRAPPE_STREAM_LOGGING=1`, una allowlist esplicita di metodi sintetici, inizializza il Site pinned e usa la sessione Administrator. Sul successo committa come il comando Bench; su eccezione cattura tipo, traceback e catena `__cause__/__context__`, esegue rollback prima del ritorno e rifiuta il successo se il rollback fallisce. La diagnostica conserva frame, funzione, classe e messaggio tecnico, redige credenziali/email/valori tra virgolette e limita la dimensione. Gli eventuali file diagnostici sono fuori dal repository, directory `0700` e file `0600`.
+
+`infra/finance_browser_acceptance.py`, `infra/browser_acceptance.py` e il dispatcher condiviso `infra/security_acceptance.py` ora usano il medesimo invocatore. I flussi finance/banking/incoming/receivables/reporting/professional/TS/SdI che importano il dispatcher condividono quindi il percorso di errore corretto; i controlli offline confermano che i metodi richiesti sono allowlisted e non passano più dal `bench execute` soggetto al fallback. Non sono stati rieseguiti i loro test mutativi sul DEV.
+
+### Verifica
+
+- Test mirati `infra.tests.test_fixture_command`: 8/8 PASS.
+- `compileall` su `infra` e app: PASS.
+- Suite offline disponibile escluso il test preesistente `test_checkpoint_requires_all_compose_and_env_hash`: 72/72 PASS. Quel test richiede `/tmp/centrochange-issue124/infra/compose.yaml`, assente nel workstation corrente; l'esecuzione completa produce un solo errore di setup su quel path, non una regressione della correzione diagnostica.
+- `git diff --check`: PASS.
+- Verifica live read-only dell'invocatore: PASS sul metodo `pending_contacts`; nessun fixture mutativo è stato invocato.
+
+Rimane necessario ottenere la causa funzionale reale solo tramite una futura esecuzione isolata e pulibile del fixture con il nuovo invocatore. Questo follow-up non autorizza né esegue alcun nuovo deploy o test mutativo sul DEV.
