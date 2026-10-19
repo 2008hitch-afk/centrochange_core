@@ -49,15 +49,15 @@ def _filters(report, branch, start, end):
         "cost_center": frappe.as_json([branch.cc_cost_center]),
     })
     if report == "trial_balance":
-        years = frappe.get_all(
-            "Fiscal Year",
-            filters={"company": branch.cc_company, "disabled": 0,
-                     "year_start_date": ["<=", start], "year_end_date": [">=", end]},
-            pluck="name", limit=2,
-        )
+        # Native ERPNext supports unrestricted fiscal years as well as
+        # explicit Fiscal Year Company child rows. Reuse its company scope.
+        from erpnext.accounts.utils import get_fiscal_years
+        from frappe.utils import getdate
+        years = [year for year in get_fiscal_years(company=branch.cc_company, as_dict=True)
+                 if getdate(year.year_start_date) <= start and getdate(year.year_end_date) >= end]
         if len(years) != 1:
             frappe.throw("Il periodo del bilancio di verifica deve rientrare in un solo esercizio configurato.")
-        filters.fiscal_year = years[0]
+        filters.fiscal_year = years[0].name
     return filters
 
 

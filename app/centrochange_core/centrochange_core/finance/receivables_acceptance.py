@@ -24,6 +24,20 @@ def prepare_browser_invoice(fixture):
 	source=fixture.get('finance',{}).get('source')
 	if not source:
 		frappe.throw('Il fixture di fatturazione browser deve indicare la fonte sintetica preparata.')
+	# create_http captures a booked (not performed) session. Close only the
+	# exact fixture-owned session and capture its current economic revision.
+	from centrochange_core.operations import lifecycle
+	from datetime import timedelta
+	appointment=frappe.get_doc('Patient Appointment',fixture['finance']['appointment'])
+	assert appointment.cc_service_label.startswith(tag+' ') and appointment.patient in fixture['patients']
+	assert appointment.cc_center==fixture['centers'][0] and not appointment.cc_package
+	previous=frappe.flags.get('cc_test_clock')
+	try:
+		frappe.flags.cc_test_clock=lifecycle.start_utc(appointment)+timedelta(hours=1)
+		lifecycle.close(appointment.name,0,tag)
+		source=bridge.capture(appointment.name,tag)['name']
+	finally:
+		frappe.flags.cc_test_clock=previous
 	center=fixture['centers'][0]
 	company=frappe.db.get_value('Branch',center,'cc_company')
 	settings=frappe.get_doc('CC Finance Settings')

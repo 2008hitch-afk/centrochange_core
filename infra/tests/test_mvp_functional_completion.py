@@ -68,6 +68,15 @@ class MvpFunctionalCompletionTests(unittest.TestCase):
             self.assertIsInstance(mode_type.func,ast.Name)
             self.assertEqual(mode_type.func.id,'_mode_of_payment_type_for_account')
 
+    def test_browser_invoice_captures_closed_fixture_revision(self):
+        text=source('app/centrochange_core/centrochange_core/finance/receivables_acceptance.py')
+        section=text.split('def prepare_browser_invoice(fixture):')[1].split('def rejected')[0]
+        self.assertLess(section.index('lifecycle.close('),section.index('source=bridge.capture('))
+        self.assertLess(section.index('source=bridge.capture('),section.index('invoice=ar.draft('))
+        self.assertIn("appointment.patient in fixture['patients']",section)
+        self.assertIn('not appointment.cc_package',section)
+        self.assertIn('frappe.flags.cc_test_clock=previous',section)
+
     def test_native_reports_remain_allowlisted_and_center_scoped(self):
         reports=source('app/centrochange_core/centrochange_core/finance/native_reports.py')
         self.assertIn('REPORTS = {"general_ledger", "trial_balance"}',reports)
