@@ -99,7 +99,7 @@ class InstallationGateTests(unittest.TestCase):
             path = Path(directory) / 'gate.json'
             now = datetime.now(timezone.utc)
             payload = {'issue': 139, 'candidate': gate.SOURCE, 'executor_sha256': 'a' * 64,
-                       'authorize': 'ONE_DEV_MVP_FUNCTIONAL_UPDATE_AND_LIVE_TESTS',
+                       'authorize': 'DEV_FIRST_MVP_SCOPED_UPDATE_AND_LIVE_TESTS',
                        'window_start_utc': (now - timedelta(minutes=1)).isoformat(),
                        'operation_deadline_utc': (now + timedelta(hours=3)).isoformat(),
                        'recovery_deadline_utc': (now + timedelta(hours=4)).isoformat()}
@@ -128,7 +128,7 @@ class InstallationGateTests(unittest.TestCase):
             path = Path(directory) / 'gate.json'
             now = datetime.now(timezone.utc)
             payload = {'issue': 139, 'candidate': gate.SOURCE, 'executor_sha256': '0' * 64,
-                       'authorize': 'ONE_DEV_MVP_FUNCTIONAL_UPDATE_AND_LIVE_TESTS',
+                       'authorize': 'DEV_FIRST_MVP_SCOPED_UPDATE_AND_LIVE_TESTS',
                        'window_start_utc': (now - timedelta(minutes=1)).isoformat(),
                        'operation_deadline_utc': (now + timedelta(hours=5)).isoformat(),
                        'recovery_deadline_utc': (now + timedelta(hours=6)).isoformat()}

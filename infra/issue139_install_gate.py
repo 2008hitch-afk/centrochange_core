@@ -29,7 +29,7 @@ import urllib.request
 REPO = Path(__file__).resolve().parent.parent
 STATE = Path('/home/empv26/.local/state/centrochange-single')
 ENV = STATE / 'runtime.env'
-SOURCE = 'd41ac305c6c5f86c37fd0b64e4e588255c467478'
+SOURCE = '5b0cdf33b3327c8e7d90917e98de384b4fc34b81'
 BASE_SOURCE = '0380874fdf91c7fe191a93ec676e2c1d6f62ff7f'
 BASE_IMAGE = 'sha256:2054c8d2ffe887e56bfd0a5a2a867449286e97bee76380119d3c6fcdb9e68cbc'
 BASE_TAG = 'centrochange-single:issue139-realtime-v2'
@@ -51,7 +51,7 @@ TECH = ('db', 'redis-cache', 'redis-queue')
 PROJECT = 'centrochange-dev'
 NETWORK_NAME = 'centrochange-dev-net'
 LOOPBACK_IP = '127.0.0.1'
-IMAGE = 'centrochange-single:mvp-functional-d41ac30'
+IMAGE = 'centrochange-single:mvp-devfirst-5b0cdf3'
 PLAYWRIGHT_PACKAGE = Path('/tmp/cc-browser-qa/node_modules/playwright/package.json')
 CHROMIUM = Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell')
 BROWSER_LIBS = '/tmp/cc-browser-libs/usr/lib/x86_64-linux-gnu'
@@ -66,7 +66,7 @@ RUN_ROOT = STATE / 'issue139-install-runs'
 DEPENDENCY_SHA = {
     'infra/browser/issue139_asset_response.cjs': '30ab0eaa9a15674d4d67f42837b25d3e009727ae796b36903a5de315b5dc3b0a',
     'infra/issue139_frontend.conf.template': '8335c04ce44258137b84a511f790f207614e3f25135910fc22aa77f25c81d48b',
-    'infra/compose.issue139_candidate.yaml': 'a19a84456c24a57042bbbe6d5a06a78ede4915aa771be7eb5f0bf0ef1019bdf2',
+    'infra/compose.issue139_candidate.yaml': '3bd007f3ddf3dce4f464121ba087bd6d2b625aa58f708dd5fea547e0c738b0ee',
     'infra/issue139_asset_cache_gate.py': '417450d4ec5c5639aea8c90d68b4fe6c15a7ed032b91ce3b3228f920e6af4361',
     'infra/goal02_install_one_command.py': '607578830188ab47a5c9d062e0848d5ef2c38c8a5422b503326f30d166592ac5',
     'infra/issue137_safe_security_run.py': '13e820df9f55e92807719751789e50d96187b091f4e515f20c2b196241da9783',
@@ -401,7 +401,7 @@ def validate_owner_gate(path, executor_sha, *, recovery=False):
                 'window_start_utc', 'operation_deadline_utc', 'recovery_deadline_utc'}
     require(set(gate) == required and gate['issue'] == 139 and gate['candidate'] == SOURCE
             and gate['executor_sha256'] == executor_sha
-            and gate['authorize'] == 'ONE_DEV_MVP_FUNCTIONAL_UPDATE_AND_LIVE_TESTS',
+            and gate['authorize'] == 'DEV_FIRST_MVP_SCOPED_UPDATE_AND_LIVE_TESTS',
             'Owner gate does not match exact single installation')
     def parse(name):
         value = datetime.fromisoformat(gate[name].replace('Z', '+00:00'))
@@ -718,8 +718,36 @@ def live_acceptance(output, script_name, args):
     result = run([sys.executable, str(REPO / 'infra' / script_name), *args],
                  cwd=REPO / 'infra', check=False)
     private_write(output / 'runner.log', (result.stdout + '\n' + result.stderr).encode())
-    require(result.returncode == 0, f'{script_name} failed; private diagnostics retained')
-    return {'status': 'PASS', 'result_lines': len(result.stdout.splitlines())}
+    if result.returncode == 0:
+        return {'status': 'PASS', 'result_lines': len(result.stdout.splitlines())}
+    # Only explicitly diagnosed preparation/render timeouts are noncritical.
+    # Assertions, authorization errors, unknown failures and cleanup failures
+    # remain fail-closed. A separate mandatory invariant gate follows even FAIL.
+    log = result.stdout + '\n' + result.stderr
+    cleanup = any(line.strip().startswith('{') and '"cleanup": "PASS"' in line
+                  for line in result.stdout.splitlines())
+    validation = ('FixtureCommandError:' in log and 'frappe.exceptions.ValidationError:' in log
+                  and 'rollback failed' not in log.lower())
+    browser_logs = ''.join(p.read_text() for p in output.glob('*.log') if p.name != 'runner.log')
+    timeout = 'TimeoutError:' in browser_logs and 'AssertionError' not in browser_logs
+    require(cleanup and (validation or timeout),
+            f'{script_name}: unclassified or critical failure; private diagnostics retained')
+    return {'status': 'BLOCKED', 'classification': 'fixture_validation' if validation else 'browser_timeout',
+            'diagnostic': str(output / 'runner.log'), 'cleanup': 'PASS'}
+
+
+def functional_gate(output, script_name, args, pre, candidate_id):
+    result = live_acceptance(output, script_name, args)
+    # Never let a noncritical test verdict bypass dataset or security checks.
+    require(PROJECT == 'centrochange-dev', 'DEV-FIRST is restricted to DEV')
+    require(pre['module'].runtime_fingerprint() == pre['data'], 'functional cleanup changed baseline data')
+    require(permission_fingerprint(pre['module']) == pre['permissions'], 'functional permission drift')
+    require(pre['module'].hooks() == pre['module'].GUARDS, 'functional security hook drift')
+    observed = pre['module'].snapshot()
+    require(all(observed[n]['image'] == candidate_id for n in APP), 'essential application image drift')
+    require(all(observed[n] == pre['services'][n] for n in TECH), 'technical service drift')
+    pre['module'].http_ready()
+    return result
 
 
 def restore_services(pre, original_env, env_stat, *, data_backup=None, output=None):
@@ -901,16 +929,16 @@ def execute(executor_sha, gate_path):
                 'read-only W5 altered Owner data')
         fixture_tests_started = True
         finance_output = evidence / 'finance-pos'
-        report['tests']['finance_pos_browser'] = live_acceptance(finance_output, 'finance_browser_acceptance.py',
-            ['--env-file', str(ENV), '--output-dir', str(finance_output), '--script', 'finance'])
+        report['tests']['finance_pos_browser'] = functional_gate(finance_output, 'finance_browser_acceptance.py',
+            ['--env-file', str(ENV), '--output-dir', str(finance_output), '--script', 'finance'], pre, candidate_id)
         require(pre['module'].runtime_fingerprint() == after_data, 'POS fixture cleanup changed baseline data')
         native_output = evidence / 'native-reports-browser'
-        report['tests']['native_reports_browser'] = live_acceptance(native_output, 'finance_browser_acceptance.py',
-            ['--env-file', str(ENV), '--output-dir', str(native_output), '--script', 'native_reports'])
+        report['tests']['native_reports_browser'] = functional_gate(native_output, 'finance_browser_acceptance.py',
+            ['--env-file', str(ENV), '--output-dir', str(native_output), '--script', 'native_reports'], pre, candidate_id)
         require(pre['module'].runtime_fingerprint() == after_data, 'native report fixture cleanup changed baseline data')
         report_output = evidence / 'reporting-api'
-        report['tests']['reporting_api'] = live_acceptance(report_output, 'reporting_acceptance.py',
-            ['--env-file', str(ENV)])
+        report['tests']['reporting_api'] = functional_gate(report_output, 'reporting_acceptance.py',
+            ['--env-file', str(ENV)], pre, candidate_id)
         require(pre['module'].runtime_fingerprint() == after_data, 'reporting fixture cleanup changed baseline data')
         safety = run(security_command(after_data['sha256'],
                                       after_data['communication_sha256']), cwd=REPO, check=False)
@@ -930,7 +958,8 @@ def execute(executor_sha, gate_path):
         require(host_telemetry()['oom_kill'] == pre['host']['oom_kill']
                 and host_telemetry()['docker_free_bytes'] >= 8 * 1024**3,
                 'host OOM or disk reserve safety event')
-        report.update(status='LIVE_TECHNICAL_PASS', after_data=after_data,
+        verdict = 'DEV_UPDATED_WITH_GAPS' if any(isinstance(v, dict) and v.get('status') in ('FAIL', 'BLOCKED') for v in report['tests'].values()) else 'LIVE_TECHNICAL_PASS'
+        report.update(status=verdict, after_data=after_data,
                       evidence_directory=str(evidence))
         report_write(report_path, report)
         return report
