@@ -455,7 +455,10 @@ def build_candidate(paths, output):
             'frontend internal Origin route missing or ambiguous')
     (context / 'issue139_frontend.conf.template').write_bytes(template)
     commands.append('USER root')
-    commands.append(f'COPY issue139_frontend.conf.template {IMAGE_FRONTEND_TEMPLATE}')
+    # The frontend runs nginx-entrypoint.sh as frappe and envsubst reads this
+    # template before nginx starts. Private build-context umask must not make
+    # the copied template unreadable to that runtime user.
+    commands.append(f'COPY --chmod=0644 issue139_frontend.conf.template {IMAGE_FRONTEND_TEMPLATE}')
     commands.append('USER frappe')
     commands.append(f'LABEL centrochange.source="{SOURCE}" centrochange.issue="139"')
     (context / 'Dockerfile').write_text('\n'.join(commands) + '\n')
@@ -477,9 +480,9 @@ def build_candidate(paths, output):
                              '--entrypoint', 'python', IMAGE, '-c', check]).stdout)
     require(all(actual[p.removeprefix(APP_PREFIX)] == file_sha(REPO / p) for p in paths),
             'candidate application file hashes mismatch')
-    # The pinned frontend template is root:root 0600. Inspect as root in an
-    # ephemeral read-only container; the application runtime is untouched.
-    observed_template = run_bytes(['docker', 'run', '--rm', '--network=none', '--read-only', '--user', '0',
+    # Check as the actual frontend runtime user, not root. This catches a
+    # template copied with 0600 permissions before any DEV service is changed.
+    observed_template = run_bytes(['docker', 'run', '--rm', '--network=none', '--read-only', '--user', 'frappe',
                                    '--entrypoint', 'cat', IMAGE, IMAGE_FRONTEND_TEMPLATE])
     require(sha(observed_template) == sha(template), 'candidate nginx template mismatch')
     return observed['Id']

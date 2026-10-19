@@ -18,10 +18,12 @@ spec.loader.exec_module(gate)
 
 
 class InstallationGateTests(unittest.TestCase):
-    def test_candidate_template_is_read_as_root_without_container_writes(self):
+    def test_candidate_template_is_world_readable_and_probed_as_runtime_user(self):
         source = SOURCE.read_text()
-        self.assertIn("'--read-only', '--user', '0',", source)
+        self.assertIn('COPY --chmod=0644 issue139_frontend.conf.template', source)
+        self.assertIn("'--read-only', '--user', 'frappe',", source)
         self.assertIn("'--entrypoint', 'cat', IMAGE, IMAGE_FRONTEND_TEMPLATE", source)
+        self.assertNotIn("'--read-only', '--user', '0',\n                                   '--entrypoint', 'cat'", source)
 
     def test_security_runner_keeps_isolated_python_in_both_processes(self):
         command = gate.security_command('data-sha', 'communication-sha')
