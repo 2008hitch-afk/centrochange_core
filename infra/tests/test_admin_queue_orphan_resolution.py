@@ -26,7 +26,7 @@ class OrphanQueueResolutionTests(unittest.TestCase):
             flags=SimpleNamespace(ignore_links=False), save=Mock())
 
     def test_missing_source_closes_with_retained_reference_and_scoped_link_exception(self):
-        helper, frappe = self.helper({('Branch', 'A'): True})
+        helper, frappe = self.helper({('DocType', 'CC Incoming Invoice'): True, ('Branch', 'A'): True})
         doc = self.document()
         helper(doc)
         self.assertTrue(doc.flags.ignore_links)
@@ -44,9 +44,16 @@ class OrphanQueueResolutionTests(unittest.TestCase):
         doc.save.assert_called_once_with(ignore_permissions=True)
 
     def test_other_broken_link_fails_closed(self):
-        helper, frappe = self.helper({('Branch', 'A'): True})
+        helper, frappe = self.helper({('DocType', 'CC Incoming Invoice'): True, ('Branch', 'A'): True})
         doc = self.document()
         doc.assignee = 'missing-user'
+        with self.assertRaises(ValueError):
+            helper(doc)
+        doc.save.assert_not_called()
+
+    def test_missing_reference_doctype_fails_closed(self):
+        helper, frappe = self.helper({('Branch', 'A'): True})
+        doc = self.document()
         with self.assertRaises(ValueError):
             helper(doc)
         doc.save.assert_not_called()

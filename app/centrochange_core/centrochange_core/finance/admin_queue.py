@@ -75,7 +75,7 @@ def _save_resolved_condition(doc):
         # synthetic source must not prevent unrelated accounting hooks from
         # refreshing the queue. This exception is limited to auto-closure;
         # preserve the original reference and audit, and verify all other links.
-        if not frappe.db.exists('Branch', doc.center) or (
+        if not frappe.db.exists('DocType', doc.reference_doctype) or not frappe.db.exists('Branch', doc.center) or (
             doc.assignee and not frappe.db.exists('User', doc.assignee)
         ):
             frappe.throw('La condizione amministrativa ha altri collegamenti non validi.')
