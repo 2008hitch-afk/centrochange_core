@@ -33,7 +33,7 @@ def main():
     reports=[]
     try:
         fixture=execute_fixture('centrochange_core.security.dev_acceptance.create_http',{'scheduling':True,'operations':True,'finance':True},diagnostic_dir=output)
-        fixture['incoming']=execute_fixture('centrochange_core.finance.incoming_acceptance.prepare_http',{'fixture':fixture},diagnostic_dir=output)
+        fixture['incoming']=execute_fixture('centrochange_core.finance.incoming_acceptance.prepare_http',{'fixture':fixture,'prepare_bank':False},diagnostic_dir=output)
         fixture['receivable']=execute_fixture('centrochange_core.finance.receivables_acceptance.prepare_browser_invoice',{'fixture':fixture},diagnostic_dir=output)
         descriptor,credential=tempfile.mkstemp(prefix='cc-browser-fixture-',suffix='.json')
         with os.fdopen(descriptor,'w') as stream:

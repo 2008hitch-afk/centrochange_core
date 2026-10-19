@@ -31,6 +31,12 @@ def prepare_browser_invoice(fixture):
 	appointment=frappe.get_doc('Patient Appointment',fixture['finance']['appointment'])
 	assert appointment.cc_service_label.startswith(tag+' ') and appointment.patient in fixture['patients']
 	assert appointment.cc_center==fixture['centers'][0] and not appointment.cc_package
+	# Refuse reused accounting input before changing lifecycle or creating a mode.
+	if frappe.db.sql("""select i.name from `tabSales Invoice Item` i
+		join `tabSales Invoice` p on p.name=i.parent
+		join `tabCC Economic Source Link` s on s.name=i.cc_economic_source
+		where s.appointment=%s and p.docstatus<2 and p.is_return=0 limit 1 for update""",(appointment.name,)):
+		frappe.throw('Fixture già fatturata: usare una nuova seduta sintetica.')
 	previous=frappe.flags.get('cc_test_clock')
 	try:
 		frappe.flags.cc_test_clock=lifecycle.start_utc(appointment)+timedelta(hours=1)

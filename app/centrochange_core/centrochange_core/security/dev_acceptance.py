@@ -123,6 +123,9 @@ def run(extra_checks=None):
 
 @synthetic_test
 def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None,finance_users=False,commit=True,public_route=True):
+	if finance:
+		from centrochange_core.security.fixture_cleanup import require_native_accounting_cleanup
+		require_native_accounting_cleanup()
 	"""Create explicitly marked disposable HTTP fixtures; harness destroys them."""
 	if frappe.session.user != 'Administrator' or frappe.conf.get('cc_synthetic_dev') != 1:
 		frappe.throw('Synthetic DEV Administrator required')
@@ -222,6 +225,8 @@ def destroy_http(fixture):
 	assert tag.startswith('CC-HTTP-')
 	users=[row['name'] for row in fixture['users'].values()]
 	assert all(name.startswith(tag.lower()+'-') and name.endswith('@example.invalid') for name in users)
+	if pending_contacts(users)['pending']:
+		frappe.throw('Cleanup sospeso: job Contact della fixture ancora in esecuzione.')
 	# Exact ownership checks prevent this private helper from deleting arbitrary documents.
 	for doctype,names,field in [('Patient',fixture['patients'],'first_name'),
 		('Healthcare Practitioner',fixture['practitioners'],'first_name'),('Branch',fixture['centers'],'branch')]:
@@ -242,10 +247,13 @@ def destroy_http(fixture):
 	groups['CC Economic Source Link']=frappe.get_all('CC Economic Source Link',filters={'appointment':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
 	for transaction in ('Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction'):
 		groups[transaction]=frappe.get_all(transaction,filters={'cc_center':['in',fixture['centers']]},pluck='name')
+	if any(groups.get(kind) for kind in ('Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction')):
+		from centrochange_core.security.fixture_cleanup import require_native_accounting_cleanup
+		require_native_accounting_cleanup()
 	browser_pos=tag+' BROWSER POS'
 	if frappe.db.exists('Mode of Payment',browser_pos):
 		mode=frappe.get_doc('Mode of Payment',browser_pos)
-		assert mode.type=='Credit Card' and all(row.company==frappe.db.get_value('Branch',fixture['centers'][0],'cc_company') for row in mode.accounts)
+		assert mode.type in ('Bank','Cash') and all(row.company==frappe.db.get_value('Branch',fixture['centers'][0],'cc_company') for row in mode.accounts)
 		groups['Mode of Payment']=[browser_pos]
 	groups['Bank Account']=frappe.get_all('Bank Account',filters={'cc_center':['in',fixture['centers']]},pluck='name')
 	groups['Account']=[frappe.db.get_value('Bank Account',name,'account') for name in groups['Bank Account']]
@@ -321,7 +329,12 @@ def destroy_http(fixture):
 		assert all((frappe.db.get_value(doctype,name,field) or '').startswith(prefix) for name in names)
 	groups['Address']=frappe.get_all('Dynamic Link',filters={'parenttype':'Address','link_doctype':'Customer',
 		'link_name':['in',groups['Customer'] or ['']]},pluck='parent')
+	from centrochange_core.security.fixture_cleanup import native_accounting_cleanup
+	native_accounting_cleanup(groups, fixture['centers'])
+	financial = {'Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction','GL Entry','Payment Ledger Entry'}
 	for doctype,names in groups.items():
+		if doctype in financial:
+			continue
 		if not names:
 			continue
 		for field in frappe.get_meta(doctype).get_table_fields():
