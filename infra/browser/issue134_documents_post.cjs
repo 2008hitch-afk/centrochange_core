@@ -43,7 +43,7 @@ async function main(){
       await page.screenshot({path:path.join(output,suffix?'invoice-print-it.png':'invoice-print.png'),fullPage:true,animations:'disabled'});
     }
     const pdf=await page.evaluate(async name=>{
-      const url='/api/method/frappe.utils.print_format.download_pdf?doctype=Sales%20Invoice&name='+encodeURIComponent(name)+'&format=Standard&lang=it';
+      const url='/api/method/frappe.utils.print_format.download_pdf?doctype=Sales%20Invoice&name='+encodeURIComponent(name)+'&language=it';
       const response=await fetch(url),buffer=await response.arrayBuffer();
       const bytes=new Uint8Array(buffer);
       let exception=null,cause=null;
