@@ -31,6 +31,22 @@
     const shown=`${raw.slice(8,10)}/${raw.slice(5,7)}/${raw.slice(0,4)}`;
     return `<span title="${label}: ${shown}"><a class="filterable ellipsis" data-filter="${field},=,${raw}">${shown}</a></span>`;
   };
+  const localizeCatalogFilterTitle = listview => {
+    // Pinned Frappe 16.50 constructs this one tooltip as an English literal,
+    // bypassing __(). Observe only the native Catalog filter button; leave
+    // its button, filters and List View behavior under Frappe control.
+    const button=listview.filter_area?.filter_button?.[0];
+    if(!button || button.__ccItalianFilterTitle)return;
+    const update=()=>{
+      const current=button.getAttribute('title')||'';
+      const count=current.match(/^(\d+) Filters? Applied$/);
+      if(count)button.setAttribute('title',`${count[1]} ${Number(count[1])===1?'filtro applicato':'filtri applicati'}`);
+    };
+    const observer=new MutationObserver(update);
+    observer.observe(button,{attributes:true,attributeFilter:['title']});
+    button.__ccItalianFilterTitle=observer;
+    update();
+  };
   const apply=(doctype,title,fields,options={})=>{
     const prior=frappe.listview_settings[doctype]||{};
     const formatters={...prior.formatters};
@@ -46,6 +62,7 @@
       const subjectNames={"Customer Name":"Paziente","Supplier Name":"Professionista",
         "Item Name":"Servizio"};
       if(subjectNames[subject?.label])subject.label=subjectNames[subject.label];
+      if(doctype==="Item")localizeCatalogFilterTitle(listview);
       listview.page.set_title(title);
     }};
   };
