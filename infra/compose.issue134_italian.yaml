@@ -1,0 +1,24 @@
+# Issue #134: one persistent image for the six application services only.
+services:
+  backend:
+    image: centrochange-single:issue134-it-0e6299d
+    pull_policy: never
+  frontend:
+    image: centrochange-single:issue134-it-0e6299d
+    pull_policy: never
+    networks:
+      centrochange-dev-net:
+        aliases:
+          - centrochange.local
+  websocket:
+    image: centrochange-single:issue134-it-0e6299d
+    pull_policy: never
+  queue-short:
+    image: centrochange-single:issue134-it-0e6299d
+    pull_policy: never
+  queue-long:
+    image: centrochange-single:issue134-it-0e6299d
+    pull_policy: never
+  scheduler:
+    image: centrochange-single:issue134-it-0e6299d
+    pull_policy: never

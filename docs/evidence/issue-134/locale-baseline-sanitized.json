@@ -1,0 +1,217 @@
+{
+  "baseline": "installed issue75-native-cc76395",
+  "status": "READ_ONLY_BASELINE",
+  "forms": [
+    {
+      "route": "patient",
+      "role": "m",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": [
+        "Occupation",
+        "Marital Status"
+      ]
+    },
+    {
+      "route": "healthcare-practitioner",
+      "role": "m",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": [
+        "Internal\nEsterno",
+        "Charges",
+        "Free Followup Details",
+        "Address and Contacts"
+      ]
+    },
+    {
+      "route": "item",
+      "role": "m",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "item-price",
+      "role": "m",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "appointment-type",
+      "role": "m",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "cc-center-service",
+      "role": "m",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "cc-package-template",
+      "role": "m",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "sales-invoice",
+      "role": "m",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": [
+        "Taxes and Charges",
+        "Sales Taxes and Charges",
+        "Total Taxes and Charges (Company Currency)",
+        "Total Taxes and Charges",
+        "Taxes and Charges Calculation"
+      ]
+    },
+    {
+      "route": "purchase-invoice",
+      "role": "f",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": [
+        "Immutable Incoming Source",
+        "Taxes and Charges",
+        "Purchase Taxes and Charges",
+        "Taxes and Charges Added (Company Currency)",
+        "Taxes and Charges Deducted (Company Currency)",
+        "Total Taxes and Charges (Company Currency)",
+        "Taxes and Charges Added",
+        "Taxes and Charges Deducted",
+        "Total Taxes and Charges"
+      ]
+    },
+    {
+      "route": "payment-entry",
+      "role": "f",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": [
+        "Taxes and Charges",
+        "Total Taxes and Charges (Company Currency) (EUR)",
+        "Total Taxes and Charges (EUR)"
+      ]
+    },
+    {
+      "route": "bank-transaction",
+      "role": "f",
+      "width": 1440,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "patient",
+      "role": "m",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": [
+        "Occupation",
+        "Marital Status"
+      ]
+    },
+    {
+      "route": "healthcare-practitioner",
+      "role": "m",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": [
+        "Internal\nEsterno",
+        "Charges",
+        "Free Followup Details",
+        "Address and Contacts"
+      ]
+    },
+    {
+      "route": "item",
+      "role": "m",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "item-price",
+      "role": "m",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "appointment-type",
+      "role": "m",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "cc-center-service",
+      "role": "m",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "cc-package-template",
+      "role": "m",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": []
+    },
+    {
+      "route": "sales-invoice",
+      "role": "m",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": [
+        "Taxes and Charges",
+        "Sales Taxes and Charges",
+        "Total Taxes and Charges (Company Currency)",
+        "Total Taxes and Charges",
+        "Taxes and Charges Calculation"
+      ]
+    },
+    {
+      "route": "purchase-invoice",
+      "role": "f",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": [
+        "Immutable Incoming Source",
+        "Taxes and Charges",
+        "Purchase Taxes and Charges",
+        "Taxes and Charges Added (Company Currency)",
+        "Taxes and Charges Deducted (Company Currency)",
+        "Total Taxes and Charges (Company Currency)",
+        "Taxes and Charges Added",
+        "Taxes and Charges Deducted",
+        "Total Taxes and Charges"
+      ]
+    },
+    {
+      "route": "payment-entry",
+      "role": "f",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": [
+        "Taxes and Charges",
+        "Total Taxes and Charges (Company Currency) (EUR)",
+        "Total Taxes and Charges (EUR)"
+      ]
+    },
+    {
+      "route": "bank-transaction",
+      "role": "f",
+      "width": 390,
+      "status": "PASS",
+      "english_matches": []
+    }
+  ],
+  "failures": []
+}
