@@ -141,6 +141,12 @@ body.cc-client-desk.cc-native-view .cc-finance-context dd{font-size:.84rem;color
 body.cc-client-desk.cc-native-view .cc-finance-context p{border-left:2px solid #12665f;padding-left:.8rem;margin:0;font-size:.82rem;line-height:1.45}
 body.cc-client-desk.cc-native-view .cc-finance-context p strong,body.cc-client-desk.cc-native-view .cc-finance-context p span{display:block}
 body.cc-client-desk.cc-native-view .cc-finance-context p strong{color:#12665f;margin-bottom:.2rem}
+/* Native Form guidance is scoped to native routes. Agenda and dedicated pages
+   never receive this block or these selectors. */
+body.cc-client-desk.cc-native-view .cc-native-help{display:flex;align-items:baseline;gap:.7rem;padding:.7rem .9rem;margin-bottom:.75rem;border:1px solid #dce8e3;border-left:3px solid #12665f;border-radius:6px;background:#f7fbf9;color:#34483e;font-size:.82rem;line-height:1.45}
+body.cc-client-desk.cc-native-view .cc-native-help strong{flex:none;color:#12665f}
+body.cc-client-desk.cc-native-view .form-control:focus-visible{outline:2px solid #12665f;outline-offset:1px}
+@media(max-width:767px){body.cc-client-desk.cc-native-view .cc-native-help{display:block}body.cc-client-desk.cc-native-view .cc-native-help strong{display:block;margin-bottom:.25rem}}
 body.cc-client-desk[data-cc-form-type="sales-invoice"][data-cc-finance-advanced="0"] .layout-side-section.right,
 body.cc-client-desk[data-cc-form-type="purchase-invoice"][data-cc-finance-advanced="0"] .layout-side-section.right,
 body.cc-client-desk[data-cc-form-type="payment-entry"][data-cc-finance-advanced="0"] .layout-side-section.right{display:none}
