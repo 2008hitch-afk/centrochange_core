@@ -10,6 +10,8 @@ function form(file, doctype, roles, doc = {}) {
   const handlers = {};
   const labels = {};
   const descriptions = {};
+  const options = {};
+  const heatmap = {text:null, html:null};
   const collapsed = [];
   const inserted = [];
   const removed = [];
@@ -20,6 +22,8 @@ function form(file, doctype, roles, doc = {}) {
       before(html) {inserted.push(html); return this;}};
   }};
   const frm = {doc, doctype, fields_dict: fields,
+    dashboard: {data: {heatmap:true,heatmap_message:'Original English'},
+      heatmap_area:{body:{find(){return {text(value){heatmap.text=value;},html(value){heatmap.html=value;}};}}}},
     layout: {tabs: [], refresh_tabs() {}, sections: ['more_info','allergy_medical_and_surgical_history','risk_factors',
       'charges','free_followup_details_section','account_details'].map(fieldname =>
       ({df: {fieldname}, collapse(value) {collapsed.push([fieldname,value]);}}))},
@@ -27,18 +31,27 @@ function form(file, doctype, roles, doc = {}) {
     is_new() {return !doc.name;}, set_df_property(field, property, value) {
       if (property === 'label') labels[field] = value;
       if (property === 'description') descriptions[field] = value;
+      if (property === 'options') options[field] = value;
       assert.notEqual(property, 'reqd', 'Client script must preserve required fields');
       assert.notEqual(property, 'read_only', 'Client script must preserve field permissions');
     }, toggle_display() {}, add_custom_button(label, fn) {buttons[label] = fn;},
     remove_custom_button(label) {delete buttons[label];}, trigger(event) {handlers[doctype].refresh(frm);}};
   const context = {window: {}, document: {body: {dataset: {}}},
     frappe: {session: {user: roles.includes('Administrator') ? 'Administrator' : 'demo'}, user_roles: roles,
+      utils:{escape_html:value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))},
       ui: {form: {on(name, events) {handlers[name] = events;}}}},
-    __: value => value, Intl, Date, Number, String, Object, Set, Boolean};
+    __: value => ({
+      'This is based on transactions against this Patient. See timeline below for details':
+        'Calcolo basato sulle operazioni del paziente. Consulta la cronologia per i dettagli.',
+      'This is based on stock movement. See {0} for details':
+        'Calcolo basato sui movimenti di magazzino. Consulta {0} per i dettagli',
+      'Stock Ledger':'Movimenti di magazzino'
+    })[value] || value, Intl, Date, Number, String, Object, Set, Boolean};
   vm.runInNewContext(fs.readFileSync(js(file), 'utf8'), context, {filename: file});
   assert.ok(handlers[doctype], `${doctype} handler registered`);
   handlers[doctype].refresh(frm);
-  return {frm, labels, descriptions, inserted, removed, buttons, collapsed, dataset:context.document.body.dataset};
+  return {frm, labels, descriptions, options, heatmap, inserted, removed, buttons, collapsed,
+    dataset:context.document.body.dataset};
 }
 
 const patient = form('cc_patient_form.js', 'Patient', ['CC Manager'],
@@ -49,6 +62,7 @@ assert.match(patient.inserted.join(''), /Salva/);
 assert.equal(patient.labels.medical_history_tab, 'Dati clinici riservati');
 assert.ok(patient.collapsed.some(([name,value]) => name === 'more_info' && value === true));
 assert.equal(patient.dataset.ccNativeTools, '0');
+assert.match(patient.heatmap.text, /Calcolo basato sulle operazioni/);
 assert.equal(typeof patient.buttons['Strumenti e tracciabilità'], 'function');
 patient.buttons['Strumenti e tracciabilità']();
 assert.equal(patient.dataset.ccNativeTools, '1');
@@ -104,6 +118,9 @@ for (const [doctype, file, field, label] of [
 const item = form('cc_item_form.js', 'Item', ['CC Manager'],
   {name:'ITEM-1', item_name:'Seduta', item_group:'Servizi', is_stock_item:0});
 assert.equal(item.labels.item_name, 'Nome servizio');
+assert.match(item.heatmap.html, /Movimenti di magazzino/);
+assert.match(item.heatmap.html, /href="\/app\/query-report\/Stock Ledger"/);
+assert.match(item.options.uom_help_html, /12 pezzi/);
 assert.match(item.inserted.join(''), /Come compilare/);
 
 console.log('native UX forms: PASS');

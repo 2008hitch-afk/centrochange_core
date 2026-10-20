@@ -2,6 +2,14 @@
 frappe.ui.form.on("Patient", {
   refresh(frm) {
     if (frappe.session.user === "Administrator" || !(frappe.user_roles || []).some(role => role.startsWith("CC "))) return;
+    // Pinned Frappe v16 caches the server-translated dashboard by DocType,
+    // rather than by user language. Localize only this client-facing message
+    // after the native dashboard has rendered; retain its native heatmap.
+    if (frm.dashboard?.data?.heatmap) {
+      const message=__("This is based on transactions against this Patient. See timeline below for details");
+      frm.dashboard.data.heatmap_message=message;
+      frm.dashboard.heatmap_area?.body?.find(".heatmap-message").text(message);
+    }
     const label=String(frm.doc.patient_name||"").replace(/^CC-HTTP-UAT\d+\s+/,"");
     if(label) frm.page.set_title(label);
     for(const [field,title] of Object.entries({basic_info:"Dati anagrafici",customer_details_section:"Dati amministrativi",

@@ -10,10 +10,28 @@
     !roles().has("CC Finance") && !roles().has("CC Accountant");
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const money = (value,currency) => new Intl.NumberFormat("it-IT",{style:"currency",currency:currency||"EUR"}).format(Number(value)||0);
-  const date = value => value ? new Intl.DateTimeFormat("it-IT").format(new Date(value+"T12:00:00")) : "Non indicata";
+  const date = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value||""))
+    ? String(value).split("-").reverse().join("/") : "Non indicata";
   const demo = value => String(value ?? "").replace(/^CC-HTTP-UAT\d+\s+/, "");
   const patient = value => /^CC-MVP-POS-[\w-]+$/.test(String(value ?? "")) ? "Paziente dimostrativo POS" : demo(value);
   const service = value => demo(value).replace(/^Session$/i,"Seduta");
+  function italianInvoiceWords(frm) {
+    if(frm.is_new() || !frm.doc.in_words || frm.doc.currency!=="EUR" || !frm.fields_dict.in_words)return;
+    const name=frm.doc.name;
+    frappe.call({method:"centrochange_core.operations.locale_presentation.invoice_words",
+      type:"GET",args:{doctype:frm.doctype,name},callback(response){
+        if(window.cur_frm===frm && frm.doc.name===name && response.message){
+          // Pinned Frappe does not apply a DocField formatter to the native
+          // read-only Small Text/Data control. Present a read-only localized
+          // value in the existing document context and keep the canonical
+          // field available to technical Administrator without changing it.
+          const context=frm.page.main.find(".cc-finance-context dl");
+          context.find(".cc-invoice-words").remove();
+          context.append('<div class="cc-invoice-words"><dt>Importo in lettere</dt><dd>'+esc(response.message)+'</dd></div>');
+          frm.toggle_display("in_words",false);
+        }
+      }});
+  }
   function state(d) {
     if (d.docstatus===2) return "Annullato";
     if (d.docstatus===0) return "Bozza";
@@ -58,6 +76,7 @@
   const invoiceAdvanced=["accounting_dimensions_section","taxes_section","section_tax_withholding_entry","sec_tax_breakup","terms_tab","more_info_tab","connections_tab","update_stock"];
   frappe.ui.form.on("Sales Invoice",{refresh(frm){
     if(!client())return;
+    italianInvoiceWords(frm);
     frm.page.set_title(frm.is_new()?"Nuova":"Dettaglio");
     for(const [field,label] of Object.entries({customer_section:"Paziente e documento",items_section:"Prestazioni",payments_tab:"Pagamenti",
       customer:"Paziente o soggetto fiscale",posting_date:"Data documento",due_date:"Scadenza",grand_total:"Totale",
@@ -75,6 +94,7 @@
   }});
   frappe.ui.form.on("Purchase Invoice",{refresh(frm){
     if(!client())return;
+    italianInvoiceWords(frm);
     frm.page.set_title(frm.is_new()?"Nuova":"Dettaglio");
     for(const [field,label] of Object.entries({supplier_invoice_details:"Documento del professionista",payments_tab:"Pagamenti",
       supplier:"Professionista o fornitore",bill_no:"Numero documento ricevuto",bill_date:"Data documento ricevuto",

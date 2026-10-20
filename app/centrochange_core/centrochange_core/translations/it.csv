@@ -1,4 +1,3 @@
-Sales Invoice,Fattura di vendita
 Customer Name,Cliente
 Bill to,Intestatario
 Invoice Number,Numero fattura
@@ -7,18 +6,17 @@ Payment Due Date,Scadenza pagamento
 Posting Date,Data contabile
 Outstanding Amount,Residuo
 No,N.
-Item,Servizio / articolo
 Quantity,Quantità
 Rate,Prezzo unitario
 Amount,Importo
 Sub Total,Subtotale
 Grand Total,Totale
 Discount,Sconto
-In Words,Importo in lettere (dato originale)
+In Words,Importo in lettere
 Total,Totale
 Sub Total:,Subtotale:
 Grand Total:,Totale:
-In Words:,Importo in lettere (dato originale):
+In Words:,Importo in lettere:
 Sign In,Accedi
 Welcome! Please sign in to continue.,Accedi per continuare.
 Continue,Continua
@@ -69,6 +67,313 @@ Item Price,Tariffa
 Purchase Invoice,Fattura professionista
 Payment Entry,Incasso o pagamento
 Bank Transaction,Movimento bancario
+Occupation,Professione
+Marital Status,Stato civile
+Appointments and Encounters,Sedute e visite
+Billing and Payments,Fatturazione e pagamenti
+Annual Billing,Fatturato annuale
+Total Unpaid,Totale non saldato
+Free Followup Details,Visite di controllo gratuite
+Charges,Tariffe professionali,Healthcare Practitioner
+Address and Contacts,Indirizzi e contatti
+Internal,Interno
+Immutable Incoming Source,Origine del documento ricevuto (non modificabile)
+Immutable Source Hash,Impronta non modificabile della fonte
+Movement Source Key,Chiave della fonte del movimento
+Personal and Social History,Storia personale e sociale
+Allergies Medical and Surgical History,Allergie e storia clinica
+"Allergies, Medical and Surgical History",Allergie e storia clinica
+Risk Factors,Fattori di rischio
+Patient Relation,Relazione con il paziente
+Series,Serie di numerazione
+Customer Group,Gruppo clienti
+Territory,Area geografica
+Default Price List,Listino predefinito
+Address and Contact,Indirizzo e contatti
+Practitioner Schedules,Disponibilità professionista
+Out Patient Consulting Charge Item,Servizio per visita ambulatoriale
+Out Patient Consulting Charge,Tariffa visita ambulatoriale
+Inpatient Visit Charge Item,Servizio per visita in struttura
+Inpatient Visit Charge,Tariffa visita in struttura
+Number of Patient Encounters in Valid Days,Numero di visite nel periodo valido
+Valid Number of Days,Giorni di validità
+Income Account,Conto ricavi
+Default Account,Conto predefinito
+Advance Account,Conto anticipi
+Primary Address and Contact,Indirizzo e contatto principali
+Practitioner Primary Contact,Contatto principale del professionista
+Practitioner Primary Address,Indirizzo principale del professionista
+Appointment Type Service Items,Servizi associati al tipo di seduta
+Codification Table,Tabella codifiche
+Code System,Sistema di codifica
+Code Value,Valore del codice
+Definition,Definizione
+Asset Category,Categoria cespiti
+Asset Naming Series,Serie di numerazione cespiti
+Standard Selling Rate,Prezzo di vendita standard
+Over Delivery/Receipt Allowance (%),Tolleranza consegna o ricezione (%)
+Over Billing Allowance (%),Tolleranza fatturazione (%)
+Item Defaults,Valori predefiniti del servizio
+Default Warehouse,Magazzino predefinito
+Deferred Accounting,Contabilità differita
+No of Months (Expense),Mesi di ripartizione del costo
+No of Months (Revenue),Mesi di ripartizione del ricavo
+Conversion Factor,Fattore di conversione
+Taxes,Imposte
+Item Tax Template,Modello imposte del servizio
+Tax Category,Categoria fiscale
+Valid From,Valido dal
+Minimum Net Rate,Prezzo netto minimo
+Maximum Net Rate,Prezzo netto massimo
+Purchase Tax Withholding Category,Categoria ritenuta acquisti
+Sales Tax Withholding Category,Categoria ritenuta vendite
+Stock Levels,Livelli di magazzino
+Inventory Valuation,Valutazione delle giacenze
+Valuation Method,Metodo di valutazione
+Valuation Rate,Valore unitario della giacenza
+Inventory Settings,Impostazioni magazzino
+End of Life,Data di fine validità
+Default Material Request Type,Tipo di richiesta materiale predefinito
+Warranty Period (in days),Garanzia (giorni)
+Weight Per Unit,Peso per unità
+Weight UOM,Unità di misura del peso
+Barcodes,Codici a barre
+Auto re-order,Riordino automatico
+Serial Nos / Batches,Numeri di serie e lotti
+Batch Number Series,Serie numerazione lotti
+Shelf Life In Days,Durata di conservazione (giorni)
+Max Sample Quantity,Quantità massima del campione
+Serial Number Series,Serie numerazione numeri di serie
+Variant Based On,Variante basata su
+Item Attribute,Attributo del servizio
+Manufacturer,Produttore
+Variant Attributes,Attributi della variante
+Default Purchase Unit of Measure,Unità di misura acquisti predefinita
+Minimum Order Qty,Quantità minima d'ordine
+Safety Stock,Scorta di sicurezza
+Last Purchase Rate,Ultimo prezzo di acquisto
+Supplier Details,Dati del fornitore
+Item Supplier,Fornitore del servizio
+Supplier Part Number,Codice servizio del fornitore
+Foreign Trade Details,Dati commercio estero
+Country of Origin,Paese di origine
+Customs Tariff Number,Codice tariffa doganale
+Default Sales Unit of Measure,Unità di misura vendita predefinita
+Max Discount (%),Sconto massimo (%)
+Customer Items,Servizi del cliente
+Ref Code,Codice di riferimento
+Production Capacity,Capacità produttiva
+Quality Inspection Template,Modello controllo qualità
+Accounting Dimensions,Dimensioni contabili
+Exchange Rate,Tasso di cambio
+Price List Currency,Valuta del listino
+Price List Exchange Rate,Tasso di cambio del listino
+Total Quantity,Quantità totale
+Total Net Weight,Peso netto totale
+Total (Company Currency),Totale (valuta aziendale)
+Net Total (Company Currency),Totale netto (valuta aziendale)
+Net Total,Totale netto
+Taxes and Charges,Imposte e oneri
+Sales Taxes and Charges,Imposte e oneri di vendita
+Purchase Taxes and Charges,Imposte e oneri di acquisto
+Total Taxes and Charges,Totale imposte e oneri
+Total Taxes and Charges (Company Currency),Totale imposte e oneri (valuta aziendale)
+Total Taxes and Charges (Company Currency) (EUR),Totale imposte e oneri (EUR)
+Total Taxes and Charges (EUR),Totale imposte e oneri (EUR)
+Taxes and Charges Added,Imposte e oneri aggiunti
+Taxes and Charges Deducted,Imposte e oneri detratti
+Taxes and Charges Added (Company Currency),Imposte e oneri aggiunti (valuta aziendale)
+Taxes and Charges Deducted (Company Currency),Imposte e oneri detratti (valuta aziendale)
+Taxes and Charges Calculation,Calcolo imposte e oneri
+Tax Rate,Aliquota fiscale
+Net Amount,Importo netto
+Account Head,Conto contabile
+Rounding Adjustment,Arrotondamento
+Rounded Total,Totale arrotondato
+Totals (Company Currency),Totali (valuta aziendale)
+Tax Withholding Entry,Ritenute
+Tax Withholding Entries,Voci di ritenuta
+Tax Withholding Category,Categoria ritenuta
+Tax Withholding Group,Gruppo ritenuta
+Taxable Document Name,Documento imponibile
+Additional Discount,Sconto aggiuntivo
+Tax Breakup,Riepilogo imposte
+Item Wise Tax Details,Dettaglio imposte per servizio
+Pricing Rules,Regole di prezzo
+Pricing Rule Detail,Dettaglio regola di prezzo
+Packing List,Distinta di imballaggio
+Packed Items,Articoli imballati
+Time Sheet List,Elenco registrazioni orarie
+Time Sheets,Registrazioni orarie
+Billing Hours,Ore fatturate
+Billing Amount,Importo fatturato
+Total Billing Hours,Ore fatturate totali
+Total Billing Amount,Importo fatturato totale
+Sales Invoice Payment,Pagamento fattura paziente
+Mode of Payment,Metodo di pagamento
+Paid Amount (Company Currency),Importo pagato (valuta aziendale)
+Paid Amount,Importo pagato
+Advance Payments,Anticipi
+Get Advances Received,Recupera anticipi ricevuti
+Get Advances Paid,Recupera anticipi pagati
+Advances,Anticipi
+Allocated Amount,Importo allocato
+Allocated amount,Importo allocato
+Write Off,Stralcio
+Write Off Amount,Importo dello stralcio
+Write Off Amount (Company Currency),Stralcio (valuta aziendale)
+Payment Terms,Condizioni di pagamento
+Payment Schedule,Scadenze di pagamento
+Payment Term,Termine di pagamento
+Invoice Portion,Quota della fattura
+Payment Amount,Importo del pagamento
+Terms and Conditions,Termini e condizioni
+Accounting Details,Dettagli contabili
+Debit To,Conto cliente
+Credit To,Conto fornitore
+E-Invoicing,Fatturazione elettronica
+Company Fiscal Code,Codice fiscale aziendale
+Company Fiscal Regime,Regime fiscale aziendale
+Customer Fiscal Code,Codice fiscale del cliente
+Commission,Provvigione
+Amount Eligible for Commission,Importo soggetto a provvigione
+Total Commission,Provvigione totale
+Sales Contributions and Incentives,Contributi e incentivi vendita
+Sales Person,Referente commerciale
+Subscription,Abbonamento
+Automation,Automazione
+Update Auto Repeat Reference,Aggiorna riferimento ricorrenza
+Supplier Name,Nome fornitore
+Tax Id,Identificativo fiscale
+Supplier Invoice,Fattura del fornitore
+Supplier Invoice No,Numero fattura del fornitore
+Supplier Invoice Date,Data fattura del fornitore
+Claimed Landed Cost Amount (Company Currency),Costi accessori dichiarati (valuta aziendale)
+Raw Materials Supplied,Materiali forniti
+Supplied Items,Articoli forniti
+Payment From / To,Da / a
+Type of Payment,Tipo di pagamento
+Party Name,Nome del soggetto
+Account Paid From,Conto di provenienza
+Account Currency (From),Valuta del conto di provenienza
+Account Currency (To),Valuta del conto di destinazione
+Source Exchange Rate,Tasso di cambio iniziale
+Target Exchange Rate,Tasso di cambio finale
+Payment References,Documenti collegati al pagamento
+Get Outstanding Invoices,Recupera fatture da saldare
+Get Outstanding Orders,Recupera ordini da saldare
+Outstanding (EUR),Residuo (EUR)
+Allocated (EUR),Allocato (EUR)
+Total Allocated Amount (EUR),Importo allocato totale (EUR)
+Total Allocated Amount (Company Currency) (EUR),Importo allocato totale (EUR)
+Writeoff,Stralcio
+Deductions or Loss,Deduzioni o perdite
+Payment Deductions or Loss,Deduzioni o perdite del pagamento
+Transaction ID,Identificativo transazione
+Cheque/Reference No,Numero assegno o riferimento
+Cheque/Reference Date,Data assegno o riferimento
+Cost Center,Centro di costo
+Remarks,Note
+Is Opening,È una registrazione di apertura
+Hold Invoice,Sospendi fattura
+Payment Entries,Pagamenti collegati
+Payment Document,Documento di pagamento
+Extended Bank Statement,Estratto conto esteso
+Included Fee,Commissione inclusa
+Excluded Fee,Commissione esclusa
+Get Items From,Importa voci da
+Please select a value,Seleziona un valore
+No records found,Nessun record trovato
+No data,Nessun dato
+Search,Cerca
+Single,Celibe / nubile
+Married,Coniugato/a
+Divorced,Divorziato/a
+Widow,Vedovo/a
+External,Esterno
+Supplier Group,Gruppo fornitori
+Billing Currency,Valuta di fatturazione
+Allergies,Allergie
+Medical and Surgical History,Storia medica e chirurgica
+Request for,Richiesta per
+Check Availability in Warehouse,Verifica disponibilità in magazzino
+Re-order Level,Soglia di riordino
+Reorder level based on Warehouse,Soglia di riordino per magazzino
+Re-order Qty,Quantità di riordino
+Material Request Type,Tipo di richiesta materiale
+Stock Adjustment,Rettifica di magazzino
+Material Transfer,Trasferimento materiale
+Material Issue,Prelievo materiale
+Manufacture,Produzione
+Customer Provided,Fornito dal cliente
+Serial No,Numero di serie
+Batch No,Numero lotto
+Stock Settings,Impostazioni magazzino
+Display Name,Nome visualizzato
+Total Insurance Coverage Amount,Totale copertura assicurativa
+Patient Payable Amount,Importo a carico del paziente
+Parent Item,Servizio principale
+Activity Type,Tipo di attività
+Base Change Amount (Company Currency),Resto (valuta aziendale)
+Change Amount,Resto
+Loyalty Points Redemption,Utilizzo punti fedeltà
+Loyalty Points,Punti fedeltà
+Loyalty Amount,Importo punti fedeltà
+Customer Address,Indirizzo del cliente
+Shipping Address,Indirizzo di spedizione
+Company Address,Indirizzo aziendale
+Company Address Name,Nome indirizzo aziendale
+Customer PO Details,Dati ordine del cliente
+Sales Team,Gruppo vendite
+Contribution (%),Contributo (%)
+Contribution to Net Total,Contributo al totale netto
+Commission Rate,Aliquota provvigione
+Incentives,Incentivi
+Supplier Address,Indirizzo fornitore
+Company Billing Address,Indirizzo fatturazione aziendale
+Select Shipping Address,Seleziona indirizzo di spedizione
+Select Billing Address,Seleziona indirizzo di fatturazione
+Is Opening Entry,Registrazione di apertura
+Received Amount,Importo ricevuto
+Received Amount (EUR),Importo ricevuto (EUR)
+Received Amount (Company Currency) (EUR),Importo ricevuto (EUR)
+Received Amount After Tax (Company Currency) (EUR),Importo ricevuto dopo imposte (EUR)
+Paid Amount (Company Currency) (EUR),Importo pagato (EUR)
+Paid Amount After Tax (Company Currency) (EUR),Importo pagato dopo imposte (EUR)
+Difference Amount (Company Currency) (EUR),Differenza (EUR)
+Write Off Difference Amount,Importo differenza da stralciare
+Account,Conto contabile
+Amount (Company Currency),Importo (valuta aziendale)
+In Words (Company Currency),Importo in lettere (valuta aziendale)
+Customer PO No,Numero ordine del cliente
+Read Only,Sola lettura
+Read-only,Sola lettura
+Optional,Facoltativo
+Loading...,Caricamento…
+No Results Found,Nessun risultato
+No records to display,Nessun record da mostrare
+Nothing to show,Nessun dato da mostrare
+Add Row,Aggiungi riga
+Edit,Modifica
+Delete,Elimina
+Print,Stampa
+Export,Esporta
+More,Altro
+Actions,Azioni
+Activity,Attività
+Timeline,Cronologia
+Attachments,Allegati
+Comments,Commenti
+Share,Condividi
+Assign To,Assegna a
+Search or type a command,Cerca o digita un comando
+Write your message,Scrivi un messaggio
+Write a comment,Scrivi un commento
+Write your comment,Scrivi un commento
+View Documentation,Apri la documentazione
+Activate Serial / Batch No for Item,Attiva numeri di serie o lotti per il servizio
+"To use Serial / Batch feature, enable {0} in {1}.","Per usare numeri di serie o lotti, attiva {0} in {1}."
+"Example: ABCD.#####\nIf series is set and Serial No is not mentioned in transactions, then automatic serial number will be created based on this series. If you always want to explicitly mention Serial Nos for this item. leave this blank.","Esempio: ABCD.#####\nSe imposti la serie e non indichi un numero di serie nella transazione, il sistema lo crea automaticamente. Lascia vuoto per indicare sempre il numero manualmente."
 Item,Servizio
 Include Payment (POS),Includi pagamento POS
 Is Return (Credit Note),Nota di credito
@@ -79,7 +384,6 @@ Currency and Price List,Valuta e listino
 Update Stock,Aggiorna magazzino
 Packing Unit,Unità confezione
 Quantity that must be bought or sold per UOM,Quantità per unità di misura
-Batch No,Numero lotto
 Buy,Acquisto
 Sell,Vendita
 Lead Time in days,Tempi di approvvigionamento (giorni)
@@ -155,6 +459,15 @@ This is based on transactions against this Healthcare Practitioner.,Attività re
 Assign,Assegna
 Tag,Etichette
 Last Edited By,Ultima modifica di
+Last Edited By {0},Ultima modifica di {0}
+Last Edited By You,Ultima modifica di te
+Created By {0},Creato da {0}
+Created By You,Creato da te
+Billed To,Intestatario
+Bill From,Emessa da
+Bill To,Intestatario
+Subtotal,Subtotale
+No.,N.
 Female,Femminile
 Male,Maschile
 Other,Altro
@@ -168,7 +481,6 @@ Tax,Imposte
 Inventory,Magazzino
 Variants,Varianti
 Manufacturing,Produzione
-Appointment Type,Tipo di seduta
 Appointment Types,Tipi di seduta
 Allow Booking For,Prenotabile per
 Default Duration (In Minutes),Durata predefinita (minuti)
@@ -181,6 +493,42 @@ Item Attributes,Informazioni principali
 Stock UOM,Unità di misura predefinita
 Available for Sale,Disponibile per la vendita
 Sales Invoice,Fattura paziente
-Purchase Invoice,Fattura professionista
-Payment Entry,Incasso o pagamento
-Bank Transaction,Movimento bancario
+Clear all filters,Cancella tutti i filtri
+1 Filter Applied,1 filtro applicato
+Internal Transfer,Giroconto interno
+Return,Reso
+Credit Note Issued,Nota di credito emessa
+Unpaid and Discounted,Da pagare con sconto
+Partly Paid and Discounted,Pagata parzialmente con sconto
+Overdue and Discounted,Scaduta con sconto
+Debit Note Issued,Nota di debito emessa
+Payment Type,Tipo di pagamento
+Payment,Pagamento
+Receive,Incasso
+Pay,Pagamento
+Party,Soggetto
+Settled,Regolato
+Active,Attivo
+Add attachment,Aggiungi allegato
+Disable Rounded Total,Disattiva arrotondamento del totale
+Stock Ledger,Movimenti di magazzino
+On Net Total,Sul totale imponibile
+Is Return (Debit Note),È un reso (nota di debito)
+Book Advance Payments in Separate Party Account,Registra gli anticipi in un conto separato del soggetto
+"On save, the Excluded Fee will be converted to an Included Fee.",Al salvataggio la tariffa esclusa diventerà inclusa.
+"Select, to make the practitioner searchable with these fields",Seleziona i campi usati per cercare il professionista.
+All active prices for this item across buying and selling price lists.,Tutte le tariffe attive del servizio nei listini di acquisto e vendita.
+Add Price,Aggiungi tariffa
+Item ...,Servizio ...
+In Words will be visible once you save the Sales Invoice.,L'importo in lettere sarà visibile dopo il salvataggio della fattura paziente.
+Use Company default Cost Center for Round off,Usa il centro di costo predefinito dell'azienda per l'arrotondamento
+Use Company Default Round Off Cost Center,Usa il centro di costo predefinito dell'azienda per l'arrotondamento
+"If ""Link Customer to Patient"" is checked in Healthcare Settings and an existing Customer is not selected then, a Customer will be created for this Patient for recording transactions in Accounts module.",Se nelle impostazioni sanitarie è attivo il collegamento tra cliente e paziente e non viene selezionato un cliente esistente verrà creato un soggetto fiscale per registrare le operazioni contabili.
+"Issue a debit note against an existing Sales Invoice to adjust the rate. The quantity will be retained from the original invoice.",Emetti una nota di debito collegata a una fattura paziente esistente per correggere il prezzo. La quantità resta quella della fattura originale.
+This is based on stock movement. See,Calcolo basato sui movimenti di magazzino. Vedi
+This is based on stock movement. See {0} for details,Calcolo basato sui movimenti di magazzino. Consulta {0} per i dettagli
+This is based on transactions against this Patient. See timeline below for details,Calcolo basato sulle operazioni del paziente. Consulta la cronologia per i dettagli.
+for details,per i dettagli
+Payment Term Outstanding,Residuo della scadenza
+Outstanding,Residuo
+Full Name,Nome completo

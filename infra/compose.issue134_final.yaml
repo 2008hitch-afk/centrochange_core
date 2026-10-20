@@ -1,0 +1,24 @@
+# Issue #134: final Italian print/PDF image for the six application services.
+services:
+  backend:
+    image: centrochange-single:issue134-final-1b7ffc4
+    pull_policy: never
+  frontend:
+    image: centrochange-single:issue134-final-1b7ffc4
+    pull_policy: never
+    networks:
+      centrochange-dev-net:
+        aliases:
+          - centrochange.local
+  websocket:
+    image: centrochange-single:issue134-final-1b7ffc4
+    pull_policy: never
+  queue-short:
+    image: centrochange-single:issue134-final-1b7ffc4
+    pull_policy: never
+  queue-long:
+    image: centrochange-single:issue134-final-1b7ffc4
+    pull_policy: never
+  scheduler:
+    image: centrochange-single:issue134-final-1b7ffc4
+    pull_policy: never
