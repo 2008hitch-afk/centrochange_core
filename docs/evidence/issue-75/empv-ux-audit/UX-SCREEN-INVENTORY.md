@@ -1,17 +1,17 @@
 # Inventario delle 23 destinazioni Direzione e delle varianti di ruolo
 
-Metodo: le 23 rotte uniche della sidebar Direzione sono state censite dal browser live; i menu di Segreteria (14), Finance (10), Commercialista (5), Professionista A/B/C (4) sono sottoinsiemi/varianti autorizzate. Per ogni riga: compito; dati/ingressi; azione/esito; costo cognitivo osservato o da verificare. Le condizioni `DA VALIDARE` non sono PASS UX. Nessun form è stato salvato durante l'audit.
+Metodo: le 23 rotte uniche della sidebar Direzione sono state censite dal browser live; i menu di Segreteria (14), Finance (10), Commercialista (5), Professionista A/B/C (4) sono sottoinsiemi/varianti autorizzate. Per ogni riga: compito; dati/ingressi; azione/esito; costo cognitivo osservato o da verificare. Le condizioni `DA VALIDARE` non sono PASS UX. Nessun form è stato salvato. **La riga Agenda è solo inventario: nessun intervento proposto, per vincolo Owner 20/10/2026.**
 
 | Schermata | Ruoli campionati | Compito e informazioni essenziali | Dati da inserire / azione primaria / risultato atteso | Ridondanza o punto oscuro | Stato UX |
 |---|---|---|---|---|---|
-| Agenda | m,s,a,b,c | Sedute, orario, stato, paziente autorizzato | Filtri data/professionista; aprire seduta o azione consentita; conferma di stato | Per professionista prevale griglia vuota, non lavoro da svolgere; `+ Prenota` da chiarire | PROBLEMA P0 |
+| Agenda | m,s,a,b,c | Sedute, orario, stato, paziente autorizzato | Flussi attuali approvati | Nessuna modifica a griglia, struttura, navigazione, filtri, visualizzazioni o azioni per alcun ruolo | PROTETTA / FUORI PIANO |
 | Ricerca pazienti | m,s,a,b,c | Trovare paziente autorizzato e assegnazioni | Cerca, seleziona, visualizza risultato; eventuali azioni approvate | Ricerca e anagrafica distinte; etichetta chiara ma task test necessario | DA VALIDARE |
-| Anagrafica pazienti | m | Identità, contatti, stato e dati fiscali pertinenti | Modifica autorizzata, salva, rileggi | ID sintetico ripetuto; pannelli tecnici | PROBLEMA P0 |
-| Anagrafica professionisti | m | Identità, stato, collegamenti professionali | Modifica autorizzata, salva, rileggi | ID domina nome; sezioni inglesi `Charges`/`Free Followup Details` presenti nel DOM | PROBLEMA P1 |
-| Disponibilità | m,s,a,b,c | Slot e giorni disponibili | Selezione consentita, conferma | Professionista ha bisogno di collegamento diretto con proprie sedute | DA VALIDARE |
+| Anagrafica pazienti | m | Identità, contatti, stato e dati fiscali pertinenti | Modifica autorizzata, salva, rileggi | ID sintetico ripetuto; pannelli tecnici | ORDINE 1 |
+| Anagrafica professionisti | m | Identità, stato, collegamenti professionali | Modifica autorizzata, salva, rileggi | ID domina nome; sezioni inglesi `Charges`/`Free Followup Details` presenti nel DOM | ORDINE 2 |
+| Disponibilità | m,s,a,b,c | Slot e giorni disponibili | Flusso attuale | Nessun intervento incluso nel piano corretto | FUORI PIANO |
 | Notifiche | m,s,a,b,c | Evento, tempo, priorità | Apri/segna secondo permesso; risultato chiaro | Terminologia e stati vuoti da walkthrough | DA VALIDARE |
 | Finanza | m,s,f | Scopo delle funzioni economiche | Apri documento/flusso; esito coerente | Menu approvato; non ridisegnarlo | DA VALIDARE |
-| Fatture pazienti | m,s,f,t | Soggetto, numero, stato, totale, residuo e prestazioni | Filtra, apri, azione per stato autorizzata | Etichette tecniche/inglesi nel Form; nominativo sintetico | PROBLEMA P0 |
+| Fatture pazienti | m,s,f,t | Soggetto, numero, stato, totale, residuo e prestazioni | Filtra, apri, azione per stato autorizzata | Etichette tecniche/inglesi nel Form; nominativo sintetico | ORDINE 3 |
 | Fatture professionisti | m,s,f,t | Fornitore, documento, importo, stato | Filtra, apri, verifica importo/pagamento | `Immutable Incoming Source`, `Tax Id`, `Claimed Landed Cost...`, `Additional Discount` nel Form; cosa è essenziale dipende dal ruolo | PROBLEMA P1 |
 | Incassi e pagamenti | m,s,f | Verso del pagamento, soggetto, documento, importo, residuo | Registra solo se autorizzato, verifica allocazione | `Payment Type`, `Mode of Payment`, `Unallocated Amount`, `Writeoff` in inglese/tecnici | PROBLEMA P1 |
 | Movimenti bancari | m,s,f | Entrata/uscita, conto, data, collegamento e residuo | Apri, controlla riconciliazione | `Transaction ID`, `Allocated/Unallocated Amount` nel Form | PROBLEMA P1 |

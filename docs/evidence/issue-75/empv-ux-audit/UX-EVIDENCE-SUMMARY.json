@@ -88,15 +88,16 @@
       }
     ]
   },
-  "new_task_probe": {
-    "professional_a_desktop_mobile": true,
-    "professional_c_desktop": true,
-    "manager_sales_invoice": true,
+  "native_ux_probe": {
+    "manager_patient_form": true,
+    "manager_practitioner_form": true,
+    "manager_sales_invoice_form": true,
     "database_writes": 0
   },
   "prototype_chromium": {
-    "checks": 16,
-    "pass": 16,
+    "active_prototypes": ["patient", "practitioner", "invoice"],
+    "checks": 30,
+    "pass": 30,
     "widths": [
       390,
       1440
@@ -104,5 +105,5 @@
     "js_errors": 0,
     "horizontal_overflow": 0
   },
-  "interpretation": "Rendering/interaction checks only; human usability decision open."
+  "interpretation": "Rendering/interaction checks only; Agenda excluded from proposals by Owner decision 2026-10-20; human usability decision open."
 }
