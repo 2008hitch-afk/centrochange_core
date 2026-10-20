@@ -20,7 +20,7 @@ class FinalInstallGateTests(unittest.TestCase):
         self.assertEqual(installer.gate.BASE_IMAGE,
                          'sha256:a681d9a22a8198cec60469564e4a3c919a1318d824a16e53010b33d4879719d5')
         self.assertEqual(installer.gate.SOURCE,
-                         '6fc6ecacd43fc486f747a99428757be2c6cdbb68')
+                         '1b7ffc465ff699de163f9536ab04d4dde4da54e3')
         self.assertEqual(installer.gate.ACTIVE_OVERLAY_SHA,
                          '8da3285db7b15e01dadb878a0a2fc0d72bd21ee11669ee39e036117bd269cb1f')
         import yaml

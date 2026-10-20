@@ -23,22 +23,22 @@ spec.loader.exec_module(parent)
 gate = parent.gate
 gate.__file__ = str(HERE)
 gate.BASE_SOURCE = '0e6299d8a5507cc5d7dde46336870c0cd6667718'
-gate.SOURCE = '6fc6ecacd43fc486f747a99428757be2c6cdbb68'
+gate.SOURCE = '1b7ffc465ff699de163f9536ab04d4dde4da54e3'
 gate.BASE_IMAGE = 'sha256:a681d9a22a8198cec60469564e4a3c919a1318d824a16e53010b33d4879719d5'
 gate.BASE_TAG = 'centrochange-single:issue134-it-0e6299d'
-gate.IMAGE = 'centrochange-single:issue134-final-6fc6eca'
+gate.IMAGE = 'centrochange-single:issue134-final-1b7ffc4'
 gate.OVERLAY = REPO / 'infra/compose.issue134_final.yaml'
 gate.FRONTEND_TEMPLATE = REPO / 'infra/issue134_frontend_pdf.conf.template'
 gate.ACTIVE_OVERLAY_SHA = '8da3285db7b15e01dadb878a0a2fc0d72bd21ee11669ee39e036117bd269cb1f'
 gate.RUN_ROOT = gate.STATE / 'issue134-final-install-runs'
 gate.DEPENDENCY_SHA = {**gate.DEPENDENCY_SHA,
     'infra/issue134_italian_install.py': PARENT_SHA,
-    'infra/compose.issue134_final.yaml': 'f077f95b93f792a8e726b2e7eea32fbea4bd950f2e629e9b604ac5fe2eab368d',
+    'infra/compose.issue134_final.yaml': 'e144cbc8005e6d6944059e0016efdcfb9de08b366f6db3877677a8ef9fb26c03',
     'infra/issue134_frontend_pdf.conf.template': '04804a9674a97dbdca1a01003b39536030bb9d858447d5a0d32e4a19f8a4c116',
-    'infra/tests/test_issue134_print_localization.py': 'afe1df2d47bcb2c38f04d6d5c85e5a161806e7603e07ef0ec889842b42eee554',
+    'infra/tests/test_issue134_print_localization.py': '06adb59578897044ff18f9d5b150c5f177a2335077c9335e51ee826c95256d54',
     'infra/tests/issue134_pdf_network_rehearsal.sh': '47a469065d56ed04724bee88c25659a3b84551f4c6a10ce0d854184e6e4fe05b',
     'infra/browser/issue134_documents_post.cjs': '95b27743f9dd1f83c4a668512d7f397b1a57f544c42e32c29e85a3d99d8d37b3',
-    'infra/tests/test_issue134_final_install.py': 'aa2c8271f017ede578d2b7551e2c8da791ef12e3b5c5c018ceea0f588878977a',
+    'infra/tests/test_issue134_final_install.py': '3453c61a688c5872a3a375ff4e121f1ef3ee5515e8ee900d43c407fc941e7447',
 }
 
 
