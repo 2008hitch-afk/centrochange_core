@@ -160,6 +160,7 @@ doctype_list_js = {
     "Healthcare Practitioner": "public/js/cc_practitioner_list.js",
     "Item": "public/js/cc_catalog_finance_list.js",
     "Item Price": "public/js/cc_catalog_finance_list.js",
+    "Appointment Type": "public/js/cc_catalog_finance_list.js",
     "Sales Invoice": "public/js/cc_catalog_finance_list.js",
     "Purchase Invoice": "public/js/cc_catalog_finance_list.js",
     "Bank Transaction": "public/js/cc_catalog_finance_list.js",

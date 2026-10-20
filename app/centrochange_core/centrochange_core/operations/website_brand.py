@@ -31,9 +31,15 @@ def context(values):
     # frappe.local.path remains the API path; the renderer context is decisive.
     if values.get('doctype') == 'Sales Invoice' and values.get('body'):
         values.body = localize_print_labels(values.body, frappe.form_dict.get('name'))
-        title = values.get('title') or ''
-        if title.startswith('Sales Invoice: '):
-            values.title = 'Fattura paziente: ' + title[len('Sales Invoice: '):]
+        # The pinned print renderer can supply either an English document title
+        # or a website title at this hook. Use its canonical name to avoid
+        # depending on the title wording or on request-language cache state.
+        invoice_name = values.get('name') or frappe.form_dict.get('name')
+        if invoice_name:
+            translated_title = 'Fattura paziente: ' + str(invoice_name)
+            values.title = translated_title
+            # BaseTemplatePage merges response.context after this hook.
+            frappe.local.response.setdefault('context', frappe._dict())['title'] = translated_title
     if getattr(frappe.local,'path',None)=='login':
         values.title='Centro Change — Accesso'
         values.cc_login_ui=True
@@ -74,6 +80,10 @@ def localize_print_labels(body, invoice_name=None):
     from num2words import num2words
 
     soup = BeautifulSoup(body, 'html.parser')
+    # The pinned invoice builder is a standalone print renderer: its <title>
+    # lives inside body, so the website context title alone cannot change it.
+    if soup.title and soup.title.string and soup.title.string.startswith('Sales Invoice: '):
+        soup.title.string.replace_with('Fattura paziente: ' + soup.title.string[len('Sales Invoice: '):])
     labels = {
         'Sales Invoice': 'Fattura paziente', 'Credit Note': 'Nota di credito',
         'Billed To': 'Intestatario',
@@ -120,6 +130,30 @@ def localize_print_labels(body, invoice_name=None):
         for text_node in list(node.find_all(string=True)):
             if text_node.strip() == 'Italy':
                 text_node.replace_with('Italia')
+    for node in soup.select('.company-address'):
+        for text_node in list(node.find_all(string=True)):
+            source = str(text_node)
+            if source.strip() == 'Italy':
+                text_node.replace_with(source.replace('Italy', 'Italia'))
+            elif source.rstrip().endswith(', Italy'):
+                text_node.replace_with(source.replace(', Italy', ', Italia'))
+    # Keep synthetic canonical references on the printed document for audit,
+    # but present a readable label first and make the code visually secondary.
+    for node in soup.select('td[data-fieldname="item_name"] .cell-line--secondary'):
+        if node.string and re.fullmatch(r'CC-HTTP-UAT\d+ SESSION', node.string.strip()):
+            node.string.replace_with('Rif. servizio: ' + node.string.strip())
+            node['style'] = 'font-size:9px;color:#667085;font-weight:400'
+    for node in soup.select('[data-fieldname="customer_name"] .value'):
+        if node.string:
+            source = node.string.strip()
+            match = re.fullmatch(r'CC-HTTP-UAT\d+ ([A-Za-z]+)', source)
+            if match:
+                node.clear()
+                node.append('Paziente dimostrativo ' + match.group(1))
+                reference = soup.new_tag('small')
+                reference['style'] = 'display:block;font-size:9px;color:#667085;font-weight:400'
+                reference.string = 'Rif. anagrafica: ' + source
+                node.append(reference)
 
     if invoice_name:
         # The English number in words is stored by ERPNext on submit. Render a

@@ -493,3 +493,42 @@ Item Attributes,Informazioni principali
 Stock UOM,Unità di misura predefinita
 Available for Sale,Disponibile per la vendita
 Sales Invoice,Fattura paziente
+Clear all filters,Cancella tutti i filtri
+1 Filter Applied,1 filtro applicato
+Internal Transfer,Giroconto interno
+Return,Reso
+Credit Note Issued,Nota di credito emessa
+Unpaid and Discounted,Da pagare con sconto
+Partly Paid and Discounted,Pagata parzialmente con sconto
+Overdue and Discounted,Scaduta con sconto
+Debit Note Issued,Nota di debito emessa
+Payment Type,Tipo di pagamento
+Payment,Pagamento
+Receive,Incasso
+Pay,Pagamento
+Party,Soggetto
+Settled,Regolato
+Active,Attivo
+Add attachment,Aggiungi allegato
+Disable Rounded Total,Disattiva arrotondamento del totale
+Stock Ledger,Movimenti di magazzino
+On Net Total,Sul totale imponibile
+Is Return (Debit Note),È un reso (nota di debito)
+Book Advance Payments in Separate Party Account,Registra gli anticipi in un conto separato del soggetto
+"On save, the Excluded Fee will be converted to an Included Fee.",Al salvataggio la tariffa esclusa diventerà inclusa.
+"Select, to make the practitioner searchable with these fields",Seleziona i campi usati per cercare il professionista.
+All active prices for this item across buying and selling price lists.,Tutte le tariffe attive del servizio nei listini di acquisto e vendita.
+Add Price,Aggiungi tariffa
+Item ...,Servizio ...
+In Words will be visible once you save the Sales Invoice.,L'importo in lettere sarà visibile dopo il salvataggio della fattura paziente.
+Use Company default Cost Center for Round off,Usa il centro di costo predefinito dell'azienda per l'arrotondamento
+Use Company Default Round Off Cost Center,Usa il centro di costo predefinito dell'azienda per l'arrotondamento
+"If ""Link Customer to Patient"" is checked in Healthcare Settings and an existing Customer is not selected then, a Customer will be created for this Patient for recording transactions in Accounts module.",Se nelle impostazioni sanitarie è attivo il collegamento tra cliente e paziente e non viene selezionato un cliente esistente verrà creato un soggetto fiscale per registrare le operazioni contabili.
+"Issue a debit note against an existing Sales Invoice to adjust the rate. The quantity will be retained from the original invoice.",Emetti una nota di debito collegata a una fattura paziente esistente per correggere il prezzo. La quantità resta quella della fattura originale.
+This is based on stock movement. See,Calcolo basato sui movimenti di magazzino. Vedi
+This is based on stock movement. See {0} for details,Calcolo basato sui movimenti di magazzino. Consulta {0} per i dettagli
+This is based on transactions against this Patient. See timeline below for details,Calcolo basato sulle operazioni del paziente. Consulta la cronologia per i dettagli.
+for details,per i dettagli
+Payment Term Outstanding,Residuo della scadenza
+Outstanding,Residuo
+Full Name,Nome completo

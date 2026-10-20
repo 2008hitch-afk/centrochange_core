@@ -16,6 +16,12 @@ spec.loader.exec_module(locale)
 
 
 class InvoicePrintTests(TestCase):
+    def test_standalone_invoice_html_title_is_italian(self):
+        html = '<!DOCTYPE html><html><head><title>Sales Invoice: SYN-INV-0</title></head><body><h1>Sales Invoice</h1></body></html>'
+        rendered = BeautifulSoup(locale.localize_print_labels(html), 'html.parser')
+        self.assertEqual(rendered.title.text, 'Fattura paziente: SYN-INV-0')
+        self.assertEqual(rendered.h1.text, 'Fattura paziente')
+
     def test_invoice_labels_words_time_and_canonical_values(self):
         original = '''<div class="print-format"><h1>Sales Invoice</h1>
           <div class="custom-html" data-fieldname="custom_html_WJGFzvLg"><div><div>Sales Invoice</div></div></div>
@@ -58,16 +64,24 @@ class InvoicePrintTests(TestCase):
         html = '''<div class="cell-line cell-line--primary">CC-HTTP-UAT0000001 Session</div>
           <div class="ql-snow">CC-HTTP-UAT0000001 Session</div>
           <div class="cell-line cell-line--primary">Nos</div>
-          <div class="ql-snow">Via SYNTHETIC DEV 0<br>Roma<br>Italy<br></div>'''
+          <div class="ql-snow">Via SYNTHETIC DEV 0<br>Roma<br>Italy<br></div>
+          <div class="company-address">Roma, Roma 00100, Italy<br></div>
+          <td data-fieldname="item_name"><div class="cell-line cell-line--secondary">CC-HTTP-UAT0000001 SESSION</div></td>
+          <div data-fieldname="customer_name"><div class="value">CC-HTTP-UAT0000001 Theta</div></div>'''
         rendered = BeautifulSoup(locale.localize_print_labels(html), 'html.parser')
         self.assertEqual([node.text for node in rendered.select('.cell-line--primary')],
                          ['Seduta dimostrativa', 'unità'])
         self.assertEqual(rendered.select_one('.ql-snow').text, 'Seduta dimostrativa')
         self.assertIn('Italia', rendered.select('.ql-snow')[1].text)
+        self.assertIn('Italia', rendered.select_one('.company-address').text)
+        self.assertIn('Rif. servizio:', rendered.select_one('.cell-line--secondary').text)
+        self.assertIn('CC-HTTP-UAT0000001 SESSION', rendered.select_one('.cell-line--secondary').text)
+        self.assertIn('Paziente dimostrativo Theta', rendered.select_one('[data-fieldname="customer_name"] .value').text)
+        self.assertIn('CC-HTTP-UAT0000001 Theta', rendered.select_one('[data-fieldname="customer_name"] small').text)
 
     def test_invoice_print_browser_title_is_italian_without_changing_identity(self):
         frappe.local.path = 'printview'
-        frappe.local.response = {}
+        frappe.local.response = frappe._dict(context=frappe._dict(title='Sales Invoice: SYN-INV-4'))
         frappe.local.request = SimpleNamespace(path='/printview')
         frappe.local.form_dict = frappe._dict(doctype='Sales Invoice', name='SYN-INV-4')
         frappe.local.session = SimpleNamespace(user='Guest')
@@ -79,6 +93,7 @@ class InvoicePrintTests(TestCase):
                     currency='EUR', grand_total=1, in_words='EUR One only.')):
             locale.context(values)
         self.assertEqual(values.title, 'Fattura paziente: SYN-INV-4')
+        self.assertEqual(frappe.local.response.context.title, 'Fattura paziente: SYN-INV-4')
 
     def test_other_document_print_is_not_localized_by_context(self):
         frappe.local.path = 'printview'
@@ -90,6 +105,36 @@ class InvoicePrintTests(TestCase):
         with patch.object(frappe, 'get_roles', return_value=[]):
             locale.context(values)
         self.assertEqual(values.body, '<h1>Sales Invoice</h1>')
+
+    def test_invoice_title_when_native_response_context_is_initially_empty(self):
+        frappe.local.path = 'printview'
+        frappe.local.response = frappe._dict()
+        frappe.local.request = SimpleNamespace(path='/printview')
+        frappe.local.form_dict = frappe._dict(doctype='Sales Invoice', name='SYN-INV-5')
+        frappe.local.session = SimpleNamespace(user='Guest')
+        values = frappe._dict(doctype='Sales Invoice', name='SYN-INV-5',
+                              title='Sales Invoice: SYN-INV-5',
+                              body='<h1>Sales Invoice</h1>', template='www/printview.html')
+        with patch.object(frappe, 'get_roles', return_value=[]), patch.object(
+                frappe, 'get_doc', return_value=SimpleNamespace(
+                    currency='EUR', grand_total=1, in_words='EUR One only.')):
+            locale.context(values)
+        self.assertEqual(frappe.local.response.context.title, 'Fattura paziente: SYN-INV-5')
+
+    def test_invoice_title_does_not_depend_on_native_title_wording(self):
+        frappe.local.path = 'printview'
+        frappe.local.response = frappe._dict(context=frappe._dict(title='Sales Invoice'))
+        frappe.local.request = SimpleNamespace(path='/printview')
+        frappe.local.form_dict = frappe._dict(doctype='Sales Invoice', name='SYN-INV-6')
+        frappe.local.session = SimpleNamespace(user='Guest')
+        values = frappe._dict(doctype='Sales Invoice', name='SYN-INV-6',
+                              title='Sales Invoice', body='<h1>Sales Invoice</h1>')
+        with patch.object(frappe, 'get_roles', return_value=[]), patch.object(
+                frappe, 'get_doc', return_value=SimpleNamespace(
+                    currency='EUR', grand_total=1, in_words='EUR One only.')):
+            locale.context(values)
+        self.assertEqual(values.title, 'Fattura paziente: SYN-INV-6')
+        self.assertEqual(frappe.local.response.context.title, values.title)
 
     def test_invoice_pdf_api_render_uses_print_context_not_request_path(self):
         frappe.local.path = 'api/method/frappe.utils.print_format.download_pdf'
