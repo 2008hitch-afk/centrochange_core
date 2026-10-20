@@ -370,6 +370,10 @@ Search or type a command,Cerca o digita un comando
 Write your message,Scrivi un messaggio
 Write a comment,Scrivi un commento
 Write your comment,Scrivi un commento
+View Documentation,Apri la documentazione
+Activate Serial / Batch No for Item,Attiva numeri di serie o lotti per il servizio
+"To use Serial / Batch feature, enable {0} in {1}.","Per usare numeri di serie o lotti, attiva {0} in {1}."
+"Example: ABCD.#####\nIf series is set and Serial No is not mentioned in transactions, then automatic serial number will be created based on this series. If you always want to explicitly mention Serial Nos for this item. leave this blank.","Esempio: ABCD.#####\nSe imposti la serie e non indichi un numero di serie nella transazione, il sistema lo crea automaticamente. Lascia vuoto per indicare sempre il numero manualmente."
 Item,Servizio
 Include Payment (POS),Includi pagamento POS
 Is Return (Credit Note),Nota di credito
