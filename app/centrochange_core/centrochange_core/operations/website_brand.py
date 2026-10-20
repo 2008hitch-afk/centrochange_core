@@ -27,8 +27,9 @@ def context(values):
         values.update(template='templates/cc_error_page.html', title='Centro Change — Accesso non consentito',
                       cc_error_title='Accesso non consentito', cc_error_action='Accedi',
                       cc_error_message='Il tuo account non è autorizzato ad aprire questa pagina. Accedi con il profilo corretto o contatta il referente del centro.')
-    if (getattr(frappe.local, 'path', None) == 'printview'
-            and frappe.form_dict.get('doctype') == 'Sales Invoice' and values.get('body')):
+    # get_print() also renders printview inside an API request. In that case
+    # frappe.local.path remains the API path; the renderer context is decisive.
+    if values.get('doctype') == 'Sales Invoice' and values.get('body'):
         values.body = localize_print_labels(values.body, frappe.form_dict.get('name'))
     if getattr(frappe.local,'path',None)=='login':
         values.title='Centro Change — Accesso'
@@ -52,7 +53,7 @@ def print_template_locale(jenv, print_format):
     Explicit language avoids incidental request-language changes during guards.
     Keep the native format, fields, values, totals and print permission path.
     """
-    if getattr(getattr(frappe.local, 'request', None), 'path', None) == '/printview':
+    if frappe.form_dict.get('doctype') == 'Sales Invoice' and frappe.local.lang == 'it':
         from functools import partial
         jenv.globals['_'] = partial(frappe._, lang='it')
     return None

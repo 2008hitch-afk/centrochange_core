@@ -61,6 +61,19 @@ class InvoicePrintTests(TestCase):
             locale.context(values)
         self.assertEqual(values.body, '<h1>Sales Invoice</h1>')
 
+    def test_invoice_pdf_api_render_uses_print_context_not_request_path(self):
+        frappe.local.path = 'api/method/frappe.utils.print_format.download_pdf'
+        frappe.local.response = {}
+        frappe.local.request = SimpleNamespace(path='/api/method/frappe.utils.print_format.download_pdf')
+        frappe.local.form_dict = frappe._dict(doctype='Sales Invoice', name='SYN-INV-3')
+        frappe.local.session = SimpleNamespace(user='Guest')
+        values = frappe._dict(doctype='Sales Invoice', body='<h1>Sales Invoice</h1>',
+                              template='www/printview.html')
+        with patch.object(frappe, 'get_doc', return_value=SimpleNamespace(
+                currency='EUR', grand_total=1, in_words='EUR One only.')):
+            locale.context(values)
+        self.assertEqual(BeautifulSoup(values.body, 'html.parser').h1.text, 'Fattura paziente')
+
 
 if __name__ == '__main__':
     import unittest
