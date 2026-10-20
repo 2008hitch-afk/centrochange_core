@@ -1,9 +1,10 @@
 import {api,escapeHtml as esc} from './api.js';
 import {clean,money,preset,table,metric} from './report_ui.js';
+import {italianDate} from './rome_date.js';
 const ccSurface=window.ccDeskSurfaceRoot||document,$=s=>ccSurface.querySelector(s),params=new URLSearchParams(location.search),method='centrochange_core.finance.patient_reporting.patient_view';
 let lastListing=null;
 let generation=0,bootGeneration=0,selected=params.get('key'),patient=params.get('patient');
-const date=v=>v?new Date(v+'T12:00:00').toLocaleDateString('it-IT'):'—';
+const date=v=>v?italianDate(v):'—';
 const args=()=>({center:$('#patient-center').value,start:$('#patient-start').value,end:$('#patient-end').value,...(selected?{key:selected}:patient?{patient}:{})});
 const detail=(id,title,rows,cols)=>'<details id="'+id+'"><summary>'+esc(title)+' · '+rows.length+' record</summary>'+table(rows,cols)+'</details>';
 const invoiceRows=rows=>rows.map(r=>({...r,posting_date:date(r.posting_date),grand_total:money(r.grand_total),outstanding_amount:money(r.outstanding_amount),original_due_date:date(r.original_due_date||r.due_date),effective_due_date:date(r.effective_due_date),deferral:r.deferral?'Differita':'—',composed_sessions:(r.session_links||[]).map(link=>clean(link.patient||'Identità non proiettata')+' · '+link.appointment).join('; ')||'Nessuna attribuzione Patient inferita'}));

@@ -10,7 +10,8 @@
     !roles().has("CC Finance") && !roles().has("CC Accountant");
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const money = (value,currency) => new Intl.NumberFormat("it-IT",{style:"currency",currency:currency||"EUR"}).format(Number(value)||0);
-  const date = value => value ? new Intl.DateTimeFormat("it-IT").format(new Date(value+"T12:00:00")) : "Non indicata";
+  const date = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value||""))
+    ? String(value).split("-").reverse().join("/") : "Non indicata";
   const demo = value => String(value ?? "").replace(/^CC-HTTP-UAT\d+\s+/, "");
   const patient = value => /^CC-MVP-POS-[\w-]+$/.test(String(value ?? "")) ? "Paziente dimostrativo POS" : demo(value);
   const service = value => demo(value).replace(/^Session$/i,"Seduta");

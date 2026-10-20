@@ -76,14 +76,14 @@
   }
   function roleLabel(roles) {
     return [["CC Manager", "Direzione"], ["CC Secretariat", "Segreteria"], ["CC Professional", "Professionista"],
-      ["CC Finance", "Finance"], ["CC Accountant", "Commercialista"]].find(([role]) => roles.has(role))?.[1] || "Centro Change";
+      ["CC Finance", "Amministrazione"], ["CC Accountant", "Commercialista"]].find(([role]) => roles.has(role))?.[1] || "Centro Change";
   }
   function accountName(user) {
     const full = typeof window.frappe?.user?.full_name === "function" ? window.frappe.user.full_name() : user;
     const demo = /^CC-HTTP-UAT\d+\s+([a-z])$/.exec(full || "");
     if (!demo) return full || user;
     return ({m: "Demo Direzione", s: "Demo Segreteria", a: "Demo professionista Alfa",
-      b: "Demo professionista Beta", c: "Demo professionista C", f: "Demo Finance",
+      b: "Demo professionista Beta", c: "Demo professionista C", f: "Demo amministrazione",
       t: "Demo Commercialista"})[demo[1]] || "Account demo";
   }
   let lastRenderedRoute = "";
