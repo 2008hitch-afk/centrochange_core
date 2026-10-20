@@ -72,7 +72,8 @@ def localize_print_labels(body, invoice_name=None):
 
     soup = BeautifulSoup(body, 'html.parser')
     labels = {
-        'Sales Invoice': 'Fattura paziente', 'Billed To': 'Intestatario',
+        'Sales Invoice': 'Fattura paziente', 'Credit Note': 'Nota di credito',
+        'Billed To': 'Intestatario',
         'Customer Name': 'Cliente', 'Bill To': 'Intestatario',
         'Bill From': 'Emessa da', 'Invoice Number': 'Numero fattura',
         'Invoice Date': 'Data fattura', 'Payment Due Date': 'Scadenza',
@@ -85,7 +86,8 @@ def localize_print_labels(body, invoice_name=None):
     }
     # The pinned standard renderer uses .label/.column-header; the ERPNext
     # invoice formats also emit plain heading spans and table header cells.
-    for node in soup.select('.invoice-title, .title .info-text, .heading, '
+    for node in soup.select('.custom-html[data-fieldname^="custom_html_"] *, '
+                            '.invoice-title, .title .info-text, .heading, '
                             '.label, .section-label, .column-header, '
                             '.table-header td, .totals-table td, '
                             'h1, h2, h3, [document-status] h4'):

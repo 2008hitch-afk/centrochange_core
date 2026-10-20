@@ -18,6 +18,8 @@ spec.loader.exec_module(locale)
 class InvoicePrintTests(TestCase):
     def test_invoice_labels_words_time_and_canonical_values(self):
         original = '''<div class="print-format"><h1>Sales Invoice</h1>
+          <div class="custom-html" data-fieldname="custom_html_WJGFzvLg"><div><div>Sales Invoice</div></div></div>
+          <div class="custom-html" data-fieldname="custom_html_WbBDnaVv"><div><div>Billed To</div></div></div>
           <span class="heading">Billed To:</span><span class="value">Sales Invoice</span>
           <table class="table-header"><tr><td>No.</td><td>Subtotal</td></tr></table>
           <div data-fieldname="in_words"><div class="value">EUR One Hundred only.</div></div>
@@ -32,6 +34,8 @@ class InvoicePrintTests(TestCase):
         get_doc.assert_called_once_with('Sales Invoice', 'SYN-INV-1')
         soup = BeautifulSoup(result, 'html.parser')
         self.assertEqual(soup.h1.text, 'Fattura paziente')
+        self.assertEqual([n.text for n in soup.select('.custom-html div div')],
+                         ['Fattura paziente', 'Intestatario'])
         self.assertEqual(soup.select_one('.heading').text, 'Intestatario:')
         self.assertEqual([x.text for x in soup.select('.table-header td')], ['N.', 'Subtotale'])
         self.assertEqual(soup.select_one('[data-fieldname="in_words"] .value').text,
