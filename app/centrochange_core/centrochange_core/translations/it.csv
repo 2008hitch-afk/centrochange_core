@@ -12,11 +12,11 @@ Amount,Importo
 Sub Total,Subtotale
 Grand Total,Totale
 Discount,Sconto
-In Words,Importo in lettere (dato originale)
+In Words,Importo in lettere
 Total,Totale
 Sub Total:,Subtotale:
 Grand Total:,Totale:
-In Words:,Importo in lettere (dato originale):
+In Words:,Importo in lettere:
 Sign In,Accedi
 Welcome! Please sign in to continue.,Accedi per continuare.
 Continue,Continua
@@ -459,6 +459,15 @@ This is based on transactions against this Healthcare Practitioner.,Attività re
 Assign,Assegna
 Tag,Etichette
 Last Edited By,Ultima modifica di
+Last Edited By {0},Ultima modifica di {0}
+Last Edited By You,Ultima modifica di te
+Created By {0},Creato da {0}
+Created By You,Creato da te
+Billed To,Intestatario
+Bill From,Emessa da
+Bill To,Intestatario
+Subtotal,Subtotale
+No.,N.
 Female,Femminile
 Male,Maschile
 Other,Altro
