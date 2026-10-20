@@ -9,9 +9,9 @@
 | Baseline DEV | source `0e6299d8a5507cc5d7dde46336870c0cd6667718`; immagine `sha256:a681d9a22a8198cec60469564e4a3c919a1318d824a16e53010b33d4879719d5` |
 | Source applicativo candidato | `1b7ffc465ff699de163f9536ab04d4dde4da54e3` |
 | Tag candidato | `centrochange-single:issue134-final-1b7ffc4` |
-| Executor | `infra/issue134_final_install.py` (SHA-256 da registrare dopo il commit) |
-| Overlay | `infra/compose.issue134_final.yaml`; sei servizi applicativi, nessun volume/port publishing aggiunto |
-| Template | `infra/issue134_frontend_pdf.conf.template`; stesso proxy e controllo Origin del template #139 |
+| Executor | `infra/issue134_final_install.py`; SHA-256 `e361d77e8a29e6040726c746be0533bbf387611940fb05c104e0acf2af204676` |
+| Overlay | `infra/compose.issue134_final.yaml`; SHA-256 `e144cbc8005e6d6944059e0016efdcfb9de08b366f6db3877677a8ef9fb26c03`; sei servizi applicativi, nessun volume/port publishing aggiunto |
+| Template | `infra/issue134_frontend_pdf.conf.template`; SHA-256 `04804a9674a97dbdca1a01003b39536030bb9d858447d5a0d32e4a19f8a4c116`; stesso proxy e controllo Origin del template #139 |
 
 ## Difetti, cause, correzioni
 
