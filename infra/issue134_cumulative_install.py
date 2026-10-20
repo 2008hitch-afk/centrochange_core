@@ -41,6 +41,10 @@ gate.DEPENDENCY_SHA = {**gate.DEPENDENCY_SHA,
         '1cc66a3931ffcb9ca6edfe446c0db135b673afb91a9c7b602fe1c88dab58093f',
     'infra/tests/test_issue134_locale_presentation.py':
         'a712b54df3e4d9be1da802831393ddd72b2f2737cfb53bde279e75ca1ddd4e4f',
+    'infra/tests/test_client_demo_list.cjs':
+        '37bd87337d1b6796a306834b2cbdaa8101b832cc69fef08eda8f1cdcf95a88e8',
+    'infra/browser/issue134_documents_post.cjs':
+        'b8058b8f67e75797dca225ad78f9a8fa440093124fa76d1c2fe77bfdd3bb09fd',
 }
 
 

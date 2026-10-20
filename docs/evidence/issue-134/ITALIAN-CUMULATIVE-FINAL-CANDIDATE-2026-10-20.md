@@ -6,7 +6,7 @@
 
 - PR #145 DRAFT, issue #134; base DEV verificata: source `1b7ffc465ff699de163f9536ab04d4dde4da54e3`, immagine `sha256:d7315cb85d3d51ed6510b9d0f6f1b9b2be639cb2d637f67a57790136f5e55257`, 9/9 servizi.
 - Source candidato: `7760e92963f0e3875acafeda32d14cd25802fa70`.
-- Executor futuro: `infra/issue134_cumulative_install.py`, SHA-256 `ca283f8b98d912d706a55198085716e5f41a1a62572ce7f5ebc6fc39c6d034e4`; overlay `infra/compose.issue134_cumulative.yaml`, SHA-256 `1eb642e2634312cbd53d033fbe4490bed34b1235e470b644f1ae5283aad2ce41`.
+- Executor futuro: `infra/issue134_cumulative_install.py`, SHA-256 `c71c11c85b0400add25f21a8f557ae34d9c4b0cf9b3dd52ddd8739ecacb8e283`; overlay `infra/compose.issue134_cumulative.yaml`, SHA-256 `1eb642e2634312cbd53d033fbe4490bed34b1235e470b644f1ae5283aad2ce41`.
 - L'executor richiede un **nuovo** gate Owner privato legato a source e SHA, 4 ore operative più 1 ora di recupero; conserva backup cifrato, checkpoint, controlli di integrità, sei soli servizi applicativi e un rollback. Il gate del deploy precedente non è riutilizzabile.
 
 ## Difetto → causa → modifica → prova
@@ -26,6 +26,7 @@
 - Rehearsal finale delle sole superfici cambiate: `issue134-locale-clone/20261020T185918Z-404078/summary.json` = **PASS**, 20 stati di route, 24 stati Form, 0 errori browser, HTML/PDF 200, `%PDF-`, 1 pagina estraibile, clone eliminato, impronta del DEV identica prima/dopo. Testo e screenshot privati in `issue134-cumulative-locale/20261020T185918Z-404078`.
 - Inventario generico del testo realmente reso: 412 elementi unici (main, sezioni, tab, dettagli, tooltip, placeholder e titolo browser); due hint inglesi classificati manualmente sotto. Il matcher serve a ordinare il riesame, non a conferire PASS automatici.
 - Test locali: 18 test Python del catalogo/clone/executor; 14 test Python su Frappe pinned del print/API; unit test List View, inventario Chromium, locale e cinque casi date/DST. Tutti PASS nell'ultima esecuzione; `git diff --check` pulito.
+- Preflight executor di sola lettura: `DRY_RUN_PASS`, 9 servizi, due sedi, nove file applicativi cambiati, sei sole immagini applicative nell'overlay, fingerprint `82dc3825e195bbcd9300f0a6787c043b9f105db324752f06ea3aae23afec7ecd`. La prima esecuzione ha fermato correttamente un hash di dipendenza del test aggiornato; il pin è stato corretto e il dry-run ripetuto con esito PASS.
 - Agenda: source di griglia, stile e navigazione invariato. L'unica riga cambiata nel modulo condiviso riguarda il testo della **conferma in Notifiche**. Screenshot reali [desktop](cumulative-final/agenda-desktop.png) e [mobile](cumulative-final/agenda-mobile.png) confrontati con la baseline: sette giorni, due professionisti, filtri e azioni invariati.
 - Esempi di resa finale: [fattura paziente](cumulative-final/sales-invoice.png), [fattura professionista](cumulative-final/purchase-invoice.png), [stampa fattura](cumulative-final/invoice-print.png). Solo dati demo sintetici; nessun PDF, dump o segreto nel repository.
 
