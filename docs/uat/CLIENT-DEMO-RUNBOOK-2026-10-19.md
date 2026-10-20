@@ -27,6 +27,8 @@ Usare i record dimostrativi leggibili Alfa, Beta, Gamma e Theta. In Fatture pazi
 
 ## Validazione cliente
 
+Nelle schede Paziente, Professionista, Servizio e Tariffa, mostrare prima i campi nativi e la guida «Come compilare»; i dettagli avanzati rimangono apribili. Per Paziente e Professionista, «Strumenti e tracciabilità» riapre allegati, assegnazioni e cronologia tecnica. In una Fattura paziente, leggere il riepilogo soggetto → stato → totale → pagato/residuo → prestazioni e poi l'indicazione «Come procedere». Scegliere per la presentazione una fattura attiva Beta/Gamma/Theta; le fatture POS annullate servono solo come esempio di tracciabilità. L'Agenda è rimasta identica alla versione approvata.
+
 Per ogni passo chiedere: l'operatore trova la funzione, capisce cosa vede, sa quale azione è consentita, riconosce il risultato e considera comprensibili lingua/date/orari? Annotare `ACCETTATO`, `OSSERVAZIONE` oppure `CORREZIONE RICHIESTA`, ruolo, pagina, scenario, comportamento atteso/osservato, screenshot e priorità. Registrare separatamente giudizi funzionali e visivi. L'Owner raccoglie una decisione esplicita; nessun PASS tecnico equivale all'accettazione cliente.
 
 ## Limiti da dichiarare
@@ -35,4 +37,5 @@ Per ogni passo chiedere: l'operatore trova la funzione, capisce cosa vede, sa qu
 - SdI, TS, notifiche esterne e carta/POS non contattano provider reali.
 - Le fatture tecniche di prova annullate restano nello storico contabile per tracciabilità.
 - Il DEV aggiornato mostra una sola voce attiva nella sidebar e un soggetto leggibile nelle fatture sintetiche. Sui telefoni la lista nativa tronca alcuni nomi lunghi e mostra controlli compatti; usare la scheda di dettaglio per il testo completo. La review visiva Owner resta aperta; vedere il [rapporto demo](../evidence/client-demo/CENTROCHANGE-CLIENT-DEMO-READINESS-REPORT-2026-10-19.md).
+- Alcuni campi canonici mostrano ancora codici sintetici e alcune etichette native ERPNext restano in inglese nelle sezioni avanzate; durante la demo spiegare che i codici identificano i record di prova. Non presentare le guide di compilazione come prova di un nuovo salvataggio live: i 46 PASS funzionali sono documentati nel rapporto MVP precedente.
 - Accesso diretto del cliente richiede una decisione separata su rete, isolamento e consegna sicura delle credenziali.

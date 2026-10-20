@@ -13,6 +13,8 @@
       const technical=Boolean(frm.__ccTechnicalOpen);
       document.body.dataset.ccTechnical=technical ? "1" : "0";
       frm.toggle_display(["packing_unit","batch_no","customer","supplier","item_name"],technical);
+      frm.page.main.find(".cc-native-help").remove();
+      frm.page.main.find(".form-layout").first().before('<section class="cc-native-help" aria-label="Guida alla compilazione"><strong>Come compilare</strong><span>Seleziona servizio e listino, poi inserisci prezzo e valuta nei campi nativi. Aggiungi le date di validità quando previste. I campi con * sono obbligatori; usa Salva per confermare.</span></section>');
       frm.remove_custom_button("Dettagli tecnici");
       frm.remove_custom_button("Vista operativa");
       frm.add_custom_button(technical ? "Vista operativa" : "Dettagli tecnici",()=>{

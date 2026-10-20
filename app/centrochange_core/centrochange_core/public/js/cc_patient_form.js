@@ -5,9 +5,35 @@ frappe.ui.form.on("Patient", {
     const label=String(frm.doc.patient_name||"").replace(/^CC-HTTP-UAT\d+\s+/,"");
     if(label) frm.page.set_title(label);
     for(const [field,title] of Object.entries({basic_info:"Dati anagrafici",customer_details_section:"Dati amministrativi",
-      more_info:"Altre informazioni",address_and_contact_tab:"Recapiti",medical_history_tab:"Storia clinica",
-      patient_name:"Nome e cognome",sex:"Sesso",dob:"Data di nascita",uid:"Identificativo"})) {
+      more_info:"Informazioni avanzate",address_and_contact_tab:"Indirizzi e contatti",address_contacts:"Recapiti",
+      medical_history_tab:"Dati clinici riservati",allergy_medical_and_surgical_history:"Allergie e storia clinica",
+      personal_and_social_history:"Storia personale e sociale",risk_factors:"Fattori di rischio",
+      patient_name:"Nome e cognome",sex:"Sesso",dob:"Data di nascita",uid:"Identificativo paziente",
+      mobile:"Cellulare",email:"Email",status:"Stato",customer:"Soggetto fiscale"})) {
       if(frm.fields_dict[field]) frm.set_df_property(field,"label",title);
     }
+    for (const tab of frm.layout?.tabs || []) {
+      const label = {address_and_contact_tab:"Indirizzi e contatti",medical_history_tab:"Dati clinici riservati"}[tab.df.fieldname];
+      if (label) { tab.df.label = label; tab.refresh(); }
+    }
+    if (!frm.__ccUxSectionsPrepared) {
+      for (const section of frm.layout?.sections || []) {
+        if (["more_info","allergy_medical_and_surgical_history","personal_and_social_history","risk_factors"].includes(section.df.fieldname))
+          section.collapse(true);
+      }
+      frm.__ccUxSectionsPrepared = true;
+    }
+    const toolsOpen = Boolean(frm.__ccNativeToolsOpen);
+    document.body.dataset.ccNativeTools = toolsOpen ? "1" : "0";
+    frm.remove_custom_button("Strumenti e tracciabilità");
+    frm.remove_custom_button("Chiudi strumenti");
+    frm.add_custom_button(toolsOpen ? "Chiudi strumenti" : "Strumenti e tracciabilità", () => {
+      frm.__ccNativeToolsOpen = !toolsOpen;
+      frm.trigger("refresh");
+    });
+    // Guidance sits alongside editable native controls; it does not replace
+    // DocFields, validation, clinical permissions or the normal Save action.
+    frm.page.main.find(".cc-native-help").remove();
+    frm.page.main.find(".form-layout").first().before('<section class="cc-native-help" aria-label="Guida alla compilazione"><strong>Come compilare</strong><span>Inserisci i dati anagrafici e i recapiti nei campi qui sotto. I campi contrassegnati con * sono obbligatori; gli altri sono facoltativi. I dati clinici riservati si trovano nella scheda dedicata e restano accessibili solo ai ruoli autorizzati. Usa Salva per confermare; in caso di errore correggi il campo indicato.</span></section>');
   },
 });

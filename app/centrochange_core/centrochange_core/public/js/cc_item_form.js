@@ -37,6 +37,8 @@
     frm.layout.refresh_tabs();
     frm.toggle_display([...technicalSections, ...technicalFields, "brand", "item_name"], technical);
     frm.layout.sections.find(section => section.df.fieldname === "section_break_11")?.collapse(false);
+    frm.page.main.find(".cc-native-help").remove();
+    frm.page.main.find(".form-layout").first().before('<section class="cc-native-help" aria-label="Guida alla compilazione"><strong>Come compilare</strong><span>Inserisci nome, categoria e descrizione del servizio nei campi nativi. Verifica lo stato e le tariffe collegate. I campi con * sono obbligatori; usa Salva per confermare. I dettagli tecnici restano disponibili dal comando dedicato.</span></section>');
     if (!service) return;
     frm.remove_custom_button("Dettagli tecnici");
     frm.remove_custom_button("Vista operativa");
