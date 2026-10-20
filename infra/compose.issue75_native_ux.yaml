@@ -1,24 +1,24 @@
 # Issue #75: one persistent six-service client UX image. Technical services unchanged.
 services:
   backend:
-    image: centrochange-single:issue75-native-bafa01e
+    image: centrochange-single:issue75-native-cc76395
     pull_policy: never
   frontend:
-    image: centrochange-single:issue75-native-bafa01e
+    image: centrochange-single:issue75-native-cc76395
     pull_policy: never
     networks:
       centrochange-dev-net:
         aliases:
           - centrochange.local
   websocket:
-    image: centrochange-single:issue75-native-bafa01e
+    image: centrochange-single:issue75-native-cc76395
     pull_policy: never
   queue-short:
-    image: centrochange-single:issue75-native-bafa01e
+    image: centrochange-single:issue75-native-cc76395
     pull_policy: never
   queue-long:
-    image: centrochange-single:issue75-native-bafa01e
+    image: centrochange-single:issue75-native-cc76395
     pull_policy: never
   scheduler:
-    image: centrochange-single:issue75-native-bafa01e
+    image: centrochange-single:issue75-native-cc76395
     pull_policy: never

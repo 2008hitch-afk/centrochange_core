@@ -23,19 +23,19 @@ spec.loader.exec_module(parent)
 gate = parent.gate
 gate.__file__ = str(HERE)
 gate.BASE_SOURCE = 'cf0eff79a74de4ec36cb20611e5c518de5ba7f8e'
-gate.SOURCE = 'bafa01e71f4c6d4320c1b227efd57287255bd508'
+gate.SOURCE = 'cc763958c234c9cbcc8cb46ce9f57533e47410ba'
 gate.BASE_IMAGE = 'sha256:5a9351bf68eb7e76b805a14ebcf966de57420546dfd11c8ed41b2f4a82119834'
 gate.BASE_TAG = 'centrochange-single:client-demo-cf0eff7'
-gate.IMAGE = 'centrochange-single:issue75-native-bafa01e'
+gate.IMAGE = 'centrochange-single:issue75-native-cc76395'
 gate.OVERLAY = REPO / 'infra/compose.issue75_native_ux.yaml'
 gate.ACTIVE_OVERLAY_SHA = 'c773c834c484c5fa185582663c4affa395a1a9199a35e15e3a6936630f1ef90a'
 gate.AGENDA_CSS_SHA = '9c2198cc47265c5fe681c61ce0f38ffca7df5ac35e6a3d59228e7d954a3bc9a5'
 gate.RUN_ROOT = gate.STATE / 'issue75-native-ux-install-runs'
 gate.DEPENDENCY_SHA = {**gate.DEPENDENCY_SHA,
     'infra/client_demo_install.py': PARENT_SHA,
-    'infra/compose.issue75_native_ux.yaml': 'a0452c4d27deaf7fb2e4284c6f8b945685aafd5bd9843625845e86a40a2ba93b',
+    'infra/compose.issue75_native_ux.yaml': '21b1cfddfa233746fa803ee4a611d04b2ab1962cd92cd23410d2af6711a00e9e',
     'infra/browser/issue75_native_ux_live.cjs': 'e115126d69856760209b26016ef945c81518c21a7d67e190ce604656aa6c15d5',
-    'infra/tests/test_issue75_native_ux.cjs': 'db654615d121f1ce7ec94f8de3a50e84ac2078dc5e3613ab973df10b656976db',
+    'infra/tests/test_issue75_native_ux.cjs': 'cafcdf3274fde2a0f1e56bc7a32d6b98636633e9d8971228afb63d002b7df4e7',
 }
 
 def validate_owner_gate(path, executor_sha, *, recovery=False):
