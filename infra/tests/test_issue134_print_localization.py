@@ -74,6 +74,18 @@ class InvoicePrintTests(TestCase):
             locale.context(values)
         self.assertEqual(BeautifulSoup(values.body, 'html.parser').h1.text, 'Fattura paziente')
 
+    def test_client_time_display_uses_boot_hook_without_changing_server_defaults(self):
+        for user, roles, expected in (
+                ('demo-finance', ['CC Finance'], 'HH:mm'),
+                ('demo-pro', ['CC Professional'], 'HH:mm'),
+                ('Administrator', ['CC Manager'], 'HH:mm:ss'),
+                ('unrelated-user', ['Guest'], 'HH:mm:ss')):
+            with self.subTest(user=user), patch.object(frappe, 'get_roles', return_value=roles):
+                frappe.local.session = SimpleNamespace(user=user)
+                boot = SimpleNamespace(sysdefaults={'time_format': 'HH:mm:ss'})
+                locale.client_time_format(boot)
+                self.assertEqual(boot.sysdefaults['time_format'], expected)
+
 
 if __name__ == '__main__':
     import unittest

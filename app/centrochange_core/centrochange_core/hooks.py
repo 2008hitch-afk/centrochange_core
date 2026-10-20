@@ -181,6 +181,7 @@ doctype_js = {
 # Append presentation after the original request guards; never replace security hooks.
 before_request.append("centrochange_core.operations.website_brand.client_language")
 get_print_format_template = "centrochange_core.operations.website_brand.print_template_locale"
+boot_session = ["centrochange_core.operations.website_brand.client_time_format"]
 after_request = ["centrochange_core.security.response_cache.protect"]
 after_request.append("centrochange_core.operations.client_landing.redirect_launcher")
 doc_events["User"]["on_update"] = [doc_events["User"]["on_update"], "centrochange_core.operations.client_landing.configure_user"]

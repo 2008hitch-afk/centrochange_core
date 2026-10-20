@@ -119,3 +119,16 @@ def login_language():
     # Retained existing #75 hook; no auth/session/user-language mutation.
     if getattr(getattr(frappe.local,'request',None),'path',None)=='/login':
         frappe.local.lang='it'
+
+
+def client_time_format(bootinfo):
+    """Use Frappe's supported boot hook for native client Time controls.
+
+    This changes only the browser display preference. Stored Time fields and
+    all API, audit and fiscal formats retain their canonical representation.
+    """
+    roles = set(frappe.get_roles(frappe.session.user))
+    if frappe.session.user != 'Administrator' and roles.intersection(
+            {'CC Manager', 'CC Secretariat', 'CC Professional',
+             'CC Finance', 'CC Accountant'}):
+        bootinfo.sysdefaults['time_format'] = 'HH:mm'
