@@ -12,6 +12,20 @@
     "over_delivery_receipt_allowance", "over_billing_allowance"];
   function apply(frm) {
     if (!client()) return;
+    // Frappe FormMeta caches the backend-translated dashboard across users.
+    // Keep the native chart and report link, but render its caption in the
+    // current browser language even when the shared cache was filled in en.
+    if (frm.dashboard?.data?.heatmap) {
+      const report='<a href="/app/query-report/Stock Ledger">'+
+        frappe.utils.escape_html(__("Stock Ledger"))+'</a>';
+      const message=__("This is based on stock movement. See {0} for details").replace("{0}",report);
+      frm.dashboard.data.heatmap_message=message;
+      frm.dashboard.heatmap_area?.body?.find(".heatmap-message").html(message);
+    }
+    if (frm.fields_dict.uom_help_html)
+      frm.set_df_property("uom_help_html","options",
+        '<div>Definisci unità alternative: per esempio 1 scatola = 12 pezzi, con fattore di conversione 12. '+
+        'La regola si applica anche alle varianti. <a href="https://docs.frappe.io/erpnext/uom" target="_blank" rel="noopener noreferrer">Approfondisci →</a></div>');
     const service = !frm.is_new() && !frm.doc.is_stock_item &&
       ["Servizi", "Services"].includes(frm.doc.item_group);
     const name = readable(frm.doc.item_name || frm.doc.name);
