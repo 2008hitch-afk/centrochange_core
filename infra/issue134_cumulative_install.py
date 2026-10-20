@@ -24,7 +24,7 @@ spec.loader.exec_module(parent)
 gate = parent.gate
 gate.__file__ = str(HERE)
 gate.BASE_SOURCE = '1b7ffc465ff699de163f9536ab04d4dde4da54e3'
-gate.SOURCE = '7760e92963f0e3875acafeda32d14cd25802fa70'
+gate.SOURCE = 'e52a88a960a699b08cfad91d2b86e2fbfdcfb6ec'
 gate.BASE_IMAGE = 'sha256:d7315cb85d3d51ed6510b9d0f6f1b9b2be639cb2d637f67a57790136f5e55257'
 gate.BASE_TAG = 'centrochange-single:issue134-final-1b7ffc4'
 gate.IMAGE = 'centrochange-single:issue134-cumulative'
@@ -42,7 +42,7 @@ gate.DEPENDENCY_SHA = {**gate.DEPENDENCY_SHA,
     'infra/tests/test_issue134_locale_presentation.py':
         'a712b54df3e4d9be1da802831393ddd72b2f2737cfb53bde279e75ca1ddd4e4f',
     'infra/tests/test_client_demo_list.cjs':
-        '37bd87337d1b6796a306834b2cbdaa8101b832cc69fef08eda8f1cdcf95a88e8',
+        'b1c82cbdc1487eeac94eaf051e99efbd075d62583e3b24faa3e7106cd5603482',
     'infra/browser/issue134_documents_post.cjs':
         'b8058b8f67e75797dca225ad78f9a8fa440093124fa76d1c2fe77bfdd3bb09fd',
 }
