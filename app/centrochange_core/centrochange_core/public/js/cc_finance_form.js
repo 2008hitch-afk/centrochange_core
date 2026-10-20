@@ -11,6 +11,9 @@
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const money = (value,currency) => new Intl.NumberFormat("it-IT",{style:"currency",currency:currency||"EUR"}).format(Number(value)||0);
   const date = value => value ? new Intl.DateTimeFormat("it-IT").format(new Date(value+"T12:00:00")) : "Non indicata";
+  const demo = value => String(value ?? "").replace(/^CC-HTTP-UAT\d+\s+/, "");
+  const patient = value => /^CC-MVP-POS-[\w-]+$/.test(String(value ?? "")) ? "Paziente dimostrativo POS" : demo(value);
+  const service = value => demo(value).replace(/^Session$/i,"Seduta");
   function state(d) {
     if (d.docstatus===2) return "Annullato";
     if (d.docstatus===0) return "Bozza";
@@ -61,11 +64,11 @@
       outstanding_amount:"Residuo da incassare",items:"Prestazioni fatturate",taxes:"Imposte",total_taxes_and_charges:"Totale imposte"}))
       if(frm.fields_dict[field])frm.set_df_property(field,"label",label);
     const d=frm.doc;
-    summary(frm,"Fattura paziente",[["Documento",d.name||"Nuova fattura"],["Paziente",d.patient_name||d.customer_name||d.customer],
+    summary(frm,"Fattura paziente",[["Documento",d.name||"Nuova fattura"],["Paziente",patient(d.patient_name||d.customer_name||d.customer)],
       ["Stato",state(d)],["Totale",money(d.grand_total,d.currency)],
       ["Pagato",d.docstatus===1&&d.outstanding_amount!=null?money(Math.max(0,Number(d.grand_total||0)-Number(d.outstanding_amount)),d.currency):undefined],
       ["Residuo",d.docstatus===1&&d.outstanding_amount!=null?money(d.outstanding_amount,d.currency):undefined],
-      ["Scadenza",date(d.due_date)],["Prestazioni",(d.items||[]).map(r=>r.item_name||r.item_code).filter(Boolean).join(", ")]],
+      ["Scadenza",date(d.due_date)],["Prestazioni",(d.items||[]).map(r=>service(r.item_name||r.item_code)).filter(Boolean).join(", ")]],
       invoiceNext(frm),"Seleziona il paziente e inserisci le prestazioni nei campi qui sotto. I campi con * sono obbligatori; verifica data, imposte e totale prima di usare Salva. I dettagli contabili restano disponibili ai ruoli autorizzati.");
     advanced(frm,[...invoiceAdvanced,"additional_discount_section","contact_and_address_tab","cc_fiscal_profile","company_tax_id","posting_time","set_posting_time","is_pos",
       ...(d.is_return?[]:["is_return"]),...(d.is_debit_note?[]:["is_debit_note"]),"apply_tds","update_outstanding_for_self"]);

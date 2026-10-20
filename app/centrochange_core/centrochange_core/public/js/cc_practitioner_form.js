@@ -22,6 +22,14 @@ frappe.ui.form.on("Healthcare Practitioner", {
       }
       frm.__ccUxSectionsPrepared = true;
     }
+    const toolsOpen = Boolean(frm.__ccNativeToolsOpen);
+    document.body.dataset.ccNativeTools = toolsOpen ? "1" : "0";
+    frm.remove_custom_button("Strumenti e tracciabilità");
+    frm.remove_custom_button("Chiudi strumenti");
+    frm.add_custom_button(toolsOpen ? "Chiudi strumenti" : "Strumenti e tracciabilità", () => {
+      frm.__ccNativeToolsOpen = !toolsOpen;
+      frm.trigger("refresh");
+    });
     frm.page.main.find(".cc-native-help").remove();
     frm.page.main.find(".form-layout").first().before('<section class="cc-native-help" aria-label="Guida alla compilazione"><strong>Come compilare</strong><span>Compila nome, stato e tipo di professionista nei campi nativi. Verifica il collegamento all’utente e i recapiti; i campi con * sono obbligatori. Le tariffe e i dettagli di controllo sono sezioni avanzate. Usa Salva per confermare e correggi gli eventuali campi segnalati.</span></section>');
   },

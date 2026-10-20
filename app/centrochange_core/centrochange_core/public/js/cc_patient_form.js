@@ -23,6 +23,14 @@ frappe.ui.form.on("Patient", {
       }
       frm.__ccUxSectionsPrepared = true;
     }
+    const toolsOpen = Boolean(frm.__ccNativeToolsOpen);
+    document.body.dataset.ccNativeTools = toolsOpen ? "1" : "0";
+    frm.remove_custom_button("Strumenti e tracciabilità");
+    frm.remove_custom_button("Chiudi strumenti");
+    frm.add_custom_button(toolsOpen ? "Chiudi strumenti" : "Strumenti e tracciabilità", () => {
+      frm.__ccNativeToolsOpen = !toolsOpen;
+      frm.trigger("refresh");
+    });
     // Guidance sits alongside editable native controls; it does not replace
     // DocFields, validation, clinical permissions or the normal Save action.
     frm.page.main.find(".cc-native-help").remove();

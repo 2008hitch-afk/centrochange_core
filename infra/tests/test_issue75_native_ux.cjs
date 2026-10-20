@@ -38,7 +38,7 @@ function form(file, doctype, roles, doc = {}) {
   vm.runInNewContext(fs.readFileSync(js(file), 'utf8'), context, {filename: file});
   assert.ok(handlers[doctype], `${doctype} handler registered`);
   handlers[doctype].refresh(frm);
-  return {frm, labels, descriptions, inserted, removed, buttons, collapsed};
+  return {frm, labels, descriptions, inserted, removed, buttons, collapsed, dataset:context.document.body.dataset};
 }
 
 const patient = form('cc_patient_form.js', 'Patient', ['CC Manager'],
@@ -48,6 +48,10 @@ assert.match(patient.inserted.join(''), /Come compilare/);
 assert.match(patient.inserted.join(''), /Salva/);
 assert.equal(patient.labels.medical_history_tab, 'Dati clinici riservati');
 assert.ok(patient.collapsed.some(([name,value]) => name === 'more_info' && value === true));
+assert.equal(patient.dataset.ccNativeTools, '0');
+assert.equal(typeof patient.buttons['Strumenti e tracciabilità'], 'function');
+patient.buttons['Strumenti e tracciabilità']();
+assert.equal(patient.dataset.ccNativeTools, '1');
 assert.equal(form('cc_patient_form.js', 'Patient', ['Administrator'], {}).inserted.length, 0);
 
 const practitioner = form('cc_practitioner_form.js', 'Healthcare Practitioner', ['CC Manager'],
@@ -55,6 +59,8 @@ const practitioner = form('cc_practitioner_form.js', 'Healthcare Practitioner', 
 assert.equal(practitioner.labels.charges, 'Tariffe professionali');
 assert.equal(practitioner.labels.free_followup_details_section, 'Visite di controllo gratuite');
 assert.ok(practitioner.collapsed.some(([name,value]) => name === 'charges' && value === true));
+assert.equal(practitioner.dataset.ccNativeTools, '0');
+assert.equal(typeof practitioner.buttons['Strumenti e tracciabilità'], 'function');
 assert.match(practitioner.inserted.join(''), /Come compilare/);
 assert.equal(form('cc_practitioner_form.js', 'Healthcare Practitioner', ['Administrator'], {}).inserted.length, 0);
 
@@ -65,6 +71,11 @@ assert.match(invoice.inserted.join(''), /Pagato/);
 assert.match(invoice.inserted.join(''), /60,00/);
 assert.match(invoice.inserted.join(''), /Come compilare/);
 assert.equal(form('cc_finance_form.js', 'Sales Invoice', ['Administrator'], {}).inserted.length, 0);
+const syntheticInvoice = form('cc_finance_form.js', 'Sales Invoice', ['CC Manager'],
+  {name:'SINV-2',docstatus:2,customer:'CC-MVP-POS-synthetic',grand_total:100,
+    outstanding_amount:100,items:[{item_name:'CC-HTTP-UAT0000001 Session'}]});
+assert.match(syntheticInvoice.inserted.join(''), /Paziente dimostrativo POS/);
+assert.doesNotMatch(syntheticInvoice.inserted.join(''), /Residuo<\/dt>/);
 
 const supplierInvoice = form('cc_finance_form.js', 'Purchase Invoice', ['CC Finance'],
   {name: 'PINV-1', docstatus: 0, supplier_name: 'Professionista Alfa'});
