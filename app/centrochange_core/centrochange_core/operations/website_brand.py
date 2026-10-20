@@ -31,6 +31,9 @@ def context(values):
     # frappe.local.path remains the API path; the renderer context is decisive.
     if values.get('doctype') == 'Sales Invoice' and values.get('body'):
         values.body = localize_print_labels(values.body, frappe.form_dict.get('name'))
+        title = values.get('title') or ''
+        if title.startswith('Sales Invoice: '):
+            values.title = 'Fattura paziente: ' + title[len('Sales Invoice: '):]
     if getattr(frappe.local,'path',None)=='login':
         values.title='Centro Change — Accesso'
         values.cc_login_ui=True
@@ -105,6 +108,18 @@ def localize_print_labels(body, invoice_name=None):
     for node in soup.select('td[data-fieldname="item_name"]'):
         if node.string and re.fullmatch(r'CC-HTTP-UAT\d+ Session', node.string.strip()):
             node.string.replace_with('Seduta dimostrativa')
+    # ERPNext v16's installed invoice print builder renders item names and
+    # descriptions as divs, rather than the standard td[data-fieldname] nodes.
+    # Scope these display-only replacements to exact synthetic demo values.
+    for node in soup.select('.cell-line--primary, .ql-snow'):
+        if node.string and re.fullmatch(r'CC-HTTP-UAT\d+ Session', node.string.strip()):
+            node.string.replace_with('Seduta dimostrativa')
+        elif node.string and node.string.strip() == 'Nos' and 'cell-line--primary' in node.get('class', []):
+            node.string.replace_with('unità')
+    for node in soup.select('.ql-snow'):
+        for text_node in list(node.find_all(string=True)):
+            if text_node.strip() == 'Italy':
+                text_node.replace_with('Italia')
 
     if invoice_name:
         # The English number in words is stored by ERPNext on submit. Render a

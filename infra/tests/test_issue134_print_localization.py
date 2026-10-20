@@ -54,6 +54,32 @@ class InvoicePrintTests(TestCase):
         with patch.object(frappe, 'get_doc', return_value=doc):
             self.assertIn('USD One Hundred only.', locale.localize_print_labels(html, 'SYN-INV-2'))
 
+    def test_actual_invoice_builder_markup_has_italian_demo_service_and_unit(self):
+        html = '''<div class="cell-line cell-line--primary">CC-HTTP-UAT0000001 Session</div>
+          <div class="ql-snow">CC-HTTP-UAT0000001 Session</div>
+          <div class="cell-line cell-line--primary">Nos</div>
+          <div class="ql-snow">Via SYNTHETIC DEV 0<br>Roma<br>Italy<br></div>'''
+        rendered = BeautifulSoup(locale.localize_print_labels(html), 'html.parser')
+        self.assertEqual([node.text for node in rendered.select('.cell-line--primary')],
+                         ['Seduta dimostrativa', 'unità'])
+        self.assertEqual(rendered.select_one('.ql-snow').text, 'Seduta dimostrativa')
+        self.assertIn('Italia', rendered.select('.ql-snow')[1].text)
+
+    def test_invoice_print_browser_title_is_italian_without_changing_identity(self):
+        frappe.local.path = 'printview'
+        frappe.local.response = {}
+        frappe.local.request = SimpleNamespace(path='/printview')
+        frappe.local.form_dict = frappe._dict(doctype='Sales Invoice', name='SYN-INV-4')
+        frappe.local.session = SimpleNamespace(user='Guest')
+        values = frappe._dict(doctype='Sales Invoice', name='SYN-INV-4',
+                              title='Sales Invoice: SYN-INV-4',
+                              body='<h1>Sales Invoice</h1>', template='www/printview.html')
+        with patch.object(frappe, 'get_roles', return_value=[]), patch.object(
+                frappe, 'get_doc', return_value=SimpleNamespace(
+                    currency='EUR', grand_total=1, in_words='EUR One only.')):
+            locale.context(values)
+        self.assertEqual(values.title, 'Fattura paziente: SYN-INV-4')
+
     def test_other_document_print_is_not_localized_by_context(self):
         frappe.local.path = 'printview'
         frappe.local.response = {}

@@ -35,8 +35,10 @@ async function main(){
       const print=await page.goto(base+'/printview?doctype=Sales%20Invoice&name='+encodeURIComponent(name)+suffix);
       const text=await page.locator('body').innerText();
       result.views.push({explicitItalian:Boolean(suffix),status:print.status(),pageTitle:await page.title(),
-        english:['Sales Invoice','Billed To','Subtotal','EUR One Hundred only.','No.','Nos 1']
-          .filter(s=>text.includes(s)),
+        english:[['Sales Invoice',/\bSales Invoice\b/],['Billed To',/\bBilled To\b/],
+          ['Subtotal',/\bSubtotal\b/],['EUR One Hundred only.',/\bEUR One Hundred only\./],
+          ['No.',/\bNo\.(?!\w)/],['Nos 1',/\bNos 1\b/]]
+          .filter(([,pattern])=>pattern.test(text)).map(([label])=>label),
         europeanDate:/\b\d{2}\/\d{2}\/\d{4}\b/.test(text),
         isoDate:/\b20\d{2}-\d{2}-\d{2}\b/.test(text),
         amPm:/\b\d{1,2}:\d{2}\s?(?:AM|PM)\b/i.test(text)});
