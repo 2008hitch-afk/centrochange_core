@@ -57,6 +57,7 @@ PLAYWRIGHT_PACKAGE = Path('/tmp/cc-browser-qa/node_modules/playwright/package.js
 CHROMIUM = Path('/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell')
 BROWSER_LIBS = '/tmp/cc-browser-libs/usr/lib/x86_64-linux-gnu'
 ACTIVE_OVERLAY_SHA = 'feea2e0523fb4e3fbd6acf2f9d711e59dfa0adc8b94541e76af96d46d328cbfb'
+AGENDA_CSS_SHA = 'f3ab9d5ddf9f15e63b576a5656331169067af6d722cdea6d79b8c5ca644fe27d'
 APP_PREFIX = 'app/centrochange_core/centrochange_core/'
 IMAGE_PREFIX = '/home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/'
 BENCH = '/home/frappe/frappe-bench'
@@ -350,8 +351,7 @@ def preflight(executor_sha=None):
             == BASE_IMAGE, 'installed image tag drift')
     require(module.hooks() == module.GUARDS, 'six guard/language hooks drift')
     css = 'centro_change_core/page/cc_unified_desk/cc_unified_desk.css'
-    require(module.app_hashes([css])[css] ==
-            'f3ab9d5ddf9f15e63b576a5656331169067af6d722cdea6d79b8c5ca644fe27d',
+    require(module.app_hashes([css])[css] == AGENDA_CSS_SHA,
             '#79 accepted autocomplete CSS changed')
     cache = asset_cache_probe()
     require(not cache['mismatch_keys_after'] and cache['all_files_present'],

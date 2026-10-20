@@ -14,7 +14,7 @@ import json
 HERE = Path(__file__).resolve()
 REPO = HERE.parent.parent
 BASE_EXECUTOR = REPO / 'infra/issue139_install_gate.py'
-BASE_EXECUTOR_SHA = 'c6905c90221ea8e3774dad712898c9bb74c41bf9b53fa4f0419ffa9c7df58b6d'
+BASE_EXECUTOR_SHA = 'cad198676d479ff0c7783c64767ce3b9c7744f00cae8265938a419d2f7a79dc1'
 if hashlib.sha256(BASE_EXECUTOR.read_bytes()).hexdigest() != BASE_EXECUTOR_SHA:
     raise SystemExit('base executor drift')
 spec = importlib.util.spec_from_file_location('issue139_proven_gate', BASE_EXECUTOR)
