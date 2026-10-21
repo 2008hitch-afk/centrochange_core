@@ -329,6 +329,15 @@ def destroy_http(fixture):
 		assert all((frappe.db.get_value(doctype,name,field) or '').startswith(prefix) for name in names)
 	groups['Address']=frappe.get_all('Dynamic Link',filters={'parenttype':'Address','link_doctype':'Customer',
 		'link_name':['in',groups['Customer'] or ['']]},pluck='parent')
+	# The fixture's own audit events dynamically link native vouchers. Remove only
+	# events proven to belong to this fixture before native voucher cancellation;
+	# otherwise Frappe correctly refuses to delete the cancelled voucher.
+	from centrochange_core.security.fixture_cleanup import owned_audit_ids
+	owned_audits=owned_audit_ids(frappe.get_all('CC Audit Event',filters={
+		'name':['in',groups.get('CC Audit Event') or ['']]},
+		fields=['name','reference_doctype','reference_name','reason'],limit_page_length=0),groups,tag)
+	if owned_audits:
+		frappe.db.delete('CC Audit Event',{'name':['in',owned_audits]})
 	from centrochange_core.security.fixture_cleanup import native_accounting_cleanup
 	native_accounting_cleanup(groups, fixture['centers'])
 	financial = {'Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction','GL Entry','Payment Ledger Entry'}

@@ -1,6 +1,17 @@
 """Ownership checks for disposable synthetic HTTP fixture dependents."""
 
 
+def owned_audit_ids(events, groups, tag):
+	"""Validate every synthetic audit link before voucher cleanup deletes it."""
+	names = sorted(set(groups.get('CC Audit Event', [])))
+	if len(events) != len(names) or {row['name'] for row in events} != set(names):
+		raise ValueError('Fixture audit inventory changed before cleanup')
+	for row in events:
+		if row['reason'] != tag and row['reference_name'] not in groups.get(row['reference_doctype'], []):
+			raise ValueError('Audit cleanup escaped fixture ownership')
+	return names
+
+
 def confirmation_dependents(appointments, centers, confirmations, communications):
 	"""Return exact IDs only when every dependent belongs to the fixture."""
 	appointments, centers = set(appointments), set(centers)

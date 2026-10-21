@@ -36,7 +36,9 @@ PREMIUM_ADDED = {
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
                            'centrochange_core/operations/client_landing.py',
-                           'centrochange_core/finance/reporting_acceptance.py'}
+                           'centrochange_core/finance/reporting_acceptance.py',
+                           'centrochange_core/security/dev_acceptance.py',
+                           'centrochange_core/security/fixture_cleanup.py'}
 ENDPOINT_MODULES = ('catalog', 'scoped_api', 'operations.profiles',
                     'finance.payments', 'finance.documents')
 

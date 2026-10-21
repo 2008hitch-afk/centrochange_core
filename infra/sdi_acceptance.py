@@ -2,13 +2,13 @@
 """Actual authenticated HTTP and real short-worker simulated SdI acceptance."""
 import argparse,http.cookiejar,json,time,urllib.error,urllib.parse,urllib.request
 from pathlib import Path
-from security_acceptance import execute
+from security_acceptance import acceptance_base_url, execute
 
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--env-file',required=True);args=parser.parse_args()
     values={l.split('=',1)[0]:l.split('=',1)[1].strip() for l in Path(args.env_file).read_text().splitlines() if '=' in l and not l.startswith('#')}
-    root='http://127.0.0.1:'+values.get('HTTP_PORT','8082');fixture=None;clients={};checks=[]
+    root=acceptance_base_url(values.get('HTTP_PORT','8082'));fixture=None;clients={};checks=[]
     def call(role,path,data=None,expected=200,verb=None,raw=False):
         req=urllib.request.Request(root+path,data=json.dumps(data).encode() if data is not None else None,method=verb or ('POST' if data is not None else 'GET'),headers={'Host':'centrochange.local','Content-Type':'application/json'})
         try:r=clients[role].open(req,timeout=30);status=r.status;body=r.read()

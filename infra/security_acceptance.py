@@ -3,6 +3,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import http.cookiejar
 import json
+import os
 import subprocess
 import time
 import urllib.error
@@ -11,8 +12,30 @@ import urllib.request
 from pathlib import Path
 
 
+def acceptance_backend():
+    backend = os.environ.get('CC_ACCEPTANCE_BACKEND', 'centrochange-dev-backend-1')
+    if backend not in ('centrochange-dev-backend-1', 'cc148-restore-runner'):
+        raise ValueError('Unapproved acceptance backend')
+    return backend
+
+
+def acceptance_base_url(port):
+    if acceptance_backend() == 'centrochange-dev-backend-1':
+        return 'http://127.0.0.1:' + str(port)
+    result = subprocess.run(['docker', 'inspect', 'cc148-restore-runner'], capture_output=True, text=True, check=True)
+    runner = json.loads(result.stdout)[0]
+    if (runner['HostConfig']['NetworkMode'] != 'cc148-restore-net' or
+            any(m.get('Name', '').startswith('centrochange-dev-') for m in runner['Mounts'])):
+        raise RuntimeError('Acceptance restore runner is not isolated from DEV')
+    network = runner['NetworkSettings']['Networks']['cc148-restore-net']
+    address = network['IPAddress']
+    if not address:
+        raise RuntimeError('Isolated acceptance runner has no private address')
+    return 'http://' + address + ':8000'
+
+
 def execute(method, kwargs=None):
-    command=['docker','exec','centrochange-dev-backend-1','bench','--site','centrochange.local','execute',method]
+    command=['docker','exec',acceptance_backend(),'bench','--site','centrochange.local','execute',method]
     if kwargs:
         command += ['--kwargs',repr(kwargs)]
     result=subprocess.run(command,text=True,capture_output=True)
@@ -28,6 +51,11 @@ def fixture_public_route(fixture):
     return routes[0]
 
 
+def assert_public_replay(value, appointment):
+    if value.get('name') != appointment or value.get('replay') is not True or not isinstance(value.get('confirmation'), dict):
+        raise AssertionError('Public replay did not return the same appointment and confirmation')
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--env-file',required=True)
@@ -36,7 +64,7 @@ def main():
     args=parser.parse_args()
     config=dict(line.split('=',1) for line in Path(args.env_file).read_text().splitlines() if line and not line.startswith('#'))
     assert config['SITE_NAME']=='centrochange.local'
-    base='http://127.0.0.1:'+config['HTTP_PORT']
+    base=acceptance_base_url(config['HTTP_PORT'])
     fixture=None
     checks=[]
     def session(user,password):
@@ -124,7 +152,7 @@ def main():
             public_doc=call(admin,'/api/resource/Patient%20Appointment/'+urllib.parse.quote(public_result['name'],safe=''))['data']
             fixture['patients'].append(public_doc['patient'])
             assert public_doc['practitioner']==fixture['practitioners'][0] and public_doc['appointment_type']==fixture['catalog']['Appointment Type'][0]
-            assert call(guest,public,public_payload)['message']=={'name':public_result['name'],'replay':True}
+            assert_public_replay(call(guest,public,public_payload)['message'],public_result['name'])
             checks.append('Guest first meeting fixed route and idempotent replay')
             denied('Guest cannot read created appointment',guest,'/api/resource/Patient%20Appointment/'+urllib.parse.quote(public_result['name'],safe=''))
             call(guest,public,{**public_payload,'route':'Arbitrary','request_key':fixture['tag']+'-bad-route'},expected=417)

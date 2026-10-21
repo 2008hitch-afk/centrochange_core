@@ -244,10 +244,10 @@
     "centrochange_core/security/audit_view_acceptance.py": "c1abea8e229250bfb985e5af36aa0b810bc66a300717009462b92b39e52aa0b8",
     "centrochange_core/security/center_state.py": "3ebc0a7a399e182077f52cab57ebb68e1a192b03ca7d0f12ad2e7babc7fea48b",
     "centrochange_core/security/desk_boundary_acceptance.py": "e47eee4ce11c6293baf82f06d65f4909569db82c23b605745c948cb3b8e1033c",
-    "centrochange_core/security/dev_acceptance.py": "19b4a86760c8d15902afbd499dd9db70b25352caaf03954f88187692735a7ab6",
+    "centrochange_core/security/dev_acceptance.py": "187bb0c1ea60d59b926ea7800a45627d9f127ad8bf5d25b5e5b4f4758fe98e3b",
     "centrochange_core/security/diagnostics.py": "dadc7583e9b43061b45b78f66ef63d41692b974c5b679c0172372bc2a076f55d",
     "centrochange_core/security/final_review_acceptance.py": "b10b7e3836cdd496a560d90c4715a797618daf83bc1397f2934275d3a93a7b0b",
-    "centrochange_core/security/fixture_cleanup.py": "6fcfeb2cde6a56257ad6d709ddccf1409ed56e26c8b7b6715d3b7fe82e01b7d6",
+    "centrochange_core/security/fixture_cleanup.py": "d1a4d0a392a0e3d528890b5f921edc9bc7002d0696d89c929d22ec0cf98569fe",
     "centrochange_core/security/guards.py": "7d929ffb12d92138037ca20406c19706b20cab7052a391d4acfa3f2e3b5cda0c",
     "centrochange_core/security/install.py": "edc3c35de4a45f9fad722360e306c2b99fc13e2f7a871b1aa16ae9b0fd951b07",
     "centrochange_core/security/lifecycle.py": "4b3ae96c94d1f9d065b785e037b72a5cebc871bc37a0fc10af53308f511b553f",
@@ -291,7 +291,9 @@
   "reviewed_backend_deltas": [
     "centrochange_core/finance/reporting_acceptance.py",
     "centrochange_core/hooks.py",
-    "centrochange_core/operations/client_landing.py"
+    "centrochange_core/operations/client_landing.py",
+    "centrochange_core/security/dev_acceptance.py",
+    "centrochange_core/security/fixture_cleanup.py"
   ],
   "schema": 1,
   "upstream_refs": {
