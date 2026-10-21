@@ -101,6 +101,9 @@ def check_source(root, manifest):
             'bench new-site' not in compose and 'bench migrate' not in compose and
             'build:' not in compose and 'configurator:' not in compose,
             'Canonical Compose is not the existing single Site topology')
+    require(compose.count('memswap_limit:') == 9 and
+            'aliases: [centrochange.local]' in compose,
+            'Canonical Compose lost DEV cgroup limits or Site network alias')
     html = (root / APP / 'centrochange_core/www/premium.html').read_text()
     js = (root / APP / 'centrochange_core/public/premium/app.js').read_text()
     require('csrf-token' in html and 'premium/app.js' in html and
