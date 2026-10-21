@@ -21,6 +21,7 @@ def context(values):
         values.body=localize_print_labels(values.body)
     if getattr(frappe.local,'path',None)=='login':
         values.title='Centro Change — Accesso'
+        values.cc_login_ui=True
         # Native login macro retains structure/logic; remove the upstream logo source too.
         values.logo='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E'
 
