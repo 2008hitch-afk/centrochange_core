@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
-const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro A' }], patients: [{ name: 'PAT-001', patient_name: 'Paziente Sintetico' }], practitioners: [{ name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }], services: [{ name: 'SERV-001', cc_service_label: 'Prima visita', cc_service_item: 'ITEM-001' }], packages: [], payment_methods: ['Contanti'], roles: ['CC Manager', 'CC Secretariat'] }
+const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro A' }], patients: [{ name: 'PAT-001', patient_name: 'Paziente Sintetico' }], practitioners: [{ name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }], services: [{ name: 'SERV-001', cc_service_label: 'Prima visita', cc_service_item: 'ITEM-001', price: 80, duration: 60 }], packages: [], payment_methods: ['Contanti'], roles: ['CC Manager', 'CC Secretariat'] }
 const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
 
-async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true) {
+async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true, appointmentState: Partial<typeof appointment> = {}, bootState: Partial<typeof boot> = {}) {
   await page.route('**/api/method/**', async route => {
     const req = route.request()
     const method = new URL(req.url()).pathname.split('/api/method/')[1]
@@ -13,11 +13,11 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     if (req.method() === 'POST') writes.push({ method, body, headers: req.headers() })
     let message: unknown = null
     let status = 200
-    if (method.endsWith('operations.workspace.bootstrap')) message = boot
+    if (method.endsWith('operations.workspace.bootstrap')) message = { ...boot, ...bootState }
     else if (method.endsWith('finance.reporting.bootstrap')) { if (financeAllowed) message = financeBoot; else status = 403 }
-    else if (method.endsWith('operations.workspace.agenda')) message = { appointments: [appointment], truncated: false }
+    else if (method.endsWith('operations.workspace.agenda')) message = { appointments: [{ ...appointment, ...appointmentState }], truncated: false }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
-    else if (method.endsWith('operations.workspace.patient_history')) message = { appointments: [appointment], packages: [], organizational_notes: [{ name: 'NOTE-001', content: 'Nota sintetica', creation: today }], private_notes: [], settlements: [] }
+    else if (method.endsWith('operations.workspace.patient_history')) message = { appointments: [{ ...appointment, ...appointmentState }], packages: [], organizational_notes: [{ name: 'NOTE-002', content: 'Nota sintetica rettificata', creation: today + ' 12:00:00', authored_by: 'direzione@example.invalid', corrects: 'NOTE-001' }, { name: 'NOTE-001', content: 'Nota sintetica', creation: today + ' 11:00:00', authored_by: 'direzione@example.invalid', corrects: null }], private_notes: [], settlements: [] }
     else if (method.endsWith('operations.workspace.schedules')) message = [{ name: 'SCHED-001', practitioner: 'PR-001', time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '18:00:00' }], absences: [] }]
     else if (method.endsWith('operations.reporting.summary')) message = { currencies: { EUR: { sessions: 1, performed: 0, due: 1, due_snapshot_amount: 80 } }, truncated: false }
     else if (method.endsWith('finance.reporting.summary')) message = { totals: { revenue_net: 600, collected: 400, receivable_outstanding: 200, purchase_net: 250, payable_outstanding: 80, expected_compensation: 120, unresolved_expectations: 0, sessions: 4 }, sales_invoices: [], purchase_invoices: [], scope_note: 'Dati sintetici.' }
@@ -37,6 +37,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('finance.banking.candidates')) message = { state: 'Candidate', invoices: [{ name: 'INV-001', outstanding_amount: 20 }] }
     else if (method.endsWith('finance.admin_queue.list_items') || method.endsWith('finance.fiscal.records')) message = []
     else if (method.endsWith('operations.workspace.management_context')) message = { memberships: [{ user: 'synthetic@example.invalid', active: 1 }], users: [{ name: 'synthetic@example.invalid', full_name: 'Utente Sintetico' }], practitioners: boot.practitioners }
+    else if (method.endsWith('security.audit_view.events')) message = { events: [{ name: 'AUDIT-001', event_type: 'APPOINTMENT_RESCHEDULED', actor: 'direzione@example.invalid', event_time: today + ' 12:00:00', reference_doctype: 'Patient Appointment', reference_name: 'APP-001', reason: 'Riprogrammazione sintetica', before_state: JSON.stringify({ appointment_time: '09:00:00' }), after_state: JSON.stringify({ appointment_time: '10:00:00' }) }], has_more: false, offset: 0 }
     else if (method.endsWith('scheduling.public_booking.available_slots')) message = { route: 'Marco', service: 'Primo incontro', duration: 60, price: 80, currency: 'EUR', slots: [{ date: today, time: '10:00:00' }] }
     else if (method.endsWith('scheduling.public_booking.first_meeting')) message = { name: 'APP-PUBLIC-001', confirmation: { state: 'Simulated Sent' } }
     else if (method.endsWith('frappe.client.get_list')) {
@@ -53,8 +54,10 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
 }
 
 async function openSection(page: Page, name: string) {
-  if ((page.viewportSize()?.width ?? 1440) < 760) await page.getByRole('button', { name: 'Apri menu' }).click()
+  const mobile = (page.viewportSize()?.width ?? 1440) < 760
+  if (mobile) await page.getByRole('button', { name: 'Apri menu' }).click()
   await page.getByRole('button', { name, exact: true }).click()
+  if (mobile) await expect.poll(() => page.locator('.sidebar').evaluate(el => Math.round(new DOMMatrixReadOnly(getComputedStyle(el).transform).m41))).toBe(-260)
 }
 
 test('agenda desktop: shell, calendario, dettaglio e prenotazione con CSRF', async ({ page }, testInfo) => {
@@ -78,6 +81,48 @@ test('agenda desktop: shell, calendario, dettaglio e prenotazione con CSRF', asy
   expect(booking.body.center).toBe('CENTRO-A')
   expect(booking.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
   expect(errors).toEqual([])
+})
+
+test('seduta cancellata mostra solo azioni coerenti con lo stato server', async ({ page }) => {
+  await mockApi(page, [], true, { status: 'Cancelled', cc_closure_state: 'Closed', cc_economic_state: 'Due' })
+  await page.goto('./')
+  await page.getByText('Paziente Sintetico').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await expect(drawer.getByRole('button', { name: 'Chiudi seduta' })).toHaveCount(0)
+  await expect(drawer.getByRole('button', { name: 'Sposta' })).toHaveCount(0)
+  await expect(drawer.getByRole('button', { name: 'Cancella' })).toHaveCount(0)
+  await expect(drawer.getByRole('button', { name: 'Riapri' })).toBeVisible()
+  await expect(drawer.getByRole('button', { name: 'Rinuncia economica' })).toBeVisible()
+})
+
+test('selettore pazienti lungo filtra senza perdere scelta e invia ID canonico', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  const patients = [...boot.patients, ...Array.from({ length: 10 }, (_, i) => ({ name: `PAT-${String(i + 2).padStart(3, '0')}`, patient_name: `Paziente Demo ${i + 2}` })), { name: 'PAT-ZETA', patient_name: 'Zeta Sintetica' }]
+  await mockApi(page, writes, true, {}, { patients })
+  await page.goto('./')
+  await page.getByRole('button', { name: 'Nuova prenotazione' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Nuova prenotazione' })
+  await dialog.getByRole('searchbox', { name: 'Filtra paziente' }).fill('Zeta')
+  const select = dialog.getByRole('combobox', { name: 'Paziente' })
+  await expect(select.locator('option')).toHaveCount(3)
+  await select.selectOption('PAT-ZETA')
+  await dialog.getByRole('textbox', { name: 'Motivo' }).fill('Ricerca sintetica')
+  await dialog.getByRole('button', { name: 'Conferma prenotazione' }).click()
+  await expect.poll(() => writes.find(w => w.method.endsWith('scheduling.booking.book'))?.body.patient).toBe('PAT-ZETA')
+})
+
+test('catalogo consultivo mostra servizi e professionisti dal centro autorizzato', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./')
+  await openSection(page, 'Servizi')
+  await expect(page.getByRole('heading', { name: 'Servizi e professionisti' })).toBeVisible()
+  await expect(page.getByRole('row', { name: /Prima visita/ })).toContainText('60 min')
+  await expect(page.getByRole('row', { name: /Prima visita/ })).toContainText('80,00')
+  await expect(page.getByText('Dott.ssa Rossi')).toBeVisible()
+  if (testInfo.project.name === 'mobile') expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  await page.screenshot({ path: `test-results/${testInfo.project.name}-services.png`, fullPage: true })
+  await page.getByRole('searchbox', { name: 'Cerca servizi' }).fill('inesistente')
+  await expect(page.getByRole('row', { name: /Prima visita/ })).toHaveCount(0)
 })
 
 test('navigazione finanza, pazienti e report usa endpoint di dominio', async ({ page }, testInfo) => {
@@ -345,12 +390,16 @@ test('rettifica nota conserva riferimento alla versione precedente', async ({ pa
   await page.getByText('Paziente Sintetico').first().click()
   const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
   await drawer.getByRole('tab', { name: 'Note' }).click()
+  await expect(drawer.getByText('Ultima rettifica registrata')).toBeVisible()
+  await expect(drawer.getByText('Cronologia precedenti (1)')).toBeVisible()
+  await drawer.getByText('Cronologia precedenti (1)').click()
+  await expect(drawer.getByText('Nota sintetica', { exact: true })).toBeVisible()
   await drawer.getByRole('button', { name: 'Rettifica' }).click()
   await drawer.getByRole('textbox', { name: 'Rettifica nota' }).fill('Nota sintetica rettificata')
   await drawer.getByRole('button', { name: 'Registra rettifica' }).click()
   await expect.poll(() => writes.some(w => w.method.endsWith('operations.notes.add_note'))).toBe(true)
   const note = writes.find(w => w.method.endsWith('operations.notes.add_note'))!
-  expect(note.body.corrects).toBe('NOTE-001')
+  expect(note.body.corrects).toBe('NOTE-002')
   expect(note.body.private).toBe(0)
 })
 
@@ -366,6 +415,22 @@ test('gestione accessi invoca servizio membership auditato', async ({ page }) =>
   await dialog.getByRole('button', { name: 'Conferma' }).click()
   await expect.poll(() => writes.some(w => w.method.endsWith('security.lifecycle.set_membership'))).toBe(true)
   expect(writes.at(-1)?.body.center).toBe('CENTRO-A')
+})
+
+test('registro modifiche mostra autore, motivo e prima/dopo senza mutazioni', async ({ page }, testInfo) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./')
+  await openSection(page, 'Registro modifiche')
+  await expect(page.getByRole('heading', { name: 'Registro modifiche' })).toBeVisible()
+  await page.getByRole('row', { name: /Prenotazione spostata/ }).click()
+  const drawer = page.getByRole('dialog', { name: 'Prenotazione spostata' })
+  await expect(drawer.getByText('Riprogrammazione sintetica')).toBeVisible()
+  await expect(drawer.getByText('ora seduta')).toBeVisible()
+  await expect(drawer.getByText('09:00')).toBeVisible()
+  await expect(drawer.getByText('10:00')).toBeVisible()
+  await drawer.screenshot({ path: `test-results/${testInfo.project.name}-audit-detail.png` })
+  expect(writes).toEqual([])
 })
 
 test('sweep grafico delle sezioni operative e amministrative', async ({ page }, testInfo) => {

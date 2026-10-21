@@ -18,6 +18,12 @@ export function Drawer({ title, children, onClose }: { title: string; children: 
   return <div className="drawer-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}><aside className="drawer" role="dialog" aria-modal="true" aria-label={title}><header className="drawer-head"><div><span className="eyebrow">DETTAGLIO</span><h2>{title}</h2></div><button className="icon-button" aria-label="Chiudi" onClick={onClose}><X /></button></header><div className="drawer-body">{children}</div></aside></div>
 }
 export function Field({ label, name, required, children }: { label: string; name?: string; required?: boolean; children: React.ReactNode }) { return <label className="field"><span>{label}{required && <b className="required"> *</b>}</span>{children}</label> }
+export function SearchableSelect({ label, options, value, onChange, required = false, threshold = 10, empty = 'Seleziona' }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (value: string) => void; required?: boolean; threshold?: number; empty?: string }) {
+  const [filter, setFilter] = useState('')
+  const search = filter.trim().toLocaleLowerCase('it-IT')
+  const visible = search ? options.filter(option => option.label.toLocaleLowerCase('it-IT').includes(search) || option.value === value) : options
+  return <div className="field"><span>{label}{required && <b className="required"> *</b>}</span>{options.length > threshold && <input type="search" value={filter} onChange={e => setFilter(e.target.value)} aria-label={`Filtra ${label.toLocaleLowerCase('it-IT')}`} placeholder="Cerca nell'elenco" autoComplete="off" />}<select aria-label={label} value={value} onChange={e => onChange(e.target.value)} required={required}><option value="">{empty}</option>{visible.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{search && !visible.length && <small>Nessun risultato. Modifica la ricerca.</small>}</div>
+}
 export function DateInput({ value, onChange, required = false }: { value: string; onChange: (iso: string) => void; required?: boolean }) {
   const [draft, setDraft] = useState(displayDate(value))
   useEffect(() => setDraft(displayDate(value)), [value])

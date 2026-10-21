@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bell, Menu, Search, LogOut, ChevronDown, PanelLeftClose, X, Settings2 } from 'lucide-react'
+import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bell, Menu, Search, LogOut, ChevronDown, PanelLeftClose, X, Settings2, History, BookOpen } from 'lucide-react'
 import { type Boot, type FinanceBoot, ops, finance, call } from './api'
-import { Agenda, Patients, Availability, Reports, FinanceView, Access, Notifications } from './views'
+import { Agenda, Patients, ServiceCatalog, Availability, Reports, FinanceView, Access, Notifications } from './views'
+import { AuditLog } from './audit_log'
 import './style.css'
 
-export type View = 'Agenda' | 'Pazienti' | 'Disponibilità' | 'Report' | 'Finanza' | 'Gestione accessi' | 'Notifiche'
+export type View = 'Agenda' | 'Pazienti' | 'Servizi' | 'Disponibilità' | 'Report' | 'Finanza' | 'Gestione accessi' | 'Registro modifiche' | 'Notifiche'
 const icons: Record<View, React.ReactNode> = {
-  Agenda: <CalendarDays />, Pazienti: <UsersRound />, Disponibilità: <Clock3 />, Report: <ChartNoAxesCombined />,
-  Finanza: <WalletCards />, 'Gestione accessi': <Settings2 />, Notifiche: <Bell />
+  Agenda: <CalendarDays />, Pazienti: <UsersRound />, Servizi: <BookOpen />, Disponibilità: <Clock3 />, Report: <ChartNoAxesCombined />,
+  Finanza: <WalletCards />, 'Gestione accessi': <Settings2 />, 'Registro modifiche': <History />, Notifiche: <Bell />
 }
-const allViews: View[] = ['Agenda', 'Pazienti', 'Disponibilità', 'Report', 'Finanza', 'Gestione accessi', 'Notifiche']
+const allViews: View[] = ['Agenda', 'Pazienti', 'Servizi', 'Disponibilità', 'Report', 'Finanza', 'Gestione accessi', 'Registro modifiche', 'Notifiche']
 function fromHash(): View { const raw = decodeURIComponent(location.hash.slice(1)); return allViews.includes(raw as View) ? raw as View : 'Agenda' }
 
 function App() {
@@ -38,7 +39,7 @@ function App() {
     return () => { live = false }
   }, [center])
   const roles = boot?.roles ?? []
-  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : ['Gestione accessi', 'Notifiche'].includes(v) ? roles.includes('CC Manager') : v === 'Report' ? !!boot : !!boot)
+  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : ['Gestione accessi', 'Registro modifiche', 'Notifiche'].includes(v) ? roles.includes('CC Manager') : v === 'Report' ? !!boot : !!boot)
   const currentView = available.includes(view) ? view : available[0]
   const centers = boot?.centers?.length ? boot.centers : financeBoot?.centers ?? []
   const switchView = (next: View) => { location.hash = encodeURIComponent(next); setView(next); setMobileOpen(false); setError(''); setNotice('') }
@@ -50,8 +51,8 @@ function App() {
     <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`} aria-label="Navigazione principale">
       <div className="brand"><img src={import.meta.env.BASE_URL + 'logo.webp'} alt="Centro Change" /><div><strong>centro<span>change</span></strong><small>WORKSPACE</small></div><button className="icon-button sidebar-close" aria-label="Chiudi menu" onClick={() => setMobileOpen(false)}><PanelLeftClose /></button></div>
       <div className="sidebar-label">WORKSPACE</div>
-      <nav>{available.filter(v => v !== 'Finanza' && v !== 'Gestione accessi').map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span>{v === 'Agenda' && <span className="nav-dot" />}</button>)}</nav>
-      {available.some(v => v === 'Finanza' || v === 'Gestione accessi') && <><div className="sidebar-label section-gap">AMMINISTRAZIONE</div><nav>{available.filter(v => v === 'Finanza' || v === 'Gestione accessi').map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span></button>)}</nav></>}
+      <nav>{available.filter(v => !['Finanza', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span>{v === 'Agenda' && <span className="nav-dot" />}</button>)}</nav>
+      {available.some(v => ['Finanza', 'Gestione accessi', 'Registro modifiche'].includes(v)) && <><div className="sidebar-label section-gap">AMMINISTRAZIONE</div><nav>{available.filter(v => ['Finanza', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span></button>)}</nav></>}
       <div className="sidebar-foot"><span className="sidebar-avatar">CC</span><div><strong>Centro Change</strong><small>Area riservata</small></div><button className="icon-button" title="Esci" aria-label="Esci" onClick={async () => { try { await call('logout', {}, true) } finally { location.href = '/login?redirect-to=/premium' } }}><LogOut /></button></div>
     </aside>
     {mobileOpen && <button className="scrim" aria-label="Chiudi menu" onClick={() => setMobileOpen(false)} />}
@@ -63,10 +64,12 @@ function App() {
         {notice && <div className="alert success" role="status"><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Chiudi avviso"><X /></button></div>}
         {!loading && currentView === 'Agenda' && boot && <Agenda boot={boot} center={center} feedback={feedback} refreshBoot={refreshBoot} />}
         {!loading && currentView === 'Pazienti' && boot && <Patients boot={boot} center={center} query={query} feedback={feedback} refreshBoot={refreshBoot} />}
+        {!loading && currentView === 'Servizi' && boot && <ServiceCatalog boot={boot} center={center} />}
         {!loading && currentView === 'Disponibilità' && boot && <Availability boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Finanza' && financeBoot && <FinanceView boot={financeBoot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Gestione accessi' && boot && <Access boot={boot} center={center} feedback={feedback} />}
+        {!loading && currentView === 'Registro modifiche' && boot && <AuditLog feedback={feedback} />}
         {!loading && currentView === 'Notifiche' && boot && <Notifications center={center} feedback={feedback} />}
       </main>
     </div>

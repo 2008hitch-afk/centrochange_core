@@ -9,6 +9,8 @@ Current synthetic screenshots, 2026-10-21:
 - `docs/evidence/issue-148/finance-desktop.png`, `finance-mobile.png` — accounting summary.
 - `docs/evidence/issue-148/desktop-finance-report.png`, `mobile-finance-report.png` — fiscal Customer report drawer.
 - `docs/evidence/issue-148/desktop-xml-classification.png`, `mobile-xml-classification.png` — XML line classification drawer.
+- `docs/evidence/issue-148/desktop-services.png`, `mobile-services.png` — center service/practitioner directory.
+- `docs/evidence/issue-148/desktop-audit-detail.png`, `mobile-audit-detail.png` — manager audit event before/after.
 - `docs/evidence/issue-148/first-meeting-desktop.png`, `first-meeting-mobile.png` — public Guest booking entry.
 - `docs/evidence/issue-148/patients-desktop.png`, `availability-desktop.png`, `report-desktop.png`, `access-desktop.png`, `notifications-desktop.png` — all current workspace sections.
 

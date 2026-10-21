@@ -8,6 +8,8 @@ Status: **PARTIAL / NOT_VERIFIED for live authorization**. No real patient data,
 | Operational or finance role page gate | controller checks `require_actor()` or finance `allowed()` | NOT_VERIFIED live |
 | CSRF / same-origin POST | `src/api.ts`, synthetic Playwright asserts header and payload | PASS mocked; live NOT_VERIFIED |
 | UI route hides unauthorized finance | finance bootstrap 403 synthetic; direct `#Finanza` synthetic test | PASS mocked; server API NOT_VERIFIED |
+| Manager audit view | existing `security.audit_view.events` GET; synthetic list/detail displays actor, reason and before/after without POST | PASS mocked; Manager and cross-center server authorization NOT_VERIFIED |
+| Service directory | existing center-scoped bootstrap snapshot; synthetic read-only React view | PASS mocked; cross-center response scope NOT_VERIFIED |
 | Center/patient/practitioner/notes isolation | existing domain endpoints invoked | NOT_VERIFIED on React candidate |
 | Generic `/api/resource` writes | none in React source; network test sees none | PASS on synthetic tested paths |
 | Finance, CSV/export, direct URL negatives | #139 historical tests available | NOT_VERIFIED on React candidate |
