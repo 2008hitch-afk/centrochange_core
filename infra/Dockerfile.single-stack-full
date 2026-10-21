@@ -36,10 +36,10 @@ COPY --chown=frappe:frappe infra/verify_full_single_stack.py /opt/cc148/verify_f
 RUN uv pip install --no-cache --python /home/frappe/frappe-bench/env/bin/python --editable apps/centrochange_core \
     && test "$(grep -cx '^centrochange_core$' sites/apps.txt || true)" -eq 0 \
     && printf '%s\n' centrochange_core >> sites/apps.txt \
-    && python /opt/cc148/verify_full_single_stack.py --image /home/frappe/frappe-bench \
+    && /home/frappe/frappe-bench/env/bin/python /opt/cc148/verify_full_single_stack.py --image /home/frappe/frappe-bench \
     && bench build --force \
     && cp -a sites/assets/. assets/ \
-    && python /opt/cc148/verify_full_single_stack.py --image /home/frappe/frappe-bench --built
+    && /home/frappe/frappe-bench/env/bin/python /opt/cc148/verify_full_single_stack.py --image /home/frappe/frappe-bench --built
 
 LABEL centrochange.issue="148" \
       centrochange.mode="single-stack-full" \
