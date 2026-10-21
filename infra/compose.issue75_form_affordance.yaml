@@ -1,0 +1,24 @@
+# Future Owner-gated Form affordance candidate. No new host ports or volumes.
+services:
+  backend:
+    image: centrochange-single:issue75-form-affordance
+    pull_policy: never
+  frontend:
+    image: centrochange-single:issue75-form-affordance
+    pull_policy: never
+    networks:
+      centrochange-dev-net:
+        aliases:
+          - centrochange.local
+  websocket:
+    image: centrochange-single:issue75-form-affordance
+    pull_policy: never
+  queue-short:
+    image: centrochange-single:issue75-form-affordance
+    pull_policy: never
+  queue-long:
+    image: centrochange-single:issue75-form-affordance
+    pull_policy: never
+  scheduler:
+    image: centrochange-single:issue75-form-affordance
+    pull_policy: never

@@ -79,3 +79,25 @@ left the DEV unchanged. Neither condition was an application failure.
 3. Freeze one cumulative source commit, verify the exact base image and active
    Compose, run read-only preflight, then request one Owner gate for the
    controlled update with encrypted backup and one rollback path.
+
+## Reproducible future DEV update
+
+Candidate application commit: `1f88207c6a71c4bf0252b912fe83313337cab16f`.
+It descends from the installed source `e52a88a...`; the three application
+files in the cumulative delta are this CSS plus two previously prepared
+PR #145 localisation Form scripts. The latter are not part of the CSS-only
+clone proof and require their own post-update regression.
+
+`infra/issue75_form_affordance_install.py` inherits the pinned encrypted
+four-part backup, six-service image update, integrity and permission
+fingerprints, 4h+1h gate, and single rollback. It requires a **new** private
+Owner gate for candidate and executor SHA. The default `--dry-run` was run on
+the unchanged DEV and returned `DRY_RUN_PASS`: nine services, two centers,
+source and image identity, active Compose and dataset fingerprint checked.
+The future overlay adds no host port or volume. No gate was created and no
+installation was executed. The executor and overlay SHA-256 are recorded in
+the PR and can be rechecked with `sha256sum` before a future gate.
+
+**READY_FOR_SINGLE_UX_DEV_DEPLOY: NO.** The finance Form editability and
+broader save/validation/advanced-section coverage remain unproven. The
+existing DEV remains available and unchanged.
