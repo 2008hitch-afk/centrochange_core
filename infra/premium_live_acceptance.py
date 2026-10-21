@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from urllib.parse import urlsplit
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -54,8 +55,13 @@ def main():
     parser.add_argument("--backend-container", default="centrochange-dev-backend-1")
     parser.add_argument("--base-url", default="http://127.0.0.1:8082")
     args = parser.parse_args()
-    if not re.fullmatch(r"http://127\.0\.0\.1:\d+", args.base_url):
-        raise ValueError("Acceptance URL must be loopback")
+    if args.backend_container == "cc148-restore-runner":
+        from security_acceptance import acceptance_base_url
+        os.environ["CC_ACCEPTANCE_BACKEND"] = "cc148-restore-runner"
+        if args.base_url != acceptance_base_url(8082):
+            raise ValueError("Acceptance URL must match isolated restore runner")
+    elif not re.fullmatch(r"http://127\.0\.0\.1:\d+", args.base_url):
+        raise ValueError("DEV acceptance URL must be loopback")
     source = private_file(args.fixture)
     base = json.loads(source.read_text())
     if base.get("synthetic_only") is not True or base.get("site") != SITE:
@@ -74,10 +80,30 @@ def main():
         write = owned_write(fixture)
         with tempfile.TemporaryDirectory(prefix="cc148-live-owned-", dir=output) as temporary:
             path = Path(temporary) / "fixture.json"
+            if args.backend_container == "cc148-restore-runner":
+                # The restored DB contains the same synthetic sessions, but
+                # browser cookies from DEV are scoped to its loopback host.
+                # Copy only these private test states and retarget their cookie
+                # domain to the isolated runner address.
+                host = urlsplit(args.base_url).hostname
+                assert host and host.startswith("172.16.1.")
+                isolated_roles = {}
+                for role, original in base["roles"].items():
+                    state = json.loads(private_file(original).read_text())
+                    if not state.get("cookies") or any(cookie.get("domain") != "127.0.0.1" for cookie in state["cookies"]):
+                        raise ValueError("Synthetic session cookies have an unexpected domain")
+                    for cookie in state["cookies"]:
+                        cookie["domain"] = host
+                    target = Path(temporary) / (role + ".json")
+                    target.write_text(json.dumps(state))
+                    os.chmod(target, 0o600)
+                    isolated_roles[role] = str(target)
+                base = {**base, "roles": isolated_roles}
             path.write_text(json.dumps({**base, "owned_write": write}))
             os.chmod(path, 0o600)
             env = {**os.environ, "CC_PREMIUM_LIVE_FIXTURE": str(path),
-                   "CC_PREMIUM_LIVE_SYNTHETIC": "YES", "CC_PREMIUM_LIVE_URL": args.base_url}
+                   "CC_PREMIUM_LIVE_SYNTHETIC": "YES", "CC_PREMIUM_LIVE_URL": args.base_url,
+                   "CC_PREMIUM_LIVE_RESTORE": "YES" if args.backend_container == "cc148-restore-runner" else "NO"}
             command = [str(FRONTEND / "node_modules/.bin/playwright"), "test",
                        "--config", "playwright.live.config.ts", "--reporter=line"]
             result = subprocess.run(command, cwd=FRONTEND, env=env, capture_output=True, text=True)

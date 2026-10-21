@@ -138,7 +138,9 @@ test('manager write: CSRF, field whitelist, replay, audit and center boundary', 
       data: { ...body, item_name: item.item_name + ' alterato' }, headers: { 'X-Frappe-CSRF-Token': csrf! } }))
     denied(await context.request.get(endpoint('catalog.detail'), {
       params: { center: fixture.center_b, kind: 'Item', name: fixture.owned_write.item } }))
-    const today = new Date().toISOString().slice(0, 10)
+    // Frappe audit filters are local calendar days; UTC can already be yesterday in Rome.
+    const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Rome', year: 'numeric',
+      month: '2-digit', day: '2-digit' }).format(new Date())
     const audit = await context.request.get(endpoint('security.audit_view.events'), {
       params: { start: today, end: today, event_type: 'PREMIUM_MASTER_UPDATED', reference: fixture.owned_write.item } })
     expect(audit.ok()).toBeTruthy()
