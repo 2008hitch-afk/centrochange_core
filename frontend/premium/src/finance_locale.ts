@@ -9,7 +9,7 @@ const labels: Record<string, string> = {
   docstatus: 'Stato documento', due_at: 'Scadenza', error_class: 'Esito',
   exception_type: 'Condizione', expected_amount: 'Compenso atteso', external_protocol: 'Protocollo esterno',
   grand_total: 'Totale', invoice_date: 'Data fattura', invoice_number: 'Numero fattura',
-  known_expected: 'Compenso noto', outstanding: 'Residuo', outstanding_amount: 'Residuo',
+  known_expected: 'Compenso noto', name: 'Codice', outstanding: 'Residuo', outstanding_amount: 'Residuo',
   paid_amount: 'Importo pagato', party: 'Soggetto', payment_type: 'Tipo pagamento',
   posting_date: 'Data registrazione', practitioner: 'Professionista', priority: 'Priorità',
   problem: 'Da verificare', purchase_invoice: 'Fattura fornitore', reference_doctype: 'Tipo fonte',

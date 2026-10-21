@@ -102,7 +102,7 @@ test('eleven live detail cards open with authorized records', async ({ browser }
       await expect(detail).toBeVisible()
       await expect(detail.getByRole('heading', { name: 'Dettaglio' })).toBeVisible()
       if (label === 'Pagamenti') {
-        await expect(detail.getByText(/Incasso|Pagamento|Giroconto/)).toBeVisible()
+        await expect(detail.getByText(/Incasso|Pagamento|Giroconto/).first()).toBeVisible()
         await expect(detail.getByText('Receive', { exact: true })).toHaveCount(0)
       }
       await page.screenshot({ path: info.outputPath(`detail-${String(index + 1).padStart(2, '0')}.png`), fullPage: true })
@@ -146,14 +146,16 @@ test('financial drill-down keeps labels and status in Italian', async ({ browser
     const selector = page.locator('.center-selector select')
     await expect(selector).toBeVisible()
     if (await selector.inputValue() !== fixture.center_a) await selector.selectOption(fixture.center_a)
-    await page.getByRole('button', { name: 'Fatture pazienti', exact: true }).click()
+    await page.getByRole('tab', { name: 'Fatture pazienti', exact: true }).click()
     const row = page.locator('.finance-panel tbody tr.clickable').first()
     await expect(row).toBeVisible()
     await row.click()
     const detail = page.getByRole('dialog')
     await expect(detail).toBeVisible()
     await expect(detail.locator('dt').filter({ hasText: 'Data registrazione' })).toBeVisible()
+    await expect(detail.locator('dt').filter({ hasText: 'Codice' })).toBeVisible()
     await expect(detail.locator('dt').filter({ hasText: 'posting date' })).toHaveCount(0)
+    await expect(page.getByText('Workspace', { exact: true })).toHaveCount(0)
     await page.screenshot({ path: info.outputPath('finance-detail-it.png'), fullPage: true })
   } finally { await context.close() }
 })
