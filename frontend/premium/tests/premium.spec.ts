@@ -233,6 +233,9 @@ test('gestione accessi invoca servizio membership auditato', async ({ page }) =>
 
 test('sweep grafico delle sezioni operative e amministrative', async ({ page }, testInfo) => {
   await mockApi(page)
+  const consoleErrors: string[] = []
+  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
+  page.on('pageerror', error => consoleErrors.push(error.message))
   const sections = ['Pazienti', 'Disponibilità', 'Report', 'Finanza', 'Gestione accessi', 'Notifiche']
   await page.goto('./')
   await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible()
@@ -243,4 +246,5 @@ test('sweep grafico delle sezioni operative e amministrative', async ({ page }, 
     const slug = section.toLowerCase().replaceAll(' ', '-')
     await page.screenshot({ path: `test-results/${testInfo.project.name}-${slug}.png`, fullPage: true })
   }
+  expect(consoleErrors).toEqual([])
 })

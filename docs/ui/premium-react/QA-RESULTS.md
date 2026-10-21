@@ -14,6 +14,7 @@ Run date: 2026-10-21 UTC. Candidate tested in isolated Vite preview using Playwr
 | Invalid Italian date and canonical POST | PASS in both viewports: `31/02/2026` blocked, `29/03/2026` sent as ISO | synthetic interception |
 | Invoice draft, payment, note correction, membership and public first meeting | PASS in both viewports | synthetic interception; server behavior NOT_VERIFIED |
 | No generic CRUD/third-party navigation request | PASS in both viewports | source/static browser behavior only |
+| Console errors in section sweep | 0 on desktop and mobile after fixing duplicate React table keys | Vite still logs a non-fatal outdated JSX transform warning from the app/dependency graph; source not isolated |
 | `npm audit` | 0 current findings | registry snapshot, not a security review |
 | Screenshot visual inspection | Agenda, finance, first meeting desktop/mobile plus all workspace sections desktop saved; logo visible | Owner review and all roles NOT_VERIFIED |
 | 128 route×role×device / 22 native lists+forms / 38 server security | NOT_VERIFIED | #139 results belong to older candidate |
