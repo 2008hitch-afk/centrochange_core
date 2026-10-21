@@ -53,7 +53,7 @@ function App() {
   const changeCenter = (next: string) => { if (next === center) return; hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setQuery(''); setCenter(next) }
 
   return <div className="app-shell">
-    <a href="#main" className="skip-link">Vai al contenuto</a>
+    <a href="#main" className="skip-link" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus() }}>Vai al contenuto</a>
     <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`} aria-label="Navigazione principale">
       <div className="brand"><img src={import.meta.env.BASE_URL + 'logo.webp'} alt="Centro Change" width="36" height="35" /><div><strong>centro<span>change</span></strong><small>AREA OPERATIVA</small></div><button className="icon-button sidebar-close" aria-label="Chiudi menu" onClick={() => setMobileOpen(false)}><PanelLeftClose /></button></div>
       <div className="sidebar-label">AREA OPERATIVA</div>
