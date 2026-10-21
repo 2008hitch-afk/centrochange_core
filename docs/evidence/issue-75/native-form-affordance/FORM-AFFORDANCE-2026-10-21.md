@@ -34,7 +34,10 @@ selector, DocType, permission, validation or data is changed.
   empty editable controls at both widths. The five finance Forms (Sales
   Invoice, Purchase Invoice, Item Price, Payment Entry, Bank Transaction)
   showed no editable `.form-control` for the authorised Finance account; a
-  Frappe dialog directed the user to the authorised financial reports.
+  Frappe dialog directed the user to the authorised financial reports. This
+  matches the existing server-side `finance/request_guard.py` restriction on
+  direct `erpnext.accounts.*` calls for non-Managers, and must not be bypassed
+  merely for this visual test.
   Their read-only presentation exists, but editable-state acceptance is
   **not demonstrated**. An earlier Manager clone run showed Item Price
   editable at both widths, giving 14/22 PASS for that role mix; the
