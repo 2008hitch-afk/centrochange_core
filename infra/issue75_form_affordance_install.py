@@ -26,7 +26,7 @@ gate.BASE_SOURCE = 'e52a88a960a699b08cfad91d2b86e2fbfdcfb6ec'
 gate.SOURCE = '1f88207c6a71c4bf0252b912fe83313337cab16f'
 gate.BASE_IMAGE = 'sha256:6ecc23d0fe6ddc25b294d265546889aedee6049849a2cf58358f0087cb6c611e'
 gate.BASE_TAG = 'centrochange-single:issue134-cumulative'
-gate.IMAGE = 'centrochange-single:issue75-form-affordance'
+gate.IMAGE = 'centrochange-single:issue75-form-affordance-r2'
 gate.OVERLAY = REPO / 'infra/compose.issue75_form_affordance.yaml'
 gate.ACTIVE_OVERLAY_SHA = '1eb642e2634312cbd53d033fbe4490bed34b1235e470b644f1ae5283aad2ce41'
 gate.RUN_ROOT = gate.STATE / 'issue75-form-affordance-install-runs'
@@ -36,7 +36,11 @@ gate.DEPENDENCY_SHA = {**gate.DEPENDENCY_SHA,
         '12a34991f1dffa6a37ecfb8528412faf2d308891970903dba17e70d718a13183',
     'infra/issue134_cumulative_install.py': PARENT_SHA,
     'infra/compose.issue75_form_affordance.yaml':
-        '1dc3d7b91d8176e48df2ae613593f2bfa41911d59a20a92882b591ec8b2bb9a9',
+        '96ea961b9dc16dc94807bf22e29d46368b881341b59244117fd9d53514dd9bb5',
+    'infra/browser/issue75_dev_readonly_without_manager.cjs':
+        'a6043f72b1ac006bc82848258a08a59dd95a6b5b7c4235bd00be2eb5d13503ec',
+    'infra/tests/test_issue75_install_r2.py':
+        '41d680ac26ff06aa1c9f2013b440c24e5bfd524266e7f4cc6dd8fa06052015bd',
     'infra/browser/issue75_native_form_affordance.cjs':
         '93f2a8feb3ba074e24cfe3acfd6c09ddebb0d108a3829bde06c7b7a3195393cf',
     'infra/browser/issue75_native_visual_scope.cjs':
@@ -73,6 +77,24 @@ def validate_owner_gate(path, executor_sha, *, recovery=False):
 
 
 gate.validate_owner_gate = validate_owner_gate
+
+_browser = gate.browser
+
+
+def browser_with_manager_login_deferred(script, output, **kwargs):
+    if script != 'mvp_devfirst_readonly.cjs':
+        return _browser(script, output, **kwargs)
+    result = _browser('issue75_dev_readonly_without_manager.cjs', output, **kwargs)
+    report = json.loads((output / 'devfirst-readonly.json').read_text())
+    gate.require(report.get('status') == 'ESSENTIAL_PASS'
+                 and report.get('deferred_roles') == ['m']
+                 and len(report.get('critical', [])) == 27
+                 and all(check.get('status') == 'PASS' for check in report['critical']),
+                 'remaining read-only security checks incomplete')
+    return result
+
+
+gate.browser = browser_with_manager_login_deferred
 
 if __name__ == '__main__':
     raise SystemExit(gate.main())
