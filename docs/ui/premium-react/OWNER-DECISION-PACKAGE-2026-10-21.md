@@ -1,6 +1,6 @@
 # #148 — unico pacchetto Owner residuo
 
-**Proposta, non autorizzazione.** La PR #150 rimane DRAFT e il DEV `centrochange-dev` non è stato modificato. DECISION-060/061/062 approvano direzione e lavoro isolato; la mutazione dell'unico stack e le nuove API di scrittura richiedono il gate materiale. Il risultato di questa PR è una UI React di sviluppo con fixture sintetiche; 75 test Playwright PASS, 1 skip desktop intenzionale. Nessun test live Frappe/multiruolo o collaudo grafico Owner è stato svolto.
+**Proposta, non autorizzazione.** La PR #150 rimane DRAFT e il DEV `centrochange-dev` non è stato modificato. DECISION-060/061/062 approvano direzione e lavoro isolato; la mutazione dell'unico stack e le nuove API di scrittura richiedono il gate materiale. Il risultato di questa PR è una UI React di sviluppo con fixture sintetiche; 77 test Playwright PASS, 1 skip desktop intenzionale. Nessun test live Frappe/multiruolo o collaudo grafico Owner è stato svolto.
 
 ## Decisione richiesta, in una sola revisione
 

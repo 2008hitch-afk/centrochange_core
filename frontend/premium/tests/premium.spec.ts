@@ -141,9 +141,31 @@ test('schermate principali renderizzate e fotografate', async ({ page }, testInf
   for (const section of ['Agenda', 'Pazienti', 'Servizi', 'Disponibilità', 'Report', 'Finanza', 'Gestione accessi', 'Registro modifiche', 'Notifiche']) {
     if (section !== 'Agenda') await openSection(page, section)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    if (section === 'Notifiche') await expect(page.getByText('Nessuna notifica recente')).toBeVisible()
     await page.screenshot({ path: `../../docs/evidence/issue-148/area-${section.toLocaleLowerCase('it-IT').replaceAll(' ', '-')}-${testInfo.project.name}.png`, fullPage: true })
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
   }
+})
+
+test('notifiche: caricamento, errore e riprova con stato vuoto corretto', async ({ page }) => {
+  await mockApi(page)
+  let fail = true
+  let release = () => {}
+  const gate = new Promise<void>(resolve => { release = resolve })
+  await page.route('**/api/method/frappe.client.get_list*', async route => {
+    await gate
+    if (fail) await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ exc: 'SyntheticUnavailable' }) })
+    else await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: [] }) })
+  })
+  await page.goto('./')
+  await openSection(page, 'Notifiche')
+  await expect(page.getByRole('status', { name: '' }).filter({ hasText: 'Caricamento notifiche' })).toBeVisible()
+  release()
+  await expect(page.getByRole('alert').filter({ hasText: 'Operazione non riuscita' })).toBeVisible()
+  fail = false
+  await page.getByRole('button', { name: 'Riprova' }).click()
+  await expect(page.getByText('Nessuna notifica recente')).toBeVisible()
+  await expect(page.getByText('Le comunicazioni del centro appariranno qui.')).toBeVisible()
 })
 
 test('agenda desktop: shell, calendario, dettaglio e prenotazione con CSRF', async ({ page }, testInfo) => {

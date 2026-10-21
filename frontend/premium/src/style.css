@@ -15,3 +15,4 @@
 @media(max-width:960px){.archive-layout{grid-template-columns:1fr}.archive-menu{display:flex;gap:14px;overflow-x:auto}.archive-menu>div{min-width:180px}.archive-menu h2{padding-top:3px}}
 @media(max-width:760px){.archive-layout{gap:12px}.archive-menu{display:block;white-space:nowrap;padding:9px;overflow-x:auto}.archive-menu>div{display:inline-flex;align-items:center;min-width:0}.archive-menu h2{padding:8px}.archive-menu button{width:auto;gap:7px;padding:8px;font-size:11px}.archive-menu button span{display:none}.archive-filters{padding:0 14px 14px}.archive-filters .search-inline{max-width:none}.synthetic-banner{font-size:12px}}
 .archive-filters .search-inline input{width:100%;min-width:0}
+.notification-error{padding:28px;display:flex;align-items:center;justify-content:space-between;gap:16px;color:#a6444a}.notification-error p{margin:0}.notification-error .button{flex:none}@media(max-width:760px){.notification-error{flex-direction:column;align-items:stretch}}

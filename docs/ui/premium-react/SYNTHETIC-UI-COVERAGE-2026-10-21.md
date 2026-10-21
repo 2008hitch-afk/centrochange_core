@@ -26,7 +26,7 @@ Ogni riga ha elenco, ricerca, scheda, nuovo/modifica di prova, campi obbligatori
 
 ## Altre aree principali
 
-`premium.spec.ts` esercita Agenda/prenotazioni, pazienti/storico/note/pacchetti/assegnazioni, catalogo servizi consultivo, disponibilità, report, Finanza (fatture, pagamenti, banca, XML, compensi, report), accessi, notifiche, audit e primo incontro pubblico con fixture API sintetiche. Gli screenshot `docs/evidence/issue-148/area-*-{desktop,mobile}.png` e `archive-*-{desktop,mobile}.png` / `archive-form-*-{desktop,mobile}.png` documentano la build di sviluppo; `first-meeting-*.png` era già presente. Gli screenshot sono prove di rendering, non di autorizzazione server. Browser plugin non disponibile nella sessione; eseguito Playwright Chromium locale.
+`premium.spec.ts` esercita Agenda/prenotazioni, pazienti/storico/note/pacchetti/assegnazioni, catalogo servizi consultivo, disponibilità, report, Finanza (fatture, pagamenti, banca, XML, compensi, report), accessi, notifiche (loading, errore, riprova e vuoto), audit e primo incontro pubblico con fixture API sintetiche. Gli screenshot `docs/evidence/issue-148/area-*-{desktop,mobile}.png` e `archive-*-{desktop,mobile}.png` / `archive-form-*-{desktop,mobile}.png` documentano la build di sviluppo; `first-meeting-*.png` era già presente. Gli screenshot sono prove di rendering, non di autorizzazione server. Browser plugin non disponibile nella sessione; eseguito Playwright Chromium locale.
 
 ## Evidenza e limiti
 
