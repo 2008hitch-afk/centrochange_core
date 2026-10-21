@@ -1,6 +1,16 @@
 """Ownership checks for disposable synthetic HTTP fixture dependents."""
 
 
+NATIVE_LINK_DEPENDENTS = ('CC Admin Exception', 'CC Fiscal Attempt',
+	'CC Fiscal Transaction', 'CC TS Input Review', 'CC Incoming Invoice',
+	'CC Professional Comparison')
+
+
+def native_link_dependents(groups):
+	"""Return exact center-scoped fixture documents linking native vouchers."""
+	return {kind: sorted(set(groups.get(kind, []))) for kind in NATIVE_LINK_DEPENDENTS}
+
+
 def owned_audit_ids(events, groups, tag):
 	"""Validate every synthetic audit link before voucher cleanup deletes it."""
 	names = sorted(set(groups.get('CC Audit Event', [])))
