@@ -51,6 +51,16 @@ def native_dependents_first(documents, kinds):
 	return ordered
 
 
+def native_two_phase(documents, cancel, after_cancellation, delete):
+	"""Clear hook-created fixture links between native cancel and delete."""
+	for doc in documents:
+		cancel(doc)
+	if after_cancellation:
+		after_cancellation()
+	for doc in documents:
+		delete(doc)
+
+
 def confirmation_dependents(appointments, centers, confirmations, communications):
 	"""Return exact IDs only when every dependent belongs to the fixture."""
 	appointments, centers = set(appointments), set(centers)
@@ -84,7 +94,7 @@ def require_native_accounting_cleanup():
 		frappe.throw('Fixture contabili bloccate: la configurazione nativa conserva i ledger; nessuna modifica automatica alla configurazione.')
 
 
-def native_accounting_cleanup(groups, centers):
+def native_accounting_cleanup(groups, centers, after_cancellation=None):
 	"""Cancel dependencies before invoices; never raw-delete financial vouchers."""
 	import frappe
 	from centrochange_core.security.audit import internal_write
@@ -103,16 +113,17 @@ def native_accounting_cleanup(groups, centers):
 	# Native links require returns and amended successors to go before originals.
 	documents = native_dependents_first(documents, kinds)
 	with internal_write('cc_accounting_write'):
-		for doc in documents:
+		def cancel(doc):
 			doc.reload()
 			if doc.docstatus == 1:
 				doc.flags.ignore_permissions = True
 				doc.cancel()
 			if doc.docstatus not in (0, 2):
 				raise ValueError('Native cancellation did not complete')
-		# Native link checks remain enabled. Unexpected dependencies fail closed.
-		for doc in documents:
+		def delete(doc):
 			frappe.delete_doc(doc.doctype, doc.name, ignore_permissions=True)
+		# Native link checks remain enabled. Unexpected dependencies fail closed.
+		native_two_phase(documents, cancel, after_cancellation, delete)
 	for kind in (*kinds, 'GL Entry', 'Payment Ledger Entry'):
 		if any(frappe.db.exists(kind, name) for name in groups.get(kind, [])):
 			raise ValueError('Native accounting cleanup left residual records')

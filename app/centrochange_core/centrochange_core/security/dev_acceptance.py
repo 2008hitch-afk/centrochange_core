@@ -332,7 +332,7 @@ def destroy_http(fixture):
 	# The fixture's own audit events dynamically link native vouchers. Remove only
 	# events proven to belong to this fixture before native voucher cancellation;
 	# otherwise Frappe correctly refuses to delete the cancelled voucher.
-	from centrochange_core.security.fixture_cleanup import owned_audit_ids,native_link_dependents
+	from centrochange_core.security.fixture_cleanup import owned_audit_ids,native_link_dependents,NATIVE_LINK_DEPENDENTS
 	owned_audits=owned_audit_ids(frappe.get_all('CC Audit Event',filters={
 		'name':['in',groups.get('CC Audit Event') or ['']]},
 		fields=['name','reference_doctype','reference_name','reason'],limit_page_length=0),groups,tag)
@@ -346,8 +346,38 @@ def destroy_http(fixture):
 			for field in frappe.get_meta(dependent).get_table_fields():
 				frappe.db.delete(field.options,{'parenttype':dependent,'parent':['in',names]})
 			frappe.db.delete(dependent,{'name':['in',names]})
+	def clear_post_cancel_links():
+		# Cancellation hooks can create new exception/notification rows. Every
+		# selected row belongs to the fixture by its center, patient, recipient,
+		# or exact reference to one of its native vouchers.
+		for dependent in NATIVE_LINK_DEPENDENTS:
+			if dependent=='CC Payment Override':
+				names=frappe.get_all(dependent,filters={'patient':['in',fixture['patients']]},pluck='name',limit_page_length=0)
+			elif dependent=='CC Notification':
+				names=frappe.get_all(dependent,filters={'recipient':['in',users]},pluck='name',limit_page_length=0)
+				for native in ('Bank Transaction','Payment Entry','Sales Invoice','Purchase Invoice'):
+					names+=frappe.get_all(dependent,filters={'reference_doctype':native,
+						'reference_name':['in',groups[native] or ['']]},pluck='name',limit_page_length=0)
+			else:
+				names=frappe.get_all(dependent,filters={'center':['in',fixture['centers']]},pluck='name',limit_page_length=0)
+			groups[dependent]=sorted(set(groups.get(dependent,[])+names))
+		fresh_audits=set(frappe.get_all('CC Audit Event',filters={'reason':tag},pluck='name',limit_page_length=0))
+		for dependent in (*NATIVE_LINK_DEPENDENTS,'Bank Transaction','Payment Entry','Sales Invoice','Purchase Invoice'):
+			fresh_audits.update(frappe.get_all('CC Audit Event',filters={'reference_doctype':dependent,
+				'reference_name':['in',groups.get(dependent) or ['']]},pluck='name',limit_page_length=0))
+		if fresh_audits:
+			rows=frappe.get_all('CC Audit Event',filters={'name':['in',sorted(fresh_audits)]},
+				fields=['name','reference_doctype','reference_name','reason'],limit_page_length=0)
+			owned_audit_ids(rows,{**groups,'CC Audit Event':sorted(fresh_audits)},tag)
+			frappe.db.delete('CC Audit Event',{'name':['in',sorted(fresh_audits)]})
+			groups['CC Audit Event']=sorted(set(groups.get('CC Audit Event',[]))|fresh_audits)
+		for dependent,names in native_link_dependents(groups).items():
+			if names:
+				for field in frappe.get_meta(dependent).get_table_fields():
+					frappe.db.delete(field.options,{'parenttype':dependent,'parent':['in',names]})
+				frappe.db.delete(dependent,{'name':['in',names]})
 	from centrochange_core.security.fixture_cleanup import native_accounting_cleanup
-	native_accounting_cleanup(groups, fixture['centers'])
+	native_accounting_cleanup(groups, fixture['centers'], clear_post_cancel_links)
 	financial = {'Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction','GL Entry','Payment Ledger Entry'}
 	for doctype,names in groups.items():
 		if doctype in financial:

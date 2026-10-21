@@ -56,6 +56,15 @@ class FixtureAuditOwnershipTests(unittest.TestCase):
         self.assertEqual(selected["CC Notification"], ["NOTICE-1"])
         self.assertNotIn("Patient", selected)
 
+    def test_hook_generated_link_is_cleared_between_cancel_and_delete(self):
+        events = []
+        cleanup.native_two_phase(["A", "B"],
+                                 lambda doc: events.append("cancel " + doc),
+                                 lambda: events.append("clear owned links"),
+                                 lambda doc: events.append("delete " + doc))
+        self.assertEqual(events, ["cancel A", "cancel B", "clear owned links",
+                                  "delete A", "delete B"])
+
 
 if __name__ == "__main__":
     unittest.main()
