@@ -1,4 +1,4 @@
-import { call, finance, ops, requestKey, romeToday, type Row } from './api'
+import { call, finance, ops, recentPaymentStart, requestKey, romeToday, type Row } from './api'
 
 export type ArchiveKind = 'Patient' | 'Healthcare Practitioner' | 'Item' | 'Item Price' | 'Appointment Type' | 'CC Center Service' | 'CC Package Template' | 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry' | 'Bank Transaction'
 export type ArchiveRecord = Row & { name: string; modified?: string }
@@ -22,7 +22,7 @@ export async function listArchive(center: string, kind: ArchiveKind, offset = 0,
   if (catalogKinds.includes(kind)) return call<ArchivePage>('catalog.records', { center, kind, limit: 100, offset })
   if (kind === 'Patient') return ops<ArchivePage<PatientProfile>>('profiles.patients', { center, limit: 100, offset })
   if (kind === 'Healthcare Practitioner') return ops<ArchivePage<PractitionerProfile>>('profiles.practitioners', { center, limit: 100, offset })
-  if (kind === 'Payment Entry') return finance<ArchivePage<PaymentProjection>>('payments.records', { center, start: interval?.start ?? `${Number(romeToday().slice(0, 4)) - 1}-01-01`, end: interval?.end ?? romeToday(), limit: 100, offset })
+  if (kind === 'Payment Entry') return finance<ArchivePage<PaymentProjection>>('payments.records', { center, start: interval?.start ?? recentPaymentStart(), end: interval?.end ?? romeToday(), limit: 100, offset })
   const rows = await finance<ArchiveRecord[]>('reporting.records', { center, doctype: kind })
   return { rows, has_more: false }
 }

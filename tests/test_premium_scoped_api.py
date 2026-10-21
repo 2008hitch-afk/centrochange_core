@@ -79,6 +79,7 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe = types.ModuleType('frappe')
         self.frappe.PermissionError = Denied
         self.frappe.session = types.SimpleNamespace(user='manager@example.invalid')
+        self.frappe.local = types.SimpleNamespace(request=None)
         self.frappe.db = self.db
         self.frappe.throw = lambda message, exc=Invalid: (_ for _ in ()).throw(exc(message))
         self.frappe.get_doc = lambda doctype, name=None, **kwargs: self.db.doc if not isinstance(doctype, dict) else FakeDoc(doctype['doctype'], 'DRAFT', **{k: v for k, v in doctype.items() if k != 'doctype'})
@@ -157,6 +158,18 @@ class ScopedApiTest(unittest.TestCase):
             with self.assertRaises(Invalid):
                 self.api.page(*args)
         self.assertEqual(self.db.doc.writes, 0)
+
+    def test_frappe_rpc_marker_does_not_open_mass_assignment(self):
+        method = 'centrochange_core.catalog.item_save'
+        self.frappe.local.request = types.SimpleNamespace(path='/api/method/' + method, method='POST')
+        self.api.deny_extra({'cmd': method})
+        for extra in ({'cmd': method, 'disabled': 0}, {'cmd': 'centrochange_core.catalog.other'},
+                      {'cmd': method, 'customer': 'CROSS'}):
+            with self.assertRaises(Denied):
+                self.api.deny_extra(extra)
+        self.frappe.local.request.method = 'GET'
+        with self.assertRaises(Denied):
+            self.api.deny_extra({'cmd': method})
 
     def test_create_and_replay(self):
         first = self.api.create('create', 'A', 'Item', {'item_name': 'Nuovo'}, ('item_name',), 'KC', 'motivo')

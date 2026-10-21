@@ -34,8 +34,17 @@ def exact_fields(values, allowed):
 
 
 def deny_extra(extra):
-    if extra:
-        frappe.throw('Campi non autorizzati', frappe.PermissionError)
+    if not extra:
+        return
+    request = getattr(frappe.local, 'request', None)
+    cmd = extra.get('cmd')
+    # Frappe v16 injects its RPC route into form_dict before calling a
+    # whitelisted function with **kwargs. Accept only that exact framework
+    # marker; every client-supplied business field remains rejected.
+    if (set(extra) == {'cmd'} and isinstance(cmd, str) and request
+            and request.method == 'POST' and request.path == '/api/method/' + cmd):
+        return
+    frappe.throw('Campi non autorizzati', frappe.PermissionError)
 
 
 def manager(center):

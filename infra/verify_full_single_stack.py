@@ -32,7 +32,7 @@ PREMIUM_ADDED = {
     'centrochange_core/public/premium/app.css',
     'centrochange_core/public/premium/public.js',
     'centrochange_core/public/premium/logo.webp',
-    'centrochange_core/public/premium/style-NYzsszxs.js',
+    'centrochange_core/public/premium/style-BmVv81RX.js',
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
                            'centrochange_core/operations/client_landing.py'}

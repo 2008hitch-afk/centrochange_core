@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Printer, Search } from 'lucide-react'
-import { displayDate, money, requestKey, romeToday, type Boot, type FinanceBoot, type Row } from './api'
+import { displayDate, money, recentPaymentStart, requestKey, romeToday, type Boot, type FinanceBoot, type Row } from './api'
 import { archiveDetail, createArchive, creatableKinds, documentPreview, editableKinds, financeKinds, listArchive, saveArchive, type ArchiveKind, type ArchiveRecord, type PrintPreview } from './scoped_api'
 import { Button, DataTable, Drawer, Empty, Field, FormError, Heading, Modal } from './ui'
 
@@ -39,7 +39,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [search, setSearch] = useState('')
-  const [paymentStart, setPaymentStart] = useState(`${Number(romeToday().slice(0, 4)) - 1}-01-01`)
+  const [paymentStart, setPaymentStart] = useState(recentPaymentStart)
   const [paymentEnd, setPaymentEnd] = useState(romeToday())
   const [selected, setSelected] = useState<ArchiveRecord | null>(null)
   const [draft, setDraft] = useState<Row | null>(null)

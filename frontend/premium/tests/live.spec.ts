@@ -37,7 +37,7 @@ test('same Site shell, compiled assets and responsive archive navigation', async
     const shell = await page.goto('/premium')
     expect(shell?.ok()).toBeTruthy()
     await expect(page.locator('meta[name="csrf-token"]')).toHaveAttribute('content', /.+/)
-    await expect(page.getByRole('button', { name: 'Agenda' })).toBeVisible()
+    await expect(page.locator('.sidebar nav').first().getByRole('button', { name: 'Agenda', exact: true })).toBeVisible()
     if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Apri menu' }).click()
     await page.getByRole('button', { name: 'Archivi', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Archivi' })).toBeVisible()
@@ -85,7 +85,10 @@ test('seven identities and Guest: scoped API, cross-center, native access', asyn
         params: { center: fixture.center_a, limit: 1 } })
       if (role === 'manager' || role === 'secretariat' || role.startsWith('professional_'))
         expect(profile.ok(), `profiles ${role}`).toBeTruthy()
-      else denied(profile)
+      else {
+        expect(profile.ok(), `profiles ${role}`).toBeTruthy()
+        expect((await profile.json()).message.rows).toEqual([])
+      }
       const finance = await context.request.get(endpoint('finance.payments.detail'), {
         params: { center: fixture.center_a, name: fixture.payment_a } })
       if (['manager', 'secretariat', 'finance', 'accountant'].includes(role))

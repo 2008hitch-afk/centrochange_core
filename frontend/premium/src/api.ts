@@ -43,6 +43,10 @@ export const schedule = <T>(name: string, args: Row = {}, write = false) => call
 export const requestKey = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')
 export const romeDateAt = (at: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(at)
 export const romeToday = () => romeDateAt(new Date())
+export const recentPaymentStart = () => {
+  const [year, month, day] = romeToday().split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day) - 90 * 86_400_000).toISOString().slice(0, 10)
+}
 export const displayDate = (value: unknown) => { const iso = String(value ?? '').slice(0, 10); return /^\d{4}-\d\d-\d\d$/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : String(value ?? '') }
 export const money = (value: unknown, currency = 'EUR') => value == null ? 'Da definire' : new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(Number(value))
 export const time = (value: unknown) => String(value ?? '').slice(0, 5)
