@@ -12,6 +12,13 @@ def native_link_dependents(groups):
 	return {kind: sorted(set(groups.get(kind, []))) for kind in NATIVE_LINK_DEPENDENTS}
 
 
+def fixture_incoming_target(target, owned_purchase_invoices):
+	"""Only a fixture-owned purchase invoice link may be cleared for teardown."""
+	if target and target not in owned_purchase_invoices:
+		raise ValueError('Incoming source links a purchase invoice outside fixture')
+	return target
+
+
 def owned_audit_ids(events, groups, tag):
 	"""Validate every synthetic audit link before voucher cleanup deletes it."""
 	names = sorted(set(groups.get('CC Audit Event', [])))

@@ -331,7 +331,7 @@ def destroy_http(fixture):
 		'link_name':['in',groups['Customer'] or ['']]},pluck='parent')
 	# Native cancellation hooks still need source records such as CC Incoming
 	# Invoice. Clear owned audit and other dynamic links only after cancellation.
-	from centrochange_core.security.fixture_cleanup import owned_audit_ids,native_link_dependents,NATIVE_LINK_DEPENDENTS
+	from centrochange_core.security.fixture_cleanup import owned_audit_ids,native_link_dependents,NATIVE_LINK_DEPENDENTS,fixture_incoming_target
 	def clear_post_cancel_links():
 		# Cancellation hooks can create new exception/notification rows. Every
 		# selected row belongs to the fixture by its center, patient, recipient,
@@ -359,6 +359,15 @@ def destroy_http(fixture):
 			groups['CC Audit Event']=sorted(set(groups.get('CC Audit Event',[]))|fresh_audits)
 		for dependent,names in native_link_dependents(groups).items():
 			if names:
+				if dependent=='CC Incoming Invoice':
+					# Purchase Invoice on_trash still reads the immutable XML source.
+					# Clear only its reverse link; remove the source after vouchers.
+					for name in names:
+						target=frappe.db.get_value(dependent,name,'purchase_invoice')
+						fixture_incoming_target(target,groups['Purchase Invoice'])
+						if target:
+							frappe.db.set_value(dependent,name,'purchase_invoice',None)
+					continue
 				for field in frappe.get_meta(dependent).get_table_fields():
 					frappe.db.delete(field.options,{'parenttype':dependent,'parent':['in',names]})
 				frappe.db.delete(dependent,{'name':['in',names]})

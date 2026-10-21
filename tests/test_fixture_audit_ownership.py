@@ -77,6 +77,12 @@ class FixtureAuditOwnershipTests(unittest.TestCase):
         cleanup.native_two_phase(["PURCHASE-1"], cancel, clear_owned_links, delete)
         self.assertFalse(state["voucher_exists"])
 
+    def test_incoming_reverse_link_can_only_target_owned_purchase_invoice(self):
+        self.assertEqual(cleanup.fixture_incoming_target("PINV-1", ["PINV-1"]), "PINV-1")
+        self.assertIsNone(cleanup.fixture_incoming_target(None, ["PINV-1"]))
+        with self.assertRaises(ValueError):
+            cleanup.fixture_incoming_target("PINV-OTHER", ["PINV-1"])
+
 
 if __name__ == "__main__":
     unittest.main()
