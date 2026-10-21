@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { type Row, finance, requestKey, romeToday, money } from './api'
+import { type Row, call, finance, requestKey, romeToday, money } from './api'
 import { type Feedback, Button, DateInput, Field, FormError, useAction } from './ui'
 
-type Props = { row: Row; tab: string; center: string; canWrite: boolean; accounts: Row[]; suppliers: Row[]; feedback: Feedback; onChange: () => void }
+type Props = { row: Row; tab: string; center: string; canWrite: boolean; accounts: Row[]; suppliers: Row[]; items: Row[]; feedback: Feedback; onChange: () => void }
 const err = (e: unknown) => e instanceof Error ? e.message : 'Operazione non riuscita.'
 
-export function FinanceActions({ row, tab, center, canWrite, accounts, suppliers, feedback, onChange }: Props) {
+export function FinanceActions({ row, tab, center, canWrite, accounts, suppliers, items, feedback, onChange }: Props) {
   const [choice, setChoice] = useState('')
   const [reason, setReason] = useState('')
   const [date, setDate] = useState(romeToday())
@@ -17,6 +17,10 @@ export function FinanceActions({ row, tab, center, canWrite, accounts, suppliers
   const [supplier, setSupplier] = useState('')
   const [candidates, setCandidates] = useState<Row[]>([])
   const [detail, setDetail] = useState<Row | null>(null)
+  const [incoming, setIncoming] = useState<Row | null>(null)
+  const [lines, setLines] = useState<Row[]>([])
+  const [classified, setClassified] = useState<string[]>([])
+  const [taxAccount, setTaxAccount] = useState('')
   const [loadError, setLoadError] = useState('')
   const keys = useRef<Record<string, string>>({})
   const { busy, error, run } = useAction(feedback, onChange)
@@ -26,6 +30,14 @@ export function FinanceActions({ row, tab, center, canWrite, accounts, suppliers
     const name = String(row.name ?? '')
     const task = tab === 'Banca' ? finance<Row>('banking.candidates', { name }) : ['SdI', 'TS'].includes(tab) ? finance<Row>('fiscal.status', { name }) : null
     if (task) task.then(r => { if (!live) return; setDetail(r); setCandidates(Array.isArray(r.invoices) ? r.invoices as Row[] : []) }).catch(e => { if (live) setLoadError(err(e)) })
+    if (tab === 'XML ricevuti' && row.state === 'Needs Classification') {
+      call<Row>('frappe.client.get', { doctype: 'CC Incoming Invoice', name }).then(doc => {
+        if (!live) return
+        const parsed = JSON.parse(String(doc.lines_json ?? '[]'))
+        if (!Array.isArray(parsed) || !parsed.length || parsed.some(line => !line || typeof line !== 'object')) throw new Error('Righe XML non disponibili per la classificazione.')
+        setIncoming(doc); setLines(parsed); setClassified(parsed.map(() => ''))
+      }).catch(e => { if (live) setLoadError(err(e)) })
+    }
     return () => { live = false }
   }, [row, tab])
 
@@ -33,7 +45,7 @@ export function FinanceActions({ row, tab, center, canWrite, accounts, suppliers
   const docstatus = Number(row.docstatus)
   const invoiceDomain = tab === 'Fatture pazienti' ? 'receivables' : tab === 'Fatture fornitori' ? 'incoming' : ''
   const actions = invoiceDomain ? docstatus === 0 ? [['submit', 'Approva e contabilizza']] : docstatus === 1 ? [['pay', 'Registra pagamento'], ['cancel', 'Annulla documento'], ...(invoiceDomain === 'receivables' ? [['credit', 'Nota di credito']] : [])] : docstatus === 2 ? [['amend', 'Rettifica e riemetti']] : []
-    : tab === 'Banca' && Number(row.docstatus) === 1 ? [['reconcile', 'Riconcilia con fattura'], ['cancel', 'Annulla movimento']] : tab === 'XML ricevuti' && !row.purchase_invoice ? [['bind_supplier', 'Collega fornitore']] : ['SdI', 'TS'].includes(tab) && row.direction === 'OUTBOUND' && (tab === 'TS' ? ['READY', 'RETRY_REQUIRED'] : ['PREPARED', 'FAILED_RETRYABLE']).includes(String(detail?.status ?? row.status)) ? [['queue', 'Simula tentativo']] : []
+    : tab === 'Banca' && Number(row.docstatus) === 1 ? [['reconcile', 'Riconcilia con fattura'], ['cancel', 'Annulla movimento']] : tab === 'XML ricevuti' && !row.purchase_invoice ? [...(row.state !== 'Needs Classification' ? [['bind_supplier', 'Collega fornitore']] : []), ...(row.state === 'Needs Classification' ? [['draft', 'Classifica e prepara']] : [])] : ['SdI', 'TS'].includes(tab) && row.direction === 'OUTBOUND' && (tab === 'TS' ? ['READY', 'RETRY_REQUIRED'] : ['PREPARED', 'FAILED_RETRYABLE']).includes(String(detail?.status ?? row.status)) ? [['queue', 'Simula tentativo']] : []
   const submit = async () => {
     if (!choice) return
     const name = String(row.name)
@@ -48,14 +60,15 @@ export function FinanceActions({ row, tab, center, canWrite, accounts, suppliers
       method = `banking.${choice}`
       if (choice === 'reconcile') args.invoice = invoice
     } else if (tab === 'XML ricevuti') {
-      method = 'incoming.bind_supplier'
-      args.supplier = supplier
+      method = choice === 'draft' ? 'incoming.draft' : 'incoming.bind_supplier'
+      if (choice === 'draft') args = { ...args, items: classified, expense_account: expenseAccount, tax_account: taxAccount || null, posting_date: date, due_date: due }
+      else args.supplier = supplier
     } else {
       method = `${tab === 'SdI' ? 'sdi' : 'ts'}.queue`
       args = { ...args, outcome }
     }
     const key = `${method}:${JSON.stringify(args)}`
-    if (['pay', 'credit', 'amend'].includes(choice)) args.request_key = keys.current[key] ??= requestKey()
+    if (['pay', 'credit', 'amend', 'draft'].includes(choice)) args.request_key = keys.current[key] ??= requestKey()
     if (choice === 'queue') args.attempt_key = keys.current[key] ??= requestKey()
     await run(() => finance(method, args, true), 'Operazione finanziaria registrata.')
   }
@@ -66,7 +79,8 @@ export function FinanceActions({ row, tab, center, canWrite, accounts, suppliers
     {choice === 'amend' && invoiceDomain === 'incoming' && <Field label="Conto costo" required><select value={expenseAccount} onChange={e => setExpenseAccount(e.target.value)} required><option value="">Seleziona</option>{accounts.filter(a => a.root_type === 'Expense' && !a.is_group && !a.disabled).map(a => <option key={String(a.name)} value={String(a.name)}>{String(a.name)}</option>)}</select></Field>}
     {choice === 'reconcile' && <Field label="Fattura compatibile" required><select value={invoice} onChange={e => setInvoice(e.target.value)} required><option value="">Seleziona</option>{candidates.map(c => <option key={String(c.name)} value={String(c.name)}>{String(c.name)} · residuo {money(c.outstanding_amount)}</option>)}</select></Field>}
     {choice === 'bind_supplier' && <Field label="Fornitore" required><select value={supplier} onChange={e => setSupplier(e.target.value)} required><option value="">Seleziona</option>{suppliers.map(s => <option key={String(s.name)} value={String(s.name)}>{String(s.supplier_name ?? s.name)}</option>)}</select></Field>}
+    {choice === 'draft' && <><p className="scope-note">Classifica ogni riga dell'XML conservato. La bozza resta soggetta ai controlli del server.</p>{lines.map((line, index) => <Field key={index} label={`Voce ${index + 1}: ${String(line.description ?? 'senza descrizione').slice(0, 90)} · ${String(line.qty ?? '—')} × ${money(line.rate)}`} required><select value={classified[index] ?? ''} onChange={e => setClassified(current => current.map((value, i) => i === index ? e.target.value : value))} required><option value="">Seleziona servizio</option>{items.filter(i => i.is_purchase_item && !i.disabled && !i.is_stock_item).map(i => <option key={String(i.name)} value={String(i.name)}>{String(i.item_name ?? i.name)}</option>)}</select></Field>)}<Field label="Conto costo" required><select value={expenseAccount} onChange={e => setExpenseAccount(e.target.value)} required><option value="">Seleziona</option>{accounts.filter(a => a.root_type === 'Expense' && !a.is_group && !a.disabled).map(a => <option key={String(a.name)} value={String(a.name)}>{String(a.name)}</option>)}</select></Field>{Number(incoming?.tax_total ?? 0) > 0 && <Field label="Conto IVA" required><select value={taxAccount} onChange={e => setTaxAccount(e.target.value)} required><option value="">Seleziona</option>{accounts.filter(a => a.account_type === 'Tax' && !a.is_group && !a.disabled).map(a => <option key={String(a.name)} value={String(a.name)}>{String(a.name)}</option>)}</select></Field>}<div className="form-grid"><Field label="Data registrazione" required><DateInput value={date} onChange={setDate} required /></Field><Field label="Scadenza" required><DateInput value={due} onChange={setDue} required /></Field></div></>}
     {choice === 'queue' && <Field label="Esito simulato" required><select value={outcome} onChange={e => setOutcome(e.target.value)}><option>Accepted</option><option>Rejected</option><option>Retryable Failure</option><option>Terminal Failure</option>{tab === 'TS' && <option>Correction Required</option>}</select></Field>}
-    <Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={error} /><Button disabled={busy || (choice === 'reconcile' && !invoice)} type="submit">{busy ? 'Salvataggio…' : 'Conferma operazione'}</Button>
+    <Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={error} /><Button disabled={busy || !!loadError || (choice === 'reconcile' && !invoice) || (choice === 'draft' && (!lines.length || classified.some(x => !x) || !incoming))} type="submit">{busy ? 'Salvataggio…' : 'Conferma operazione'}</Button>
   </form>}</>}</section>
 }

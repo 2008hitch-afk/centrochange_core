@@ -6,13 +6,15 @@ Run date: 2026-10-21 UTC. Candidate tested in isolated Vite preview using Playwr
 |---|---|---|
 | TypeScript `npm run typecheck` | PASS | source typecheck only |
 | Vite `npm run build` | PASS | static files generated; Frappe asset service NOT_VERIFIED |
-| Playwright 1440×900 / 390×844 | 27 PASS, 1 intentionally skipped (mobile-only check in desktop project) in final full run | mocked API, Manager-like fixture plus finance denied; Guest public UI exercised with mocked API |
+| Playwright 1440×900 / 390×844 | 37 PASS, 1 intentional desktop skip of the mobile-only menu assertion in final full run | mocked API, Manager-like fixture plus finance denied; Guest public UI exercised with mocked API |
 | Agenda booking/CSRF | PASS with POST capture, cryptographic request key presence | synthetic interception; server mutation NOT_VERIFIED |
 | Navigation/Finanza/Pazienti/Report | PASS in both viewports | simulated data |
 | Direct hash role fallback | PASS | server route/API 403 NOT_VERIFIED |
 | Date formatting/DST day boundary | PASS in both viewports | booking server DST and ambiguous time NOT_VERIFIED |
 | Invalid Italian date and canonical POST | PASS in both viewports: `31/02/2026` blocked, `29/03/2026` sent as ISO | synthetic interception |
 | Invoice draft, payment, note correction, membership and public first meeting | PASS in both viewports | synthetic interception; server behavior NOT_VERIFIED |
+| Compensation rule/capture/compare, patient assignment, package issue and XML classification | PASS on desktop and mobile with API payload and CSRF assertions | synthetic interception; server authorization and mutations NOT_VERIFIED |
+| Fiscal Customer and professional report drill-down | PASS on desktop and mobile with distinct mocked projections | live scope, export and report semantics NOT_VERIFIED |
 | No generic CRUD/third-party navigation request | PASS in both viewports | source/static browser behavior only |
 | Console errors in section sweep | 0 on desktop and mobile after fixing duplicate React table keys | Vite still logs a non-fatal outdated JSX transform warning from the app/dependency graph; source not isolated |
 | `npm audit` | 0 current findings | registry snapshot, not a security review |

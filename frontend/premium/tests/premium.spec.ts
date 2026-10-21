@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro A' }], patients: [{ name: 'PAT-001', patient_name: 'Paziente Sintetico' }], practitioners: [{ name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }], services: [{ name: 'SERV-001', cc_service_label: 'Prima visita', cc_service_item: 'ITEM-001' }], packages: [], payment_methods: ['Contanti'], roles: ['CC Manager', 'CC Secretariat'] }
-const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [], practitioners: boot.practitioners, items: [], assignees: [], simulation_only: true, fiscal_verified: false }
+const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
 
 async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true) {
@@ -21,7 +21,17 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('operations.workspace.schedules')) message = [{ name: 'SCHED-001', practitioner: 'PR-001', time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '18:00:00' }], absences: [] }]
     else if (method.endsWith('operations.reporting.summary')) message = { currencies: { EUR: { sessions: 1, performed: 0, due: 1, due_snapshot_amount: 80 } }, truncated: false }
     else if (method.endsWith('finance.reporting.summary')) message = { totals: { revenue_net: 600, collected: 400, receivable_outstanding: 200, purchase_net: 250, payable_outstanding: 80, expected_compensation: 120, unresolved_expectations: 0, sessions: 4 }, sales_invoices: [], purchase_invoices: [], scope_note: 'Dati sintetici.' }
-    else if (method.endsWith('finance.reporting.records')) message = [{ name: 'INV-001', posting_date: today, customer: 'Cliente Sintetico', grand_total: 80, outstanding_amount: 20, docstatus: 1 }]
+    else if (method.endsWith('finance.patient_reporting.patient_view')) message = new URL(req.url()).searchParams.has('key')
+      ? { key: 'CUS-001', customer_label: 'Soggetto sintetico', state: 'Regolare', counts: { sessions: 1, performed: 1 }, totals: { invoiced: 80, collected: 80, outstanding: 0, overdue: 0 }, sessions: [{ name: 'APP-001', appointment_date: today, patient_label: 'Paziente Sintetico', cc_service_label: 'Prima visita', category: 'performed' }], invoices: [{ name: 'INV-001', posting_date: today, grand_total: 80 }], payments: [{ name: 'PAY-001', posting_date: today, collected_amount: 80 }], scope_note: 'Dati sintetici.' }
+      : { rows: [{ key: 'CUS-001', customer_label: 'Soggetto sintetico', state: 'Regolare', totals: { outstanding: 0 } }] }
+    else if (method.endsWith('finance.reporting.professional_view')) message = { practitioner_name: 'Dott.ssa Rossi', counts: { sessions: 1, performed: 1 }, sessions: [{ name: 'APP-001', appointment_date: today, patient_label: 'Paziente Sintetico', cc_service_label: 'Prima visita', category: 'performed' }], economics: { expected: 40, suspended: 0, review: 0, supplier_invoices: [], comparisons: [] }, scope_note: 'Dati sintetici.' }
+    else if (method.endsWith('finance.reporting.records')) {
+      const doctype = new URL(req.url()).searchParams.get('doctype')
+      message = doctype === 'CC Economic Source Link' ? [{ name: 'SOURCE-001', appointment: 'APP-001', session_date: today, practitioner: 'PR-001', price: 80 }]
+        : doctype === 'CC Professional Expectation' ? [{ name: 'EXPECT-001', appointment: 'APP-001', appointment_label: 'Seduta sintetica', practitioner: 'PR-001', state: 'SUSPENDED', amount: null, problem: 'Unpaid Threshold Exceeded' }]
+        : doctype === 'CC Incoming Invoice' ? [{ name: 'XML-001', invoice_number: 'SYN-001', state: 'Needs Classification', supplier: 'SUP-001', total: 80, purchase_invoice: null }]
+        : [{ name: 'INV-001', posting_date: today, customer: 'Cliente Sintetico', supplier: 'SUP-001', grand_total: 80, outstanding_amount: 20, docstatus: 1 }]
+    }
     else if (method.endsWith('finance.receivables.position')) message = { name: 'INV-001', docstatus: 1, total: 80, outstanding: 20, currency: 'EUR' }
     else if (method.endsWith('finance.receivables.candidates')) message = { candidates: [{ name: 'APP-001', patient: 'PAT-001' }], period: [today, today] }
     else if (method.endsWith('finance.banking.candidates')) message = { state: 'Candidate', invoices: [{ name: 'INV-001', outstanding_amount: 20 }] }
@@ -29,11 +39,22 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('operations.workspace.management_context')) message = { memberships: [{ user: 'synthetic@example.invalid', active: 1 }], users: [{ name: 'synthetic@example.invalid', full_name: 'Utente Sintetico' }], practitioners: boot.practitioners }
     else if (method.endsWith('scheduling.public_booking.available_slots')) message = { route: 'Marco', service: 'Primo incontro', duration: 60, price: 80, currency: 'EUR', slots: [{ date: today, time: '10:00:00' }] }
     else if (method.endsWith('scheduling.public_booking.first_meeting')) message = { name: 'APP-PUBLIC-001', confirmation: { state: 'Simulated Sent' } }
-    else if (method.endsWith('frappe.client.get_list')) message = []
+    else if (method.endsWith('frappe.client.get_list')) {
+      const doctype = new URL(req.url()).searchParams.get('doctype')
+      message = doctype === 'CC Compensation Rule' ? [{ name: 'RULE-001', practitioner: 'PR-001', service_item: 'ITEM-001' }]
+        : doctype === 'CC Package Template' ? [{ name: 'TEMPLATE-001', title: 'Pacchetto sintetico', service_item: 'ITEM-001', units: 4, enabled: 1 }]
+        : doctype === 'CC Patient Assignment' ? [{ name: 'ASSIGN-001', patient: 'PAT-001', center: 'CENTRO-A', practitioner: 'PR-001', active: 1 }] : []
+    }
+    else if (method.endsWith('frappe.client.get')) message = { name: 'XML-001', lines_json: JSON.stringify([{ description: 'Visita sintetica', qty: 1, rate: 80 }]), tax_total: 0 }
     else if (req.method() === 'POST') message = { name: 'SYNTHETIC-NEW' }
     else status = 404
     await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(status === 200 ? { message } : { exc: 'PermissionError' }) })
   })
+}
+
+async function openSection(page: Page, name: string) {
+  if ((page.viewportSize()?.width ?? 1440) < 760) await page.getByRole('button', { name: 'Apri menu' }).click()
+  await page.getByRole('button', { name, exact: true }).click()
 }
 
 test('agenda desktop: shell, calendario, dettaglio e prenotazione con CSRF', async ({ page }, testInfo) => {
@@ -76,6 +97,122 @@ test('navigazione finanza, pazienti e report usa endpoint di dominio', async ({ 
   if (page.viewportSize()?.width && page.viewportSize()!.width < 760) await page.getByRole('button', { name: 'Apri menu' }).click()
   await page.getByRole('button', { name: 'Report', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Report' })).toBeVisible()
+})
+
+test('compensi: regola, cattura e confronto usano i contratti auditati', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./')
+  await openSection(page, 'Finanza')
+  await page.getByRole('tab', { name: 'Professionisti' }).click()
+  await page.getByRole('button', { name: 'Operazioni compensi' }).click()
+  let dialog = page.getByRole('dialog', { name: 'Economia professionisti' })
+  await dialog.getByRole('combobox', { name: 'Professionista' }).selectOption('PR-001')
+  await dialog.getByRole('combobox', { name: 'Servizio' }).selectOption('ITEM-001')
+  await dialog.getByRole('spinbutton', { name: 'Importo EUR' }).fill('40')
+  await dialog.getByRole('textbox', { name: 'Motivo' }).fill('Regola sintetica')
+  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(w => w.method.endsWith('professional_economics.configure_rule'))).toBeTruthy()
+  const rule = writes.find(w => w.method.endsWith('professional_economics.configure_rule'))!
+  expect(rule.body).toMatchObject({ center: 'CENTRO-A', practitioner: 'PR-001', service_item: 'ITEM-001', basis: 'Fixed Amount', value: '40', currency: 'EUR' })
+  expect(rule.body.request_key).toMatch(/^[0-9a-f]{32}$/)
+  await expect(dialog).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Operazioni compensi' }).click()
+  dialog = page.getByRole('dialog', { name: 'Economia professionisti' })
+  await dialog.getByRole('combobox', { name: 'Operazione' }).selectOption('capture')
+  await dialog.getByRole('combobox', { name: 'Fonte seduta' }).selectOption('SOURCE-001')
+  await dialog.getByRole('combobox', { name: 'Regola esplicita' }).selectOption('RULE-001')
+  await dialog.getByRole('textbox', { name: 'Motivo' }).fill('Cattura sintetica')
+  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(w => w.method.endsWith('professional_economics.capture'))).toBeTruthy()
+  expect(writes.find(w => w.method.endsWith('professional_economics.capture'))!.body).toMatchObject({ source: 'SOURCE-001', rule: 'RULE-001' })
+  await expect(dialog).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Operazioni compensi' }).click()
+  dialog = page.getByRole('dialog', { name: 'Economia professionisti' })
+  await dialog.getByRole('combobox', { name: 'Operazione' }).selectOption('compare')
+  await dialog.getByRole('combobox', { name: 'Fattura fornitore contabilizzata' }).selectOption('INV-001')
+  await dialog.getByRole('listbox', { name: 'Snapshot distinti delle sedute' }).selectOption('EXPECT-001')
+  await dialog.getByRole('textbox', { name: 'Motivo' }).fill('Confronto sintetico')
+  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(w => w.method.endsWith('professional_economics.compare'))).toBeTruthy()
+  expect(writes.find(w => w.method.endsWith('professional_economics.compare'))!.body).toMatchObject({ purchase_invoice: 'INV-001', expectations: ['EXPECT-001'] })
+})
+
+test('assegnazione paziente usa il servizio di sicurezza con motivo e CSRF', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./')
+  await openSection(page, 'Pazienti')
+  await page.getByRole('row', { name: /Paziente Sintetico/ }).click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await expect(drawer.getByText('Professionisti assegnati')).toBeVisible()
+  await drawer.getByRole('button', { name: 'Gestisci assegnazione' }).click()
+  await drawer.getByRole('combobox', { name: 'Professionista' }).selectOption('PR-001')
+  await drawer.getByRole('combobox', { name: 'Stato' }).selectOption('0')
+  await drawer.getByRole('textbox', { name: 'Motivo' }).fill('Revoca sintetica')
+  await drawer.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(w => w.method.endsWith('security.lifecycle.set_assignment'))).toBeTruthy()
+  const write = writes.find(w => w.method.endsWith('security.lifecycle.set_assignment'))!
+  expect(write.body).toMatchObject({ patient: 'PAT-001', center: 'CENTRO-A', practitioner: 'PR-001', active: '0', reason: 'Revoca sintetica' })
+  expect(write.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
+})
+
+test('emissione pacchetto usa modello autorizzato e centro corrente', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./')
+  await openSection(page, 'Pazienti')
+  await page.getByRole('row', { name: /Paziente Sintetico/ }).click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await drawer.getByRole('button', { name: 'Emetti pacchetto' }).click()
+  await drawer.getByRole('combobox', { name: 'Modello' }).selectOption('TEMPLATE-001')
+  await drawer.getByRole('textbox', { name: 'Motivo' }).fill('Emissione sintetica')
+  await drawer.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(w => w.method.endsWith('operations.packages.issue'))).toBeTruthy()
+  const write = writes.find(w => w.method.endsWith('operations.packages.issue'))!
+  expect(write.body).toMatchObject({ template: 'TEMPLATE-001', patient: 'PAT-001', centers: ['CENTRO-A'], reason: 'Emissione sintetica' })
+  expect(write.body.request_key).toMatch(/^[0-9a-f]{32}$/)
+  expect(write.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
+})
+
+test('XML ricevuto: classificazione esplicita prepara bozza tramite servizio di dominio', async ({ page }, testInfo) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./')
+  await openSection(page, 'Finanza')
+  await page.getByRole('tab', { name: 'XML ricevuti' }).click()
+  await page.getByRole('row', { name: /SYN-001/ }).click()
+  const drawer = page.getByRole('dialog', { name: 'SYN-001' })
+  await drawer.getByRole('button', { name: 'Classifica e prepara' }).click()
+  await drawer.getByRole('combobox', { name: /Voce 1/ }).selectOption('ITEM-001')
+  await drawer.getByRole('combobox', { name: 'Conto costo' }).selectOption('EXP-001')
+  await drawer.screenshot({ path: `test-results/${testInfo.project.name}-xml-classification.png` })
+  await drawer.getByRole('textbox', { name: 'Motivo' }).fill('Classificazione sintetica')
+  await drawer.getByRole('button', { name: 'Conferma operazione' }).click()
+  await expect.poll(() => writes.find(w => w.method.endsWith('finance.incoming.draft'))).toBeTruthy()
+  const write = writes.find(w => w.method.endsWith('finance.incoming.draft'))!
+  expect(write.body).toMatchObject({ name: 'XML-001', items: ['ITEM-001'], expense_account: 'EXP-001', tax_account: null, reason: 'Classificazione sintetica' })
+  expect(write.body.request_key).toMatch(/^[0-9a-f]{32}$/)
+  expect(write.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
+})
+
+test('report dettagliati separa soggetto fiscale e professionista', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./')
+  await openSection(page, 'Finanza')
+  await page.getByRole('button', { name: 'Report dettagliati' }).click()
+  const drawer = page.getByRole('dialog', { name: 'Report dettagliati' })
+  await expect(drawer.getByText('Soggetto sintetico')).toBeVisible()
+  await drawer.getByRole('row', { name: /Soggetto sintetico/ }).click()
+  await expect(drawer.getByText('Fatturato')).toBeVisible()
+  await expect(drawer.getByText('PAY-001')).toBeVisible()
+  await drawer.screenshot({ path: `test-results/${testInfo.project.name}-finance-report.png` })
+  await drawer.getByRole('button', { name: 'Professionisti' }).click()
+  await drawer.getByRole('combobox', { name: 'Professionista' }).selectOption('PR-001')
+  await expect(drawer.getByText('Confronti atteso e ricevuto')).toBeVisible()
+  await expect(drawer.getByText('40,00')).toBeVisible()
 })
 
 test('mobile: menu, Agenda e Finanza senza overflow orizzontale', async ({ page }, testInfo) => {

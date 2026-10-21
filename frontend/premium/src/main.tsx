@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bell, Menu, Search, LogOut, ChevronDown, PanelLeftClose, X, Settings2 } from 'lucide-react'
 import { type Boot, type FinanceBoot, ops, finance, call } from './api'
 import { Agenda, Patients, Availability, Reports, FinanceView, Access, Notifications } from './views'
-import { FirstMeeting } from './first_meeting'
 import './style.css'
 
 export type View = 'Agenda' | 'Pazienti' | 'Disponibilità' | 'Report' | 'Finanza' | 'Gestione accessi' | 'Notifiche'
@@ -63,7 +62,7 @@ function App() {
         {error && <div className="alert error" role="alert"><span>{error}</span><button onClick={() => setError('')} aria-label="Chiudi errore"><X /></button></div>}
         {notice && <div className="alert success" role="status"><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Chiudi avviso"><X /></button></div>}
         {!loading && currentView === 'Agenda' && boot && <Agenda boot={boot} center={center} feedback={feedback} refreshBoot={refreshBoot} />}
-        {!loading && currentView === 'Pazienti' && boot && <Patients boot={boot} center={center} query={query} feedback={feedback} />}
+        {!loading && currentView === 'Pazienti' && boot && <Patients boot={boot} center={center} query={query} feedback={feedback} refreshBoot={refreshBoot} />}
         {!loading && currentView === 'Disponibilità' && boot && <Availability boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Finanza' && financeBoot && <FinanceView boot={financeBoot} center={center} feedback={feedback} />}
@@ -75,4 +74,4 @@ function App() {
 }
 
 const root = document.getElementById('root')!
-createRoot(root).render(<React.StrictMode>{root.dataset.page === 'first-meeting' ? <FirstMeeting /> : <App />}</React.StrictMode>)
+createRoot(root).render(<React.StrictMode><App /></React.StrictMode>)

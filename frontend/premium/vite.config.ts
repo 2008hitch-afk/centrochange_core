@@ -7,8 +7,8 @@ export default defineConfig({
     outDir: '../../app/centrochange_core/centrochange_core/public/premium',
     emptyOutDir: true,
     rollupOptions: {
-      input: 'src/main.tsx',
-      output: { entryFileNames: 'app.js', assetFileNames: 'app.[ext]' }
+      input: { app: 'src/main.tsx', public: 'src/public.tsx' },
+      output: { entryFileNames: '[name].js', chunkFileNames: '[name]-[hash].js', assetFileNames: 'app.[ext]' }
     }
   },
   server: { port: 5182, strictPort: true }

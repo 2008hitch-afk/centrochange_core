@@ -7,6 +7,8 @@ Current synthetic screenshots, 2026-10-21:
 - `docs/evidence/issue-148/agenda-desktop.png` — 1440×900 viewport, Agenda and practitioner lane.
 - `docs/evidence/issue-148/agenda-mobile.png` — 390×844 viewport, single resource day view.
 - `docs/evidence/issue-148/finance-desktop.png`, `finance-mobile.png` — accounting summary.
+- `docs/evidence/issue-148/desktop-finance-report.png`, `mobile-finance-report.png` — fiscal Customer report drawer.
+- `docs/evidence/issue-148/desktop-xml-classification.png`, `mobile-xml-classification.png` — XML line classification drawer.
 - `docs/evidence/issue-148/first-meeting-desktop.png`, `first-meeting-mobile.png` — public Guest booking entry.
 - `docs/evidence/issue-148/patients-desktop.png`, `availability-desktop.png`, `report-desktop.png`, `access-desktop.png`, `notifications-desktop.png` — all current workspace sections.
 
