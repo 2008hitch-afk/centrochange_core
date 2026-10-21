@@ -5,6 +5,7 @@ import { type Boot, type FinanceBoot, ops, finance, call } from './api'
 import { Agenda, Patients, ServiceCatalog, Availability, Reports, FinanceView, Access, Notifications } from './views'
 import { AuditLog } from './audit_log'
 import { MasterArchive, syntheticArchive } from './master_archive'
+import { ScopedArchive } from './scoped_archive'
 import './style.css'
 
 export type View = 'Agenda' | 'Pazienti' | 'Servizi' | 'Disponibilità' | 'Report' | 'Finanza' | 'Archivi' | 'Gestione accessi' | 'Registro modifiche' | 'Notifiche'
@@ -43,7 +44,7 @@ function App() {
     return () => { live = false }
   }, [center])
   const roles = boot?.roles ?? []
-  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive && (roles.includes('CC Manager') || !!financeBoot?.can_write) : ['Gestione accessi', 'Registro modifiche', 'Notifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
+  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : !!boot || !!financeBoot : ['Gestione accessi', 'Registro modifiche', 'Notifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
   const currentView = available.includes(view) ? view : available[0]
   const centers = boot?.centers?.length ? boot.centers : financeBoot?.centers ?? []
   const switchView = (next: View) => { location.hash = encodeURIComponent(next); setView(next); setMobileOpen(false); setError(''); setNotice('') }
@@ -73,7 +74,7 @@ function App() {
         {!loading && currentView === 'Disponibilità' && boot && <Availability boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Finanza' && financeBoot && <FinanceView boot={financeBoot} center={center} feedback={feedback} />}
-        {!loading && currentView === 'Archivi' && boot && <MasterArchive boot={boot} financeBoot={financeBoot} center={center} />}
+        {!loading && currentView === 'Archivi' && (boot || financeBoot) && (syntheticArchive ? boot && <MasterArchive boot={boot} financeBoot={financeBoot} center={center} /> : <ScopedArchive boot={boot} financeBoot={financeBoot} center={center} />)}
         {!loading && currentView === 'Gestione accessi' && boot && <Access boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Registro modifiche' && boot && <AuditLog feedback={feedback} />}
         {!loading && currentView === 'Notifiche' && boot && <Notifications center={center} feedback={feedback} />}

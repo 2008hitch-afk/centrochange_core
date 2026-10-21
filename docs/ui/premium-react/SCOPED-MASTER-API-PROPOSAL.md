@@ -1,5 +1,7 @@
 # #148 — proposte API per editor ordinari mancanti
 
+**Stato storico:** questa proposta precede la DECISION-063. L'Owner ha poi autorizzato l'implementazione delimitata, non ogni signature qui ipotizzata. Contratti effettivi, test e blocchi attuali: [SCOPED-API-DECISION-063-REPORT.md](SCOPED-API-DECISION-063-REPORT.md). La proposta di `Payment Entry` create/allocate resta esplicitamente non autorizzata.
+
 **PROPOSTA, nessun endpoint implementato o autorizzato.** DECISION-062 richiede catalogo, tariffe, anagrafiche e pagamenti ordinari in React. Le API correnti espongono snapshot di servizi/practitioner/pazienti e workflow finanza, ma non una scrittura di dominio per questi master. Non usare `/api/resource`, `frappe.client.insert/set_value` o permessi elevati nel browser come scorciatoia. Il backend resta la fonte autorevole.
 
 ## Confini di dominio

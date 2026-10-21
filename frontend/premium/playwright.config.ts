@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
-  testDir: './tests',
+  testDir: './tests', testMatch: 'premium.spec.ts',
   timeout: 30_000,
   expect: { timeout: 7_000 },
   use: { baseURL: 'http://127.0.0.1:5182/assets/centrochange_core/premium/', browserName: 'chromium', trace: 'retain-on-failure', screenshot: 'only-on-failure' },
