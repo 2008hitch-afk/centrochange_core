@@ -70,6 +70,7 @@ def main():
     os.chmod(output.parent, 0o700)
     os.chown(output, account.pw_uid, account.pw_gid)
     report = {'status':'BLOCKED','clone_project':clone.PROJECT,'dev_mutated':False}
+    patient_only = os.environ.get('CC_CLONE_ONLY_PATIENT') == '1'
     image = None
     try:
         clone.setup(state)
@@ -120,7 +121,10 @@ frappe.destroy()
             f'CC_OUTPUT_DIR={output}',
             'CC_BROWSER_IP=127.0.0.2',
             'CC_FORM_MANAGER=1',
+            'CC_CLONE_SAVE=1',
         ]
+        if patient_only:
+            env.append('CC_ROUTES=patient')
         result = clone.run(['runuser','-u','empv26','--','env',*env,'node',
             str(REPO / 'infra/browser/issue75_native_form_affordance.cjs')], check=False)
         report['browser_exit_code'] = result.returncode
@@ -128,9 +132,13 @@ frappe.destroy()
             rows = json.loads((output / 'results.json').read_text())
             report['browser'] = {status:sum(row['status']==status for row in rows)
                                  for status in ('PASS','FAIL','BLOCKED')}
+            saves = [row.get('syntheticSave', {}).get('status') for row in rows
+                     if row.get('route') == 'patient' and row.get('width') == 1440]
+            report['patient_save'] = saves[0] if saves else 'BLOCKED'
         else:
             (state / 'browser.stderr').write_bytes(result.stderr)
-        report['status'] = ('PASS' if report.get('browser',{}).get('PASS') == 22
+        report['status'] = ('PASS' if report.get('browser',{}).get('PASS') == (2 if patient_only else 22)
+                            and report.get('patient_save') == 'PASS'
                             else 'PARTIAL' if report.get('browser') else 'BLOCKED')
     except Exception as error:
         report['failure'] = f'{type(error).__name__}: {str(error)[:180]}'
@@ -152,6 +160,7 @@ frappe.destroy()
         print(json.dumps({'status':report['status'],'restore':report.get('restore'),
                           'candidate_css':report.get('candidate_css'),
                           'browser':report.get('browser'),'cleanup':report['cleanup'],
+                          'patient_save':report.get('patient_save'),
                           'state':str(state),'failure':report.get('failure')}),flush=True)
     return 0 if report['status']=='PASS' else 2
 

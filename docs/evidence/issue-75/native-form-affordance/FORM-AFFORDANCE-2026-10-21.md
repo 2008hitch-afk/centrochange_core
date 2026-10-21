@@ -42,9 +42,12 @@ selector, DocType, permission, validation or data is changed.
 * Agenda, Segreteria: desktop 1440px and mobile 390px screenshots were pixel
   identical before/after CSS preview; calendar geometry was identical. This
   does not replace a later post-deploy regression.
-* Save and refresh persistence, actual native required-field validation,
-  all advanced/conditional controls and the remaining role matrix are not
-  established by this CSS test. No synthetic document was saved on shared DEV.
+* A separate isolated Patient fixture completed native fill → Save → refresh →
+  persisted value: **PASS** (2/2 visual widths, clone removed). An earlier
+  attempt found a test-only error: `sex` is a Link input, not an HTML select;
+  the runner now uses the actual Frappe control. No synthetic document was
+  saved on shared DEV. Actual native required-field validation, all advanced/
+  conditional controls and the remaining role matrix are not established.
 
 Representative sanitised images: `patient-desktop-before.png`,
 `patient-desktop-after-preview.png`, `patient-clone-desktop.png`,
@@ -71,7 +74,8 @@ left the DEV unchanged. Neither condition was an application failure.
 1. Establish the intended edit path and authorised role for the five finance
    Forms, then test their editable empty, filled, select, focus, error and
    read-only states without altering the shared DEV dataset.
-2. Verify actual synthetic save, refresh and persistence in an isolated Site.
+2. Extend synthetic save, refresh and persistence checks to the other
+   editable Form types where their authorised workflows permit it.
 3. Freeze one cumulative source commit, verify the exact base image and active
    Compose, run read-only preflight, then request one Owner gate for the
    controlled update with encrypted backup and one rollback path.

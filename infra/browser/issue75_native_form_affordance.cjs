@@ -100,6 +100,31 @@ async function inspect(page) {
               result.readonlyDistinct=result.after.readonly.some(x=>x.border>=1&&x.borderStyle==='dashed');
               result.dropdownVisible=result.after.controls.some(x=>x.field==='report_preference'&&x.tag==='SELECT'&&x.border>=1);
               if (result.focus.width<2 || !result.readonlyDistinct || !result.dropdownVisible || result.error!=='rgb(180, 35, 24)') result.status='FAIL';
+              if (managerMode && process.env.CC_CLONE_SAVE === '1') {
+                try {
+                await field.evaluate(e=>e.classList.remove('has-error'));
+                const first=page.locator('.frappe-control[data-fieldname="first_name"] input');
+                const last=page.locator('.frappe-control[data-fieldname="last_name"] input');
+                const sex=page.locator('.frappe-control[data-fieldname="sex"] input');
+                const marker=`UX-SINTETICO-${Date.now()}`;
+                await first.fill(marker);
+                await last.fill('Prova');
+                await sex.fill('Male');
+                await sex.press('Tab');
+                const invite=page.getByLabel('Invita come utente');
+                if (await invite.count() && await invite.isChecked()) await invite.uncheck();
+                await page.getByRole('button',{name:'Salva',exact:true}).click();
+                await page.waitForFunction(()=>window.cur_frm && !cur_frm.is_new(),{timeout:12000});
+                const saved=await page.evaluate(()=>({name:cur_frm.doc.name,first:cur_frm.doc.first_name}));
+                await page.reload();
+                await page.locator('.form-page').waitFor({timeout:10000});
+                const persisted=await page.locator('.frappe-control[data-fieldname="first_name"] input').inputValue();
+                result.syntheticSave={status:saved.first===marker&&persisted===marker?'PASS':'FAIL',
+                  persistedAfterRefresh:persisted===marker};
+                } catch (error) {
+                  result.syntheticSave={status:'FAIL',reason:String(error.message).split('\n')[0]};
+                }
+              }
             }
           } catch (error) {result.status='BLOCKED';result.reason=String(error.message).split('\n')[0];}
           results.push(result);
