@@ -4,7 +4,7 @@ Status: **PARTIAL**, 2026-10-21. Branch `issue-148/premium-react-frontend` from 
 
 ## Boundary
 
-`/premium` is a new Frappe `www` page. Its Python controller checks the Frappe session and operational/finance role before rendering; it provides a CSRF token. The HTML references versioned repository assets under `/assets/centrochange_core/premium/`. React renders the single workspace and calls same-origin `/api/method/centrochange_core.*` domain methods using the Frappe cookie and CSRF header for POST. Frappe, ERPNext, Marley Healthcare and `centrochange_core` remain authoritative. No frontend database, proxy token or generic Doctype write endpoint is introduced. `/centrochange`, `/finanza` and Desk are untouched and are **not** promoted as second product UI.
+`/premium` is a new Frappe `www` page. Its Python controller checks the Frappe session and operational/finance role before rendering; it provides a CSRF token. `/premium-primo-incontro` is a separate public React shell which uses only the existing guarded Guest first-meeting endpoints. Both HTML pages reference repository assets under `/assets/centrochange_core/premium/`. React calls same-origin `/api/method/centrochange_core.*` domain methods using the Frappe cookie and CSRF header for POST. Frappe, ERPNext, Marley Healthcare and `centrochange_core` remain authoritative. No frontend database, proxy token or generic Doctype write endpoint is introduced. `/centrochange`, `/finanza` and Desk are untouched and are **not** promoted as second product UI.
 
 The Vite source is `frontend/premium/`; `npm ci --ignore-scripts` and `npm run build` reproduce checked-in static assets in `app/centrochange_core/centrochange_core/public/premium/`. The local `index.html` is test-only and injects a fake CSRF token. A production Frappe site did not serve this candidate: page resolution, reverse-proxy caching, Content-Security-Policy, real login redirect and bundled asset delivery are **NOT_VERIFIED**. The `www` convention is supported by [Frappe portal page documentation](https://docs.frappe.io/framework/user/en/portal-pages); that is architectural support, not runtime proof.
 
@@ -22,4 +22,4 @@ The candidate is source and static assets only. No Docker image, Frappe install,
 
 ## Architectural gaps
 
-The current SPA has one HTML route plus hash sections. It lacks public first-encounter React route, complete 11 native list/form equivalents, several finance document mutation flows, role-level navigation validation, and a live Frappe integration test. These are enumerated in `FUNCTIONAL-COVERAGE.md` and prevent `READY_FOR_OWNER_VISUAL_UAT`.
+The current SPA has one workspace HTML route plus hash sections and one public first-encounter route. It lacks complete 11 native list/form equivalents, several finance document mutation flows, role-level navigation validation, and a live Frappe integration test. These are enumerated in `FUNCTIONAL-COVERAGE.md` and prevent `READY_FOR_OWNER_VISUAL_UAT`.

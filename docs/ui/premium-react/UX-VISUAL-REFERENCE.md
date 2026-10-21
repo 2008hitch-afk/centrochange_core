@@ -6,6 +6,8 @@ Current synthetic screenshots, 2026-10-21:
 
 - `docs/evidence/issue-148/agenda-desktop.png` — 1440×900 viewport, Agenda and practitioner lane.
 - `docs/evidence/issue-148/agenda-mobile.png` — 390×844 viewport, single resource day view.
-- `docs/evidence/issue-148/finance-mobile.png` — 390×844 viewport, finance summary.
+- `docs/evidence/issue-148/finance-desktop.png`, `finance-mobile.png` — accounting summary.
+- `docs/evidence/issue-148/first-meeting-desktop.png`, `first-meeting-mobile.png` — public Guest booking entry.
+- `docs/evidence/issue-148/patients-desktop.png`, `availability-desktop.png`, `report-desktop.png`, `access-desktop.png`, `notifications-desktop.png` — all current workspace sections.
 
-These screenshots are from Vite with intercepted synthetic API responses, not an installed Frappe Site. Visual quality was inspected by Codex; Owner visual acceptance is **NOT_VERIFIED**. Desktop finance, patient, every role, focus states and live account data are still open. Historic #139 screenshots are reference/evidence of earlier Frappe-native candidate only and are not visual PASS for this React branch.
+These screenshots are from Vite with intercepted synthetic API responses, not an installed Frappe Site. Visual quality was inspected by Codex; Owner visual acceptance is **NOT_VERIFIED**. Every role, focus states, complete forms and live account data are still open. Historic #139 screenshots are reference/evidence of earlier Frappe-native candidate only and are not visual PASS for this React branch.

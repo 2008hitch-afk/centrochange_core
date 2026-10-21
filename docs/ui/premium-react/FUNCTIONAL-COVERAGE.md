@@ -8,15 +8,15 @@
 | Agenda calendar | day practitioner lanes, week view, filter, date nav, event/slot selection | PRESENTE; collision, DST, 48h server tests NOT_VERIFIED |
 | Booking and session actions | book, move, cancel, close, reopen, waive | PRESENTE; only booking mocked; other mutations NOT_VERIFIED |
 | Patient overview | permission-aware search, history, packages, organizational notes | PRESENTE; pagination/truncation and all patient permissions NOT_VERIFIED |
-| Private notes | professional tab and create | PRESENTE; correction flow UI missing, server isolation NOT_VERIFIED |
+| Private notes | professional tab, create and append-only correction | PRESENTE; synthetic correction PASS, server isolation NOT_VERIFIED |
 | Availability | schedule/absence read and forms | PRESENTE; actual mutation NOT_VERIFIED |
 | Operational report | summary and CSV link | PRESENTE; export permissions NOT_VERIFIED |
 | Finance overview | accounting summary, debts and expected compensation | PRESENTE; live totals NOT_VERIFIED |
 | Finance lists | sales, incoming XML, purchase, bank, expected compensation, admin queue, SdI, TS | PRESENTE as read-only tables; list/form parity NOT_VERIFIED |
-| Finance mutations | sales draft/submit/pay/credit, incoming invoice review, bank import/reconcile, professional rule/threshold/compare, SdI/TS simulated prep/retry | BACKEND_AVAILABLE_UI_MISSING; existing domain services identified; no new rule authorized |
-| Access | memberships read | PRESENTE; membership/practitioner state actions UI missing |
+| Finance mutations | sales draft/submit/pay/credit/amend, supplier submit/pay/cancel/amend, bank import/reconcile/cancel, admin queue, professional threshold, SdI/TS simulated prepare/queue, incoming XML intake/supplier bind | PRESENTE in React; representative draft/payment mocked, others live NOT_VERIFIED; supplier XML classification, compensation rule/compare and fiscal review UI missing |
+| Access | memberships read, membership/practitioner state actions | PRESENTE; synthetic membership POST PASS, live revocation NOT_VERIFIED |
 | Notifications | list | PRESENTE via native read permission; live role check NOT_VERIFIED |
-| Public first encounter | existing Frappe page only | BACKEND_AVAILABLE_UI_MISSING in React; Guest UAT NOT_VERIFIED |
+| Public first encounter | new React `/premium-primo-incontro` using existing guarded Guest services | PRESENTE; synthetic desktop/mobile booking PASS, live Guest UAT NOT_VERIFIED |
 | Catalog, packages, assignments | backend and native Desk | BACKEND_AVAILABLE_UI_MISSING; 11 list/form equivalents not built |
 | Technical Desk | existing Frappe/ERPNext/Marley | no second native UI developed; 11×2 parity and separation decision NOT_VERIFIED |
 | Seven roles + Guest | existing #139 historical suite | this candidate tested manager-like synthetic and one finance-denied synthetic role only; full matrix NOT_VERIFIED |

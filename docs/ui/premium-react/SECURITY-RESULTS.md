@@ -14,5 +14,6 @@ Status: **PARTIAL / NOT_VERIFIED for live authorization**. No real patient data,
 | Provider calls | none added; only fiscal status read, no send action | PASS source review; runtime NOT_VERIFIED |
 | Dependency vulnerabilities | npm audit snapshot: 0 | PASS snapshot only |
 | Client error rendering | React escapes string content; server HTML stripped in API error string | source review; hostile-data test NOT_VERIFIED |
+| Public first meeting | React sends only route, slot and identity to existing rate-limited Guest service; no patient/practitioner identifiers | PASS synthetic payload; live rate limit, identity matching and permissions NOT_VERIFIED |
 
 The UI never grants permissions by hiding controls. `finance.reporting.bootstrap` and all mutation services must be tested server-side for each role and cross-center attempt before READY. The existing `frappe.client.get_list` notifications projection needs direct permission review. #139's 38/38 is historical and must be rerun against the installed React candidate in an Owner-authorized isolated environment, with synthetic fixture fingerprint and cleanup.

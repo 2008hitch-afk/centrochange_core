@@ -19,8 +19,8 @@ Status is source-level inspection plus mocked browser exercises; server authoriz
 | SdI/TS status only | permitted finance roles | `finance.fiscal.records` | CC Fiscal Transaction | scoped read | PRESENTE; no provider invocation |
 | Access memberships read | Manager | `operations.workspace.management_context` | CC Center Membership, User | scoped read | PRESENTE; write UI missing |
 | Notifications read | Manager in UI | `frappe.client.get_list` | CC Notification | native permission required | PRESENTE; live permission NOT_VERIFIED |
-| Public first encounter | Guest | Existing `www/primo_incontro` / backend flow | Patient / Booking | public guarded | BACKEND_AVAILABLE_UI_MISSING in React |
-| Fiscal creation, payment, credit, bank reconciliation, TS/SdI simulation actions | finance writers | existing `finance.*` service methods | ERPNext / CC Fiscal Transaction | audited POST | BACKEND_AVAILABLE_UI_MISSING |
-| Package/catalog/assignment forms, private-note correction, print | operational roles | existing domain services | Package, Item, Patient Assignment | scoped read/POST | BACKEND_AVAILABLE_UI_MISSING |
+| `/premium-primo-incontro` public first encounter | Guest | `scheduling.public_booking.available_slots/first_meeting` | Patient / Booking | public rate-limited guarded GET/POST | PRESENTE, synthetic browser PASS; live NOT_VERIFIED |
+| Sales draft/pay/credit/amend, bank reconcile/import, SdI/TS prepare/queue | finance writers | existing `finance.*` service methods | ERPNext / CC Fiscal Transaction | audited POST | PRESENTE in React; synthetic representative tests, live NOT_VERIFIED |
+| Package/catalog/assignment forms, incoming XML classification, professional compensation rule/compare, print | operational or finance roles | existing domain services | Package, Item, Patient Assignment, ERPNext | scoped read/POST | BACKEND_AVAILABLE_UI_MISSING |
 
 No endpoint was inferred to grant a new permission. No direct generic `/api/resource` call exists in the React source. Role enumeration and negative matrix from #139 are historical fixtures/test methodology only; they have **not** run against this candidate.

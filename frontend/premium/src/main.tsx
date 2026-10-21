@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bell, Menu, Search, LogOut, ChevronDown, PanelLeftClose, X, Settings2 } from 'lucide-react'
 import { type Boot, type FinanceBoot, ops, finance, call } from './api'
 import { Agenda, Patients, Availability, Reports, FinanceView, Access, Notifications } from './views'
+import { FirstMeeting } from './first_meeting'
 import './style.css'
 
 export type View = 'Agenda' | 'Pazienti' | 'Disponibilità' | 'Report' | 'Finanza' | 'Gestione accessi' | 'Notifiche'
@@ -73,4 +74,5 @@ function App() {
   </div>
 }
 
-createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>)
+const root = document.getElementById('root')!
+createRoot(root).render(<React.StrictMode>{root.dataset.page === 'first-meeting' ? <FirstMeeting /> : <App />}</React.StrictMode>)

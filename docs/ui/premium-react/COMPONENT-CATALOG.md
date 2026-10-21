@@ -12,5 +12,7 @@ Components are in `frontend/premium/src/ui.tsx` and assembled in `main.tsx` / `v
 | DateInput | Italian `GG/MM/AAAA` text with calendar-date validation; sends ISO to API | invalid/valid date browser PASS; calendar-picker UX remains open |
 | Empty/loading/alert | visible empty, loading and request failure states | rendered; full scenario matrix NOT_VERIFIED |
 | React Big Calendar | day resources and week overview, click event/slot, local wall time | mocked Agenda desktop/mobile PASS; DST scheduling server NOT_VERIFIED |
+| FinanceCreate / FinanceActions | guided accounting actions, request keys stable for identical retries, scoped candidates | synthetic invoice draft/payment PASS; all live accounting outcomes NOT_VERIFIED |
+| FirstMeeting | public route, slot-only search, bounded identity form, confirmation | synthetic Guest flow desktop/mobile PASS; live rate limit/permissions NOT_VERIFIED |
 
 Untitled UI React FREE was reviewed as a candidate. Its package distribution is copy-based rather than an npm component library; using it would add Tailwind/React Aria and a second styling system. The candidate therefore uses native semantic controls plus one shared component layer and MIT React Big Calendar. No Untitled PRO or FullCalendar Premium content is used.
