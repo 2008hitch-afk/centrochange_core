@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+const todayItalian = `${today.slice(8, 10)}/${today.slice(5, 7)}/${today.slice(0, 4)}`
 const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro A' }], patients: [{ name: 'PAT-001', patient_name: 'Paziente Sintetico' }], practitioners: [{ name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }], services: [{ name: 'SERV-001', cc_service_label: 'Prima visita', cc_service_item: 'ITEM-001', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR', duration: 60 }], packages: [], payment_methods: ['Contanti'], roles: ['CC Manager', 'CC Secretariat'] }
 const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
@@ -59,6 +60,91 @@ async function openSection(page: Page, name: string) {
   await page.getByRole('button', { name, exact: true }).click()
   if (mobile) await expect.poll(() => page.locator('.sidebar').evaluate(el => Math.round(new DOMMatrixReadOnly(getComputedStyle(el).transform).m41))).toBe(-260)
 }
+
+const archiveCases = [
+  { group: 'Anagrafiche', label: 'Pazienti', first: 'Nome e cognome', sample: 'Persona di prova', fields: { 'Email': 'persona@example.invalid' } },
+  { group: 'Anagrafiche', label: 'Professionisti', first: 'Nome professionista', sample: 'Dott. Verdi', fields: { 'Specializzazione': 'Psicologia' } },
+  { group: 'Catalogo', label: 'Articoli', first: 'Nome articolo', sample: 'Colloquio di prova', fields: { 'Categoria': 'Servizi' } },
+  { group: 'Catalogo', label: 'Tariffe', first: 'Articolo', sample: 'ITEM-001', fields: { 'Listino': 'Listino Centro', 'Importo EUR': '90', 'Valida dal': today } },
+  { group: 'Catalogo', label: 'Tipi seduta', first: 'Tipo seduta', sample: 'Colloquio di prova', fields: { 'Durata in minuti': '50' } },
+  { group: 'Catalogo', label: 'Servizi del centro', first: 'Nome servizio', sample: 'Servizio di prova', fields: { 'Articolo collegato': 'ITEM-001', 'Durata in minuti': '50', 'Tariffa EUR': '90' } },
+  { group: 'Catalogo', label: 'Modelli pacchetto', first: 'Nome modello', sample: 'Percorso di prova', fields: { 'Articolo servizio': 'ITEM-001', 'Sedute incluse': '4' } },
+  { group: 'Finanza', label: 'Fatture pazienti', first: 'Cliente', sample: 'Cliente di prova due', fields: { 'Data documento': today, 'Totale EUR': '90', 'Residuo EUR': '20' } },
+  { group: 'Finanza', label: 'Fatture professionisti', first: 'Fornitore', sample: 'Fornitore di prova due', fields: { 'Data documento': today, 'Totale EUR': '45', 'Residuo EUR': '10' } },
+  { group: 'Finanza', label: 'Pagamenti', first: 'Soggetto', sample: 'Cliente di prova due', fields: { 'Data pagamento': today, 'Importo EUR': '90' }, select: { 'Tipo': 'Receive' } },
+  { group: 'Finanza', label: 'Movimenti bancari', first: 'Data movimento', sample: today, fields: { 'Riferimento': 'PROVA-002', 'Entrata EUR': '90' } }
+] as const
+
+for (const entry of archiveCases) test(`archivio ${entry.label}: lista, dettaglio e form sintetico`, async ({ page }, testInfo) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./')
+  await openSection(page, 'Archivi')
+  const nav = page.getByRole('navigation', { name: 'Tipi di archivio' })
+  await nav.getByRole('button', { name: entry.label, exact: true }).click()
+  await expect(page.getByRole('heading', { name: entry.label, exact: true })).toBeVisible()
+  await expect(page.getByText('Nessun salvataggio Frappe.')).toBeVisible()
+  await page.screenshot({ path: `../../docs/evidence/issue-148/archive-${entry.label.toLowerCase().replaceAll(' ', '-')}-${testInfo.project.name}.png`, fullPage: true })
+  const rows = page.locator('.archive-panel tbody tr')
+  if (await rows.count()) { await rows.first().click(); await expect(page.getByRole('dialog')).toBeVisible(); await page.getByRole('dialog').getByRole('button', { name: 'Chiudi' }).click() }
+  await page.getByRole('button', { name: 'Nuova scheda' }).click()
+  let form = page.getByRole('dialog')
+  await form.getByLabel(entry.first).fill(entry.first.startsWith('Data ') ? todayItalian : entry.sample)
+  for (const [label, value] of Object.entries(entry.fields)) await form.getByLabel(label).fill(label.startsWith('Data ') || label === 'Valida dal' ? todayItalian : value)
+  if ('select' in entry) for (const [label, value] of Object.entries(entry.select)) await form.getByLabel(label).selectOption(value)
+  await page.screenshot({ path: `../../docs/evidence/issue-148/archive-form-${entry.label.toLowerCase().replaceAll(' ', '-')}-${testInfo.project.name}.png`, fullPage: true })
+  await form.getByRole('button', { name: 'Rivedi modifica di prova' }).click()
+  await expect(page.getByRole('dialog', { name: 'Conferma modifica di prova' })).toBeVisible()
+  await page.getByRole('button', { name: 'Conferma nella preview' }).click()
+  await expect(page.getByText('Bozza di prova aggiornata nel browser. Nessun dato salvato su Frappe.')).toBeVisible()
+  await expect(page.getByRole('dialog')).toContainText(entry.sample)
+  expect(writes).toEqual([])
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+})
+
+test('archivio: ricerca, validazione, errore e accesso per ruolo', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('./')
+  await openSection(page, 'Archivi')
+  await page.getByRole('searchbox', { name: 'Cerca in pazienti' }).fill('nessun risultato')
+  await expect(page.getByText('Nessuna scheda trovata')).toBeVisible()
+  await page.getByRole('searchbox', { name: 'Cerca in pazienti' }).fill('')
+  await page.getByRole('button', { name: 'Nuova scheda' }).click()
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Chiudi' })).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Rivedi modifica di prova' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Chiudi' })).toBeFocused()
+  await page.getByRole('dialog').getByLabel('Email').fill('non-valida')
+  await page.getByRole('dialog').getByRole('button', { name: 'Rivedi modifica di prova' }).click()
+  await expect(page.getByRole('dialog', { name: 'Conferma modifica di prova' })).toHaveCount(0)
+  await page.getByRole('dialog').getByLabel('Nome e cognome').fill('Persona errore')
+  await page.getByRole('dialog').getByLabel('Email').fill('ok@example.invalid')
+  await page.evaluate(() => sessionStorage.setItem('cc-synthetic-fail', '1'))
+  await page.getByRole('dialog').getByRole('button', { name: 'Rivedi modifica di prova' }).click()
+  await page.getByRole('button', { name: 'Conferma nella preview' }).click()
+  await expect(page.getByRole('alert', { name: '' }).filter({ hasText: 'Simulazione non riuscita' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('archivio nascosto a ruolo senza facoltà amministrativa', async ({ page }) => {
+  await mockApi(page, [], false, {}, { roles: ['CC Secretariat'] })
+  await page.goto('./#Archivi')
+  await expect(page.getByRole('heading', { name: 'Agenda' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Archivi', exact: true })).toHaveCount(0)
+})
+
+test('schermate principali renderizzate e fotografate', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./')
+  for (const section of ['Agenda', 'Pazienti', 'Servizi', 'Disponibilità', 'Report', 'Finanza', 'Gestione accessi', 'Registro modifiche', 'Notifiche']) {
+    if (section !== 'Agenda') await openSection(page, section)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await page.screenshot({ path: `../../docs/evidence/issue-148/area-${section.toLocaleLowerCase('it-IT').replaceAll(' ', '-')}-${testInfo.project.name}.png`, fullPage: true })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+  }
+})
 
 test('agenda desktop: shell, calendario, dettaglio e prenotazione con CSRF', async ({ page }, testInfo) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []

@@ -1,17 +1,18 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bell, Menu, Search, LogOut, ChevronDown, PanelLeftClose, X, Settings2, History, BookOpen } from 'lucide-react'
+import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bell, Menu, Search, LogOut, ChevronDown, PanelLeftClose, X, Settings2, History, BookOpen, Archive } from 'lucide-react'
 import { type Boot, type FinanceBoot, ops, finance, call } from './api'
 import { Agenda, Patients, ServiceCatalog, Availability, Reports, FinanceView, Access, Notifications } from './views'
 import { AuditLog } from './audit_log'
+import { MasterArchive, syntheticArchive } from './master_archive'
 import './style.css'
 
-export type View = 'Agenda' | 'Pazienti' | 'Servizi' | 'Disponibilità' | 'Report' | 'Finanza' | 'Gestione accessi' | 'Registro modifiche' | 'Notifiche'
+export type View = 'Agenda' | 'Pazienti' | 'Servizi' | 'Disponibilità' | 'Report' | 'Finanza' | 'Archivi' | 'Gestione accessi' | 'Registro modifiche' | 'Notifiche'
 const icons: Record<View, React.ReactNode> = {
   Agenda: <CalendarDays />, Pazienti: <UsersRound />, Servizi: <BookOpen />, Disponibilità: <Clock3 />, Report: <ChartNoAxesCombined />,
-  Finanza: <WalletCards />, 'Gestione accessi': <Settings2 />, 'Registro modifiche': <History />, Notifiche: <Bell />
+  Finanza: <WalletCards />, Archivi: <Archive />, 'Gestione accessi': <Settings2 />, 'Registro modifiche': <History />, Notifiche: <Bell />
 }
-const allViews: View[] = ['Agenda', 'Pazienti', 'Servizi', 'Disponibilità', 'Report', 'Finanza', 'Gestione accessi', 'Registro modifiche', 'Notifiche']
+const allViews: View[] = ['Agenda', 'Pazienti', 'Servizi', 'Disponibilità', 'Report', 'Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche', 'Notifiche']
 function fromHash(): View { const raw = decodeURIComponent(location.hash.slice(1)); return allViews.includes(raw as View) ? raw as View : 'Agenda' }
 
 function App() {
@@ -24,36 +25,39 @@ function App() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const hydratedCenter = useRef('')
 
   useEffect(() => { const fn = () => setView(fromHash()); addEventListener('hashchange', fn); return () => removeEventListener('hashchange', fn) }, [])
   useEffect(() => {
+    if (center && hydratedCenter.current === center) { hydratedCenter.current = ''; return }
     let live = true
     setLoading(true); setError(''); setBoot(null); setFinanceBoot(null)
     Promise.allSettled([ops<Boot>('workspace.bootstrap', center ? { center } : {}), finance<FinanceBoot>('reporting.bootstrap', center ? { center } : {})]).then(([o, f]) => {
       if (!live) return
-      if (o.status === 'fulfilled') { setBoot(o.value); if (!center) setCenter(o.value.center ?? '') }
-      if (f.status === 'fulfilled') { setFinanceBoot(f.value); if (!center && o.status === 'rejected') setCenter(f.value.center ?? '') }
+      if (o.status === 'fulfilled') setBoot(o.value)
+      if (f.status === 'fulfilled') setFinanceBoot(f.value)
+      if (!center) { const selected = o.status === 'fulfilled' ? o.value.center : f.status === 'fulfilled' ? f.value.center : ''; if (selected) { hydratedCenter.current = selected; setCenter(selected) } }
       if (o.status === 'rejected' && f.status === 'rejected') setError('Nessuna area disponibile per questo account. Verifica assegnazione e ruolo.')
       setLoading(false)
     })
     return () => { live = false }
   }, [center])
   const roles = boot?.roles ?? []
-  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : ['Gestione accessi', 'Registro modifiche', 'Notifiche'].includes(v) ? roles.includes('CC Manager') : v === 'Report' ? !!boot : !!boot)
+  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive && (roles.includes('CC Manager') || !!financeBoot?.can_write) : ['Gestione accessi', 'Registro modifiche', 'Notifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
   const currentView = available.includes(view) ? view : available[0]
   const centers = boot?.centers?.length ? boot.centers : financeBoot?.centers ?? []
   const switchView = (next: View) => { location.hash = encodeURIComponent(next); setView(next); setMobileOpen(false); setError(''); setNotice('') }
   const feedback = (message: string, fail = false) => { if (fail) setError(message); else { setNotice(message); setError('') } }
   const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(fresh) }
-  const changeCenter = (next: string) => { setBoot(null); setFinanceBoot(null); setQuery(''); setCenter(next) }
+  const changeCenter = (next: string) => { hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setQuery(''); setCenter(next) }
 
   return <div className="app-shell">
     <a href="#main" className="skip-link">Vai al contenuto</a>
     <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`} aria-label="Navigazione principale">
-      <div className="brand"><img src={import.meta.env.BASE_URL + 'logo.webp'} alt="Centro Change" /><div><strong>centro<span>change</span></strong><small>WORKSPACE</small></div><button className="icon-button sidebar-close" aria-label="Chiudi menu" onClick={() => setMobileOpen(false)}><PanelLeftClose /></button></div>
+      <div className="brand"><img src={import.meta.env.BASE_URL + 'logo.webp'} alt="Centro Change" width="36" height="35" /><div><strong>centro<span>change</span></strong><small>WORKSPACE</small></div><button className="icon-button sidebar-close" aria-label="Chiudi menu" onClick={() => setMobileOpen(false)}><PanelLeftClose /></button></div>
       <div className="sidebar-label">WORKSPACE</div>
-      <nav>{available.filter(v => !['Finanza', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span>{v === 'Agenda' && <span className="nav-dot" />}</button>)}</nav>
-      {available.some(v => ['Finanza', 'Gestione accessi', 'Registro modifiche'].includes(v)) && <><div className="sidebar-label section-gap">AMMINISTRAZIONE</div><nav>{available.filter(v => ['Finanza', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span></button>)}</nav></>}
+      <nav>{available.filter(v => !['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span>{v === 'Agenda' && <span className="nav-dot" />}</button>)}</nav>
+      {available.some(v => ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche'].includes(v)) && <><div className="sidebar-label section-gap">AMMINISTRAZIONE</div><nav>{available.filter(v => ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span></button>)}</nav></>}
       <div className="sidebar-foot"><span className="sidebar-avatar">CC</span><div><strong>Centro Change</strong><small>Area riservata</small></div><button className="icon-button" title="Esci" aria-label="Esci" onClick={async () => { try { await call('logout', {}, true) } finally { location.href = '/login?redirect-to=/premium' } }}><LogOut /></button></div>
     </aside>
     {mobileOpen && <button className="scrim" aria-label="Chiudi menu" onClick={() => setMobileOpen(false)} />}
@@ -69,6 +73,7 @@ function App() {
         {!loading && currentView === 'Disponibilità' && boot && <Availability boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Finanza' && financeBoot && <FinanceView boot={financeBoot} center={center} feedback={feedback} />}
+        {!loading && currentView === 'Archivi' && boot && <MasterArchive boot={boot} financeBoot={financeBoot} center={center} />}
         {!loading && currentView === 'Gestione accessi' && boot && <Access boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Registro modifiche' && boot && <AuditLog feedback={feedback} />}
         {!loading && currentView === 'Notifiche' && boot && <Notifications center={center} feedback={feedback} />}

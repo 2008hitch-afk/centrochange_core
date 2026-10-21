@@ -9,13 +9,34 @@ export function Heading({ eyebrow, title, subtitle, action }: { eyebrow?: string
 export function Button({ children, variant = 'primary', ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }) { return <button {...rest} className={`button ${variant} ${rest.className ?? ''}`}>{children}</button> }
 export function Chip({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'neutral' | 'good' | 'warn' | 'bad' | 'blue' }) { return <span className={`chip ${tone}`}><span className="chip-dot" />{children}</span> }
 export function Empty({ title, detail }: { title: string; detail?: string }) { return <div className="empty-state"><div className="empty-mark">✦</div><strong>{title}</strong>{detail && <p>{detail}</p>}</div> }
+function useDialogFocus(onClose: () => void) {
+  const ref = React.useRef<HTMLElement>(null)
+  const closeRef = React.useRef(onClose)
+  closeRef.current = onClose
+  useEffect(() => {
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const items = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])') ?? []).filter(el => el.getClientRects().length > 0)
+    items()[0]?.focus()
+    const keydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); closeRef.current(); return }
+      if (e.key !== 'Tab') return
+      const focusable = items(); if (!focusable.length) { e.preventDefault(); return }
+      const first = focusable[0], last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    addEventListener('keydown', keydown)
+    return () => { removeEventListener('keydown', keydown); previous?.focus() }
+  }, [])
+  return ref
+}
 export function Modal({ title, children, onClose, footer }: { title: string; children: React.ReactNode; onClose: () => void; footer?: React.ReactNode }) {
-  useEffect(() => { const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }; addEventListener('keydown', fn); return () => removeEventListener('keydown', fn) }, [onClose])
-  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}><section className="modal" role="dialog" aria-modal="true" aria-label={title}><header className="modal-head"><div><span className="eyebrow">CENTRO CHANGE</span><h2>{title}</h2></div><button className="icon-button" onClick={onClose} aria-label="Chiudi"><X /></button></header><div className="modal-body">{children}</div>{footer && <footer className="modal-foot">{footer}</footer>}</section></div>
+  const ref = useDialogFocus(onClose)
+  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}><section ref={ref} className="modal" role="dialog" aria-modal="true" aria-label={title}><header className="modal-head"><div><span className="eyebrow">CENTRO CHANGE</span><h2>{title}</h2></div><button className="icon-button" onClick={onClose} aria-label="Chiudi"><X /></button></header><div className="modal-body">{children}</div>{footer && <footer className="modal-foot">{footer}</footer>}</section></div>
 }
 export function Drawer({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) {
-  useEffect(() => { const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }; addEventListener('keydown', fn); return () => removeEventListener('keydown', fn) }, [onClose])
-  return <div className="drawer-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}><aside className="drawer" role="dialog" aria-modal="true" aria-label={title}><header className="drawer-head"><div><span className="eyebrow">DETTAGLIO</span><h2>{title}</h2></div><button className="icon-button" aria-label="Chiudi" onClick={onClose}><X /></button></header><div className="drawer-body">{children}</div></aside></div>
+  const ref = useDialogFocus(onClose)
+  return <div className="drawer-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}><aside ref={ref} className="drawer" role="dialog" aria-modal="true" aria-label={title}><header className="drawer-head"><div><span className="eyebrow">DETTAGLIO</span><h2>{title}</h2></div><button className="icon-button" aria-label="Chiudi" onClick={onClose}><X /></button></header><div className="drawer-body">{children}</div></aside></div>
 }
 export function Field({ label, name, required, children }: { label: string; name?: string; required?: boolean; children: React.ReactNode }) { return <label className="field"><span>{label}{required && <b className="required"> *</b>}</span>{children}</label> }
 export function SearchableSelect({ label, options, value, onChange, required = false, threshold = 10, empty = 'Seleziona' }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (value: string) => void; required?: boolean; threshold?: number; empty?: string }) {
