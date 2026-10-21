@@ -101,6 +101,10 @@ test('eleven live detail cards open with authorized records', async ({ browser }
       const detail = page.getByRole('dialog')
       await expect(detail).toBeVisible()
       await expect(detail.getByRole('heading', { name: 'Dettaglio' })).toBeVisible()
+      if (label === 'Pagamenti') {
+        await expect(detail.getByText(/Incasso|Pagamento|Giroconto/)).toBeVisible()
+        await expect(detail.getByText('Receive', { exact: true })).toHaveCount(0)
+      }
       await page.screenshot({ path: info.outputPath(`detail-${String(index + 1).padStart(2, '0')}.png`), fullPage: true })
       await detail.getByRole('button', { name: 'Chiudi' }).click()
     }
@@ -111,6 +115,10 @@ test('principal live sections render without page overflow', async ({ browser },
   const context = await roleContext(browser, 'manager')
   try {
     const page = await context.newPage()
+    await page.goto('/premium#Agenda')
+    const selector = page.locator('.center-selector select')
+    await expect(selector).toBeVisible()
+    if (await selector.inputValue() !== fixture.center_a) await selector.selectOption(fixture.center_a)
     const views = ['Agenda', 'Pazienti', 'Servizi', 'Disponibilità', 'Report',
       'Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche', 'Notifiche']
     for (const [index, view] of views.entries()) {
@@ -119,10 +127,34 @@ test('principal live sections render without page overflow', async ({ browser },
       await expect(page.locator('.breadcrumbs strong')).toHaveText(view)
       await expect(page.locator('main')).toBeVisible()
       await expect(page.locator('main [role="alert"].error')).toHaveCount(0)
+      if (view === 'Finanza') {
+        await expect(page.locator('.scope-note')).toContainText('date di registrazione')
+        await expect(page.locator('.scope-note')).not.toContainText('Posting')
+      }
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
       expect(overflow, `${view} horizontal overflow`).toBeLessThanOrEqual(2)
       await page.screenshot({ path: info.outputPath(`section-${String(index + 1).padStart(2, '0')}.png`), fullPage: true })
     }
+  } finally { await context.close() }
+})
+
+test('financial drill-down keeps labels and status in Italian', async ({ browser }, info) => {
+  const context = await roleContext(browser, 'manager')
+  try {
+    const page = await context.newPage()
+    await page.goto('/premium#Finanza')
+    const selector = page.locator('.center-selector select')
+    await expect(selector).toBeVisible()
+    if (await selector.inputValue() !== fixture.center_a) await selector.selectOption(fixture.center_a)
+    await page.getByRole('button', { name: 'Fatture pazienti', exact: true }).click()
+    const row = page.locator('.finance-panel tbody tr.clickable').first()
+    await expect(row).toBeVisible()
+    await row.click()
+    const detail = page.getByRole('dialog')
+    await expect(detail).toBeVisible()
+    await expect(detail.locator('dt').filter({ hasText: 'Data registrazione' })).toBeVisible()
+    await expect(detail.locator('dt').filter({ hasText: 'posting date' })).toHaveCount(0)
+    await page.screenshot({ path: info.outputPath('finance-detail-it.png'), fullPage: true })
   } finally { await context.close() }
 })
 

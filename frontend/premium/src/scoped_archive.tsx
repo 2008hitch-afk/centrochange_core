@@ -3,6 +3,7 @@ import { ArrowRight, Printer, Search } from 'lucide-react'
 import { displayDate, money, recentPaymentStart, requestKey, romeToday, type Boot, type FinanceBoot, type Row } from './api'
 import { archiveDetail, createArchive, creatableKinds, documentPreview, editableKinds, financeKinds, listArchive, saveArchive, type ArchiveKind, type ArchiveRecord, type PrintPreview } from './scoped_api'
 import { Button, DataTable, Drawer, Empty, Field, FormError, Heading, Modal } from './ui'
+import { financeFieldValue } from './finance_locale'
 
 type FieldSpec = { key: string; label: string; edit?: boolean; required?: boolean; kind?: 'text' | 'number' | 'email' | 'select'; values?: { value: string; label: string }[] }
 type Spec = { kind: ArchiveKind; label: string; group: string; fields: FieldSpec[] }
@@ -25,6 +26,7 @@ const view = (field: FieldSpec, value: unknown) => {
   if (/date|valid_from/.test(field.key)) return displayDate(value)
   if (/amount|total|rate|deposit|withdrawal/.test(field.key)) return money(value)
   if (field.key === 'enabled') return Number(value) ? 'Attivo' : 'Disattivato'
+  if (field.key === 'payment_type') return financeFieldValue(field.key, value)
   return String(value)
 }
 
