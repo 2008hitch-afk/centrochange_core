@@ -1,0 +1,48 @@
+# #148 full candidate. Build only after the single Owner runtime gate.
+# No old Centro Change image is a source layer.
+ARG ERP_IMAGE=frappe/erpnext:v16.50.0@sha256:833bceb57233908cbc949d7aa533942b18e54b329d846b933b66937c62b7e4ae
+
+FROM ${ERP_IMAGE} AS react-build
+USER frappe
+WORKDIR /tmp/cc148/frontend/premium
+COPY --chown=frappe:frappe frontend/premium/package.json frontend/premium/package-lock.json ./
+RUN node --version && npm ci --ignore-scripts --no-audit --no-fund
+COPY --chown=frappe:frappe frontend/premium/ ./
+RUN npm run typecheck && npm run build
+
+FROM ${ERP_IMAGE} AS candidate
+ARG BUILDER_TAG=v1.35.1
+ARG BUILDER_REF=37e958bc4f801d06d0438c21b97b42c45c4eaa51
+ARG HEALTHCARE_TAG=v16.6.1
+ARG HEALTHCARE_REF=dda107b26e3a0fe1dbd65c7257371235de054a04
+ARG SINGLE_STACK_SOURCE_SHA
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+# Official upstream applications, exact release commits. No floating branch.
+RUN test "${#SINGLE_STACK_SOURCE_SHA}" -eq 40 \
+    && bench get-app --branch "${BUILDER_TAG}" builder https://github.com/frappe/builder.git \
+    && test "$(git -C apps/builder rev-parse HEAD)" = "${BUILDER_REF}" \
+    && bench set-config -gp socketio_port 9000 \
+    && bench get-app --branch "${HEALTHCARE_TAG}" healthcare https://github.com/earthians/marley.git \
+    && test "$(git -C apps/healthcare rev-parse HEAD)" = "${HEALTHCARE_REF}"
+
+# Full installed DEV application tree + DECISION-063 API/React and gated routing.
+COPY --chown=frappe:frappe app/centrochange_core/ apps/centrochange_core/
+COPY --from=react-build --chown=frappe:frappe /tmp/cc148/app/centrochange_core/centrochange_core/public/premium/ apps/centrochange_core/centrochange_core/public/premium/
+COPY --chown=frappe:frappe infra/full-single-stack-manifest.json /opt/cc148/full-single-stack-manifest.json
+COPY --chown=frappe:frappe infra/verify_full_single_stack.py /opt/cc148/verify_full_single_stack.py
+
+RUN uv pip install --no-cache --python /home/frappe/frappe-bench/env/bin/python --editable apps/centrochange_core \
+    && test "$(grep -cx '^centrochange_core$' sites/apps.txt || true)" -eq 0 \
+    && printf '%s\n' centrochange_core >> sites/apps.txt \
+    && python /opt/cc148/verify_full_single_stack.py --image /home/frappe/frappe-bench \
+    && bench build --force \
+    && cp -a sites/assets/. assets/ \
+    && python /opt/cc148/verify_full_single_stack.py --image /home/frappe/frappe-bench --built
+
+LABEL centrochange.issue="148" \
+      centrochange.mode="single-stack-full" \
+      centrochange.backend_installed_source="1f88207c6a71c4bf0252b912fe83313337cab16f" \
+      centrochange.source="${SINGLE_STACK_SOURCE_SHA}" \
+      centrochange.site="centrochange.local"

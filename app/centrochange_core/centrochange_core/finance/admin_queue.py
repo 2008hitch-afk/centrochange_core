@@ -10,10 +10,10 @@ from centrochange_core.operations.lifecycle import now_utc
 
 def protected(doc,method=None):
     if method=='on_trash' or not frappe.flags.get('cc_queue_write'):
-        frappe.throw('Administrative conditions require audited queue services',frappe.PermissionError)
+        frappe.throw('Le condizioni amministrative richiedono il servizio di coda tracciato.',frappe.PermissionError)
     old=doc.get_doc_before_save()
     if old and any(doc.get(k)!=old.get(k) for k in ('center','condition_key','exception_type','reference_doctype','reference_name','detected_at')):
-        frappe.throw('Administrative condition identity is immutable',frappe.PermissionError)
+        frappe.throw('L’identità della condizione amministrativa non può cambiare.',frappe.PermissionError)
 
 
 def _at():return now_utc().replace(tzinfo=None)
@@ -68,6 +68,22 @@ def refresh(center,reason):
     return _refresh(center,reason)
 
 
+def _save_resolved_condition(doc):
+    """Retain an orphaned queue fact while closing its no-longer-current condition."""
+    if not frappe.db.exists(doc.reference_doctype, doc.reference_name):
+        # Frappe validates Dynamic Link targets on ordinary saves. A deleted
+        # synthetic source must not prevent unrelated accounting hooks from
+        # refreshing the queue. This exception is limited to auto-closure;
+        # preserve the original reference and audit, and verify all other links.
+        if not frappe.db.exists('DocType', doc.reference_doctype) or not frappe.db.exists('Branch', doc.center) or (
+            doc.assignee and not frappe.db.exists('User', doc.assignee)
+        ):
+            frappe.throw('La condizione amministrativa ha altri collegamenti non validi.')
+        doc.resolution_reason = 'La fonte della condizione non esiste più; riferimento storico conservato'
+        doc.flags.ignore_links = True
+    doc.save(ignore_permissions=True)
+
+
 def _refresh(center,reason):
     at=_at();conditions=_conditions(center)
     existing={d.condition_key:d for d in [frappe.get_doc('CC Admin Exception',n,for_update=True) for n in current_rows('CC Admin Exception',{'center':center},pluck='name')]}
@@ -88,7 +104,9 @@ def _refresh(center,reason):
         for key,doc in existing.items():
             if key not in conditions and doc.state!='Closed':
                 before={'state':doc.state};doc.state='Closed';doc.resolved_at=at;doc.defer_until=None;doc.resolution_reason='Underlying condition resolved'
-                doc.save(ignore_permissions=True);append('ADMIN_EXCEPTION_AUTO_CLOSED',doc.doctype,doc.name,before,{'state':doc.state},reason);changed.append(doc.name)
+                _save_resolved_condition(doc)
+                append('ADMIN_EXCEPTION_AUTO_CLOSED',doc.doctype,doc.name,before,
+                    {'state':doc.state,'resolution_reason':doc.resolution_reason},reason);changed.append(doc.name)
     return {'changed':changed,'conditions':len(conditions)}
 
 
@@ -96,15 +114,15 @@ def _refresh(center,reason):
 @atomic
 def manage(name,priority,reason,assignee=None,due_at=None,defer_until=None):
     lock();require_synthetic();doc=frappe.get_doc('CC Admin Exception',name,for_update=True);require_finance(doc.center,True)
-    if doc.state=='Closed':frappe.throw('Resolved conditions cannot be manually reopened')
+    if doc.state=='Closed':frappe.throw('Una condizione risolta non può essere riaperta manualmente.')
     try:priority=int(priority)
-    except (ValueError,TypeError):frappe.throw('Choose a priority from 1 through 4')
-    if priority not in (1,2,3,4):frappe.throw('Choose a priority from 1 through 4')
+    except (ValueError,TypeError):frappe.throw('Seleziona una priorità da 1 a 4.')
+    if priority not in (1,2,3,4):frappe.throw('Seleziona una priorità da 1 a 4.')
     if assignee and (not enabled(assignee) or not allowed(assignee,True) or not is_manager(assignee) and doc.center not in centers(assignee)):
-        frappe.throw('Assignee must be enabled and authorized for center administration',frappe.PermissionError)
+        frappe.throw('Il responsabile deve essere attivo e autorizzato ad amministrare la sede.',frappe.PermissionError)
     due=frappe.utils.get_datetime(due_at) if due_at else None
     defer=frappe.utils.get_datetime(defer_until) if defer_until else None
-    if defer and defer<=_at():frappe.throw('Deferral requires an explicit future UTC timestamp')
+    if defer and defer<=_at():frappe.throw('Per rinviare indica una data e ora futura esplicita in UTC.')
     before={k:doc.get(k) for k in ('priority','assignee','due_at','defer_until','state')}
     after={'priority':priority,'assignee':assignee,'due_at':due,'defer_until':defer,'state':'Deferred' if defer else ('Assigned' if assignee else 'Open')}
     if before==after:return {'name':name,'state':doc.state,'replay':True}
@@ -134,7 +152,7 @@ def catch_up():
     try:
         from centrochange_core.operations.install import AUTOMATION_USER
         require_synthetic();frappe.set_user(AUTOMATION_USER);lock()
-        for center in current_rows('Branch',{'cc_company':['is','set']},pluck='name'):
+        for center in current_rows('Branch',{'cc_company':['is','set'],'cc_operational':1},pluck='name'):
             from centrochange_core.finance.professional_economics import _reevaluate
             _reevaluate(center,'Scheduled professional unpaid threshold reconciliation')
             _refresh(center,'Scheduled administrative condition reconciliation')

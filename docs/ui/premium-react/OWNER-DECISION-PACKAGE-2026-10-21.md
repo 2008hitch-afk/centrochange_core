@@ -1,5 +1,7 @@
 # #148 — unico pacchetto Owner residuo
 
+> **STORICO / NON ESEGUIRE.** Le API DECISION-063 sono già approvate in codice. L'Owner ha revocato la proposta di overlay parziale. Il solo gate materiale corrente è [il piano full rebuild](SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md); le richieste API originarie e il comando a sei container sotto sono superati.
+
 **Aggiornamento DECISION-063:** il gate per implementare API delimitate in codice isolato è stato APPROVATO. La richiesta API qui sotto è storica; per i soli contratti rimasti senza policy e per l'unico gate DEV usare [SCOPED-API-DECISION-063-REPORT.md](SCOPED-API-DECISION-063-REPORT.md). Il piano runtime resta non autorizzato e non eseguito. La PR #150 resta DRAFT / PARTIAL.
 
 **Proposta, non autorizzazione.** La PR #150 rimane DRAFT e il DEV `centrochange-dev` non è stato modificato. DECISION-060/061/062 approvano direzione e lavoro isolato; la mutazione dell'unico stack e le nuove API di scrittura richiedono il gate materiale. Il risultato di questa PR è una UI React di sviluppo con fixture sintetiche; 77 test Playwright PASS, 1 skip desktop intenzionale. Nessun test live Frappe/multiruolo o collaudo grafico Owner è stato svolto.

@@ -69,7 +69,7 @@ def checks(fixture):
         try:
             validate_slot(SimpleNamespace(appointment_date=date,appointment_time=time,duration=60,practitioner=prac1,cc_center=center,patient=patient,name=None))
         except frappe.ValidationError as error:
-            assert 'Ambiguous or nonexistent' in str(error)
+            assert 'ora della seduta non esiste o è ambigua nel fuso Europe/Rome' in str(error)
         else:
             raise AssertionError('DST fold/gap booking accepted')
     result.append('DST gap and fold booking rejected before canonical insert')

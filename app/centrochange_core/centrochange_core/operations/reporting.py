@@ -39,14 +39,19 @@ def safe_cell(value):
 def export_csv(center,start,end):
     data=agenda(center,start,end)
     if data['truncated']:
-        frappe.throw('Narrow the date interval before exporting; rows must not be silently omitted')
-    columns=['appointment_date','appointment_time','patient_name','practitioner_name','cc_service_label','duration',
+        frappe.throw('Riduci l’intervallo prima di esportare: i risultati non vengono omessi senza avviso.')
+    fields=['appointment_date','appointment_time','patient_name','practitioner_name','cc_service_label','duration',
         'cc_closure_state','cc_economic_state','cc_paid','cc_price_snapshot','cc_currency_snapshot']
+    columns=['Data','Ora','Paziente','Professionista','Servizio','Durata (minuti)',
+        'Stato seduta','Stato economico','Pagamento registrato','Prezzo snapshot','Valuta']
     output=StringIO(newline='')
     writer=csv.writer(output)
     writer.writerow(columns)
     for row in data['appointments']:
-        writer.writerow([safe_cell(row.get(field)) for field in columns])
+        values=[row.get(field) for field in fields]
+        values[0]=frappe.utils.formatdate(values[0],'dd/MM/yyyy') if values[0] else ''
+        values[1]=str(values[1])[:5] if values[1] else ''
+        writer.writerow([safe_cell(value) for value in values])
     frappe.response.update({'type':'download','filename':'centrochange-agenda.csv','filecontent':output.getvalue(),
         'content_type':'text/csv; charset=utf-8'})
 
@@ -66,7 +71,7 @@ def print_session(appointment):
         return {'a':'Alfa','b':'Beta','c':'Gamma'}.get(suffix,suffix) if professional else suffix
     closure={'Pending':'Da chiudere','Closed':'Chiusa','Auto Locked':'Bloccata','Reopened':'Riaperta'}
     economy={'Due':'Dovuta','Non Due':'Non dovuta','Package Covered':'Coperta da pacchetto','Waived':'Rinuncia economica'}
-    rows=[('Paziente',display_name(doc.patient_name)),('Data',frappe.utils.formatdate(doc.appointment_date,'dd/MM/yyyy')),('Ora',doc.appointment_time),
+    rows=[('Paziente',display_name(doc.patient_name)),('Data',frappe.utils.formatdate(doc.appointment_date,'dd/MM/yyyy')),('Ora',str(doc.appointment_time or '')[:5]),
         ('Professionista',display_name(doc.practitioner_name,True)),('Servizio',display_name(doc.cc_service_label)),('Durata (minuti)',doc.duration),
         ('Stato',closure.get(doc.cc_closure_state,doc.cc_closure_state)),('Economia operativa',economy.get(doc.cc_economic_state,doc.cc_economic_state))]
     body=''.join('<tr><th>'+escape(label)+'</th><td>'+escape(str(value or ''))+'</td></tr>' for label,value in rows)

@@ -16,22 +16,22 @@ def _balance(name):
 	remaining=sum(row.remaining_delta for row in rows)
 	reserved=sum(row.reserved_delta for row in rows)
 	if remaining<0 or reserved<0 or reserved>remaining:
-		frappe.throw('Package ledger invariant violated')
+		frappe.throw('Le unità del pacchetto non sono coerenti: verifica lo storico.')
 	return {'remaining':remaining,'reserved':reserved,'available':remaining-reserved}
 
 
 def _append(package,kind,remaining,reserved,key,reason,appointment=None,center=None):
 	if not reason or not reason.strip():
-		frappe.throw('A package business reason is required')
+		frappe.throw('Indica il motivo dell’operazione sul pacchetto.')
 	existing=frappe.db.get_value('CC Package Ledger',{'event_key':key},for_update=True)
 	if existing:
 		row=frappe.get_doc('CC Package Ledger',existing,for_update=True)
 		if (row.package,row.event_type,row.remaining_delta,row.reserved_delta,row.appointment or None)!=(package,kind,remaining,reserved,appointment):
-			frappe.throw('Ledger event key already has a different operation')
+			frappe.throw('L’evento del pacchetto è già associato a un’operazione diversa.')
 		return existing
 	balance=_balance(package)
 	if balance['remaining']+remaining<0 or balance['reserved']+reserved<0 or balance['reserved']+reserved>balance['remaining']+remaining:
-		frappe.throw('Insufficient or inconsistent package units')
+		frappe.throw('Le unità del pacchetto sono insufficienti o incoerenti.')
 	with internal_write('cc_operation_write'):
 		return frappe.get_doc({'doctype':'CC Package Ledger','package':package,'event_type':kind,
 			'remaining_delta':remaining,'reserved_delta':reserved,'event_key':key,'appointment':appointment,
@@ -45,27 +45,27 @@ def issue(template,patient,centers,request_key,reason,valid_until=None,practitio
 	if isinstance(centers,str):
 		centers=frappe.parse_json(centers)
 	if not isinstance(centers,list) or not centers or len(centers)>100 or len(set(centers))!=len(centers):
-		frappe.throw('Explicit eligible package centers are required')
+		frappe.throw('Indica le sedi ammesse per il pacchetto.')
 	for center in centers:
 		require_operations(center)
 		require_context(patient,center)
 	if not request_key or len(request_key)>140:
-		frappe.throw('A bounded package issuance key is required')
+		frappe.throw('Indica un identificativo valido per l’assegnazione del pacchetto.')
 	from hashlib import sha256
 	key=sha256((frappe.session.user+'\0'+request_key).encode()).hexdigest()
 	existing=frappe.db.get_value('CC Patient Package',{'issue_key':key},for_update=True)
 	if existing:
 		doc=_package(existing)
 		if doc.patient!=patient or doc.template!=template or sorted(row.center for row in doc.centers)!=sorted(centers) or (doc.practitioner or None)!=(practitioner or None) or (str(doc.valid_until) if doc.valid_until else None)!=(str(getdate(valid_until)) if valid_until else None):
-			frappe.throw('Issuance key has different package context')
+			frappe.throw('L’assegnazione è già stata usata con dati del pacchetto diversi.')
 		return {'name':doc.name,**_balance(doc.name)}
 	profile=frappe.get_doc('CC Package Template',template,for_update=True)
 	if not profile.enabled:
-		frappe.throw('Package template is disabled')
+		frappe.throw('Il modello pacchetto non è attivo.')
 	if valid_until and getdate(valid_until)<frappe.utils.getdate():
-		frappe.throw('Package expiry is in the past')
+		frappe.throw('La scadenza del pacchetto è nel passato.')
 	if practitioner and not frappe.db.exists('Healthcare Practitioner',practitioner):
-		frappe.throw('Invalid package practitioner')
+		frappe.throw('Il professionista del pacchetto non è valido.')
 	with internal_write('cc_operation_write'):
 		doc=frappe.get_doc({'doctype':'CC Patient Package','template':template,'patient':patient,
 			'service_item':profile.service_item,'issue_key':key,'centers':[{'center':center} for center in centers],
@@ -81,7 +81,7 @@ def balance(package,center):
 	doc.check_permission('read')
 	require_context(doc.patient,center)
 	if center not in [row.center for row in doc.centers]:
-		frappe.throw('Package center access denied',frappe.PermissionError)
+		frappe.throw('Non hai accesso al pacchetto in questa sede.',frappe.PermissionError)
 	return _balance(package)
 
 
@@ -90,9 +90,9 @@ def reserve(doc,reason):
 		return
 	package=_package(doc.cc_package)
 	if package.patient!=doc.patient or package.service_item!=doc.cc_service_item or doc.cc_center not in [row.center for row in package.centers] or package.practitioner and package.practitioner!=doc.practitioner:
-		frappe.throw('Package does not cover this patient/service/context')
+		frappe.throw('Il pacchetto non copre paziente, servizio o contesto selezionati.')
 	if package.valid_until and getdate(doc.appointment_date)>getdate(package.valid_until):
-		frappe.throw('Package expires before this appointment')
+		frappe.throw('Il pacchetto scade prima della seduta.')
 	_append(package.name,'RESERVE',0,1,'reserve:'+doc.name,reason,doc.name,doc.cc_center)
 	frappe.db.set_value('Patient Appointment',doc.name,'cc_package_state','Reserved')
 	doc.cc_package_state='Reserved'
@@ -128,7 +128,7 @@ def adjust(package,units,request_key,reason):
 		require_operations(row.center)
 	units=frappe.utils.cint(units)
 	if not units or abs(units)>9999 or not request_key or len(request_key)>140:
-		frappe.throw('Invalid package adjustment')
+		frappe.throw('La rettifica del pacchetto non è valida.')
 	from hashlib import sha256
 	key=sha256((package+'\0'+request_key).encode()).hexdigest()
 	name=_append(package,'ADJUST',units,0,'adjust:'+key,reason)

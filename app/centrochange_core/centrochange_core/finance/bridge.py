@@ -20,13 +20,13 @@ def map_center(center,reason,cost_center=None):
             return {'company':company,'cost_center':branch.cc_cost_center,'replay':True}
         root=frappe.db.get_value('Cost Center',{'company':company,'is_group':1,'parent_cost_center':['is','not set']},'name',for_update=True)
         if not root:
-            frappe.throw('Native company cost-center root is not configured')
+            frappe.throw('Manca il centro di costo principale della società.')
         doc=frappe.get_doc({'doctype':'Cost Center','cost_center_name':'CC '+center,'company':company,
             'parent_cost_center':root,'is_group':0}).insert(ignore_permissions=True)
         cost_center=doc.name
     doc=frappe.get_doc('Cost Center',cost_center,for_update=True)
     if doc.company!=company or doc.is_group or doc.disabled:
-        frappe.throw('An enabled native leaf cost center for the configured company is required')
+        frappe.throw('Serve un centro di costo operativo attivo per la società configurata.')
     if old=={'company':company,'cost_center':cost_center}:
         return {'company':company,'cost_center':cost_center,'replay':True}
     with internal_write('cc_finance_mapping_write'):
@@ -43,14 +43,14 @@ def map_patient(patient,center,reason,customer=None):
     patient_context(patient,center,write=True)
     row=frappe.db.get_value('Patient',patient,['name','patient_name','customer'],as_dict=True,for_update=True)
     if not row:
-        frappe.throw('Patient identity does not exist')
+        frappe.throw('L’identità del paziente non esiste.')
     if not customer and row.customer:
         return {'customer':row.customer,'replay':True}
     created=not customer
     if not customer:
         group=frappe.db.get_single_value('Selling Settings','customer_group')
         if not group or frappe.db.get_value('Customer Group',group,'is_group'):
-            frappe.throw('Configure a native non-group default Customer Group before mapping')
+            frappe.throw('Configura un gruppo clienti nativo ordinario prima del collegamento.')
         # Native Customer is the fiscal master; no clinical fields are copied.
         customer=frappe.get_doc({'doctype':'Customer','customer_name':row.patient_name,'customer_type':'Individual',
             'customer_group':group,
@@ -59,7 +59,7 @@ def map_patient(patient,center,reason,customer=None):
     if not created:
         target.check_permission('read')
     if target.disabled:
-        frappe.throw('Accounting customer is disabled')
+        frappe.throw('Il cliente contabile è disattivato.')
     if row.customer==customer:
         return {'customer':customer,'replay':True}
     with internal_write('cc_finance_mapping_write'):
@@ -76,7 +76,7 @@ def map_practitioner(practitioner,center,reason,supplier=None):
     require_finance(center,write=True)
     row=frappe.db.get_value('Healthcare Practitioner',practitioner,['name','practitioner_name','user_id','supplier'],as_dict=True,for_update=True)
     if not row or not current_rows('CC Center Membership',{'user':row.user_id,'center':center,'active':1},pluck='name'):
-        frappe.throw('Professional accounting context is unavailable',frappe.PermissionError)
+        frappe.throw('Il contesto contabile del professionista non è disponibile.',frappe.PermissionError)
     if not supplier and row.supplier:
         return {'supplier':row.supplier,'replay':True}
     created=not supplier
@@ -88,7 +88,7 @@ def map_practitioner(practitioner,center,reason,supplier=None):
     if not created:
         target.check_permission('read')
     if target.disabled:
-        frappe.throw('Accounting supplier is disabled')
+        frappe.throw('Il fornitore contabile è disattivato.')
     if row.supplier==supplier:
         return {'supplier':supplier,'replay':True}
     with internal_write('cc_finance_mapping_write'):
@@ -109,10 +109,10 @@ def capture(appointment,reason):
     customer=frappe.db.get_value('Patient',doc.patient,'customer',for_update=True)
     supplier=frappe.db.get_value('Healthcare Practitioner',doc.practitioner,'supplier',for_update=True)
     if not customer or not center.cc_company or not center.cc_cost_center or not doc.cc_service_item or not doc.cc_currency_snapshot:
-        frappe.throw('Complete native accounting mappings and historical appointment snapshots first')
+        frappe.throw('Completa i collegamenti contabili nativi e i dati storici delle sedute.')
     native_center=frappe.get_doc('Cost Center',center.cc_cost_center,for_update=True)
     if native_center.company!=doc.company or center.cc_company!=doc.company:
-        frappe.throw('Accounting and operational company/cost-center context differ')
+        frappe.throw('Società o centro di costo contabile non corrispondono al contesto operativo.')
     snapshot={'appointment':doc.name,'patient':doc.patient,'customer':customer,'practitioner':doc.practitioner,'supplier':supplier,
         'center':doc.cc_center,'company':doc.company,'cost_center':center.cc_cost_center,'service_item':doc.cc_service_item,
         'service_label':doc.cc_service_label,'duration':doc.duration,'price':doc.cc_price_snapshot,'currency':doc.cc_currency_snapshot,
@@ -133,5 +133,7 @@ def capture(appointment,reason):
 
 def protected_center(doc,method=None):
     previous=doc.get_doc_before_save()
+    from centrochange_core.security.center_state import protect_operational_state
+    protect_operational_state(doc,previous)
     if not frappe.flags.get('cc_finance_mapping_write') and any(doc.get(field)!=(previous.get(field) if previous else None) for field in ('cc_company','cc_cost_center','cc_bank_account')):
-        frappe.throw('Accounting center mappings require the audited bridge',frappe.PermissionError)
+        frappe.throw('I collegamenti contabili della sede richiedono il servizio tracciato.',frappe.PermissionError)

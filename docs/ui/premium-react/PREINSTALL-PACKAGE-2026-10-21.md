@@ -1,5 +1,7 @@
 # #148 · pacchetto preinstallazione React + API per PR DRAFT #150
 
+> **STORICO / NON ESEGUIRE.** Il pacchetto overlay qui sotto è stato revocato dall'Owner. Usare soltanto [il piano full rebuild](SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md), `infra/Dockerfile.single-stack-full`, `infra/compose.single-stack-full.yaml` e `infra/verify_full_single_stack.py`.
+
 **Stato:** `SOURCE_PACKAGE_PASS / OFFLINE_REGRESSION_PASS / IMAGE_NOT_BUILT / FRAPPE_LIVE_NOT_VERIFIED / PARTIAL`. Questa preparazione non è un deploy né `READY_FOR_OWNER_VISUAL_UAT`. DECISION-060/061/062/063 applicabili; il Site unico futuro è `centrochange.local` sullo stack esistente `centrochange-dev`.
 
 ## Overlay riproducibile

@@ -7,19 +7,21 @@ from centrochange_core.security.lifecycle import lock
 
 
 def require_practitioner(practitioner, center):
+	from centrochange_core.security.guards import require_operational_center
+	require_operational_center(center)
 	doc=frappe.get_doc('Healthcare Practitioner',practitioner,for_update=True)
 	if not enabled() or doc.status != 'Active':
-		frappe.throw('Active authorized practitioner required',frappe.PermissionError)
+		frappe.throw('Seleziona un professionista attivo e autorizzato.',frappe.PermissionError)
 	if not is_manager():
 		if center not in centers():
-			frappe.throw('Center access denied',frappe.PermissionError)
+			frappe.throw('Non hai accesso a questa sede.',frappe.PermissionError)
 		if 'CC Professional' in roles():
 			if doc.user_id != frappe.session.user:
-				frappe.throw('Cross-practitioner schedule access denied',frappe.PermissionError)
+				frappe.throw('Non puoi consultare la disponibilità di un altro professionista.',frappe.PermissionError)
 		else:
 			require_operations(center)
 	if not doc.user_id or center not in centers(doc.user_id):
-		frappe.throw('Practitioner must have active center membership')
+		frappe.throw('Il professionista deve avere un’appartenenza attiva alla sede.')
 	return doc
 
 
@@ -31,16 +33,16 @@ def set_schedule(practitioner,center,time_slots,reason):
 	if isinstance(time_slots,str):
 		time_slots=frappe.parse_json(time_slots)
 	if not isinstance(time_slots,list) or len(time_slots)>100:
-		frappe.throw('Invalid recurring schedule')
+		frappe.throw('La disponibilità settimanale non è valida.')
 	slots=[]
 	for row in time_slots:
 		if row.get('day') not in ('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'):
-			frappe.throw('Invalid weekday')
+			frappe.throw('Il giorno della settimana non è valido.')
 		start,end=get_time(row.get('from_time')),get_time(row.get('to_time'))
 		if start>=end:
-			frappe.throw('Schedule must start before it ends')
+			frappe.throw('L’ora iniziale deve precedere quella finale.')
 		if any(old['day']==row['day'] and start<get_time(old['to_time']) and end>get_time(old['from_time']) for old in slots):
-			frappe.throw('Recurring schedule intervals overlap')
+			frappe.throw('Le fasce della disponibilità settimanale si sovrappongono.')
 		slots.append({'day':row['day'],'from_time':str(start),'to_time':str(end)})
 	name=frappe.db.get_value('Practitioner Schedule',{'cc_practitioner':practitioner,'cc_center':center},for_update=True)
 	doc=frappe.get_doc('Practitioner Schedule',name,for_update=True) if name else frappe.get_doc({'doctype':'Practitioner Schedule',
@@ -82,7 +84,7 @@ def create_absence(practitioner,center,start_date,end_date,start_time,end_time,r
 
 def protected_schedule(doc,method=None):
 	if not frappe.flags.get('cc_schedule_write'):
-		frappe.throw('Schedules and absences must use the guarded service',frappe.PermissionError)
+		frappe.throw('Usa il servizio autorizzato per disponibilità e assenze.',frappe.PermissionError)
 
 
 def schedule_query(user=None):
@@ -137,12 +139,12 @@ def cancel_absence(availability,reason):
 	lock()
 	doc=frappe.get_doc('Practitioner Availability',availability,for_update=True)
 	if doc.scope_type!='Healthcare Practitioner' or doc.type!='Unavailable':
-		frappe.throw('Only managed practitioner absences can be cancelled')
+		frappe.throw('Puoi annullare solo le assenze gestite da Centro Change.')
 	require_practitioner(doc.scope,doc.cc_center)
 	if doc.docstatus==2:
 		return {'name':doc.name,'replay':True}
 	if doc.docstatus!=1:
-		frappe.throw('A submitted absence is required')
+		frappe.throw('Seleziona un’assenza confermata.')
 	with internal_write('cc_schedule_write'):
 		doc.flags.ignore_permissions=True
 		doc.cancel()

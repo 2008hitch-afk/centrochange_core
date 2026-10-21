@@ -1,5 +1,7 @@
 # React / Frappe architecture — #148
 
+> **Aggiornamento single-stack:** le sezioni storiche sotto descrivono il candidato prima del full rebuild. Recipe e gate correnti: [SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md](SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md). L'immagine verrà costruita da base pinned e intero albero applicativo installato, più React/API; l'overlay precedente è revocato. Il routing React primario è implementato ma disattivato fino a test live e accettazione Owner.
+
 Status: **PARTIAL**, 2026-10-21. Branch `issue-148/premium-react-frontend` from PR #149 (`640b221`). No shared DEV, server clone, production or live data used.
 
 ## Boundary

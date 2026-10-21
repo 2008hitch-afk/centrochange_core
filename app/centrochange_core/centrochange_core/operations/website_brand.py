@@ -1,10 +1,20 @@
 """Supported website context extension; native authentication/authorization unchanged."""
 import frappe
+import re
 
 
 def context(values):
     values.update(app_name='Centro Change', brand_html='Centro Change', footer_powered='Centro Change',
                   base_template_path='templates/cc_web_base.html')
+    # Frappe 16.50 renders this image in desk.html before app_include_js runs,
+    # and in login.js immediately after successful authentication. A client
+    # CSS or post-render DOM fix cannot prevent the upstream splash flash.
+    roles = set(frappe.get_roles(frappe.session.user)) if frappe.session.user != 'Guest' else set()
+    if getattr(frappe.local, 'path', None) == 'login' or roles.intersection(
+        {'CC Manager', 'CC Secretariat', 'CC Professional', 'CC Finance', 'CC Accountant'}
+    ):
+        values.splash_image = '/assets/centrochange_core/images/centrochange-wordmark.svg'
+        values.favicon = '/assets/centrochange_core/images/centrochange-wordmark.svg'
     if frappe.session.user != 'Guest':
         from frappe.sessions import get_csrf_token
         values.csrf_token = get_csrf_token()
@@ -17,10 +27,22 @@ def context(values):
         values.update(template='templates/cc_error_page.html', title='Centro Change — Accesso non consentito',
                       cc_error_title='Accesso non consentito', cc_error_action='Accedi',
                       cc_error_message='Il tuo account non è autorizzato ad aprire questa pagina. Accedi con il profilo corretto o contatta il referente del centro.')
-    if getattr(frappe.local,'path',None)=='printview' and values.get('body'):
-        values.body=localize_print_labels(values.body)
+    # get_print() also renders printview inside an API request. In that case
+    # frappe.local.path remains the API path; the renderer context is decisive.
+    if values.get('doctype') == 'Sales Invoice' and values.get('body'):
+        values.body = localize_print_labels(values.body, frappe.form_dict.get('name'))
+        # The pinned print renderer can supply either an English document title
+        # or a website title at this hook. Use its canonical name to avoid
+        # depending on the title wording or on request-language cache state.
+        invoice_name = values.get('name') or frappe.form_dict.get('name')
+        if invoice_name:
+            translated_title = 'Fattura paziente: ' + str(invoice_name)
+            values.title = translated_title
+            # BaseTemplatePage merges response.context after this hook.
+            frappe.local.response.setdefault('context', frappe._dict())['title'] = translated_title
     if getattr(frappe.local,'path',None)=='login':
         values.title='Centro Change — Accesso'
+        values.cc_login_ui=True
         # Native login macro retains structure/logic; remove the upstream logo source too.
         values.logo='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E'
 
@@ -40,24 +62,124 @@ def print_template_locale(jenv, print_format):
     Explicit language avoids incidental request-language changes during guards.
     Keep the native format, fields, values, totals and print permission path.
     """
-    if getattr(getattr(frappe.local, 'request', None), 'path', None) == '/printview':
+    if frappe.form_dict.get('doctype') == 'Sales Invoice' and frappe.local.lang == 'it':
         from functools import partial
         jenv.globals['_'] = partial(frappe._, lang='it')
     return None
 
 
-def localize_print_labels(body):
-    """Translate only pinned native template label nodes, never invoice values."""
+def localize_print_labels(body, invoice_name=None):
+    """Localize the rendered v16 invoice print without changing its document.
+
+    Standard and builder print formats use different markup. Only exact label
+    nodes and the designated in-words value are changed; amounts, ledger
+    values, invoice identifiers and the stored ``in_words`` remain untouched.
+    """
     from bs4 import BeautifulSoup
-    soup=BeautifulSoup(body, 'html.parser')
-    labels={'Sales Invoice':'Fattura di vendita','Customer Name:':'Cliente:',
-            'Bill to:':'Intestatario:', 'Invoice Number:':'Numero fattura:',
-            'Invoice Date:':'Data fattura:', 'Payment Due Date:':'Scadenza pagamento:'}
-    for node in soup.select('.invoice-title, .title .info-text'):
-        if node.string and node.string.strip() in labels:
-            node.string.replace_with(labels[node.string.strip()])
+    from decimal import Decimal, ROUND_HALF_UP
+    from num2words import num2words
+
+    soup = BeautifulSoup(body, 'html.parser')
+    # The pinned invoice builder is a standalone print renderer: its <title>
+    # lives inside body, so the website context title alone cannot change it.
+    if soup.title and soup.title.string and soup.title.string.startswith('Sales Invoice: '):
+        soup.title.string.replace_with('Fattura paziente: ' + soup.title.string[len('Sales Invoice: '):])
+    labels = {
+        'Sales Invoice': 'Fattura paziente', 'Credit Note': 'Nota di credito',
+        'Billed To': 'Intestatario',
+        'Customer Name': 'Cliente', 'Bill To': 'Intestatario',
+        'Bill From': 'Emessa da', 'Invoice Number': 'Numero fattura',
+        'Invoice Date': 'Data fattura', 'Payment Due Date': 'Scadenza',
+        'Subtotal': 'Subtotale', 'Sub Total': 'Subtotale',
+        'Grand Total': 'Totale', 'No.': 'N.', 'No': 'N.',
+        'Quantity': 'Quantità', 'Rate': 'Prezzo unitario',
+        'Amount': 'Importo', 'In Words': 'Importo in lettere',
+        'Item': 'Servizio', 'Item Code': 'Codice servizio',
+        'DRAFT': 'BOZZA', 'CANCELLED': 'ANNULLATA',
+    }
+    # The pinned standard renderer uses .label/.column-header; the ERPNext
+    # invoice formats also emit plain heading spans and table header cells.
+    for node in soup.select('.custom-html[data-fieldname^="custom_html_"] *, '
+                            '.invoice-title, .title .info-text, .heading, '
+                            '.label, .section-label, .column-header, '
+                            '.table-header td, .totals-table td, '
+                            'h1, h2, h3, [document-status] h4'):
+        if node.find(True) or not node.string:
+            continue
+        source = node.string.strip()
+        suffix = ':' if source.endswith(':') else ''
+        translated = labels.get(source.removesuffix(':'))
+        if translated:
+            node.string.replace_with(translated + suffix)
+
+    for node in soup.select('[data-fieldname="posting_time"] .value'):
+        if node.string and re.fullmatch(r'\d{2}:\d{2}:\d{2}', node.string.strip()):
+            node.string.replace_with(node.string.strip()[:5])
+    for node in soup.select('td[data-fieldname="item_name"]'):
+        if node.string and re.fullmatch(r'CC-HTTP-UAT\d+ Session', node.string.strip()):
+            node.string.replace_with('Seduta dimostrativa')
+    # ERPNext v16's installed invoice print builder renders item names and
+    # descriptions as divs, rather than the standard td[data-fieldname] nodes.
+    # Scope these display-only replacements to exact synthetic demo values.
+    for node in soup.select('.cell-line--primary, .ql-snow'):
+        if node.string and re.fullmatch(r'CC-HTTP-UAT\d+ Session', node.string.strip()):
+            node.string.replace_with('Seduta dimostrativa')
+        elif node.string and node.string.strip() == 'Nos' and 'cell-line--primary' in node.get('class', []):
+            node.string.replace_with('unità')
+    for node in soup.select('.ql-snow'):
+        for text_node in list(node.find_all(string=True)):
+            if text_node.strip() == 'Italy':
+                text_node.replace_with('Italia')
+    for node in soup.select('.company-address'):
+        for text_node in list(node.find_all(string=True)):
+            source = str(text_node)
+            if source.strip() == 'Italy':
+                text_node.replace_with(source.replace('Italy', 'Italia'))
+            elif source.rstrip().endswith(', Italy'):
+                text_node.replace_with(source.replace(', Italy', ', Italia'))
+    # Keep synthetic canonical references on the printed document for audit,
+    # but present a readable label first and make the code visually secondary.
+    for node in soup.select('td[data-fieldname="item_name"] .cell-line--secondary'):
+        if node.string and re.fullmatch(r'CC-HTTP-UAT\d+ SESSION', node.string.strip()):
+            node.string.replace_with('Rif. servizio: ' + node.string.strip())
+            node['style'] = 'font-size:9px;color:#667085;font-weight:400'
+    for node in soup.select('[data-fieldname="customer_name"] .value'):
+        if node.string:
+            source = node.string.strip()
+            match = re.fullmatch(r'CC-HTTP-UAT\d+ ([A-Za-z]+)', source)
+            if match:
+                node.clear()
+                node.append('Paziente dimostrativo ' + match.group(1))
+                reference = soup.new_tag('small')
+                reference['style'] = 'display:block;font-size:9px;color:#667085;font-weight:400'
+                reference.string = 'Rif. anagrafica: ' + source
+                node.append(reference)
+
+    if invoice_name:
+        # The English number in words is stored by ERPNext on submit. Render a
+        # localized presentation only for EUR; never rewrite accounting data.
+        invoice = frappe.get_doc('Sales Invoice', invoice_name)
+        if invoice.currency == 'EUR':
+            amount = Decimal(str(invoice.grand_total)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            words = num2words(f'{amount:.2f}', lang='it', to='currency', currency='EUR')
+            for node in soup.select('[data-fieldname="in_words"] .value, .words-box'):
+                if node.string and node.string.strip() == str(invoice.in_words or '').strip():
+                    node.string.replace_with(words[0].upper() + words[1:] + '.')
     return str(soup)
 def login_language():
     # Retained existing #75 hook; no auth/session/user-language mutation.
     if getattr(getattr(frappe.local,'request',None),'path',None)=='/login':
         frappe.local.lang='it'
+
+
+def client_time_format(bootinfo):
+    """Use Frappe's supported boot hook for native client Time controls.
+
+    This changes only the browser display preference. Stored Time fields and
+    all API, audit and fiscal formats retain their canonical representation.
+    """
+    roles = set(frappe.get_roles(frappe.session.user))
+    if frappe.session.user != 'Administrator' and roles.intersection(
+            {'CC Manager', 'CC Secretariat', 'CC Professional',
+             'CC Finance', 'CC Accountant'}):
+        bootinfo.sysdefaults['time_format'] = 'HH:mm'

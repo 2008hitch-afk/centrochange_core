@@ -12,7 +12,7 @@ OUTCOMES={'Accepted':'ACCEPTED_OR_DELIVERED','Rejected':'REJECTED','Retryable Fa
 class SimulatedSdiAdapter:
     route='SIMULATED'
     def send(self,payload,idempotency_key,outcome):
-        if outcome not in OUTCOMES:frappe.throw('Choose an explicit simulated SdI result')
+        if outcome not in OUTCOMES:frappe.throw('Seleziona un esito SdI simulato esplicito.')
         status=OUTCOMES[outcome];protocol='SYNTHETIC-SDI-'+fiscal.digest([idempotency_key,sha256(payload).hexdigest()])[:24]
         return {'status':status,'external_protocol':protocol,'retryable':status=='FAILED_RETRYABLE',
             'error_class':{'REJECTED':'SYNTHETIC_REJECTION','FAILED_RETRYABLE':'SYNTHETIC_TRANSIENT','FAILED_TERMINAL':'SYNTHETIC_TERMINAL'}.get(status),
@@ -23,20 +23,20 @@ class SimulatedSdiAdapter:
 @atomic
 def prepare(invoice,request_key,reason,corrects=None):
     lock();fiscal.guard();doc=frappe.get_doc('Sales Invoice',invoice,for_update=True);require_finance(doc.cc_center,True)
-    if doc.docstatus!=1 or doc.cc_fiscal_profile!='SYNTHETIC_UNVERIFIED':frappe.throw('A submitted fictional DEV Sales Invoice is required')
-    if not request_key or len(request_key)>160:frappe.throw('A bounded fiscal idempotency key is required')
+    if doc.docstatus!=1 or doc.cc_fiscal_profile!='SYNTHETIC_UNVERIFIED':frappe.throw('Seleziona una fattura paziente demo contabilizzata.')
+    if not request_key or len(request_key)>160:frappe.throw('Indica un identificativo valido per la richiesta fiscale.')
     files=frappe.get_all('File',filters={'attached_to_doctype':'Sales Invoice','attached_to_name':invoice,'is_private':1},fields=['name','file_name','creation'])
     files=[f for f in files if f.file_name.endswith('.xml')]
-    if not files:frappe.throw('Native local electronic-invoice XML is missing; no payload is invented')
+    if not files:frappe.throw('Manca il file XML nativo della fattura elettronica; non viene creato un documento fittizio.')
     file=frappe.get_doc('File',max(files,key=lambda f:(f.creation,f.name)).name)
     payload=file.get_content();payload=payload.encode('utf-8') if isinstance(payload,str) else payload
     digest=sha256(payload).hexdigest()
     if corrects:
         previous=fiscal.transaction(corrects,True)
         if previous.domain!='SDI' or previous.direction!='OUTBOUND' or previous.center!=doc.cc_center or previous.status not in ('REJECTED','FAILED_TERMINAL'):
-            frappe.throw('Correction requires a rejected/terminal original in the same center')
+            frappe.throw('La correzione richiede un originale rifiutato o definitivo nella stessa sede.')
         if not (doc.amended_from==previous.reference_name or doc.return_against==previous.reference_name):
-            frappe.throw('Correction must use a supported native amendment or credit reference')
+            frappe.throw('La correzione richiede una rettifica nativa o una nota di credito supportata.')
     snapshot={'invoice':invoice,'payload_hash':digest,'corrects':corrects,'profile':'SYNTHETIC_UNVERIFIED'}
     key=fiscal.digest(['SDI','OUTBOUND',doc.cc_center,request_key]);version=fiscal.digest(['SDI','OUTBOUND',invoice,digest])
     old=fiscal.replay(key,fiscal.digest(snapshot),version,doc.cc_center)
@@ -52,8 +52,8 @@ def prepare(invoice,request_key,reason,corrects=None):
 def intake(center,external_message_id,xml,reason):
     lock();fiscal.guard();require_finance(center,True)
     if not external_message_id or not external_message_id.startswith('SYNTHETIC-') or len(external_message_id)>160:
-        frappe.throw('A bounded explicitly synthetic inbound message identifier is required')
-    if not isinstance(xml,str) or len(xml.encode('utf-8'))>1024*1024:frappe.throw('A bounded XML payload is required')
+        frappe.throw('Indica un identificativo sintetico valido per il messaggio ricevuto.')
+    if not isinstance(xml,str) or len(xml.encode('utf-8'))>1024*1024:frappe.throw('Il file XML deve essere presente e rispettare i limiti previsti.')
     raw=xml.encode('utf-8');payload_hash=sha256(raw).hexdigest()
     key=fiscal.digest(['SDI','INBOUND',external_message_id]);snapshot={'center':center,'message':external_message_id,'payload_hash':payload_hash}
     old=fiscal.replay(key,fiscal.digest(snapshot),key,center)
@@ -71,17 +71,17 @@ def intake(center,external_message_id,xml,reason):
 def queue(name,attempt_key,outcome,reason):
     lock();doc=fiscal.transaction(name,True)
     if doc.domain!='SDI' or doc.direction!='OUTBOUND' or outcome not in OUTCOMES or not attempt_key or len(attempt_key)>160:
-        frappe.throw('A supported outbound SdI simulated attempt is required')
+        frappe.throw('Seleziona un tentativo SdI simulato in uscita supportato.')
     key=fiscal.digest([name,attempt_key]);fingerprint=fiscal.digest([name,outcome,doc.payload_hash])
     old=frappe.db.get_value('CC Fiscal Attempt',{'attempt_key':key},['name','request_hash'],as_dict=True,for_update=True)
     if old:
-        if old.request_hash!=fingerprint:frappe.throw('Fiscal attempt replay payload differs')
+        if old.request_hash!=fingerprint:frappe.throw('Il tentativo fiscale è già stato usato con dati diversi.')
         return fiscal.result(doc,True)
     if doc.status=='QUEUED':
-        if doc.pending_attempt_key!=key or doc.pending_outcome!=outcome:frappe.throw('Another fiscal attempt is already queued')
+        if doc.pending_attempt_key!=key or doc.pending_outcome!=outcome:frappe.throw('Un altro tentativo fiscale è già in coda.')
         return fiscal.result(doc,True)
     if doc.status not in ('PREPARED','FAILED_RETRYABLE') or doc.attempt_count>=fiscal.MAX_ATTEMPTS:
-        frappe.throw('Fiscal status or retry limit does not permit another attempt')
+        frappe.throw('Stato o limite dei tentativi non consentono un nuovo tentativo simulato.')
     before={'status':doc.status,'attempt_count':doc.attempt_count}
     with internal_write('cc_fiscal_write'):
         doc.status='QUEUED';doc.pending_attempt_key=key;doc.pending_outcome=outcome;doc.pending_actor=frappe.session.user;doc.retryable=0;doc.save(ignore_permissions=True)
@@ -99,7 +99,7 @@ def dispatch(name):
         doc=frappe.get_doc('CC Fiscal Transaction',name,for_update=True)
         if doc.domain!='SDI' or doc.direction!='OUTBOUND' or doc.status!='QUEUED':return {'replay':True}
         file=frappe.get_doc('File',doc.payload_file);payload=file.get_content();payload=payload.encode('utf-8') if isinstance(payload,str) else payload
-        if not file.is_private or sha256(payload).hexdigest()!=doc.payload_hash:frappe.throw('Retained fiscal payload integrity failed')
+        if not file.is_private or sha256(payload).hexdigest()!=doc.payload_hash:frappe.throw('La verifica di integrità del documento fiscale conservato non è riuscita.')
         response=SimulatedSdiAdapter().send(payload,doc.pending_attempt_key,doc.pending_outcome)
         count=doc.attempt_count+1;status=response['status']
         if count>=fiscal.MAX_ATTEMPTS and response['retryable']:

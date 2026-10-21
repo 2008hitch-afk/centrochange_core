@@ -6,7 +6,7 @@ class CCPrivateNote(Document):
 		validate_note(self)
 	def on_trash(self):
 		import frappe
-		frappe.throw("Private notes are append-only",frappe.PermissionError)
+		frappe.throw("Le note riservate restano nello storico e non possono essere sovrascritte.",frappe.PermissionError)
 	def check_permission(self,permtype="read",permlevel=None):
 		from centrochange_core.operations.notes import require_private
 		require_private(self)

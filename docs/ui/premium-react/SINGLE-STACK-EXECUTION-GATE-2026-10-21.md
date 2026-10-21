@@ -1,5 +1,7 @@
 # #148 — unico piano esecutivo single-stack (DECISION-062)
 
+> **STORICO / NON ESEGUIRE.** Il piano overlay a sei container qui sotto è stato revocato dall'Owner. La proposta definitiva è [SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md](SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md). Le recipe overlay menzionate sotto sono state rimosse dalla PR #150; nessun comando di questa pagina è autorizzato.
+
 **Stato: PROPOSTA / NON ESEGUITA.** PR #150 rimane DRAFT e `PARTIAL / RUNTIME_GATE_BLOCKED`. Questo documento chiede un solo gate materiale; non autorizza da solo build Docker, backup sul DEV, restore, deploy, migrate, restart, cambio UI primaria o cleanup. DECISION-060/061/062/063 restano applicabili. La variante `centrochange-premium-148` è **NON APPROVATA** e non compare in questa sequenza.
 
 ## Perimetro e inventario corrente in sola lettura
