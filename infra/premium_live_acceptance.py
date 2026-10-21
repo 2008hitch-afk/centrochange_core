@@ -105,7 +105,8 @@ def main():
                    "CC_PREMIUM_LIVE_SYNTHETIC": "YES", "CC_PREMIUM_LIVE_URL": args.base_url,
                    "CC_PREMIUM_LIVE_RESTORE": "YES" if args.backend_container == "cc148-restore-runner" else "NO"}
             command = [str(FRONTEND / "node_modules/.bin/playwright"), "test",
-                       "--config", "playwright.live.config.ts", "--reporter=line"]
+                       "--config", "playwright.live.config.ts", "--reporter=line",
+                       "--output", str(output / "screenshots")]
             result = subprocess.run(command, cwd=FRONTEND, env=env, capture_output=True, text=True)
             log = output / "playwright.log"
             log.write_text(result.stdout + result.stderr)

@@ -50,7 +50,7 @@ function App() {
   const switchView = (next: View) => { location.hash = encodeURIComponent(next); setView(next); setMobileOpen(false); setError(''); setNotice('') }
   const feedback = (message: string, fail = false) => { if (fail) setError(message); else { setNotice(message); setError('') } }
   const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(fresh) }
-  const changeCenter = (next: string) => { hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setQuery(''); setCenter(next) }
+  const changeCenter = (next: string) => { if (next === center) return; hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setQuery(''); setCenter(next) }
 
   return <div className="app-shell">
     <a href="#main" className="skip-link">Vai al contenuto</a>

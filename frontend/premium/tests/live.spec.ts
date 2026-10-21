@@ -60,6 +60,12 @@ test('all eleven live archives render a list or a genuine empty state', async ({
   try {
     const page = await context.newPage()
     await page.goto('/premium#Archivi')
+    const selector = page.locator('.center-selector select')
+    await expect(selector).toBeVisible()
+    if (await selector.inputValue() !== fixture.center_a) await selector.selectOption(fixture.center_a)
+    await expect(page.getByRole('navigation', { name: 'Tipi di archivio' })).toBeVisible()
+    await selector.selectOption(fixture.center_a)
+    await expect(page.getByRole('navigation', { name: 'Tipi di archivio' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Archivi' })).toBeVisible()
     for (const label of ['Pazienti', 'Professionisti', 'Articoli', 'Tariffe', 'Tipi seduta',
       'Servizi del centro', 'Modelli pacchetto', 'Fatture pazienti', 'Fatture professionisti',
@@ -71,6 +77,52 @@ test('all eleven live archives render a list or a genuine empty state', async ({
       await expect(page.locator('.archive-panel tbody, .archive-panel .empty-state')).toBeVisible()
     }
     await page.screenshot({ path: info.outputPath('premium-live-eleven-archives.png'), fullPage: true })
+  } finally { await context.close() }
+})
+
+test('eleven live detail cards open with authorized records', async ({ browser }, info) => {
+  const context = await roleContext(browser, 'manager')
+  try {
+    const page = await context.newPage()
+    await page.goto('/premium#Archivi')
+    const selector = page.locator('.center-selector select')
+    await expect(selector).toBeVisible()
+    if (await selector.inputValue() !== fixture.center_a) await selector.selectOption(fixture.center_a)
+    await expect(page.getByRole('navigation', { name: 'Tipi di archivio' })).toBeVisible()
+    const labels = ['Pazienti', 'Professionisti', 'Articoli', 'Tariffe', 'Tipi seduta',
+      'Servizi del centro', 'Modelli pacchetto', 'Fatture pazienti', 'Fatture professionisti',
+      'Pagamenti', 'Movimenti bancari']
+    for (const [index, label] of labels.entries()) {
+      await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: label, exact: true }).click()
+      await expect(page.locator('.archive-panel h2')).toHaveText(label)
+      const row = page.locator('.archive-panel tbody tr.clickable').first()
+      await expect(row, `${label} must have a synthetic UAT record`).toBeVisible({ timeout: 15_000 })
+      await row.click()
+      const detail = page.getByRole('dialog')
+      await expect(detail).toBeVisible()
+      await expect(detail.getByRole('heading', { name: 'Dettaglio' })).toBeVisible()
+      await page.screenshot({ path: info.outputPath(`detail-${String(index + 1).padStart(2, '0')}.png`), fullPage: true })
+      await detail.getByRole('button', { name: 'Chiudi' }).click()
+    }
+  } finally { await context.close() }
+})
+
+test('principal live sections render without page overflow', async ({ browser }, info) => {
+  const context = await roleContext(browser, 'manager')
+  try {
+    const page = await context.newPage()
+    const views = ['Agenda', 'Pazienti', 'Servizi', 'Disponibilità', 'Report',
+      'Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche', 'Notifiche']
+    for (const [index, view] of views.entries()) {
+      const response = await page.goto('/premium#' + encodeURIComponent(view))
+      if (response) expect(response.ok(), `${view} route`).toBeTruthy()
+      await expect(page.locator('.breadcrumbs strong')).toHaveText(view)
+      await expect(page.locator('main')).toBeVisible()
+      await expect(page.locator('main [role="alert"].error')).toHaveCount(0)
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      expect(overflow, `${view} horizontal overflow`).toBeLessThanOrEqual(2)
+      await page.screenshot({ path: info.outputPath(`section-${String(index + 1).padStart(2, '0')}.png`), fullPage: true })
+    }
   } finally { await context.close() }
 })
 
