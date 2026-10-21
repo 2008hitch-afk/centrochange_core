@@ -65,6 +65,18 @@ class FixtureAuditOwnershipTests(unittest.TestCase):
         self.assertEqual(events, ["cancel A", "cancel B", "clear owned links",
                                   "delete A", "delete B"])
 
+    def test_source_document_remains_for_native_cancel_hook(self):
+        state = {"source_exists": True, "voucher_exists": True}
+        def cancel(_):
+            self.assertTrue(state["source_exists"])
+        def clear_owned_links():
+            state["source_exists"] = False
+        def delete(_):
+            self.assertFalse(state["source_exists"])
+            state["voucher_exists"] = False
+        cleanup.native_two_phase(["PURCHASE-1"], cancel, clear_owned_links, delete)
+        self.assertFalse(state["voucher_exists"])
+
 
 if __name__ == "__main__":
     unittest.main()
