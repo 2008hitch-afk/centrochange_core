@@ -1,0 +1,44 @@
+# Centro Change #148 — DECISION-065 APPROVATO: secondo tentativo end-to-end sul solo DEV
+
+**Decisione HITCH:** [HC-0005 DECISION-065](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-065-authorize-second-full-site-restore-and-dev-rebuild.md), [PR HITCH #115 merged](https://github.com/2008hitch-afk/hitch-client-discovery/pull/115).  
+**Owner ha detto «Approvo» il 21/10/2026.**  
+**Stato runtime ereditato:** `BLOCKED_SAFE_ROLLBACK`, vecchia immagine funzionante, PR #150 DRAFT; **la seconda esecuzione non è ancora partita**.  
+**Plan esatto:** [SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md](https://github.com/2008hitch-afk/centrochange_core/blob/issue-148/premium-react-frontend/docs/ui/premium-react/SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md), blob `36755c1668763bf6665e4792bef046718bfd3812` (la sezione **Recovery completa: precondizioni del secondo tentativo** prevale sul precedente piano).  
+**Report correzioni:** [DECISION-064-RECOVERY-CORRECTION-REPORT-2026-10-21.md](https://github.com/2008hitch-afk/centrochange_core/blob/issue-148/premium-react-frontend/docs/ui/premium-react/DECISION-064-RECOVERY-CORRECTION-REPORT-2026-10-21.md).  
+**PR implementativa:** [#150](https://github.com/2008hitch-afk/centrochange_core/pull/150), HEAD osservata all'autorizzazione `6982018d07b29d0f295425627738a40594720647`.  
+**Immagine React+API corretta prebuilt:** `sha256:a7921c5143e5294fa4a6849455a51b67eb4b3a41331832000254db252d409fa2`, **non installata**; **immagine vecchia sul DEV** `sha256:6d6f9d2e65d0b16974e6b04aeaaf6d1210f071448ace5276689ebc9652bc2f7b`.
+
+## Perimetro e risultato
+
+Un solo DEV `srv2033673`, Compose `centrochange-dev`, Site `centrochange.local`, DB applicativo `_4f614b4543aa5230`, bind privato `127.0.0.1:8082`; tutti i dati sintetici, backend canonico MVP e nuova UI React Premium. Non creare un secondo deployment permanente.
+
+**Risultato tecnico richiesto:** `SINGLE_STACK_DEV_INSTALLED + FULL_MVP_LIVE_QA_PASS + REACT_PREMIUM_VISUAL_QA_PASS + READY_FOR_OWNER_VISUAL_UAT` (solo se tutti provati con evidenza). La UI React diventa home di default **solo dopo esplicita accettazione visiva Owner distinta**; fino a quel momento `cc_premium_primary=0`.
+
+## Un solo secondo ciclo autorizzato, fail-closed
+
+1. **Preflight/fingerprint**: HEAD PR150, Git status, manifest, image IDs e sorgente; Compose privato solo con account legittimato, Site/DB/volumi/container/route; `cc_synthetic_dev=1`; RAM, disco, cgroup `memory.max`, PSI/OOM, job/queue e altri progetti. Nessuna mutazione se informazioni materiali non coincidono.
+2. **Backup FULL-SITE cifrato aggiornato**, usando `infra/premium_single_backup.py` e `infra/premium_site_checkpoint.py`: quattro artefatti Frappe **più** `site-tree.tar` di *tutto* il volume Site e `site-manifest.json`; file, directory, metadata, hash, UAT manifest+lock, allegati, Builder, indici e log; doppia verifica live/tar; AES-256, chiavi separate 0600, cartelle 0700, niente segreti in report. **I due vecchi backup cifrati incompleti e le chiavi si preservano** ma non contano come `PASS_RESTORE`.
+3. **Restore reale isolato**: solo quattro container temporanei `cc148-restore-{db,runner,redis-cache,redis-queue}`, volumi `cc148-restore-{db-data,sites}` e rete interna `cc148-restore-net`, senza porte o mount DEV. `verify-tree` pre-runner identico allo snapshot intero e `verify-tree --volatile-logs` dopo; restore SQL, schema/tabelle/ACL/ruoli/DocPerm/fixtures/hash/attachments, Site accessibile. **Solo PASS_RESTORE reale autorizza switch**.
+4. **Full app image e single-stack switch**: riusare l'image ID corretta se HEAD/manifest congruenti; altrimenti build full-source pinned revisionata prima del freeze. Il Compose canonico ricrea solo 6 processi applicativi (backend, frontend, websocket, queue-short, queue-long, scheduler) nel project attuale, conservando DB, due Redis, 4 volumi `centrochange-dev-sites`, `centrochange-dev-db-data`, `centrochange-dev-redis-cache-data`, `centrochange-dev-redis-queue-data`, Site, porta, rete, segreti. Non eseguire `migrate`, `reset` o configurator storico. **Write-freeze massimo 120 minuti**, health/smoke entro finestra.
+5. **QA LIVE completo** con fixture sintetiche e Frappe reale: sette ruoli+Guest, centro A/B, CSRF/ACL/security/IDOR, route dirette, tutte le 11 liste+11 form, Agenda/prenotazioni, anagrafiche, catalogo, tariffe, pacchetti, Finanza/pagamenti/fatture/XML/stampa/report, audit, performance p50/p95, desktop/mobile, UX e localizzazione italiana. Riprovare i 4 gruppi di fail precedenti: selector Agenda, range Payment Entry, richieste autorizzate con risultato vuoto, `cmd` POST server. Sintetici PASS precedenti non contano come live PASS.
+6. **Iterare solo sul bugfix ordinario entro lo stesso ciclo** già approvato per codice/UI/API senza ampliare permessi; non continuare l'esecuzione runtime su un problema materiale, e non eseguire ri-deploy multipli indeterminati.
+7. **Sicurezza/rollback**: preflight/restore/memory/backup/compatibilità/schema/security/data mismatch/timeout => STOP e rollback solo da baseline verificata; se integrità dati è dubbia isolamento e richiesta Owner, non riparazioni distruttive. Rimuovere per ID solo risorse restore temporanee dopo prove; conservare backup e versione precedente. **No cleanup storico** fino a successiva conferma Owner whitelist.
+8. **Consegna e accettazione**: solo se PASS completo fornire URL privato della UI `/premium` e modalità accesso sicure, screenshot e checklist essenziale; `cc_premium_primary=0` fino a successiva accettazione visiva Owner. No `OWNER_ACCEPTED` automatico, no release/production.
+
+**Vietato**: nuove politiche/ruoli, nuove API materiali non approvate, Patient/Practitioner/Item standalone create non autorizzate, Payment Entry create/allocate dirette, Customer link nuovo, dati reali, provider reali, merge PR150, produzione, GOAL-03, nuovo VPS, Site/DB/volume wipe, `down -v`, prune globale, cleanup storico, attivazione UI primaria anticipata. **L'approvazione è per un solo secondo tentativo condizionato**, non per installazioni infinite.
+
+## Prompt di esecuzione
+
+```text
+Centro Change #148 — riprendi dalla HEAD effettiva PR DRAFT #150, senza nuovo /goal. DECISION-065 è APPROVATO in HITCH: SECONDO E ULTIMO TENTATIVO CONDIZIONATO nello stesso DEV, finalizzato a una sola webapp React funzionante con dati sintetici. Leggi DECISION-060/061/062/063/064/065, AGENTS.md, il nuovo docs/ui/PREMIUM-REACT-DECISION065-SECOND-DEV-ATTEMPT.md da main, report DECISION-064-EXECUTION-REPORT e RECOVERY-CORRECTION, e il piano SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md aggiornato (blob 36755c1668763bf6665e4792bef046718bfd3812).
+
+Verifica HEAD Git/worktree, manifest e ID; NON ricominciare React. DEV attuale da preservare con vecchia immagine sha256:6d6f9d2e65d0b16974e6b04aeaaf6d1210f071448ace5276689ebc9652bc2f7b; candidato prebuilt sha256:a7921c5143e5294fa4a6849455a51b67eb4b3a41331832000254db252d409fa2 (usalo se ancora congruente; no rebuild inutili).
+
+Procedi in UN CICLO: preflight live fail-closed con config Compose privata legittima, cap/RAM/PSI/disco, Site synthetic-only, DB/rete/volumi; scritture congelate non più di 120 minuti; backup FULL Site cifrato a sei componenti incluso private/uat e manifest, verifica integrità/permissions/hash/path; restore SQL+SITE vero su cc148-restore-* senza montare DEV, confronto integrale pre/post e PASS_RESTORE reale; solo se tutti i gate PASS sostituisci i SEI container applicativi nell'unico centrochange-dev, preservando DB/Site/Redis/4 volumi; nessun migrate/schema change.
+
+Esegui QA Frappe live COMPLETO: 7 ruoli+Guest, centri A/B, auth/CSRF/ACL, UI di tutti i moduli MVP, 11 liste+11 form, Agenda, Finanza, API, documento/stampa, 4 regressioni fallite e corrette offline al primo tentativo, desktop/mobile, italiano, performance e sicurezza. Correggi da solo bug ordinari entro scope già approvato; un difetto materiale o nuova policy richiesta impone STOP, non bypass. Non tentare reinstallazioni multiple fuori gate. Se serve rollback usa solo percorso provato sicuro, conserva backup/chiavi/evidenze e il DEV precedente.
+
+Se PASS tecnico e screenshot visivi automatici, consegna URL privato e modalità accesso Owner per collaudo: READY_FOR_OWNER_VISUAL_UAT, ma flag cc_premium_primary=0. NON attivare React home prima della distinta accettazione grafica Owner. Non cancellare immagini storiche/volumi/log, non fare merge, non usare dati reali o produzione/GOAL-03. Rimuovi soltanto il restore temporaneo per ID dopo prove.
+
+Voglio l'app tecnicamente funzionante da aprire, NON un altro piano. Continua autonomamente tutte le attività ordinarie, con un solo rapporto conclusivo PASS/PARTIAL/BLOCKED; interrompi solo per rischi materiali. No autopromozione a OWNER_ACCEPTED.
+```
