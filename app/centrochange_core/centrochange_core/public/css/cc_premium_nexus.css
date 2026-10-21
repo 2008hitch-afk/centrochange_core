@@ -107,6 +107,39 @@ body.cc-client-desk.cc-native-view .form-column .frappe-control:not(:last-child)
 body.cc-client-desk.cc-native-view .control-label{color:#68796f;font-size:.77rem;font-weight:650;margin-bottom:var(--nx-label-gap)}
 body.cc-client-desk.cc-native-view .form-control{background:#fff;border-color:#dce4dd;border-radius:5px;color:#243a30;min-height:2.1rem}
 body.cc-client-desk.cc-native-view .form-control:focus{border-color:#12665f;box-shadow:var(--theme-ring)}
+/* Frappe 16.50's desk bundle sets .form-control { border: none } for idle
+   Form controls. A border-color override alone leaves empty controls invisible.
+   Scope the complete affordance to native client Forms, never the Agenda. */
+body.cc-client-desk.cc-native-view .form-page .frappe-control .control-input .form-control:not(:disabled):not([readonly]){
+  border:1px solid #789087;
+  background:#fff;
+  min-height:2.35rem;
+  color:#243a30;
+  box-shadow:0 1px 2px #102b380b;
+}
+body.cc-client-desk.cc-native-view .form-page .frappe-control .control-input .form-control:not(:disabled):not([readonly]):focus{
+  border-color:#12665f;
+  outline:2px solid #12665f;
+  outline-offset:1px;
+  box-shadow:0 0 0 3px #12665f24;
+}
+body.cc-client-desk.cc-native-view .form-page .frappe-control .control-input .form-control:disabled,
+body.cc-client-desk.cc-native-view .form-page .frappe-control .control-input .form-control[readonly],
+body.cc-client-desk.cc-native-view .form-page .frappe-control .like-disabled-input{
+  border:1px dashed #b9c8bf;
+  background:#f1f5f2;
+  color:#52645b;
+  box-shadow:none;
+}
+body.cc-client-desk.cc-native-view .form-page .frappe-control.has-error .control-input .form-control,
+body.cc-client-desk.cc-native-view .form-page .frappe-control .control-input .form-control.is-invalid,
+body.cc-client-desk.cc-native-view .form-page .frappe-control.has-error .control-input .form-control:not(:disabled):not([readonly]):focus{
+  border-color:#b42318;
+  box-shadow:0 0 0 2px #b4231826;
+}
+body.cc-client-desk.cc-native-view .form-page .frappe-control.has-error .control-input .form-control:focus{
+  outline-color:#b42318;
+}
 body.cc-client-desk.cc-native-view .like-disabled-input{background:#f6f8f6;border-color:#e1e7e2;color:#34483e}
 body.cc-client-desk.cc-native-view .indicator-pill{border-radius:4px}
 body.cc-client-desk.cc-native-view .page-actions .btn{border-radius:5px}
