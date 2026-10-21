@@ -46,10 +46,14 @@ class FixtureAuditOwnershipTests(unittest.TestCase):
 
     def test_only_named_fixture_native_dependents_are_selected(self):
         groups = {"CC Admin Exception": ["EX-1", "EX-1"],
+                  "CC Payment Override": ["OVERRIDE-1"],
+                  "CC Notification": ["NOTICE-1"],
                   "CC TS Input Review": ["TS-1"], "Patient": ["PAT-1"]}
         selected = cleanup.native_link_dependents(groups)
         self.assertEqual(selected["CC Admin Exception"], ["EX-1"])
         self.assertEqual(selected["CC TS Input Review"], ["TS-1"])
+        self.assertEqual(selected["CC Payment Override"], ["OVERRIDE-1"])
+        self.assertEqual(selected["CC Notification"], ["NOTICE-1"])
         self.assertNotIn("Patient", selected)
 
 

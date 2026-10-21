@@ -1,7 +1,8 @@
 """Ownership checks for disposable synthetic HTTP fixture dependents."""
 
 
-NATIVE_LINK_DEPENDENTS = ('CC Admin Exception', 'CC Fiscal Attempt',
+NATIVE_LINK_DEPENDENTS = ('CC Admin Exception', 'CC Payment Override',
+	'CC Notification', 'CC Fiscal Attempt',
 	'CC Fiscal Transaction', 'CC TS Input Review', 'CC Incoming Invoice',
 	'CC Professional Comparison')
 

@@ -314,7 +314,7 @@ def destroy_http(fixture):
 	if fixture.get('catalog'):
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'Patient Appointment',
 			'reference_name':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
-		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package','CC Economic Source Link','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Booking Confirmation','Communication','CC Incoming Invoice','CC Unpaid Threshold','CC Compensation Rule','CC Professional Expectation','CC Professional Comparison','CC Admin Exception','CC Fiscal Transaction','CC Fiscal Attempt','CC TS Input Review'):
+		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package','CC Economic Source Link','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Booking Confirmation','Communication','CC Incoming Invoice','CC Unpaid Threshold','CC Compensation Rule','CC Professional Expectation','CC Professional Comparison','CC Admin Exception','CC Fiscal Transaction','CC Fiscal Attempt','CC TS Input Review','CC Notification'):
 			groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':protected,'reference_name':['in',groups[protected] or ['']]},pluck='name')
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'CC Patient Assignment',
 			'reference_name':['in',groups.get('CC Patient Assignment') or ['']]},pluck='name')
