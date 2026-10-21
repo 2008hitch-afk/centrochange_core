@@ -35,7 +35,8 @@ PREMIUM_ADDED = {
     'centrochange_core/public/premium/style-BmVv81RX.js',
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
-                           'centrochange_core/operations/client_landing.py'}
+                           'centrochange_core/operations/client_landing.py',
+                           'centrochange_core/finance/reporting_acceptance.py'}
 ENDPOINT_MODULES = ('catalog', 'scoped_api', 'operations.profiles',
                     'finance.payments', 'finance.documents')
 

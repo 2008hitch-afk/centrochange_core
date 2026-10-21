@@ -132,7 +132,7 @@
     "centrochange_core/finance/receivables.py": "d1f6ef86fa767f63bf8328530138b8e57ce9608a826f16f71c11fa1a1b448926",
     "centrochange_core/finance/receivables_acceptance.py": "3882e81bef94be5b4999aac4532e520806965b2da36e70a06b43f231b687dd3f",
     "centrochange_core/finance/reporting.py": "2fd385d9982c57c653eadd54b62f640e454310274bf17c06007865b08a6ddfad",
-    "centrochange_core/finance/reporting_acceptance.py": "67cd98566f725fd53b2df85d5940ade07c6885f5be97993b40c6d2587fe27cea",
+    "centrochange_core/finance/reporting_acceptance.py": "f64863b370f9d4d6bd400e6816b90d326443d087840d4118153747f9cad9895d",
     "centrochange_core/finance/request_guard.py": "2ba9e54e922e24994145472ec356b13487a45b37dbbd60f77a34fbbf4eb3f4b4",
     "centrochange_core/finance/sdi.py": "f1b8ce558e417689af9539dc0ab6958049b6d0ff14f8c571c733f0856b3a97b5",
     "centrochange_core/finance/sdi_acceptance.py": "898658024225f311863492300d80462562c480bcaeed465e55da426fa058b50b",
@@ -289,6 +289,7 @@
   },
   "frontend_lock_sha256": "05f472ed67da6ed9a1200dcfe21c1c7b08649310dac05a9f054b7b9a520c637f",
   "reviewed_backend_deltas": [
+    "centrochange_core/finance/reporting_acceptance.py",
     "centrochange_core/hooks.py",
     "centrochange_core/operations/client_landing.py"
   ],

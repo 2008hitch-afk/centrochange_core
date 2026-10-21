@@ -5,7 +5,8 @@ import { resolve } from 'node:path'
 
 type Role = 'manager' | 'secretariat' | 'professional_a' | 'professional_b' | 'professional_c' | 'finance' | 'accountant'
 type Fixture = { synthetic_only: true; site: 'centrochange.local'; center_a: string; center_b: string;
-  item_a: string; payment_a: string; invoice_a: string; roles: Record<Role, string> }
+  item_a: string; payment_a: string; invoice_a: string; roles: Record<Role, string>;
+  owned_write: { tag: string; center: string; item: string } }
 const fixturePath = process.env.CC_PREMIUM_LIVE_FIXTURE
 if (!fixturePath || !process.env.CC_PREMIUM_LIVE_SYNTHETIC || process.env.CC_PREMIUM_LIVE_SYNTHETIC !== 'YES')
   throw new Error('Gated synthetic fixture and explicit CC_PREMIUM_LIVE_SYNTHETIC=YES required')
@@ -21,6 +22,10 @@ const names: Role[] = ['manager', 'secretariat', 'professional_a', 'professional
 if (fixture.synthetic_only !== true || fixture.site !== 'centrochange.local' ||
     !fixture.center_a || !fixture.center_b || fixture.center_a === fixture.center_b ||
     !fixture.item_a || !fixture.payment_a || !fixture.invoice_a ||
+    !/^CC-HTTP-[A-Za-z0-9]{10}$/.test(fixture.owned_write?.tag || '') ||
+    !fixture.owned_write.center ||
+    fixture.owned_write.center === fixture.center_a || fixture.owned_write.center === fixture.center_b ||
+    fixture.owned_write.item !== fixture.owned_write.tag + ' SESSION' ||
     names.some(name => !fixture.roles?.[name])) throw new Error('Incomplete synthetic single-Site fixture')
 for (const role of names) privateFile(fixture.roles[role])
 
@@ -111,12 +116,12 @@ test('manager write: CSRF, field whitelist, replay, audit and center boundary', 
     const csrf = await page.locator('meta[name="csrf-token"]').getAttribute('content')
     expect(csrf).toBeTruthy()
     const detail = await context.request.get(endpoint('catalog.detail'), {
-      params: { center: fixture.center_a, kind: 'Item', name: fixture.item_a } })
+      params: { center: fixture.owned_write.center, kind: 'Item', name: fixture.owned_write.item } })
     expect(detail.ok()).toBeTruthy()
     const item = (await detail.json()).message
     expect(item.modified && item.item_name).toBeTruthy()
     const key = `live-cc148-${crypto.randomUUID()}`
-    const body = { center: fixture.center_a, name: fixture.item_a, item_name: item.item_name,
+    const body = { center: fixture.owned_write.center, name: fixture.owned_write.item, item_name: item.item_name,
       expected_version: item.modified, request_key: key, reason: 'Collaudo sintetico #148' }
     denied(await context.request.post(endpoint('catalog.item_save'), { data: body }))
     denied(await context.request.post(endpoint('catalog.item_save'), {
@@ -132,12 +137,12 @@ test('manager write: CSRF, field whitelist, replay, audit and center boundary', 
     denied(await context.request.post(endpoint('catalog.item_save'), {
       data: { ...body, item_name: item.item_name + ' alterato' }, headers: { 'X-Frappe-CSRF-Token': csrf! } }))
     denied(await context.request.get(endpoint('catalog.detail'), {
-      params: { center: fixture.center_b, kind: 'Item', name: fixture.item_a } }))
+      params: { center: fixture.center_b, kind: 'Item', name: fixture.owned_write.item } }))
     const today = new Date().toISOString().slice(0, 10)
     const audit = await context.request.get(endpoint('security.audit_view.events'), {
-      params: { start: today, end: today, event_type: 'PREMIUM_MASTER_UPDATED', reference: fixture.item_a } })
+      params: { start: today, end: today, event_type: 'PREMIUM_MASTER_UPDATED', reference: fixture.owned_write.item } })
     expect(audit.ok()).toBeTruthy()
-    expect(JSON.stringify((await audit.json()).message)).toContain(fixture.item_a)
+    expect(JSON.stringify((await audit.json()).message)).toContain(fixture.owned_write.item)
   } finally { await context.close() }
 })
 
