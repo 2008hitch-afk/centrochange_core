@@ -4,8 +4,8 @@ export type Practitioner = { name: string; practitioner_name: string }
 export type Patient = { name: string; patient_name: string }
 export type Service = { name: string; cc_service_label?: string; cc_service_item?: string; cc_price_snapshot?: number; cc_currency_snapshot?: string; duration?: number }
 export type Appointment = { name: string; patient: string; patient_name: string; practitioner: string; practitioner_name: string; cc_center: string; appointment_date: string; appointment_time: string; duration: number; status: string; cc_closure_state?: string; cc_economic_state?: string; cc_paid?: number; cc_performed?: number; cc_service_label?: string; cc_price_snapshot?: number; cc_currency_snapshot?: string }
-export type Boot = { center: string; centers: Center[]; patients: Patient[]; practitioners: Practitioner[]; services: Service[]; packages: Row[]; payment_methods: string[]; roles: string[] }
-export type FinanceBoot = { center: string; centers: Center[]; can_write: boolean; is_manager: boolean; customers: Row[]; suppliers: Row[]; accounts: Row[]; practitioners: Practitioner[]; items: Row[]; assignees: string[]; simulation_only: boolean; fiscal_verified: boolean }
+export type Boot = { center: string; centers: Center[]; patients: Patient[]; practitioners: Practitioner[]; services: Service[]; packages: Row[]; payment_methods: string[]; roles: string[]; demo_labels?: Record<string, string> }
+export type FinanceBoot = { center: string; centers: Center[]; can_write: boolean; is_manager: boolean; customers: Row[]; suppliers: Row[]; accounts: Row[]; practitioners: Practitioner[]; items: Row[]; assignees: string[]; simulation_only: boolean; fiscal_verified: boolean; demo_labels?: Record<string, string> }
 
 const prefix = 'centrochange_core.'
 export async function call<T>(method: string, args: Row = {}, write = false): Promise<T> {

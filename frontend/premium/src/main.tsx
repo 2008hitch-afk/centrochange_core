@@ -2,18 +2,19 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bell, Menu, Search, LogOut, ChevronDown, PanelLeftClose, X, Settings2, History, BookOpen, Archive } from 'lucide-react'
 import { type Boot, type FinanceBoot, ops, finance, call } from './api'
-import { Agenda, Patients, ServiceCatalog, Availability, Reports, FinanceView, Access, Notifications } from './views'
+import { Agenda, Patients, Professionals, ServiceCatalog, Availability, Reports, FinanceView, Access, Notifications } from './views'
 import { AuditLog } from './audit_log'
 import { MasterArchive, syntheticArchive } from './master_archive'
 import { ScopedArchive } from './scoped_archive'
+import { configureDemoLabels, demoText } from './demo_labels'
 import './style.css'
 
-export type View = 'Agenda' | 'Pazienti' | 'Servizi' | 'Disponibilità' | 'Report' | 'Finanza' | 'Archivi' | 'Gestione accessi' | 'Registro modifiche' | 'Notifiche'
+export type View = 'Agenda' | 'Pazienti' | 'Professionisti' | 'Servizi' | 'Disponibilità' | 'Report' | 'Finanza' | 'Archivi' | 'Gestione accessi' | 'Registro modifiche' | 'Notifiche'
 const icons: Record<View, React.ReactNode> = {
-  Agenda: <CalendarDays />, Pazienti: <UsersRound />, Servizi: <BookOpen />, Disponibilità: <Clock3 />, Report: <ChartNoAxesCombined />,
+  Agenda: <CalendarDays />, Pazienti: <UsersRound />, Professionisti: <UsersRound />, Servizi: <BookOpen />, Disponibilità: <Clock3 />, Report: <ChartNoAxesCombined />,
   Finanza: <WalletCards />, Archivi: <Archive />, 'Gestione accessi': <Settings2 />, 'Registro modifiche': <History />, Notifiche: <Bell />
 }
-const allViews: View[] = ['Agenda', 'Pazienti', 'Servizi', 'Disponibilità', 'Report', 'Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche', 'Notifiche']
+const allViews: View[] = ['Agenda', 'Pazienti', 'Professionisti', 'Servizi', 'Disponibilità', 'Report', 'Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche', 'Notifiche']
 function fromHash(): View { const raw = decodeURIComponent(location.hash.slice(1)); return allViews.includes(raw as View) ? raw as View : 'Agenda' }
 
 function App() {
@@ -47,6 +48,7 @@ function App() {
   const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : !!boot || !!financeBoot : ['Gestione accessi', 'Registro modifiche', 'Notifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
   const currentView = available.includes(view) ? view : available[0]
   const centers = boot?.centers?.length ? boot.centers : financeBoot?.centers ?? []
+  configureDemoLabels(boot, financeBoot)
   const switchView = (next: View) => { location.hash = encodeURIComponent(next); setView(next); setMobileOpen(false); setError(''); setNotice('') }
   const feedback = (message: string, fail = false) => { if (fail) setError(message); else { setNotice(message); setError('') } }
   const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(fresh) }
@@ -63,16 +65,17 @@ function App() {
     </aside>
     {mobileOpen && <button className="scrim" aria-label="Chiudi menu" onClick={() => setMobileOpen(false)} />}
     <div className="workspace">
-      <header className="topbar"><button className="icon-button menu-toggle" aria-label="Apri menu" onClick={() => setMobileOpen(true)}><Menu /></button><div className="breadcrumbs"><span>Area operativa</span><span className="breadcrumb-slash">/</span><strong>{currentView}</strong></div><div className="top-actions"><div className="search-shell"><Search /><input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && query.trim()) switchView('Pazienti') }} placeholder="Cerca pazienti..." aria-label="Cerca pazienti" disabled={!boot} /></div>{centers.length > 0 && <label className="center-selector"><span className="sr-only">Centro</span><select value={center} onChange={e => changeCenter(e.target.value)}>{centers.map(c => <option key={c.name} value={c.name}>{c.branch || c.name}</option>)}</select><ChevronDown /></label>}<span className="top-avatar" aria-hidden="true">CC</span></div></header>
+      <header className="topbar"><button className="icon-button menu-toggle" aria-label="Apri menu" onClick={() => setMobileOpen(true)}><Menu /></button><div className="breadcrumbs"><span>Area operativa</span><span className="breadcrumb-slash">/</span><strong>{currentView}</strong></div><div className="top-actions"><div className="search-shell"><Search /><input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && query.trim()) switchView('Pazienti') }} placeholder="Cerca pazienti..." aria-label="Cerca pazienti" disabled={!boot} /></div>{centers.length > 0 && <label className="center-selector"><span className="sr-only">Centro</span><select value={center} onChange={e => changeCenter(e.target.value)}>{centers.map(c => <option key={c.name} value={c.name}>{demoText(c.branch || c.name)}</option>)}</select><ChevronDown /></label>}<span className="top-avatar" aria-hidden="true">CC</span></div></header>
       <main id="main" className="content" tabIndex={-1}>
         {loading && <div className="loading-state" role="status"><div className="skeleton heading-skeleton" /><div className="skeleton wide-skeleton" /><div className="skeleton panel-skeleton" /></div>}
         {error && <div className="alert error" role="alert"><span>{error}</span><button onClick={() => setError('')} aria-label="Chiudi errore"><X /></button></div>}
         {notice && <div className="alert success" role="status"><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Chiudi avviso"><X /></button></div>}
         {!loading && currentView === 'Agenda' && boot && <Agenda boot={boot} center={center} feedback={feedback} refreshBoot={refreshBoot} />}
         {!loading && currentView === 'Pazienti' && boot && <Patients boot={boot} center={center} query={query} feedback={feedback} refreshBoot={refreshBoot} />}
+        {!loading && currentView === 'Professionisti' && boot && <Professionals boot={boot} center={center} />}
         {!loading && currentView === 'Servizi' && boot && <ServiceCatalog boot={boot} center={center} />}
         {!loading && currentView === 'Disponibilità' && boot && <Availability boot={boot} center={center} feedback={feedback} />}
-        {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} />}
+        {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} financeBoot={financeBoot} />}
         {!loading && currentView === 'Finanza' && financeBoot && <FinanceView boot={financeBoot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Archivi' && (boot || financeBoot) && (syntheticArchive ? boot && <MasterArchive boot={boot} financeBoot={financeBoot} center={center} /> : <ScopedArchive boot={boot} financeBoot={financeBoot} center={center} />)}
         {!loading && currentView === 'Gestione accessi' && boot && <Access boot={boot} center={center} feedback={feedback} />}

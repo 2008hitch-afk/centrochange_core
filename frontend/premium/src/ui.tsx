@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { ArrowDownRight, ArrowUpRight, X } from 'lucide-react'
 import { displayDate, money, type Row } from './api'
+import { demoText } from './demo_labels'
 
 export type Feedback = (message: string, fail?: boolean) => void
 export function Heading({ eyebrow, title, subtitle, action }: { eyebrow?: string; title: string; subtitle?: string; action?: React.ReactNode }) {
@@ -75,7 +76,7 @@ export function useAction(feedback: Feedback, onSuccess?: () => void) {
 export function Metric({ label, value, trend, tone = 'blue' }: { label: string; value: React.ReactNode; trend?: string; tone?: 'blue' | 'green' | 'amber' | 'purple' }) { return <article className={`metric-card ${tone}`}><div className="metric-top"><span>{label}</span>{trend && <span className="metric-trend">{trend.startsWith('+') ? <ArrowUpRight /> : <ArrowDownRight />}{trend}</span>}</div><strong>{value}</strong><div className="metric-rule" /></article> }
 export function DataTable({ rows, columns, onRow }: { rows: Row[]; columns: { key: string; label: string; render?: (value: unknown, row: Row) => React.ReactNode }[]; onRow?: (row: Row) => void }) {
   if (!rows.length) return <Empty title="Nessun elemento" detail="Modifica i filtri o scegli un altro periodo." />
-  return <div className="table-scroll"><table><thead><tr>{columns.map((c, i) => <th key={`${c.key}-${i}`} scope="col">{c.label}</th>)}</tr></thead><tbody>{rows.map((row, i) => <tr key={String(row.name ?? i)} className={onRow ? 'clickable' : ''} onClick={() => onRow?.(row)} onKeyDown={e => { if (onRow && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onRow(row) } }} tabIndex={onRow ? 0 : undefined}>{columns.map((c, j) => <td key={`${c.key}-${j}`}>{c.render ? c.render(row[c.key], row) : String(row[c.key] ?? '—')}</td>)}</tr>)}</tbody></table></div>
+  return <div className="table-scroll"><table><thead><tr>{columns.map((c, i) => <th key={`${c.key}-${i}`} scope="col">{c.label}</th>)}</tr></thead><tbody>{rows.map((row, i) => <tr key={String(row.name ?? i)} className={onRow ? 'clickable' : ''} onClick={() => onRow?.(row)} onKeyDown={e => { if (onRow && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onRow(row) } }} tabIndex={onRow ? 0 : undefined}>{columns.map((c, j) => <td key={`${c.key}-${j}`}>{c.render ? c.render(row[c.key], row) : demoText(row[c.key] ?? '—')}</td>)}</tr>)}</tbody></table></div>
 }
 export const dateColumn = (key: string, label: string) => ({ key, label, render: (v: unknown) => displayDate(v) })
 export const moneyColumn = (key: string, label: string) => ({ key, label, render: (v: unknown) => money(v) })

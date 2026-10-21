@@ -1,4 +1,5 @@
 import { displayDate, money } from './api'
+import { demoText } from './demo_labels'
 
 const labels: Record<string, string> = {
   appointment: 'Seduta', appointment_label: 'Seduta', amount: 'Importo', amount_known: 'Importo definito',
@@ -43,5 +44,5 @@ export function financeFieldValue(key: string, value: unknown): string {
   if (['amount', 'expected_amount', 'known_expected', 'grand_total', 'total',
     'outstanding', 'outstanding_amount', 'paid_amount', 'unallocated_amount',
     'deposit', 'withdrawal'].includes(key)) return money(value)
-  return values[String(value)] ?? String(value)
+  return values[String(value)] ?? demoText(value)
 }

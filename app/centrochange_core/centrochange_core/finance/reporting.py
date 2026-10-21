@@ -114,12 +114,18 @@ def bootstrap(center=None):
                             label={'Cash':'Contanti','Bank':'Bonifico','General':'Altro metodo'}.get(mode.type,'Metodo di pagamento')
                         payment_methods.append({'name':mode.name,'type':mode.type,'label':label})
                         break
+    customers=masters('Customer',['name','customer_name'])
+    suppliers=masters('Supplier',['name','supplier_name','tax_id'])
+    items=_bounded('Item',{'disabled':0,'is_stock_item':0},['name','item_name','is_purchase_item','is_sales_item'])
+    from centrochange_core.uat.display import finance_aliases
+    demo_labels=finance_aliases(center,scopes,customers,suppliers,practitioners,items) if center else {}
     return {'centers':scopes,'center':center,'can_write':allowed(write=True),'is_manager':is_manager(),
-        'customers':masters('Customer',['name','customer_name']),'suppliers':masters('Supplier',['name','supplier_name','tax_id']),
+        'customers':customers,'suppliers':suppliers,
         'accounts':masters('Account',['name','root_type','account_type','is_group','disabled','company']),
-        'items':_bounded('Item',{'disabled':0,'is_stock_item':0},['name','item_name','is_purchase_item','is_sales_item']),
+        'items':items,
         'practitioners':practitioners,'assignees':assignees,'payment_methods':payment_methods,'unpaid_policy':professional_economics.POLICY,
-        'fiscal_verified':bool(frappe.db.get_single_value('CC Finance Settings','fiscal_configuration_verified')),'simulation_only':True}
+        'fiscal_verified':bool(frappe.db.get_single_value('CC Finance Settings','fiscal_configuration_verified')),'simulation_only':True,
+        'demo_labels':demo_labels}
 
 
 @frappe.whitelist(methods=['GET'])

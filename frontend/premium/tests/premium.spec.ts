@@ -6,7 +6,7 @@ const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro
 const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
 
-async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true, appointmentState: Partial<typeof appointment> = {}, bootState: Partial<typeof boot> = {}) {
+async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true, appointmentState: Partial<typeof appointment> = {}, bootState: Partial<typeof boot> = {}, agendaRows: typeof appointment[] | null = null) {
   await page.route('**/api/method/**', async route => {
     const req = route.request()
     const method = new URL(req.url()).pathname.split('/api/method/')[1]
@@ -16,7 +16,8 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     let status = 200
     if (method.endsWith('operations.workspace.bootstrap')) message = { ...boot, ...bootState }
     else if (method.endsWith('finance.reporting.bootstrap')) { if (financeAllowed) message = financeBoot; else status = 403 }
-    else if (method.endsWith('operations.workspace.agenda')) message = { appointments: [{ ...appointment, ...appointmentState }], truncated: false }
+    else if (method.endsWith('operations.workspace.agenda')) message = { appointments: agendaRows ?? [{ ...appointment, ...appointmentState }], truncated: false }
+    else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
     else if (method.endsWith('operations.workspace.patient_history')) message = { appointments: [{ ...appointment, ...appointmentState }], packages: [], organizational_notes: [{ name: 'NOTE-002', content: 'Nota sintetica rettificata', creation: today + ' 12:00:00', authored_by: 'direzione@example.invalid', corrects: 'NOTE-001' }, { name: 'NOTE-001', content: 'Nota sintetica', creation: today + ' 11:00:00', authored_by: 'direzione@example.invalid', corrects: null }], private_notes: [], settlements: [] }
     else if (method.endsWith('operations.workspace.schedules')) message = [{ name: 'SCHED-001', practitioner: 'PR-001', time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '18:00:00' }], absences: [] }]
@@ -135,6 +136,95 @@ test('archivio nascosto a ruolo senza facoltà amministrativa', async ({ page })
   await expect(page.getByRole('button', { name: 'Archivi', exact: true })).toHaveCount(0)
 })
 
+test('UAT Agenda: sette colonne uguali, professionisti per riga e prenotazione contestuale', async ({ page }, testInfo) => {
+  const anchor = new Date(`${today}T12:00:00Z`)
+  const monday = new Date(anchor.getTime() - ((anchor.getUTCDay() + 6) % 7) * 86_400_000).toISOString().slice(0, 10)
+  const tuesday = new Date(`${monday}T12:00:00Z`)
+  tuesday.setUTCDate(tuesday.getUTCDate() + 1)
+  const next = tuesday.toISOString().slice(0, 10)
+  const second = { ...appointment, name: 'APP-002', practitioner: 'PR-002', practitioner_name: 'Dott. Bianchi', appointment_date: next }
+  await mockApi(page, [], true, {}, { practitioners: [...boot.practitioners, { name: 'PR-002', practitioner_name: 'Dott. Bianchi' }] }, [{ ...appointment, appointment_date: monday }, second])
+  await page.goto('./')
+  await expect(page.locator('.segmented button.selected')).toHaveText('Settimana')
+  await expect(page.locator('.week-day')).toHaveCount(7)
+  await expect(page.locator('.week-row')).toHaveCount(2)
+  await expect(page.locator(`.week-cell[data-date="${monday}"][data-practitioner="PR-001"] .week-event`)).toHaveCount(1)
+  await expect(page.locator(`.week-cell[data-date="${next}"][data-practitioner="PR-002"] .week-event`)).toHaveCount(1)
+  const geometry = await page.locator('.week-grid').evaluate(grid => {
+    const header = [...grid.querySelectorAll('.week-day')].map(element => element.getBoundingClientRect())
+    const cells = [...grid.querySelector('.week-row')!.querySelectorAll('.week-cell')].map(element => element.getBoundingClientRect())
+    return { widths: header.map(rect => rect.width), delta: header.map((rect, index) => Math.abs(rect.left - cells[index].left)) }
+  })
+  expect(Math.max(...geometry.widths) - Math.min(...geometry.widths)).toBeLessThanOrEqual(0.75)
+  expect(Math.max(...geometry.delta)).toBeLessThanOrEqual(0.75)
+  await page.screenshot({ path: `../../docs/evidence/issue-148/uat-agenda-week-${testInfo.project.name}.png`, fullPage: true })
+  await page.locator(`.week-cell[data-date="${next}"][data-practitioner="PR-002"] .week-add`).click()
+  await expect(page.getByRole('dialog', { name: 'Nuova prenotazione' }).getByLabel('Professionista')).toHaveValue('PR-002')
+  await page.getByRole('dialog').getByRole('button', { name: 'Chiudi' }).click()
+  await page.getByLabel('Professionista', { exact: true }).selectOption('PR-002')
+  await expect(page.locator('.week-row')).toHaveCount(1)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+})
+
+test('UAT Professionisti: navigazione, ricerca e scheda autorizzata', async ({ page }, testInfo) => {
+  await mockApi(page, [], true, {}, { practitioners: [...boot.practitioners, { name: 'PR-002', practitioner_name: 'Dott. Bianchi' }] })
+  await page.goto('./')
+  await openSection(page, 'Professionisti')
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('Bianchi')
+  await expect(page.locator('tbody tr')).toHaveCount(1)
+  await page.locator('tbody tr').click()
+  await expect(page.getByRole('dialog')).toContainText('Dott. Bianchi')
+  await page.screenshot({ path: `../../docs/evidence/issue-148/uat-professionisti-${testInfo.project.name}.png`, fullPage: true })
+})
+
+test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo', async ({ page }, testInfo) => {
+  await mockApi(page, [], false, { cc_performed: 1 }, { roles: ['CC Secretariat'] })
+  await page.goto('./')
+  await openSection(page, 'Report')
+  await page.getByRole('button', { name: 'Report professionisti' }).click()
+  await page.getByLabel('Professionista report').selectOption('PR-001')
+  await expect(page.getByText('Sedute svolte')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Compensi e fatture autorizzati' })).toHaveCount(0)
+  await page.screenshot({ path: `../../docs/evidence/issue-148/uat-report-professionisti-${testInfo.project.name}.png`, fullPage: true })
+})
+
+test('UAT alias demo: record esatti in Agenda, ricerca e schede, ID API invariati', async ({ page }, testInfo) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  const demo_labels = { 'PAT-001': 'Paziente 1', 'Paziente Sintetico': 'Paziente 1', 'PR-001': 'Professionista 1', 'Dott.ssa Rossi': 'Professionista 1', 'SERV-001': 'Servizio 1', 'Prima visita': 'Servizio 1', 'CENTRO-A': 'Centro A' }
+  await mockApi(page, writes, false, {}, { demo_labels } as Partial<typeof boot>)
+  await page.goto('./')
+  await expect(page.locator('.week-event').first()).toContainText('Paziente 1')
+  await expect(page.locator('.week-professional')).toContainText('Professionista 1')
+  await openSection(page, 'Pazienti')
+  await page.getByRole('textbox', { name: 'Cerca pazienti' }).last().fill('Paziente 1')
+  await expect(page.locator('tbody tr')).toHaveCount(1)
+  await expect(page.locator('tbody')).toContainText('Paziente 1')
+  await page.reload()
+  await expect(page.locator('tbody')).toContainText('Paziente 1')
+  await openSection(page, 'Professionisti')
+  await expect(page.locator('tbody')).toContainText('Professionista 1')
+  await openSection(page, 'Servizi')
+  await expect(page.locator('tbody')).toContainText('Servizio 1')
+  await openSection(page, 'Agenda')
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
+  await expect(page.getByRole('dialog').getByRole('option', { name: 'Paziente 1' })).toHaveCount(1)
+  await page.getByRole('dialog').getByRole('textbox', { name: 'Motivo' }).fill('Verifica alias UAT')
+  await page.getByRole('button', { name: 'Conferma prenotazione' }).click()
+  expect(writes.at(-1)?.body.patient).toBe('PAT-001')
+  expect(writes.at(-1)?.body.practitioner).toBe('PR-001')
+  await page.screenshot({ path: `../../docs/evidence/issue-148/uat-alias-demo-${testInfo.project.name}.png`, fullPage: true })
+})
+
+test('UAT alias demo: fattura e soggetto leggibili in Finanza, valore non censito invariato', async ({ page }) => {
+  await mockApi(page, [], true, {}, { demo_labels: { 'INV-001': 'Fattura paziente 1', 'Cliente Sintetico': 'Cliente 1', 'SUP-001': 'Fornitore 1' } } as Partial<typeof boot>)
+  await page.goto('./')
+  await openSection(page, 'Finanza')
+  await page.getByRole('tab', { name: 'Fatture pazienti' }).click()
+  await expect(page.locator('.finance-panel tbody')).toContainText('Fattura paziente 1')
+  await expect(page.locator('.finance-panel tbody')).toContainText('Cliente 1')
+  await expect(page.locator('.finance-panel tbody')).toContainText('80,00')
+})
+
 test('schermate principali renderizzate e fotografate', async ({ page }, testInfo) => {
   await mockApi(page)
   await page.goto('./')
@@ -180,7 +270,7 @@ test('agenda desktop: shell, calendario, dettaglio e prenotazione con CSRF', asy
   await page.getByText('Paziente Sintetico').first().click()
   await expect(page.getByRole('dialog', { name: 'Paziente Sintetico' })).toBeVisible()
   await page.getByRole('button', { name: 'Chiudi', exact: true }).first().click()
-  await page.getByRole('button', { name: 'Nuova prenotazione' }).click()
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Nuova prenotazione' })).toBeVisible()
   await page.getByRole('dialog', { name: 'Nuova prenotazione' }).getByRole('textbox', { name: 'Motivo' }).fill('Test sintetico')
   await page.getByRole('button', { name: 'Conferma prenotazione' }).click()

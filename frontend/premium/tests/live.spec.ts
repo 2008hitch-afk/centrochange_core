@@ -60,6 +60,58 @@ test('same Site shell, compiled assets and responsive archive navigation', async
   } finally { await context.close() }
 })
 
+test('UAT priority: live weekly grid, Professionals, report and manifest-owned demo labels', async ({ browser }, info) => {
+  const context = await roleContext(browser, 'manager')
+  try {
+    const page = await context.newPage()
+    await page.goto('/premium#Agenda')
+    await expect(page.locator('.center-selector select')).toBeVisible()
+    await page.locator('.center-selector select').selectOption(fixture.center_a)
+    await expect(page.locator('.segmented button.selected')).toHaveText('Settimana')
+    await expect(page.locator('.week-day')).toHaveCount(7)
+    const alignment = await page.locator('.week-grid').evaluate(grid => {
+      const header = [...grid.querySelectorAll('.week-day')].map(node => node.getBoundingClientRect())
+      const cells = [...grid.querySelector('.week-row')!.querySelectorAll('.week-cell')].map(node => node.getBoundingClientRect())
+      return { widths: header.map(rect => rect.width), drift: header.map((rect, i) => Math.abs(rect.left - cells[i].left)) }
+    })
+    expect(Math.max(...alignment.widths) - Math.min(...alignment.widths)).toBeLessThanOrEqual(0.75)
+    expect(Math.max(...alignment.drift)).toBeLessThanOrEqual(0.75)
+    await page.screenshot({ path: info.outputPath('uat-live-week.png'), fullPage: true })
+    const nav = page.locator('.sidebar nav').first()
+    const labels = await nav.locator('.nav-item span:first-of-type').allTextContents()
+    expect(labels.indexOf('Professionisti')).toBe(labels.indexOf('Pazienti') + 1)
+    await page.goto('/premium#Professionisti')
+    await expect(page.getByRole('heading', { name: 'Professionisti', exact: true })).toBeVisible()
+    await expect(page.locator('tbody')).toContainText('Professionista 1')
+    await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('Professionista 1')
+    await expect(page.locator('tbody tr')).toHaveCount(1)
+    await page.locator('tbody tr').first().click()
+    await expect(page.getByRole('dialog')).toContainText('Professionista 1')
+    await page.screenshot({ path: info.outputPath('uat-live-professionals.png'), fullPage: true })
+    await page.goto('/premium#Pazienti')
+    await expect(page.locator('tbody')).toContainText('Paziente 1')
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).last().fill('Paziente 1')
+    await expect(page.locator('tbody tr')).toHaveCount(1)
+    await page.goto('/premium#Report')
+    await page.getByRole('button', { name: 'Report professionisti' }).click()
+    await page.getByLabel('Professionista report').selectOption({ label: 'Professionista 1' })
+    await expect(page.getByRole('button', { name: 'Compensi e fatture autorizzati' })).toBeVisible()
+    await page.screenshot({ path: info.outputPath('uat-live-professional-report.png'), fullPage: true })
+  } finally { await context.close() }
+})
+
+test('UAT priority: secretariat professional report has no financial details', async ({ browser }) => {
+  const context = await roleContext(browser, 'secretariat')
+  try {
+    const page = await context.newPage()
+    await page.goto('/premium#Report')
+    await expect(page.getByRole('heading', { name: 'Report' })).toBeVisible()
+    await page.getByRole('button', { name: 'Report professionisti' }).click()
+    await expect(page.getByRole('button', { name: 'Compensi e fatture autorizzati' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Finanza', exact: true })).toHaveCount(0)
+  } finally { await context.close() }
+})
+
 test('all eleven live archives render a list or a genuine empty state', async ({ browser }, info) => {
   const context = await roleContext(browser, 'manager')
   try {

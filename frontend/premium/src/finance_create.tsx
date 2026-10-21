@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { type Row, finance, requestKey, romeToday } from './api'
+import { demoText } from './demo_labels'
 import { type Feedback, Button, DateInput, Field, FormError, Modal, SearchableSelect, useAction } from './ui'
 
 type Props = { tab: string; center: string; feedback: Feedback; onClose: () => void; onSuccess: () => void; start: string; end: string }
@@ -62,8 +63,8 @@ export function FinanceCreate({ tab, center, feedback, onClose, onSuccess, start
   const title = ({ 'Fatture pazienti': 'Crea fattura paziente', 'XML ricevuti': 'Importa XML sintetico', Banca: 'Importa movimento', SdI: 'Prepara SdI simulato', TS: 'Prepara TS simulato', 'Coda amministrativa': 'Rileva condizioni' } as Record<string, string>)[tab] ?? 'Nuova operazione'
   return <Modal title={title} onClose={onClose}><form onSubmit={e => { e.preventDefault(); submit() }}>
     {loadError && <p className="inline-error">{loadError}</p>}
-    {['Fatture pazienti', 'SdI', 'TS'].includes(tab) && <SearchableSelect label={tab === 'Fatture pazienti' ? 'Seduta da fatturare' : tab === 'SdI' ? 'Fattura contabilizzata' : 'Fonte economica'} options={choices.filter(r => tab !== 'SdI' || Number(r.docstatus) === 1).map(r => ({ value: String(r.name), label: String(r.name) }))} value={selected} onChange={setSelected} required />}
-    {tab === 'TS' && <SearchableSelect label="Fattura della fonte" options={secondary.map(r => ({ value: String(r.name), label: String(r.name) }))} value={second} onChange={setSecond} required />}
+    {['Fatture pazienti', 'SdI', 'TS'].includes(tab) && <SearchableSelect label={tab === 'Fatture pazienti' ? 'Seduta da fatturare' : tab === 'SdI' ? 'Fattura contabilizzata' : 'Fonte economica'} options={choices.filter(r => tab !== 'SdI' || Number(r.docstatus) === 1).map(r => ({ value: String(r.name), label: demoText(r.name) }))} value={selected} onChange={setSelected} required />}
+    {tab === 'TS' && <SearchableSelect label="Fattura della fonte" options={secondary.map(r => ({ value: String(r.name), label: demoText(r.name) }))} value={second} onChange={setSecond} required />}
     {tab === 'XML ricevuti' && <Field label="File XML sintetico" required><input type="file" accept=".xml,text/xml,application/xml" onChange={e => setFile(e.target.files?.[0] ?? null)} required /></Field>}
     {tab === 'Banca' && <><Field label="Identificativo estratto" required><input value={externalId} onChange={e => setExternalId(e.target.value)} maxLength={160} required /></Field><div className="form-grid"><Field label="Entrata EUR"><input type="number" step="0.01" min="0" value={deposit} onChange={e => setDeposit(e.target.value)} /></Field><Field label="Uscita EUR"><input type="number" step="0.01" min="0" value={withdrawal} onChange={e => setWithdrawal(e.target.value)} /></Field></div><Field label="Riferimento"><input value={reference} onChange={e => setReference(e.target.value)} /></Field><Field label="Descrizione" required><input value={description} onChange={e => setDescription(e.target.value)} required /></Field></>}
     {['Fatture pazienti', 'Banca'].includes(tab) && <Field label="Data" required><DateInput value={date} onChange={setDate} required /></Field>}

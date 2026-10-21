@@ -16,6 +16,7 @@ class FullStackPackageTests(unittest.TestCase):
         gate.check_source(ROOT, manifest)
         self.assertIn('centrochange_core/finance/receivables.py', manifest['files'])
         self.assertIn('centrochange_core/catalog.py', manifest['files'])
+        self.assertIn('centrochange_core/uat/display.py', manifest['files'])
         self.assertIn('centrochange_core/hooks.py', manifest['reviewed_backend_deltas'])
 
     def test_changed_manifest_is_rejected(self):
