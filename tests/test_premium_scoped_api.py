@@ -170,6 +170,31 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe.local.request.method = 'GET'
         with self.assertRaises(Denied):
             self.api.deny_extra({'cmd': method})
+        self.frappe.local.request.method = 'POST'
+        self.frappe.local.request.path = '/api/method/centrochange_core.catalog.other'
+        with self.assertRaises(Denied):
+            self.api.deny_extra({'cmd': method})
+        self.frappe.local.request = None
+        with self.assertRaises(Denied):
+            self.api.deny_extra({'cmd': method})
+
+    def test_authorized_empty_patient_result_does_not_expand_scope(self):
+        self.role_allowed = False  # Finance-like center member, no patient contexts.
+        self.guards.patient_contexts = lambda: set()
+        calls = []
+        def get_all(doctype, **kwargs):
+            calls.append((doctype, kwargs))
+            if doctype == 'CC Patient Assignment':
+                return ['PAT-A']
+            return []
+        self.frappe.get_all = get_all
+        spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
+        profiles = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(profiles)
+        result = profiles.patients('A')
+        self.assertEqual(result, {'rows': [], 'has_more': False})
+        self.assertEqual(calls[-1][0], 'Patient')
+        self.assertEqual(calls[-1][1]['filters']['name'], ['in', ['']])
 
     def test_create_and_replay(self):
         first = self.api.create('create', 'A', 'Item', {'item_name': 'Nuovo'}, ('item_name',), 'KC', 'motivo')

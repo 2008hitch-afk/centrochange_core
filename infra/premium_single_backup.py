@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from premium_site_checkpoint import compare, tar_manifest, validate_native_archive, verify_bundle
 
 CONTAINER = "centrochange-dev-backend-1"
 SITE = "centrochange.local"
@@ -34,7 +35,8 @@ def run(args):
 def outside_repository(path):
     path = Path(path).expanduser().resolve()
     repository = Path(__file__).resolve().parent.parent
-    if path == repository or repository in path.parents:
+    if (path == repository or repository in path.parents or
+            any((ancestor / ".git").exists() for ancestor in (path, *path.parents))):
         raise ValueError("Checkpoint and keys must remain outside Git")
     return path
 
@@ -50,6 +52,19 @@ def verify(expected_container, expected_image):
     check = "import json; p='/home/frappe/frappe-bench/sites/centrochange.local/site_config.json'; print(int(bool(json.load(open(p)).get('cc_synthetic_dev'))))"
     if run(["docker", "exec", CONTAINER, "python3", "-c", check]) != "1":
         raise RuntimeError("Synthetic DEV flag absent; aborting backup")
+
+
+def live_site_manifest():
+    """Independent, read-only scan inside DEV; stdout stays in this process."""
+    source = (Path(__file__).parent / "premium_site_checkpoint.py").read_text()
+    remote = ("import json,sys; scope={'__name__':'site_inventory'}; "
+              "exec(sys.stdin.read(),scope); "
+              "print(json.dumps(scope['tree_manifest']('/home/frappe/frappe-bench/sites')))" )
+    result = subprocess.run(["docker", "exec", "-i", CONTAINER, "python3", "-c", remote],
+                            input=source, text=True, capture_output=True, check=False)
+    if result.returncode:
+        raise RuntimeError("Read-only original Site inventory failed")
+    return json.loads(result.stdout)
 
 
 def checkpoint(destination, key_directory, expected_container, expected_image):
@@ -88,16 +103,47 @@ def checkpoint(destination, key_directory, expected_container, expected_image):
         inventory = []
         for kind, matches_kind in kinds.items():
             matches = [p for p in files if matches_kind(p.name)]
-            if len(matches) != 1 or not matches[0].is_file() or not matches[0].stat().st_size:
+            if (len(matches) != 1 or matches[0].is_symlink() or
+                    not matches[0].is_file() or not matches[0].stat().st_size):
                 raise RuntimeError(f"Missing or ambiguous {kind} component")
             p = matches[0]
+            if kind in ("public_files", "private_files"):
+                validate_native_archive(p)
             inventory.append({"kind": kind, "size": p.stat().st_size, "sha256": sha256_file(p)})
         if len(files) != 4:
             raise RuntimeError("Unexpected extra backup component; review manually")
+        # The Frappe-native files tarballs omit private/uat and other Site state.
+        # Stream the *whole* sites volume, then take a second read-only snapshot.
+        # Any concurrent change, including a changing log, blocks this checkpoint.
+        original_before = live_site_manifest()
+        site_archive = job / "site-tree.tar"
+        repeat_archive = job / "site-tree-repeat.tar"
+        for target in (site_archive, repeat_archive):
+            with target.open("xb") as output:
+                copied = subprocess.run(
+                    ["docker", "exec", CONTAINER, "tar", "-C", "/home/frappe/frappe-bench", "-cf", "-", "sites"],
+                    stdout=output, stderr=subprocess.DEVNULL, check=False)
+            if copied.returncode:
+                raise RuntimeError("Full Site snapshot failed")
+        site_manifest = tar_manifest(site_archive)
+        compare(original_before, site_manifest)
+        compare(site_manifest, tar_manifest(repeat_archive))
+        compare(original_before, live_site_manifest())
+        repeat_archive.unlink()
+        manifest_file = raw / "site-manifest.json"
+        with manifest_file.open("x", encoding="utf-8") as output:
+            json.dump(site_manifest, output, sort_keys=True)
+        os.chmod(manifest_file, 0o600)
+        shutil.move(site_archive, raw / "site-tree.tar")
+        files.extend((raw / "site-tree.tar", manifest_file))
+        for kind, name in (("site_tree", "site-tree.tar"), ("site_manifest", "site-manifest.json")):
+            item = raw / name
+            inventory.append({"kind": kind, "size": item.stat().st_size, "sha256": sha256_file(item)})
         with tarfile.open(archive, "w") as output:
             for p in files:
-                output.add(p, arcname=p.name)
+                output.add(p, arcname=p.name, recursive=False)
         os.chmod(archive, 0o600)
+        verify_bundle(archive)
         with os.fdopen(os.open(key, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600), "w") as stream:
             stream.write(secrets.token_urlsafe(64))
         home.mkdir(mode=0o700)
@@ -110,13 +156,15 @@ def checkpoint(destination, key_directory, expected_container, expected_image):
         verified.stdout.close()
         if verified.wait() or digest.hexdigest() != sha256_file(archive):
             raise RuntimeError("Encrypted checkpoint integrity check failed")
-        report = {"status": "PASS_BACKUP_ONLY", "site": SITE, "container_id": expected_container, "image_id": expected_image, "components": inventory, "encrypted_sha256": sha256_file(encrypted), "restore_tested": False, "backup_directory": str(job), "key_directory": str(key_directory)}
+        report = {"status": "PASS_BACKUP_ONLY", "site": SITE, "container_id": expected_container, "image_id": expected_image, "components": inventory, "site_entries": len(site_manifest["entries"]), "encrypted_sha256": sha256_file(encrypted), "restore_tested": False, "backup_directory": str(job), "key_directory": str(key_directory)}
         (job / "inventory.json").write_text(json.dumps(report, indent=2) + "\n")
         os.chmod(job / "inventory.json", 0o600)
         return report
     finally:
         if raw.exists():
             shutil.rmtree(raw)
+        (job / "site-tree.tar").unlink(missing_ok=True)
+        (job / "site-tree-repeat.tar").unlink(missing_ok=True)
         archive.unlink(missing_ok=True)
         if backup_started:
             cleanup = subprocess.run(["docker", "exec", CONTAINER, "rm", "-r", "--", remote], capture_output=True, check=False)

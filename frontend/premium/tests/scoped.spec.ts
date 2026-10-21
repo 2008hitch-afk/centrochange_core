@@ -59,6 +59,26 @@ async function openArchives(page: Page) {
   await expect(page.getByRole('heading', { name: 'Archivi' })).toBeVisible()
 }
 
+test('regressioni DECISION-064: Agenda unica e intervallo pagamenti ammesso', async ({ page }) => {
+  await mock(page, [])
+  await page.goto('./')
+  if ((page.viewportSize()?.width ?? 1440) < 760) await page.getByRole('button', { name: 'Apri menu' }).click()
+  const agenda = page.locator('.sidebar nav').first().getByRole('button', { name: 'Agenda', exact: true })
+  await expect(agenda).toHaveCount(1)
+  await expect(agenda).toBeVisible()
+  await openArchives(page)
+  const paymentRequest = page.waitForRequest(request => request.url().includes('finance.payments.records'))
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Pagamenti', exact: true }).click()
+  const url = new URL((await paymentRequest).url())
+  const start = url.searchParams.get('start') ?? ''
+  const end = url.searchParams.get('end') ?? ''
+  expect(start).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  expect(end).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  const days = (Date.parse(end + 'T00:00:00Z') - Date.parse(start + 'T00:00:00Z')) / 86_400_000
+  expect(days).toBe(90)
+  await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
+})
+
 test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa', async ({ page }, testInfo) => {
   const writes: Write[] = []
   await mock(page, writes)
