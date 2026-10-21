@@ -53,6 +53,15 @@ Per ogni requisito valutare nell'ordine:
 
 Se il nativo introduce semantica errata, rischio di sicurezza, UX significativamente peggiore o forte upgrade risk, preferire custom pulito.
 
+### Direzione frontend dedicato — HC-0005 DECISION-060 (21/10/2026)
+
+L'Owner ha **approvato la direzione architetturale** di un frontend React dedicato per le superfici operative Centro Change, con UX ispirata a Fresha e brand originale Centro Change. Questa direzione **sostituisce la preferenza UI nativa Frappe** del 12/10/2026, ma **non** il principio native-first per funzionalità backend, DocType, contabilità, autorizzazione e audit.
+
+Fonte canonica: `2008hitch-afk/hitch-client-discovery/clients/HC-0005/decisions/DECISION-060-premium-react-frontend-architecture.md` (stato APPROVATO). Riusare Frappe/ERPNext/Marley/`centrochange_core` come backend autorevole; il frontend va integrato su API protette e verificate, preferibilmente sul sito Frappe esistente previa validazione.
+
+**La decisione non autorizza implementazione né avvio del macro-goal**. In assenza di mandato operativo specifico, limitarsi ad analisi e proposta: niente installazioni, modifiche al server, PR di prodotto, merge, cutover o GOAL-03. Mantenere immutati gli stati delle PR esistenti e le limitazioni su dati reali e provider.
+
+
 
 ## Documentazione upstream e verifica della versione pinned
 
