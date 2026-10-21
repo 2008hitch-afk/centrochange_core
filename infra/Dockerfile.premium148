@@ -1,4 +1,5 @@
-# Source preparation only. Never build or run against the shared centrochange-dev project.
+# SUPERSEDED by DECISION-062. Historical, unapproved temporary lab recipe.
+# Never build or run this image as part of the single-stack plan.
 # Gate preflight must verify this local tag resolves to image ID
 # sha256:ac25b74321da6de7e669e75e9a5ee23494bc6fc672d3b82498aaca73b7225d00.
 # That #124 base contains the pinned 16.50/16.6.1 backend and app revision e2fd728.

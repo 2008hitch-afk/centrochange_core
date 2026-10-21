@@ -28,7 +28,7 @@ function App() {
   useEffect(() => { const fn = () => setView(fromHash()); addEventListener('hashchange', fn); return () => removeEventListener('hashchange', fn) }, [])
   useEffect(() => {
     let live = true
-    setLoading(true); setError('')
+    setLoading(true); setError(''); setBoot(null); setFinanceBoot(null)
     Promise.allSettled([ops<Boot>('workspace.bootstrap', center ? { center } : {}), finance<FinanceBoot>('reporting.bootstrap', center ? { center } : {})]).then(([o, f]) => {
       if (!live) return
       if (o.status === 'fulfilled') { setBoot(o.value); if (!center) setCenter(o.value.center ?? '') }
@@ -45,6 +45,7 @@ function App() {
   const switchView = (next: View) => { location.hash = encodeURIComponent(next); setView(next); setMobileOpen(false); setError(''); setNotice('') }
   const feedback = (message: string, fail = false) => { if (fail) setError(message); else { setNotice(message); setError('') } }
   const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(fresh) }
+  const changeCenter = (next: string) => { setBoot(null); setFinanceBoot(null); setQuery(''); setCenter(next) }
 
   return <div className="app-shell">
     <a href="#main" className="skip-link">Vai al contenuto</a>
@@ -57,7 +58,7 @@ function App() {
     </aside>
     {mobileOpen && <button className="scrim" aria-label="Chiudi menu" onClick={() => setMobileOpen(false)} />}
     <div className="workspace">
-      <header className="topbar"><button className="icon-button menu-toggle" aria-label="Apri menu" onClick={() => setMobileOpen(true)}><Menu /></button><div className="breadcrumbs"><span>Workspace</span><span className="breadcrumb-slash">/</span><strong>{currentView}</strong></div><div className="top-actions"><div className="search-shell"><Search /><input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && query.trim()) switchView('Pazienti') }} placeholder="Cerca pazienti..." aria-label="Cerca pazienti" disabled={!boot} /></div>{centers.length > 0 && <label className="center-selector"><span className="sr-only">Centro</span><select value={center} onChange={e => setCenter(e.target.value)}>{centers.map(c => <option key={c.name} value={c.name}>{c.branch || c.name}</option>)}</select><ChevronDown /></label>}<span className="top-avatar" aria-hidden="true">CC</span></div></header>
+      <header className="topbar"><button className="icon-button menu-toggle" aria-label="Apri menu" onClick={() => setMobileOpen(true)}><Menu /></button><div className="breadcrumbs"><span>Workspace</span><span className="breadcrumb-slash">/</span><strong>{currentView}</strong></div><div className="top-actions"><div className="search-shell"><Search /><input value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && query.trim()) switchView('Pazienti') }} placeholder="Cerca pazienti..." aria-label="Cerca pazienti" disabled={!boot} /></div>{centers.length > 0 && <label className="center-selector"><span className="sr-only">Centro</span><select value={center} onChange={e => changeCenter(e.target.value)}>{centers.map(c => <option key={c.name} value={c.name}>{c.branch || c.name}</option>)}</select><ChevronDown /></label>}<span className="top-avatar" aria-hidden="true">CC</span></div></header>
       <main id="main" className="content" tabIndex={-1}>
         {loading && <div className="loading-state" role="status"><div className="skeleton heading-skeleton" /><div className="skeleton wide-skeleton" /><div className="skeleton panel-skeleton" /></div>}
         {error && <div className="alert error" role="alert"><span>{error}</span><button onClick={() => setError('')} aria-label="Chiudi errore"><X /></button></div>}

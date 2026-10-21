@@ -10,15 +10,15 @@
 | Patient overview | permission-aware search, history, packages, organizational note revision groups | PRESENTE; pagination/truncation and all patient permissions NOT_VERIFIED |
 | Private notes | professional tab, create and append-only correction with grouped history | PRESENTE; synthetic correction/history PASS, server isolation NOT_VERIFIED |
 | Availability | schedule/absence read and forms | PRESENTE; actual mutation NOT_VERIFIED |
-| Operational report | summary and CSV link | PRESENTE; export permissions NOT_VERIFIED |
-| Finance overview and drill-down | accounting summary; fiscal Customer groups and professional period report with sessions, invoices/payments or expectation comparisons, plus CSV | PRESENTE with synthetic browser checks; full field parity and live totals NOT_VERIFIED |
+| Operational report | currency-separated summary, operational paid/due counts and CSV link disabled when truncated | PRESENTE; export permissions NOT_VERIFIED |
+| Finance overview and drill-down | accounting summary; fiscal Customer groups, open invoices/due dates/deferrals, professional expectations/supplier invoices, sessions/payments/comparisons, CSV | PRESENTE with synthetic browser checks; print and live totals NOT_VERIFIED |
 | Finance lists | sales, incoming XML, purchase, bank, expected compensation, admin queue, SdI, TS | PRESENTE as read-only tables; list/form parity NOT_VERIFIED |
 | Finance mutations | sales draft/submit/pay/credit/amend, supplier submit/pay/cancel/amend, bank import/reconcile/cancel, admin queue, professional rule/threshold/capture/compare/override/reevaluate, SdI/TS simulated prepare/queue, incoming XML intake/supplier bind/classify/draft | PRESENTE in React; representative draft/payment/rule/capture/compare/XML classification mocked, live NOT_VERIFIED; fiscal review UI incomplete |
 | Access | memberships read, membership/practitioner state actions | PRESENTE; synthetic membership POST PASS, live revocation NOT_VERIFIED |
 | Audit | manager-only list, period/reference filters, event detail with actor, reason and before/after | PRESENTE; synthetic read-only desktop/mobile PASS, live audit permission NOT_VERIFIED |
 | Notifications | list | PRESENTE via native read permission; live role check NOT_VERIFIED |
 | Public first encounter | new React `/premium-primo-incontro` using existing guarded Guest services | PRESENTE; synthetic desktop/mobile booking PASS, live Guest UAT NOT_VERIFIED |
-| Catalog, packages, assignments | read-only center service/practitioner directory; package issue/adjust and patient assignment/reassignment through existing audited services; searchable long selectors | PARTIAL; master catalog editor and full 11 list/form equivalents not built, server role checks NOT_VERIFIED |
+| Catalog, packages, assignments | searchable center service/practitioner directory with service detail, duration, item and tariff snapshot; package issue/adjust and patient assignment/reassignment through existing audited services | PARTIAL; master writers and full 11 list/form equivalents require separate API gate, server role checks NOT_VERIFIED |
 | Technical Desk | existing Frappe/ERPNext/Marley | 11×2 disposition mapped in `NATIVE-ROUTE-DISPOSITION.md`; direct URL/role separation and Owner decision NOT_VERIFIED |
 | Seven roles + Guest | existing #139 historical suite | this candidate tested manager-like synthetic and one finance-denied synthetic role only; full matrix NOT_VERIFIED |
 

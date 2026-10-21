@@ -1,0 +1,20 @@
+# DECISION-062 preparation only. Apply solely after the exact Owner runtime gate.
+# Append after the existing five centrochange-dev Compose files, never run alone.
+# No configurator override: do not start it; it can bootstrap/migrate the Site.
+x-premium-image: &premium-image
+  image: ${CC_SINGLE_PREMIUM_IMAGE:?Pin the gated image tag}
+  pull_policy: never
+
+services:
+  backend:
+    <<: *premium-image
+  frontend:
+    <<: *premium-image
+  websocket:
+    <<: *premium-image
+  queue-short:
+    <<: *premium-image
+  queue-long:
+    <<: *premium-image
+  scheduler:
+    <<: *premium-image

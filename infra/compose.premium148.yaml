@@ -1,4 +1,5 @@
-# REVIEW ONLY until the Owner approves the exact temporary runtime gate.
+# SUPERSEDED by DECISION-062. Historical, unapproved temporary lab recipe.
+# Do not run. The approved target is the single existing centrochange-dev stack.
 name: centrochange-premium-148
 
 x-app: &app

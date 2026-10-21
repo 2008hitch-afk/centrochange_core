@@ -22,9 +22,9 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('operations.reporting.summary')) message = { currencies: { EUR: { sessions: 1, performed: 0, due: 1, due_snapshot_amount: 80 } }, truncated: false }
     else if (method.endsWith('finance.reporting.summary')) message = { totals: { revenue_net: 600, collected: 400, receivable_outstanding: 200, purchase_net: 250, payable_outstanding: 80, expected_compensation: 120, unresolved_expectations: 0, sessions: 4 }, sales_invoices: [], purchase_invoices: [], scope_note: 'Dati sintetici.' }
     else if (method.endsWith('finance.patient_reporting.patient_view')) message = new URL(req.url()).searchParams.has('key')
-      ? { key: 'CUS-001', customer_label: 'Soggetto sintetico', state: 'Regolare', counts: { sessions: 1, performed: 1 }, totals: { invoiced: 80, collected: 80, outstanding: 0, overdue: 0 }, sessions: [{ name: 'APP-001', appointment_date: today, patient_label: 'Paziente Sintetico', cc_service_label: 'Prima visita', category: 'performed' }], invoices: [{ name: 'INV-001', posting_date: today, grand_total: 80 }], payments: [{ name: 'PAY-001', posting_date: today, collected_amount: 80 }], scope_note: 'Dati sintetici.' }
-      : { rows: [{ key: 'CUS-001', customer_label: 'Soggetto sintetico', state: 'Regolare', totals: { outstanding: 0 } }] }
-    else if (method.endsWith('finance.reporting.professional_view')) message = { practitioner_name: 'Dott.ssa Rossi', counts: { sessions: 1, performed: 1 }, sessions: [{ name: 'APP-001', appointment_date: today, patient_label: 'Paziente Sintetico', cc_service_label: 'Prima visita', category: 'performed' }], economics: { expected: 40, suspended: 0, review: 0, supplier_invoices: [], comparisons: [] }, scope_note: 'Dati sintetici.' }
+      ? { key: 'CUS-001', customer_label: 'Soggetto sintetico', state: 'Scaduto', counts: { sessions: 1, performed: 1 }, totals: { invoiced: 80, collected: 60, outstanding: 20, overdue: 20, open_invoices: 1 }, next_due_date: today, blocked: false, deferred: true, sessions: [{ name: 'APP-001', appointment_date: today, patient_label: 'Paziente Sintetico', cc_service_label: 'Prima visita', category: 'performed' }], invoices: [{ name: 'INV-001', posting_date: today, grand_total: 80 }], payments: [{ name: 'PAY-001', posting_date: today, collected_amount: 60 }], open_invoices: [{ name: 'INV-001', outstanding_amount: 20, original_due_date: today, effective_due_date: today, overdue: true }], scope_note: 'Dati sintetici.' }
+      : { rows: [{ key: 'CUS-001', customer_label: 'Soggetto sintetico', state: 'Scaduto', totals: { outstanding: 20, overdue: 20 }, next_due_date: today }] }
+    else if (method.endsWith('finance.reporting.professional_view')) message = { practitioner_name: 'Dott.ssa Rossi', counts: { sessions: 1, performed: 1 }, sessions: [{ name: 'APP-001', appointment_date: today, patient_label: 'Paziente Sintetico', cc_service_label: 'Prima visita', category: 'performed' }], economics: { expected: 40, suspended: 0, review: 0, supplier_paid: 10, supplier_invoices: [{ name: 'PUR-001', posting_date: today, grand_total: 40 }], expectations: [{ name: 'EXPECT-001', appointment: 'APP-001', state: 'OK', amount: 40 }], missing_expectation_sessions: [], comparisons: [] }, scope_note: 'Dati sintetici.' }
     else if (method.endsWith('finance.reporting.records')) {
       const doctype = new URL(req.url()).searchParams.get('doctype')
       message = doctype === 'CC Economic Source Link' ? [{ name: 'SOURCE-001', appointment: 'APP-001', session_date: today, practitioner: 'PR-001', price: 80 }]
@@ -119,10 +119,32 @@ test('catalogo consultivo mostra servizi e professionisti dal centro autorizzato
   await expect(page.getByRole('row', { name: /Prima visita/ })).toContainText('60 min')
   await expect(page.getByRole('row', { name: /Prima visita/ })).toContainText('80,00')
   await expect(page.getByText('Dott.ssa Rossi')).toBeVisible()
+  await page.getByRole('row', { name: /Prima visita/ }).click()
+  const detail = page.getByRole('dialog', { name: 'Prima visita' })
+  await expect(detail.getByText('ITEM-001')).toBeVisible()
+  await expect(detail.getByText('80,00')).toBeVisible()
+  await detail.getByRole('button', { name: 'Chiudi' }).click()
   if (testInfo.project.name === 'mobile') expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
   await page.screenshot({ path: `test-results/${testInfo.project.name}-services.png`, fullPage: true })
   await page.getByRole('searchbox', { name: 'Cerca servizi' }).fill('inesistente')
   await expect(page.getByRole('row', { name: /Prima visita/ })).toHaveCount(0)
+})
+
+test('cambio centro svuota immediatamente i dati del centro precedente', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', async route => {
+    const selected = new URL(route.request().url()).searchParams.get('center')
+    const data = selected === 'CENTRO-B'
+      ? { ...boot, center: 'CENTRO-B', centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }], patients: [], practitioners: [], services: [] }
+      : { ...boot, centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }] }
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: data }) })
+  })
+  await page.goto('./')
+  await openSection(page, 'Servizi')
+  await expect(page.getByRole('row', { name: /Prima visita/ })).toBeVisible()
+  await page.getByRole('combobox', { name: 'Centro' }).selectOption('CENTRO-B')
+  await expect(page.getByRole('row', { name: /Prima visita/ })).toHaveCount(0)
+  await expect(page.getByText('Nessun elemento')).toBeVisible()
 })
 
 test('navigazione finanza, pazienti e report usa endpoint di dominio', async ({ page }, testInfo) => {
@@ -253,11 +275,15 @@ test('report dettagliati separa soggetto fiscale e professionista', async ({ pag
   await drawer.getByRole('row', { name: /Soggetto sintetico/ }).click()
   await expect(drawer.getByText('Fatturato')).toBeVisible()
   await expect(drawer.getByText('PAY-001')).toBeVisible()
+  await expect(drawer.getByRole('heading', { name: 'Fatture aperte, posizione corrente' })).toBeVisible()
+  await expect(drawer.getByText('Scadenza differita')).toBeVisible()
   await drawer.screenshot({ path: `test-results/${testInfo.project.name}-finance-report.png` })
   await drawer.getByRole('button', { name: 'Professionisti' }).click()
   await drawer.getByRole('combobox', { name: 'Professionista' }).selectOption('PR-001')
   await expect(drawer.getByText('Confronti atteso e ricevuto')).toBeVisible()
-  await expect(drawer.getByText('40,00')).toBeVisible()
+  await expect(drawer.getByRole('heading', { name: 'Compensi attesi' })).toBeVisible()
+  await expect(drawer.getByText('PUR-001')).toBeVisible()
+  await expect(drawer.getByText('40,00').first()).toBeVisible()
 })
 
 test('mobile: menu, Agenda e Finanza senza overflow orizzontale', async ({ page }, testInfo) => {

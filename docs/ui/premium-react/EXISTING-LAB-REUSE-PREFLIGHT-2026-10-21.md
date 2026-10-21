@@ -1,5 +1,7 @@
 # #148 — preflight riuso laboratorio sul server esistente
 
+> **SUPERATO DA DECISION-062 (21/10/2026).** Questo è un inventario storico; la variante `centrochange-premium-148` qui descritta è **NON APPROVATA** e non deve essere eseguita. L'unico piano corrente è [SINGLE-STACK-EXECUTION-GATE-2026-10-21.md](SINGLE-STACK-EXECUTION-GATE-2026-10-21.md), con target sul `centrochange-dev` esistente e gate Owner ancora pendente.
+
 **Esito: PARTIAL / nessun vecchio runtime eleggibile oggi. Nessuna installazione autorizzata o eseguita.** Letture live su `srv2033673`, 2026-10-21 UTC. PR #150 resta DRAFT. Questa decisione Owner sostituisce la preferenza per un nuovo server: cercare prima un laboratorio Centro Change sacrificabile, fermarsi prima di qualsiasi mutazione runtime.
 
 ## Fonti e stato effettivo

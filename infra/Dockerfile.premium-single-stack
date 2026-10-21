@@ -1,0 +1,25 @@
+# DECISION-062 preparation only. Build and deployment require the specific Owner runtime gate.
+# The preflight must assert this local tag resolves to
+# sha256:6d6f9d2e65d0b16974e6b04aeaaf6d1210f071448ace5276689ebc9652bc2f7b.
+FROM centrochange-single:issue75-form-affordance-r2
+
+ARG PREMIUM_SOURCE_SHA
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+# Keep the running backend revision, DocTypes, role rules and accounting code.
+# Only add the versioned React website controllers and static assets.
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/premium/ apps/centrochange_core/centrochange_core/public/premium/
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/www/premium.html apps/centrochange_core/centrochange_core/www/premium.html
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/www/premium.py apps/centrochange_core/centrochange_core/www/premium.py
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/www/premium-primo-incontro.html apps/centrochange_core/centrochange_core/www/premium-primo-incontro.html
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/www/premium_primo_incontro.py apps/centrochange_core/centrochange_core/www/premium_primo_incontro.py
+
+RUN bench build --force \
+    && cp -a sites/assets/. assets/ \
+    && python -c "import json,pathlib; a=json.loads(pathlib.Path('assets/assets.json').read_text()); required={'desk.bundle.js','erpnext.bundle.js','healthcare.bundle.js','login.bundle.css','frappe-web.bundle.js'}; assert required <= a.keys(), sorted(required-a.keys())"
+
+LABEL centrochange.issue="148" \
+      centrochange.base_application_revision="e2fd728ecf6acdb0e0ab26379820df6905dd5521" \
+      centrochange.premium_source="${PREMIUM_SOURCE_SHA}" \
+      centrochange.target="single-stack-react"
