@@ -39,6 +39,8 @@ gate.DEPENDENCY_SHA = {**gate.DEPENDENCY_SHA,
         '1dc3d7b91d8176e48df2ae613593f2bfa41911d59a20a92882b591ec8b2bb9a9',
     'infra/browser/issue75_native_form_affordance.cjs':
         '93f2a8feb3ba074e24cfe3acfd6c09ddebb0d108a3829bde06c7b7a3195393cf',
+    'infra/browser/issue75_native_visual_scope.cjs':
+        '717d516fae83c45d36dfdde2fe43260724b9707d97e80dd341078b7753f671b8',
     'infra/issue75_form_affordance_clone.py':
         'd9794fcd9dc946886c77e4fef7acdba2ab062129f63452e9b303d2bfe08c34b3',
 }
