@@ -1,0 +1,344 @@
+{
+  "name": "centrochange-g2d-20261008",
+  "networks": {
+    "centrochange-g2d-20261008-net": {
+      "name": "centrochange-g2d-20261008-net",
+      "driver": "bridge",
+      "ipam": {}
+    }
+  },
+  "services": {
+    "backend": {
+      "restart": "unless-stopped",
+      "command": null,
+      "entrypoint": null,
+      "environment": {
+        "GUNICORN_THREADS": "4",
+        "GUNICORN_TIMEOUT": "120",
+        "GUNICORN_WORKERS": "2"
+      },
+      "image": "centrochange-g2d:e85fce588de6-clean",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "configurator": {
+          "condition": "service_completed_successfully",
+          "required": true
+        }
+      }
+    },
+    "configurator": {
+      "restart": "no",
+      "command": [
+        "bench set-config -g db_host db\nbench set-config -gp db_port 3306\nbench set-config -g redis_cache redis://redis-cache:6379\nbench set-config -g redis_queue redis://redis-queue:6379\nbench set-config -g redis_socketio redis://redis-queue:6379\nbench set-config -gp socketio_port 9000\nif [ ! -f \"sites/$${SITE_NAME}/site_config.json\" ]; then\n  bench new-site \"$${SITE_NAME}\" --db-host db --mariadb-user-host-login-scope '%' --mariadb-root-password \"$${DB_PASSWORD}\" --admin-password \"$${ADMIN_PASSWORD}\" --install-app erpnext --install-app builder --set-default\n  bench --site \"$${SITE_NAME}\" set-config cc_synthetic_dev 1\nfi\nbench --site \"$${SITE_NAME}\" execute \"__import__('centrochange_core.dev_bootstrap', fromlist=['setup']).setup()\"\nbench --site \"$${SITE_NAME}\" install-app healthcare\nbench --site \"$${SITE_NAME}\" install-app centrochange_core\nbench --site \"$${SITE_NAME}\" migrate\nbench --site \"$${SITE_NAME}\" enable-scheduler\n\nbench --site \"$${SITE_NAME}\" set-config mute_emails 1\n"
+      ],
+      "entrypoint": [
+        "bash",
+        "-ec"
+      ],
+      "environment": {
+        "SITE_NAME": "g2d20261008.local"
+      },
+      "image": "centrochange-g2d:e85fce588de6-clean",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "db": {
+          "condition": "service_healthy",
+          "required": true
+        },
+        "redis-cache": {
+          "condition": "service_healthy",
+          "required": true
+        },
+        "redis-queue": {
+          "condition": "service_healthy",
+          "required": true
+        }
+      }
+    },
+    "db": {
+      "restart": "unless-stopped",
+      "command": [
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_unicode_ci",
+        "--skip-character-set-client-handshake"
+      ],
+      "entrypoint": null,
+      "environment": {
+        "MARIADB_AUTO_UPGRADE": "1"
+      },
+      "image": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-db-data",
+          "target": "/var/lib/mysql",
+          "volume": {}
+        }
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "healthcheck.sh",
+          "--connect",
+          "--innodb_initialized"
+        ],
+        "timeout": "5s",
+        "interval": "5s",
+        "retries": 10,
+        "start_period": "2m0s"
+      }
+    },
+    "frontend": {
+      "restart": "unless-stopped",
+      "command": [
+        "nginx-entrypoint.sh"
+      ],
+      "entrypoint": null,
+      "environment": {
+        "BACKEND": "backend:8000",
+        "FRAPPE_SITE_NAME_HEADER": "g2d20261008.local",
+        "SOCKETIO": "websocket:9000",
+        "UPSTREAM_REAL_IP_ADDRESS": "127.0.0.1",
+        "UPSTREAM_REAL_IP_HEADER": "X-Forwarded-For",
+        "UPSTREAM_REAL_IP_RECURSIVE": "off"
+      },
+      "image": "centrochange-g2d:e85fce588de6-clean",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "backend": {
+          "condition": "service_started",
+          "required": true
+        },
+        "websocket": {
+          "condition": "service_started",
+          "required": true
+        }
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "host_ip": "127.0.0.1",
+          "target": 8080,
+          "published": "8098",
+          "protocol": "tcp"
+        }
+      ]
+    },
+    "queue-long": {
+      "restart": "unless-stopped",
+      "command": [
+        "bench",
+        "worker",
+        "--queue",
+        "long,default,short"
+      ],
+      "entrypoint": null,
+      "image": "centrochange-g2d:e85fce588de6-clean",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "configurator": {
+          "condition": "service_completed_successfully",
+          "required": true
+        }
+      }
+    },
+    "queue-short": {
+      "restart": "unless-stopped",
+      "command": [
+        "bench",
+        "worker",
+        "--queue",
+        "short,default"
+      ],
+      "entrypoint": null,
+      "image": "centrochange-g2d:e85fce588de6-clean",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "configurator": {
+          "condition": "service_completed_successfully",
+          "required": true
+        }
+      }
+    },
+    "redis-cache": {
+      "restart": "unless-stopped",
+      "command": null,
+      "entrypoint": null,
+      "image": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-redis-cache-data",
+          "target": "/data",
+          "volume": {}
+        }
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ],
+        "timeout": "3s",
+        "interval": "5s",
+        "retries": 10
+      }
+    },
+    "redis-queue": {
+      "restart": "unless-stopped",
+      "command": null,
+      "entrypoint": null,
+      "image": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-redis-queue-data",
+          "target": "/data",
+          "volume": {}
+        }
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ],
+        "timeout": "3s",
+        "interval": "5s",
+        "retries": 10
+      }
+    },
+    "scheduler": {
+      "restart": "unless-stopped",
+      "command": [
+        "bench",
+        "schedule"
+      ],
+      "entrypoint": null,
+      "image": "centrochange-g2d:e85fce588de6-clean",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "configurator": {
+          "condition": "service_completed_successfully",
+          "required": true
+        }
+      }
+    },
+    "websocket": {
+      "restart": "unless-stopped",
+      "command": [
+        "node",
+        "/home/frappe/frappe-bench/apps/frappe/socketio.js"
+      ],
+      "entrypoint": null,
+      "image": "centrochange-g2d:e85fce588de6-clean",
+      "networks": {
+        "centrochange-g2d-20261008-net": null
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-g2d-20261008-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "configurator": {
+          "condition": "service_completed_successfully",
+          "required": true
+        }
+      }
+    }
+  },
+  "volumes": {
+    "centrochange-g2d-20261008-db-data": {
+      "name": "centrochange-g2d-20261008-db-data"
+    },
+    "centrochange-g2d-20261008-redis-cache-data": {
+      "name": "centrochange-g2d-20261008-redis-cache-data"
+    },
+    "centrochange-g2d-20261008-redis-queue-data": {
+      "name": "centrochange-g2d-20261008-redis-queue-data"
+    },
+    "centrochange-g2d-20261008-sites": {
+      "name": "centrochange-g2d-20261008-sites"
+    }
+  }
+}

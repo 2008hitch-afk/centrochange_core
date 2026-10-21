@@ -1,0 +1,49 @@
+{
+  "status": "PASS",
+  "original_container_count": 20,
+  "container_deltas": [],
+  "missing_original_volumes": [],
+  "missing_or_replaced_original_networks": [],
+  "missing_or_retagged_original_images": [],
+  "http": {
+    "8082": {
+      "status": 200,
+      "pong": true
+    },
+    "8097": {
+      "status": 200,
+      "pong": true
+    },
+    "8098": {
+      "status": 200,
+      "pong": true
+    }
+  },
+  "original_checkout_head": "9d12f5e06df92ed35de843b882f3a40e82c02b19",
+  "original_checkout_branch": "issue-97/before-request-guards",
+  "original_checkout_clean": true,
+  "remote_main": "e85fce588de6012a47da302710b9f9c615211279",
+  "archived_tracked_source_files_checked": 575,
+  "archive_bytes_changed": [],
+  "existing_runtime_identity": [
+    {
+      "container": "/centrochange-m97-lab-backend-1",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "revision": "ee0573a42d631d97ccd5a77567ae3961de6a926c"
+    },
+    {
+      "container": "/centrochange-dev-backend-1",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "revision": "f06acca4f6c2ac757dbd3e187709f94b18554b65"
+    }
+  ],
+  "g2d_isolation": {
+    "project": "centrochange-g2d-20261008",
+    "site": "g2d20261008.local",
+    "port": 8098,
+    "exclusive_volumes_network_ports": true,
+    "no_code_bind": true
+  }
+}

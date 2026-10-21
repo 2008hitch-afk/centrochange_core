@@ -1,0 +1,807 @@
+{
+  "checked_at": "2026-10-08T21:39:20.462605+00:00",
+  "preservation": "COMPLETE_CURATED_SANITIZED_PACKAGE",
+  "stop": "BLOCKED_CONCURRENT_SESSION_USAGE_NOT_DEMONSTRABLE",
+  "inaccessible_codex_pids": [
+    16351,
+    233103,
+    271978,
+    2984373
+  ],
+  "http_rc22_before": [
+    {
+      "path": "/api/method/ping",
+      "status": 200
+    },
+    {
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "path": "/centrochange",
+      "status": 200
+    }
+  ],
+  "protected_metadata": [
+    {
+      "name": "/centrochange-g2d-20261008-frontend-1",
+      "id": "81a3fbd114f3f08b35208803a03f1325af3c87b96fc7a1dbce6594049405ecd3",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image_ref": "centrochange-g2d:e85fce588de6-clean",
+      "started": "2026-10-08T19:18:02.454161311Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "377e2884a403d7ddb35dd79a25533de6fe72738434390c78038ab97e19860575",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "8098"
+          }
+        ]
+      }
+    },
+    {
+      "name": "/centrochange-g2d-20261008-queue-short-1",
+      "id": "9ee20b1e2b7c473cc0d6b1307ebed75f3f79c3cec7fe8309c2ccdd13abd0670c",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image_ref": "centrochange-g2d:e85fce588de6-clean",
+      "started": "2026-10-08T19:18:01.784871628Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "8f7fe91ea950ada32d799a6ec695e7a4178fc555377d584ad35c7070ff7c858d",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-g2d-20261008-scheduler-1",
+      "id": "9c8c1ca363ad3fe4e7e6f2a9a7d7f293a1deeb7f6c3982eb1cc90006cc855b27",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image_ref": "centrochange-g2d:e85fce588de6-clean",
+      "started": "2026-10-08T19:18:01.938836608Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "6729661f2ec6b53dfcabdd92067f40b7875947245de1f502033d647730d3317f",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-g2d-20261008-websocket-1",
+      "id": "026c14bf51cbc69a3f8e6dcd47c808e33d6e1608650a408501df4533323a670c",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image_ref": "centrochange-g2d:e85fce588de6-clean",
+      "started": "2026-10-08T19:18:02.051831314Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "f9ecece70e2f6bbef74f871b010ad7cf46e3fd662b656f44a98362e2ef157ee2",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-g2d-20261008-backend-1",
+      "id": "f9c911403e4421226ca93315c434420a7b158c80081648386b003f4ee9954482",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image_ref": "centrochange-g2d:e85fce588de6-clean",
+      "started": "2026-10-08T19:18:02.31052407Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "6f73a63a57b40dd40eb13c5f1925449345c3f57a9de98ba3f2c1206abc70fe5a",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-g2d-20261008-queue-long-1",
+      "id": "185b37a4d7c06ca1d0be6e616a533317ebf39e0f981b6bc7795bde3d346b7cc6",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image_ref": "centrochange-g2d:e85fce588de6-clean",
+      "started": "2026-10-08T19:18:02.187994135Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "2407c8372cd3632d4b74585801d3fd5dde4f4dca69570db44cafc9006f7c46a1",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-g2d-20261008-configurator-1",
+      "id": "5a3883618d2f33c9b5ac55a370775d905b0a623cc844009dc96de02ae0867c8b",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "image_ref": "centrochange-g2d:e85fce588de6-clean",
+      "started": "2026-10-08T19:16:36.184918306Z",
+      "restart_count": 0,
+      "running": false,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "46fc824b35771717dc6aef3380ad2da8049ef649d943ebbb73d13eb10cd4478d",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-g2d-20261008-redis-cache-1",
+      "id": "79a0db902a8f4682309607f3e668edb8695b71f65e859af91de259f3f7f07dc0",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-08T19:16:30.556193636Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-redis-cache-data",
+          "destination": "/data"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {
+        "6379/tcp": null
+      }
+    },
+    {
+      "name": "/centrochange-g2d-20261008-redis-queue-1",
+      "id": "1759275e07057820497122111c096ab71241451426864b177eda763cd84e9a3c",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-08T19:16:30.309192329Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-redis-queue-data",
+          "destination": "/data"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {
+        "6379/tcp": null
+      }
+    },
+    {
+      "name": "/centrochange-g2d-20261008-db-1",
+      "id": "d3c391df3079e6e7971ef14db65c583cb9046c0be15d8806fdd06baa0e2776f6",
+      "project": "centrochange-g2d-20261008",
+      "image_id": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "image_ref": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "started": "2026-10-08T19:16:30.437959025Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "centrochange-g2d-20261008-db-data",
+          "destination": "/var/lib/mysql"
+        }
+      ],
+      "networks": [
+        "centrochange-g2d-20261008-net"
+      ],
+      "ports": {
+        "3306/tcp": null
+      }
+    },
+    {
+      "name": "/centrochange-m97-lab-frontend-1",
+      "id": "7f04f8c5c7e0a25c72295ac7338c80d2fab653d97e331dbf26d4cefc22fd73fe",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.848975464Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "3a9f233fc180364d48f60bd69e0438f31bda9b4ed9e3686588bc19cac7c880ef",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "8097"
+          }
+        ]
+      }
+    },
+    {
+      "name": "/centrochange-m97-lab-queue-short-1",
+      "id": "6a849fffd78ca854418afc1b2baf08698f62fcdeea6173c585e57e9e2a07b403",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.535809461Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "99aadcc90053d035bc3f0db6db9ef16f1bd37afb81ef278da2a16ea54e929164",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-m97-lab-queue-long-1",
+      "id": "3a5876a78059de3a90880e4d48bd396e42e9754ef2a390809cd964969d5b2b68",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.373990686Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "04196602bc67ea70cd15cf16315f924bdf6f6b4e0641fd95744dbca8815153dd",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-m97-lab-websocket-1",
+      "id": "a18479b73dd36862e2f69aee3c3a2c5d7013c2e702496ba0d71466378aab4a9e",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.268425689Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "951c00ca88ec93beea98956288bd0610bf5ce55bff6ee54ef2c5bdecc09272a8",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-m97-lab-scheduler-1",
+      "id": "7db1d0456443510685f422b03b480802798a6d12c08fb39ea386c847718cf596",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.145829503Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "7cb3a272dbfb701bcc8a6fcd4079e92cac3c714b1ea7e5e5fd9575078246d538",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-m97-lab-backend-1",
+      "id": "4045d2713e30d0cb7e783c875fb2fac275fba1edc56d75c23faf6bc3442ed1f0",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.685583196Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "cf55264239fa58cfa47a46ce4ace3dbb7774044a98e9cf38cd852c52b570f2f6",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-m97-lab-configurator-1",
+      "id": "35f137603a26b64f2399809f10b8fb9d223ead3a4c5fcbeab4e73554115ad737",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:e89e4dd0249ab1f06f84975bd074194cfead8478cb2ced5fa60a11ad587e51f8",
+      "image_ref": "centrochange-m97:issue97-guards-v1",
+      "started": "2026-10-08T15:48:11.090959237Z",
+      "restart_count": 0,
+      "running": false,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "dbbfb2f870e1754d6be288a66828d038937169db1e4cb6931adea83659df6bf7",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-m97-lab-redis-cache-1",
+      "id": "6c377b75d88fe8ca35790a5facde5f097bb48283f2dd4f0b5a8cfc7f29ba53e4",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-08T15:41:50.941001883Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-redis-cache-data",
+          "destination": "/data"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {
+        "6379/tcp": null
+      }
+    },
+    {
+      "name": "/centrochange-m97-lab-redis-queue-1",
+      "id": "a7e923ba0afd73edfabb573085be4c63d37bc6486c03d0aa9bca37d85041e1bc",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-08T15:41:50.791418861Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-redis-queue-data",
+          "destination": "/data"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {
+        "6379/tcp": null
+      }
+    },
+    {
+      "name": "/centrochange-m97-lab-db-1",
+      "id": "9ca884d963352954e8255d7a230c6542063201728a83a1beb8e8f47dbfe022f4",
+      "project": "centrochange-m97-lab",
+      "image_id": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "image_ref": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "started": "2026-10-08T15:41:51.046003941Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "centrochange-m97-lab-db-data",
+          "destination": "/var/lib/mysql"
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {
+        "3306/tcp": null
+      }
+    },
+    {
+      "name": "/centrochange-dev-frontend-1",
+      "id": "4283499a973bf3ea00f5282300f2e4aa3c21ce1e294a00cc8217b7e0ed0cbecc",
+      "project": "centrochange-dev",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.47472239Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "e414450c6f597d1b5996280256ecc82130da6a2a634b396eeb832bc7201c0539",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-dev-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "8082"
+          }
+        ]
+      }
+    },
+    {
+      "name": "/centrochange-dev-websocket-1",
+      "id": "89282eabae30ece7a072e7f36a2420b0237e869b396e41bf4dfeeebc03968abe",
+      "project": "centrochange-dev",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:04.993107542Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "a297b02ca574da5fd0ff4acbe2637b87dec97b29d2d9aee0168420760bc571d6",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-dev-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-dev-backend-1",
+      "id": "7775561c691d1d86c5da70c389b88e14081c64ca36f0b45efb3314a884fe5b4c",
+      "project": "centrochange-dev",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.219031103Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "a833b509cc6988761189bf01b4af67b1e254399e3301c3ffee4c6a2dcd300c73",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-dev-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-dev-queue-short-1",
+      "id": "0734332e4210c36a44d508f445830e0779dfa02816e342ec6ad2953079e3d0ac",
+      "project": "centrochange-dev",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.103361463Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "27dc8d6c52119699ec481eb992c02066935d735cf0bbcdfed56246bc6752897f",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-dev-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-dev-scheduler-1",
+      "id": "558a6968d87be9f2f6a20f91037613580a9c83c15b1f2fc744570be0f86e7bf1",
+      "project": "centrochange-dev",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.75962531Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "c137441faf6351b6931ff3ba6d6a28b697f99d78a5d88914f79389e3bbda237b",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-dev-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-dev-queue-long-1",
+      "id": "a2bb4587bf3305f0822948acdb43dd3318e8250c7a3b6befbb3cf2b4d199372a",
+      "project": "centrochange-dev",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.633041274Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "842c42f37e52e2ce04cd85a4cf6ea951a7ed47480a0a345fd49d9657b8af9532",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-dev-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-dev-configurator-1",
+      "id": "7fed2d6b37cee05819caa768d89701a7714adc07f63c3de58aa991b2a62ce42c",
+      "project": "centrochange-dev",
+      "image_id": "sha256:bf9ef2cc39aab0a37e3ac00f6d9e76dd70b323343cac3bc5a2e6b4f294a7b4a6",
+      "image_ref": "centrochange-uat:goal02-20261007-rc24",
+      "started": "2026-10-07T17:31:02.110148427Z",
+      "restart_count": 0,
+      "running": false,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "7ea725906e3dce8529d3ffae74db5abf46bbb56b8616c035e298da7b04d4d1fe",
+          "destination": "/home/frappe/frappe-bench/logs"
+        },
+        {
+          "type": "volume",
+          "name": "centrochange-dev-sites",
+          "destination": "/home/frappe/frappe-bench/sites"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "name": "/centrochange-dev-redis-cache-1",
+      "id": "77ab007443ed74be2f7e92dba7604a217bee349eb1433eb3a38efcd8370ccdf4",
+      "project": "centrochange-dev",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-05T17:43:30.311343189Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "centrochange-dev-redis-cache-data",
+          "destination": "/data"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {
+        "6379/tcp": null
+      }
+    },
+    {
+      "name": "/centrochange-dev-redis-queue-1",
+      "id": "dab9deddfba35764654e784feb069a8f80291f08cb2c6b961d2f4349d48b0e89",
+      "project": "centrochange-dev",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-05T17:43:30.413509793Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "centrochange-dev-redis-queue-data",
+          "destination": "/data"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {
+        "6379/tcp": null
+      }
+    },
+    {
+      "name": "/centrochange-dev-db-1",
+      "id": "82fbeecff7286bac2b012857bbfe0eec7aa4c2e7f81be349b0fbaf5d732f6ae8",
+      "project": "centrochange-dev",
+      "image_id": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "image_ref": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "started": "2026-10-05T17:43:30.529568822Z",
+      "restart_count": 0,
+      "running": true,
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "centrochange-dev-db-data",
+          "destination": "/var/lib/mysql"
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {
+        "3306/tcp": null
+      }
+    }
+  ],
+  "images_retained": [
+    "centrochange-m97:issue97-guards-v3",
+    "centrochange-g2d:e85fce588de6-clean",
+    "centrochange-g2d-browser:e85fce588de6-pw1582"
+  ],
+  "credentials_raw_logs_env_dump_collected": false
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "suite": "security.audit_view_acceptance",
+    "status": "PASS",
+    "fixture_translation_only": true
+  },
+  {
+    "suite": "scheduling.reopen_acceptance",
+    "status": "PASS",
+    "fixture_translation_only": true
+  },
+  {
+    "suite": "finance.expectation_ui_acceptance",
+    "status": "PASS",
+    "fixture_translation_only": true
+  },
+  {
+    "suite": "finance.bank_trace_acceptance",
+    "status": "PASS",
+    "fixture_translation_only": true
+  }
+]

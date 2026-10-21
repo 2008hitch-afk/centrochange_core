@@ -1,0 +1,87 @@
+[
+  {
+    "suite": "mission97_hooks",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/mission97_hooks.log"
+  },
+  {
+    "suite": "mission97_http",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/mission97_http.log"
+  },
+  {
+    "suite": "browser-uat",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-uat.log"
+  },
+  {
+    "suite": "browser-professional",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-professional.log"
+  },
+  {
+    "suite": "browser-patient",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-patient.log"
+  },
+  {
+    "suite": "browser-expectations",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-expectations.log"
+  },
+  {
+    "suite": "browser-ts_detail",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-ts_detail.log"
+  },
+  {
+    "suite": "browser-confirmation",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-confirmation.log"
+  },
+  {
+    "suite": "browser-search",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-search.log"
+  },
+  {
+    "suite": "browser-accounting",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-accounting.log"
+  },
+  {
+    "suite": "browser-permissions",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-permissions.log"
+  },
+  {
+    "suite": "browser-walkthrough",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-walkthrough.log"
+  },
+  {
+    "suite": "browser-ui_v1",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-ui_v1.log"
+  },
+  {
+    "suite": "browser-print",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-print.log"
+  },
+  {
+    "suite": "browser-states",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-states.log"
+  },
+  {
+    "suite": "browser-agenda_geometry",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/browser-agenda_geometry.log"
+  },
+  {
+    "suite": "final-lab-health",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/final-lab-health.log"
+  }
+]

@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "source_commit": "e85fce588de6012a47da302710b9f9c615211279",
+  "image_id": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+  "source_file_count": 239,
+  "source_manifest_sha256": "8c5cf4d2a83115c1e59647ced101871b869f6e79dff73003d21cb7f20226653d",
+  "versions": {
+    "frappe": {
+      "version": "16.31.0",
+      "commit": null
+    },
+    "erpnext": {
+      "version": "16.32.0",
+      "commit": null
+    },
+    "builder": {
+      "version": "1.33.0",
+      "commit": "41987c064da4650e6901b5da82b7c76add452ebf"
+    },
+    "healthcare": {
+      "version": "16.5.2",
+      "commit": "934d6c162868139dfbe80c23d6102adb7ec25adb"
+    }
+  },
+  "upstream_git_metadata_note": "Official base image omits frappe/erpnext .git; commits checked separately through pinned image digest and official source-file hashes.",
+  "infra_images": [
+    {
+      "service": "db",
+      "pin": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "image_id": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c"
+    },
+    {
+      "service": "redis-cache",
+      "pin": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+    },
+    {
+      "service": "redis-queue",
+      "pin": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+    }
+  ],
+  "six_application_services_same_image": true,
+  "source_binds": false
+}

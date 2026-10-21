@@ -1,0 +1,113 @@
+{
+  "status": "PASS",
+  "phase": "before",
+  "checks": [
+    {
+      "role": "a",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "a",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 404,
+      "exception_type": "DoesNotExistError",
+      "result": "PASS"
+    },
+    {
+      "role": "b",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "b",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 404,
+      "exception_type": "DoesNotExistError",
+      "result": "PASS"
+    },
+    {
+      "role": "c",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "c",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 404,
+      "exception_type": "DoesNotExistError",
+      "result": "PASS"
+    },
+    {
+      "role": "s",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "s",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 404,
+      "exception_type": "DoesNotExistError",
+      "result": "PASS"
+    },
+    {
+      "role": "f",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "f",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 404,
+      "exception_type": "DoesNotExistError",
+      "result": "PASS"
+    },
+    {
+      "role": "t",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "t",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 404,
+      "exception_type": "DoesNotExistError",
+      "result": "PASS"
+    },
+    {
+      "role": "m",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "m",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 404,
+      "exception_type": "DoesNotExistError",
+      "result": "PASS"
+    },
+    {
+      "role": "guest",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "guest",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 403,
+      "exception_type": "PermissionError",
+      "result": "PASS"
+    }
+  ],
+  "synthetic_only": true,
+  "business_mutations": "NONE",
+  "raw_responses_recorded": false
+}
