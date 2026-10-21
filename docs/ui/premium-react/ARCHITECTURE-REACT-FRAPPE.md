@@ -18,7 +18,7 @@ The Vite source is `frontend/premium/`; `npm ci --ignore-scripts` and `npm run b
 
 ## Deployment and rollback contract
 
-The candidate is source and static assets only. No Docker image, Frappe install, migration, restart or shared runtime mutation has occurred. A future isolated Site must be separately authorized and provisioned with synthetic fixtures, pinned build, rollback checkpoint, cleanup fingerprint and no external providers. Rollback of this source candidate is Git branch removal; runtime rollback is **NOT_VERIFIED** because nothing was installed.
+The candidate is source and static assets only. No Docker image, Frappe install, migration, restart or shared runtime mutation has occurred. A read-only inventory found no reusable old laboratory runtime. `infra/Dockerfile.premium148` and `infra/compose.premium148.yaml` are review-only preparations for a temporary isolated Site on the same server, under the separate Owner gate in `EXISTING-LAB-REUSE-PREFLIGHT-2026-10-21.md`. They do not authorize execution. Rollback of this source candidate is Git branch removal; runtime rollback is **NOT_VERIFIED** because nothing was installed.
 
 ## Architectural gaps
 

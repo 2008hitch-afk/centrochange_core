@@ -1,0 +1,25 @@
+# Source preparation only. Never build or run against the shared centrochange-dev project.
+# Gate preflight must verify this local tag resolves to image ID
+# sha256:ac25b74321da6de7e669e75e9a5ee23494bc6fc672d3b82498aaca73b7225d00.
+# That #124 base contains the pinned 16.50/16.6.1 backend and app revision e2fd728.
+FROM centrochange-single:issue124-base
+
+ARG PREMIUM_SOURCE_SHA
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+# Overlay only the new React pages and assets. Keep Frappe, ERPNext, Marley,
+# centrochange_core APIs, DocTypes, hooks, permissions and accounting from base.
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/public/premium/ apps/centrochange_core/centrochange_core/public/premium/
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/www/premium.html apps/centrochange_core/centrochange_core/www/premium.html
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/www/premium.py apps/centrochange_core/centrochange_core/www/premium.py
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/www/premium-primo-incontro.html apps/centrochange_core/centrochange_core/www/premium-primo-incontro.html
+COPY --chown=frappe:frappe app/centrochange_core/centrochange_core/www/premium_primo_incontro.py apps/centrochange_core/centrochange_core/www/premium_primo_incontro.py
+
+RUN bench build --force \
+    && cp -a sites/assets/. assets/ \
+    && python -c "import json,pathlib; a=json.loads(pathlib.Path('assets/assets.json').read_text()); required={'desk.bundle.js','erpnext.bundle.js','healthcare.bundle.js','login.bundle.css','frappe-web.bundle.js'}; assert required <= a.keys(), sorted(required-a.keys())"
+
+LABEL centrochange.issue="148" \
+      centrochange.base_application_revision="e2fd728ecf6acdb0e0ab26379820df6905dd5521" \
+      centrochange.premium_source="${PREMIUM_SOURCE_SHA}"

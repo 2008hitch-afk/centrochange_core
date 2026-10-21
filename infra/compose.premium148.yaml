@@ -1,0 +1,194 @@
+# REVIEW ONLY until the Owner approves the exact temporary runtime gate.
+name: centrochange-premium-148
+
+x-app: &app
+  image: ${CC148_IMAGE:?Pinned image required}
+  pull_policy: never
+  restart: "no"
+
+x-site: &site centrochange-premium-148-sites:/home/frappe/frappe-bench/sites
+
+services:
+  configurator:
+    <<: *app
+    mem_limit: 2g
+    memswap_limit: 2g
+    environment:
+      SITE_NAME: ${CC148_SITE_NAME:?Private synthetic Site required}
+      DB_PASSWORD: ${CC148_DB_PASSWORD:?Private DB password required}
+      ADMIN_PASSWORD: ${CC148_ADMIN_PASSWORD:?Private admin password required}
+    entrypoint: ["bash", "-ec"]
+    command:
+      - |
+        bench set-config -g db_host db
+        bench set-config -gp db_port 3306
+        bench set-config -g redis_cache redis://redis-cache:6379
+        bench set-config -g redis_queue redis://redis-queue:6379
+        bench set-config -g redis_socketio redis://redis-queue:6379
+        bench set-config -gp socketio_port 9000
+        test ! -e "sites/$${SITE_NAME}/site_config.json"
+        bench new-site "$${SITE_NAME}" --db-host db --mariadb-user-host-login-scope '%' --mariadb-root-password "$${DB_PASSWORD}" --admin-password "$${ADMIN_PASSWORD}" --install-app erpnext --install-app builder --set-default
+        bench --site "$${SITE_NAME}" set-config cc_synthetic_dev 1
+        bench --site "$${SITE_NAME}" execute "__import__('centrochange_core.dev_bootstrap', fromlist=['setup']).setup()"
+        bench --site "$${SITE_NAME}" install-app healthcare
+        bench --site "$${SITE_NAME}" install-app centrochange_core
+        bench --site "$${SITE_NAME}" migrate
+        bench --site "$${SITE_NAME}" enable-scheduler
+    volumes:
+      - *site
+      - centrochange-premium-148-logs-configurator:/home/frappe/frappe-bench/logs
+    depends_on:
+      db: {condition: service_healthy}
+      redis-cache: {condition: service_healthy}
+      redis-queue: {condition: service_healthy}
+    networks: [centrochange-premium-148-net]
+
+  backend:
+    <<: *app
+    mem_limit: 900m
+    memswap_limit: 900m
+    environment:
+      GUNICORN_THREADS: "4"
+      GUNICORN_WORKERS: "2"
+      GUNICORN_TIMEOUT: "120"
+    volumes:
+      - *site
+      - centrochange-premium-148-logs-backend:/home/frappe/frappe-bench/logs
+    depends_on:
+      configurator: {condition: service_completed_successfully}
+    networks: [centrochange-premium-148-net]
+
+  frontend:
+    <<: *app
+    mem_limit: 160m
+    memswap_limit: 160m
+    command: ["nginx-entrypoint.sh"]
+    environment:
+      BACKEND: backend:8000
+      SOCKETIO: websocket:9000
+      FRAPPE_SITE_NAME_HEADER: ${CC148_SITE_NAME:?Private synthetic Site required}
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+    ports: ["127.0.0.1:18082:8080"]
+    volumes:
+      - *site
+      - centrochange-premium-148-logs-frontend:/home/frappe/frappe-bench/logs
+    depends_on:
+      backend: {condition: service_started}
+      websocket: {condition: service_started}
+    networks: [centrochange-premium-148-net]
+
+  websocket:
+    <<: *app
+    mem_limit: 160m
+    memswap_limit: 160m
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    volumes:
+      - *site
+      - centrochange-premium-148-logs-websocket:/home/frappe/frappe-bench/logs
+    depends_on:
+      configurator: {condition: service_completed_successfully}
+    networks: [centrochange-premium-148-net]
+
+  queue-short:
+    <<: *app
+    mem_limit: 320m
+    memswap_limit: 320m
+    command: ["bench", "worker", "--queue", "short,default"]
+    volumes:
+      - *site
+      - centrochange-premium-148-logs-queue-short:/home/frappe/frappe-bench/logs
+    depends_on:
+      configurator: {condition: service_completed_successfully}
+    networks: [centrochange-premium-148-net]
+
+  queue-long:
+    <<: *app
+    mem_limit: 320m
+    memswap_limit: 320m
+    command: ["bench", "worker", "--queue", "long,default,short"]
+    volumes:
+      - *site
+      - centrochange-premium-148-logs-queue-long:/home/frappe/frappe-bench/logs
+    depends_on:
+      configurator: {condition: service_completed_successfully}
+    networks: [centrochange-premium-148-net]
+
+  scheduler:
+    <<: *app
+    mem_limit: 160m
+    memswap_limit: 160m
+    command: ["bench", "schedule"]
+    volumes:
+      - *site
+      - centrochange-premium-148-logs-scheduler:/home/frappe/frappe-bench/logs
+    depends_on:
+      configurator: {condition: service_completed_successfully}
+    networks: [centrochange-premium-148-net]
+
+  db:
+    image: mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c
+    restart: "no"
+    mem_limit: 1g
+    memswap_limit: 1g
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--skip-character-set-client-handshake"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${CC148_DB_PASSWORD:?Private DB password required}
+      MARIADB_AUTO_UPGRADE: "1"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 120s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - centrochange-premium-148-db-data:/var/lib/mysql
+    networks: [centrochange-premium-148-net]
+
+  redis-cache:
+    image: redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9
+    restart: "no"
+    mem_limit: 128m
+    memswap_limit: 128m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - centrochange-premium-148-redis-cache-data:/data
+    networks: [centrochange-premium-148-net]
+
+  redis-queue:
+    image: redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9
+    restart: "no"
+    mem_limit: 128m
+    memswap_limit: 128m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - centrochange-premium-148-redis-queue-data:/data
+    networks: [centrochange-premium-148-net]
+
+volumes:
+  centrochange-premium-148-sites: {name: centrochange-premium-148-sites}
+  centrochange-premium-148-db-data: {name: centrochange-premium-148-db-data}
+  centrochange-premium-148-redis-cache-data: {name: centrochange-premium-148-redis-cache-data}
+  centrochange-premium-148-redis-queue-data: {name: centrochange-premium-148-redis-queue-data}
+  centrochange-premium-148-logs-configurator: {name: centrochange-premium-148-logs-configurator}
+  centrochange-premium-148-logs-backend: {name: centrochange-premium-148-logs-backend}
+  centrochange-premium-148-logs-frontend: {name: centrochange-premium-148-logs-frontend}
+  centrochange-premium-148-logs-websocket: {name: centrochange-premium-148-logs-websocket}
+  centrochange-premium-148-logs-queue-short: {name: centrochange-premium-148-logs-queue-short}
+  centrochange-premium-148-logs-queue-long: {name: centrochange-premium-148-logs-queue-long}
+  centrochange-premium-148-logs-scheduler: {name: centrochange-premium-148-logs-scheduler}
+
+networks:
+  centrochange-premium-148-net:
+    name: centrochange-premium-148-net
+    driver: bridge
+    internal: true
