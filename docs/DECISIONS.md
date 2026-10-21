@@ -440,3 +440,18 @@ N è un intero non negativo configurato esplicitamente per professionista, senza
 Implementazione: riuso dei DocType nativi e degli snapshot append-only WP-05; configurazioni e aspettative versionate, original facts immutabili, proiezione corrente tramite sequenza per seduta. Ordinamento ricostruibile per data/ora della seduta e identificativo canonico; pagamenti nativi governano outstanding, altrimenti settlement operativo corrente. L'override non cancella né il fatto non-incassato né il conteggio della seduta. Configurazione mancante è REVIEW, oltre soglia è SUSPENDED; entrambi conservano amount_known=false. I tassi economici restano configurati separatamente, mai inferiti.
 
 Non autorizza fiscalità reale, provider, produzione o GOAL-02. Evidenza del delta: [WP-05 / DECISION-054](evidence/DECISION-054-2026-10-05.md).
+
+## TD-033 — Direzione frontend React premium (HC-0005 DECISION-060)
+
+**Stato: DIREZIONE ARCHITETTURALE APPROVATA DALL'OWNER — 21/10/2026; IMPLEMENTAZIONE NON AUTORIZZATA DA QUESTA DECISIONE.**
+
+**Fonte canonica:** [HC-0005 DECISION-060 — Nuova architettura frontend premium React](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-060-premium-react-frontend-architecture.md).
+
+Per l'interfaccia cliente, la direzione approvata diventa **frontend React dedicato**, UX premium ispirata a Fresha e identità visuale originale di Centro Change dal sito ufficiale. La precedente **preferenza per la UI nativa Frappe** annotata nella [issue #75](https://github.com/2008hitch-afk/centrochange_core/issues/75) è sostituita **solo per la superficie operativa client-facing**. Il principio native-first **rimane pienamente valido per backend e dati**: Frappe, ERPNext, Marley Healthcare e `centrochange_core` restano fonte autorevole di processi, documenti, sicurezza, autorizzazioni e audit.
+
+Direzione d'integrazione preferita: React nel sito Frappe esistente senza duplicare backend/database, **da validare tecnicamente** (API, sessione/CSRF, routing, permessi, asset build, migrazione/reversibilità). Librerie UI, calendario e skill sono candidate, non dipendenze già selezionate o licenze acquistate. Nessun core upstream può essere patchato.
+
+Confini: **nessun mandato esecutivo Codex, nuova installazione, modifica runtime, server, API, dati, permessi, merge dello stack, cutover, produzione, dati reali, provider reali o GOAL-03** autorizzato dalla sola decisione. Rimangono validi gli stati storici di #75/#76, #109/PR #112 e le osservazioni UAT #134/#136/#137/#139; GOAL-02 e Owner visual acceptance non sono automaticamente completati.
+
+**Passo successivo:** specifica React/Frappe e design system, analisi di copertura API/ruoli, lock licenze/skill, piano verifiche e proposta di unico macro-goal da autorizzare separatamente.
+
