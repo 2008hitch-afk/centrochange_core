@@ -30,7 +30,7 @@ Un solo DEV `srv2033673`, Compose `centrochange-dev`, Site `centrochange.local`,
 ## Prompt di esecuzione
 
 ```text
-Centro Change #148 — riprendi dalla HEAD effettiva PR DRAFT #150, senza nuovo /goal. DECISION-065 è APPROVATO in HITCH: SECONDO E ULTIMO TENTATIVO CONDIZIONATO nello stesso DEV, finalizzato a una sola webapp React funzionante con dati sintetici. Leggi DECISION-060/061/062/063/064/065, AGENTS.md, il nuovo docs/ui/PREMIUM-REACT-DECISION065-SECOND-DEV-ATTEMPT.md da main, report DECISION-064-EXECUTION-REPORT e RECOVERY-CORRECTION, e il piano SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md aggiornato (blob 36755c1668763bf6665e4792bef046718bfd3812).
+Centro Change #148 — riprendi dalla HEAD effettiva PR DRAFT #150, senza nuovo /goal. DECISION-065 è APPROVATO in HITCH: UNICO SECONDO TENTATIVO CONDIZIONATO AUTORIZZATO DA QUESTO GATE nello stesso DEV, finalizzato a una sola webapp React funzionante con dati sintetici. Leggi DECISION-060/061/062/063/064/065, AGENTS.md, il nuovo docs/ui/PREMIUM-REACT-DECISION065-SECOND-DEV-ATTEMPT.md da main, report DECISION-064-EXECUTION-REPORT e RECOVERY-CORRECTION, e il piano SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md aggiornato (blob 36755c1668763bf6665e4792bef046718bfd3812).
 
 Verifica HEAD Git/worktree, manifest e ID; NON ricominciare React. DEV attuale da preservare con vecchia immagine sha256:6d6f9d2e65d0b16974e6b04aeaaf6d1210f071448ace5276689ebc9652bc2f7b; candidato prebuilt sha256:a7921c5143e5294fa4a6849455a51b67eb4b3a41331832000254db252d409fa2 (usalo se ancora congruente; no rebuild inutili).
 
