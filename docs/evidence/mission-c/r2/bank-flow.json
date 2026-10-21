@@ -1,0 +1,1 @@
+{"status":"PASS","external":"C109-SYNTHETIC-1791577061711","candidates":1,"events":[{"method":"banking.import_movements","status":200},{"method":"banking.candidates","status":200},{"method":"banking.reconcile","status":200}],"errors":[]}
