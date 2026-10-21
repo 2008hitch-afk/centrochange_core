@@ -12,6 +12,34 @@ def owned_audit_ids(events, groups, tag):
 	return names
 
 
+def native_dependents_first(documents, kinds):
+	"""Order fixture vouchers so returns and amendments precede their originals."""
+	by_key = {(doc.doctype, doc.name): doc for doc in documents}
+	if len(by_key) != len(documents):
+		raise ValueError('Duplicate native voucher in fixture cleanup')
+	children = {key: [] for key in by_key}
+	for key, doc in by_key.items():
+		for field in ('return_against', 'amended_from'):
+			parent = doc.get(field)
+			if parent and (doc.doctype, parent) in children:
+				children[(doc.doctype, parent)].append(key)
+	ordered, visited, active = [], set(), set()
+	def visit(key):
+		if key in active:
+			raise ValueError('Cyclic native voucher correction')
+		if key in visited:
+			return
+		active.add(key)
+		for child in sorted(set(children[key])):
+			visit(child)
+		active.remove(key)
+		visited.add(key)
+		ordered.append(by_key[key])
+	for key in sorted(by_key, key=lambda item: (kinds.index(item[0]), item[1])):
+		visit(key)
+	return ordered
+
+
 def confirmation_dependents(appointments, centers, confirmations, communications):
 	"""Return exact IDs only when every dependent belongs to the fixture."""
 	appointments, centers = set(appointments), set(centers)
@@ -61,8 +89,8 @@ def native_accounting_cleanup(groups, centers):
 			if doc.cc_center not in centers:
 				raise ValueError('Accounting cleanup escaped fixture centers')
 			documents.append(doc)
-	# Return/credit documents precede their originals within each invoice type.
-	documents.sort(key=lambda doc: (kinds.index(doc.doctype), not bool(doc.get('is_return')), doc.name))
+	# Native links require returns and amended successors to go before originals.
+	documents = native_dependents_first(documents, kinds)
 	with internal_write('cc_accounting_write'):
 		for doc in documents:
 			doc.reload()

@@ -28,6 +28,22 @@ class FixtureAuditOwnershipTests(unittest.TestCase):
                                       "reference_name": "PAY-OTHER", "reason": "Different"}],
                                     groups, "CC-HTTP-ABC1234567")
 
+    def test_native_corrections_precede_original_invoice(self):
+        class Voucher(dict):
+            def __init__(self, name, **fields):
+                super().__init__(fields)
+                self.doctype = "Sales Invoice"
+                self.name = name
+
+        original = Voucher("INV-1")
+        amendment = Voucher("INV-1-1", amended_from="INV-1")
+        credit = Voucher("INV-1-CREDIT", return_against="INV-1")
+        ordered = cleanup.native_dependents_first(
+            [original, amendment, credit], ("Sales Invoice",)
+        )
+        self.assertEqual(ordered[-1].name, "INV-1")
+        self.assertEqual({row.name for row in ordered[:-1]}, {"INV-1-1", "INV-1-CREDIT"})
+
 
 if __name__ == "__main__":
     unittest.main()
