@@ -132,7 +132,7 @@ def check_image(bench, manifest, built=False):
     require('before_request' in hooks and 'permission_query_conditions' in hooks and
             'has_permission' in hooks, 'Security hooks missing')
     apps = (bench / 'sites/apps.txt').read_text().splitlines()
-    require(all(apps.count(name) == 1 for name in ('frappe', 'erpnext', 'builder', 'healthcare', 'centrochange_core')),
+    require(apps == ['frappe', 'erpnext', 'healthcare', 'builder', 'centrochange_core'],
             'Bench app registration mismatch')
     if built:
         assets = json.loads((bench / 'assets/assets.json').read_text())

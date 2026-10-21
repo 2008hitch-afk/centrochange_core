@@ -15,13 +15,11 @@ ARG BUILDER_TAG=v1.35.1
 ARG BUILDER_REF=37e958bc4f801d06d0438c21b97b42c45c4eaa51
 ARG HEALTHCARE_TAG=v16.6.1
 ARG HEALTHCARE_REF=dda107b26e3a0fe1dbd65c7257371235de054a04
-ARG SINGLE_STACK_SOURCE_SHA
 USER frappe
 WORKDIR /home/frappe/frappe-bench
 
 # Official upstream applications, exact release commits. No floating branch.
-RUN test "${#SINGLE_STACK_SOURCE_SHA}" -eq 40 \
-    && bench get-app --branch "${BUILDER_TAG}" builder https://github.com/frappe/builder.git \
+RUN bench get-app --branch "${BUILDER_TAG}" builder https://github.com/frappe/builder.git \
     && test "$(git -C apps/builder rev-parse HEAD)" = "${BUILDER_REF}" \
     && bench set-config -gp socketio_port 9000 \
     && bench get-app --branch "${HEALTHCARE_TAG}" healthcare https://github.com/earthians/marley.git \
@@ -33,9 +31,10 @@ COPY --from=react-build --chown=frappe:frappe /tmp/cc148/app/centrochange_core/c
 COPY --chown=frappe:frappe infra/full-single-stack-manifest.json /opt/cc148/full-single-stack-manifest.json
 COPY --chown=frappe:frappe infra/verify_full_single_stack.py /opt/cc148/verify_full_single_stack.py
 
-RUN uv pip install --no-cache --python /home/frappe/frappe-bench/env/bin/python --editable apps/centrochange_core \
-    && test "$(grep -cx '^centrochange_core$' sites/apps.txt || true)" -eq 0 \
-    && printf '%s\n' centrochange_core >> sites/apps.txt \
+ARG SINGLE_STACK_SOURCE_SHA
+RUN test "${#SINGLE_STACK_SOURCE_SHA}" -eq 40 \
+    && uv pip install --no-cache --python /home/frappe/frappe-bench/env/bin/python --editable apps/centrochange_core \
+    && printf '%s\n' frappe erpnext healthcare builder centrochange_core > sites/apps.txt \
     && /home/frappe/frappe-bench/env/bin/python /opt/cc148/verify_full_single_stack.py --image /home/frappe/frappe-bench \
     && bench build --force \
     && cp -a sites/assets/. assets/ \
