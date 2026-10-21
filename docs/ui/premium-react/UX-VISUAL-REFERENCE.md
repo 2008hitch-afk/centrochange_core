@@ -1,0 +1,11 @@
+# UX visual reference — #148
+
+Direction: compact professional scheduling workspace, Agenda as landing, practitioner lanes in day view, visible daily counts, quick booking, detail drawer, finance summary with actionable tables and slim persistent navigation. [Fresha](https://www.fresha.com/) was viewed only as a quality reference. Product assets, composition measurements, marketing copy and code are original to this branch. Centro Change logo and verified blue palette provide identity.
+
+Current synthetic screenshots, 2026-10-21:
+
+- `docs/evidence/issue-148/agenda-desktop.png` — 1440×900 viewport, Agenda and practitioner lane.
+- `docs/evidence/issue-148/agenda-mobile.png` — 390×844 viewport, single resource day view.
+- `docs/evidence/issue-148/finance-mobile.png` — 390×844 viewport, finance summary.
+
+These screenshots are from Vite with intercepted synthetic API responses, not an installed Frappe Site. Visual quality was inspected by Codex; Owner visual acceptance is **NOT_VERIFIED**. Desktop finance, patient, every role, focus states and live account data are still open. Historic #139 screenshots are reference/evidence of earlier Frappe-native candidate only and are not visual PASS for this React branch.

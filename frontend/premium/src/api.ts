@@ -1,0 +1,48 @@
+export type Row = Record<string, unknown>
+export type Center = { name: string; branch: string }
+export type Practitioner = { name: string; practitioner_name: string }
+export type Patient = { name: string; patient_name: string }
+export type Service = { name: string; cc_service_label?: string; cc_service_item?: string; price?: number; duration?: number }
+export type Appointment = { name: string; patient: string; patient_name: string; practitioner: string; practitioner_name: string; cc_center: string; appointment_date: string; appointment_time: string; duration: number; status: string; cc_closure_state?: string; cc_economic_state?: string; cc_paid?: number; cc_performed?: number; cc_service_label?: string; cc_price_snapshot?: number; cc_currency_snapshot?: string }
+export type Boot = { center: string; centers: Center[]; patients: Patient[]; practitioners: Practitioner[]; services: Service[]; packages: Row[]; payment_methods: string[]; roles: string[] }
+export type FinanceBoot = { center: string; centers: Center[]; can_write: boolean; is_manager: boolean; customers: Row[]; suppliers: Row[]; practitioners: Practitioner[]; items: Row[]; assignees: string[]; simulation_only: boolean; fiscal_verified: boolean }
+
+const prefix = 'centrochange_core.'
+export async function call<T>(method: string, args: Row = {}, write = false): Promise<T> {
+  const url = '/api/method/' + (method.startsWith('frappe.') || method === 'logout' ? method : prefix + method)
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  const options: RequestInit = { credentials: 'same-origin', headers, method: write ? 'POST' : 'GET' }
+  if (write) {
+    const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content
+    if (!token) throw new Error('Sessione scaduta. Ricarica la pagina.')
+    headers['X-Frappe-CSRF-Token'] = token
+    headers['Content-Type'] = 'application/json'
+    options.body = JSON.stringify(args)
+  }
+  const query = new URLSearchParams(Object.entries(args).map(([key, value]) => [key, typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value ?? '')]))
+  let response: Response
+  try { response = await fetch(write ? url : `${url}?${query}`, options) }
+  catch { throw new Error('Connessione non disponibile. Riprova.') }
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok || payload.exc) {
+    if (response.status === 401 || response.status === 403) throw new Error('Accesso negato o sessione scaduta. Verifica i permessi.')
+    let message = 'Operazione non riuscita. Verifica i dati e riprova.'
+    try {
+      const server = JSON.parse(payload._server_messages ?? '[]')
+      const last = JSON.parse(server.at(-1) ?? '{}')
+      if (last.message && typeof last.message === 'string') message = last.message.replace(/<[^>]*>/g, '')
+    } catch { /* generic error retained */ }
+    throw new Error(message)
+  }
+  return payload.message as T
+}
+
+export const ops = <T>(name: string, args: Row = {}, write = false) => call<T>('operations.' + name, args, write)
+export const finance = <T>(name: string, args: Row = {}, write = false) => call<T>('finance.' + name, args, write)
+export const schedule = <T>(name: string, args: Row = {}, write = false) => call<T>('scheduling.' + name, args, write)
+export const requestKey = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('')
+export const romeDateAt = (at: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(at)
+export const romeToday = () => romeDateAt(new Date())
+export const displayDate = (value: unknown) => { const iso = String(value ?? '').slice(0, 10); return /^\d{4}-\d\d-\d\d$/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : String(value ?? '') }
+export const money = (value: unknown, currency = 'EUR') => value == null ? 'Da definire' : new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(Number(value))
+export const time = (value: unknown) => String(value ?? '').slice(0, 5)
