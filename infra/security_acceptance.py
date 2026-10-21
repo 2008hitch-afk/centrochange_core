@@ -21,6 +21,13 @@ def execute(method, kwargs=None):
     return json.loads(result.stdout)
 
 
+def fixture_public_route(fixture):
+    routes = fixture.get('catalog', {}).get('CC Public Booking Route', [])
+    if len(routes) != 1 or not isinstance(routes[0], str) or not routes[0]:
+        raise ValueError('Synthetic fixture must own exactly one public booking route')
+    return routes[0]
+
+
 def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--env-file',required=True)
@@ -109,7 +116,8 @@ def main():
                 {'practitioner':fixture['practitioners'][0],'patient':own,'date':'2099-01-12','slot':'10:00:00'})
             guest=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
             public='/api/method/centrochange_core.scheduling.public_booking.first_meeting'
-            public_payload={'route':'Marco','first_name':fixture['tag']+' SYNTHETIC','last_name':'Guest',
+            public_route=fixture_public_route(fixture)
+            public_payload={'route':public_route,'first_name':fixture['tag']+' SYNTHETIC','last_name':'Guest',
                 'email':fixture['tag'].lower()+'-guest@example.invalid','sex':'Female',
                 'appointment_date':'2099-01-12','appointment_time':'10:00:00','request_key':fixture['tag']+'-public'}
             public_result=call(guest,public,public_payload)['message']
@@ -121,9 +129,9 @@ def main():
             denied('Guest cannot read created appointment',guest,'/api/resource/Patient%20Appointment/'+urllib.parse.quote(public_result['name'],safe=''))
             call(guest,public,{**public_payload,'route':'Arbitrary','request_key':fixture['tag']+'-bad-route'},expected=417)
             checks.append('unapproved public route denied')
-            call(admin,'/api/method/frappe.client.set_value',{'doctype':'CC Public Booking Route','name':'Marco','fieldname':'enabled','value':0})
+            call(admin,'/api/method/frappe.client.set_value',{'doctype':'CC Public Booking Route','name':public_route,'fieldname':'enabled','value':0})
             denied('disabled public route denied',guest,public,{**public_payload,'email':fixture['tag'].lower()+'-other@example.invalid','request_key':fixture['tag']+'-disabled'})
-            call(admin,'/api/method/frappe.client.set_value',{'doctype':'CC Public Booking Route','name':'Marco','fieldname':'enabled','value':1})
+            call(admin,'/api/method/frappe.client.set_value',{'doctype':'CC Public Booking Route','name':public_route,'fieldname':'enabled','value':1})
             call(admin,'/api/method/frappe.client.set_value',{'doctype':'Appointment Type','name':fixture['catalog']['Appointment Type'][0],'fieldname':'cc_first_meeting','value':0})
             denied('public subsequent-session profile denied',guest,public,{**public_payload,'email':fixture['tag'].lower()+'-other@example.invalid','request_key':fixture['tag']+'-subsequent'})
         if args.with_operations:

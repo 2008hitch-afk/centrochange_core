@@ -37,8 +37,11 @@ def checks(fixture):
         assert native_reports.run(center,name,'2026-01-01','2026-12-31')['read_only']
     frappe.set_user(fixture['pro1'])
     reject(lambda:native_reports.run(center,'general_ledger','2026-01-01','2026-12-31'))
-    frappe.set_user('Administrator')
+    # Administrator is intentionally allowed to see all operational centers.
+    # Check the cross-center denial with a finance reader assigned only to A.
+    frappe.set_user('accountant.cc-regression@example.invalid')
     reject(lambda:native_reports.run(fixture['other'],'general_ledger','2026-01-01','2026-12-31'))
+    frappe.set_user('Administrator')
     reject(lambda:native_reports.run(center,'unapproved_report','2026-01-01','2026-12-31'))
     reject(lambda:native_reports.run(center,'trial_balance','2025-01-01','2026-12-31'))
     result.append('native report allowlist, inactive/unassigned center and cross-fiscal-year scope rejected')
