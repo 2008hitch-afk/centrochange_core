@@ -26,6 +26,7 @@ function App() {
   const [notice, setNotice] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loggingOut, setLoggingOut] = useState(false)
   const [query, setQuery] = useState('')
   const hydratedCenter = useRef('')
 
@@ -61,7 +62,11 @@ function App() {
       <div className="sidebar-label">AREA OPERATIVA</div>
       <nav>{available.filter(v => !['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span>{v === 'Agenda' && <span className="nav-dot" />}</button>)}</nav>
       {available.some(v => ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche'].includes(v)) && <><div className="sidebar-label section-gap">AMMINISTRAZIONE</div><nav>{available.filter(v => ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span></button>)}</nav></>}
-      <div className="sidebar-foot"><span className="sidebar-avatar">CC</span><div><strong>Centro Change</strong><small>Area riservata</small></div><button className="icon-button" title="Esci" aria-label="Esci" onClick={async () => { try { await call('logout', {}, true) } finally { location.href = '/login?redirect-to=/premium' } }}><LogOut /></button></div>
+      <div className="sidebar-foot"><span className="sidebar-avatar">CC</span><div><strong>Centro Change</strong><small>Area riservata</small></div><button className="icon-button" title="Esci" aria-label="Esci" disabled={loggingOut} onClick={async () => {
+        setLoggingOut(true)
+        try { await call('logout', {}, true); location.replace('/login?redirect-to=/premium') }
+        catch { feedback('Uscita non riuscita. Riprova.', true); setLoggingOut(false) }
+      }}><LogOut /></button></div>
     </aside>
     {mobileOpen && <button className="scrim" aria-label="Chiudi menu" onClick={() => setMobileOpen(false)} />}
     <div className="workspace">

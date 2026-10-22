@@ -33,16 +33,21 @@ PREMIUM_ADDED = {
     'centrochange_core/public/premium/app.css',
     'centrochange_core/public/premium/public.js',
     'centrochange_core/public/premium/logo.webp',
-    'centrochange_core/public/premium/style-UB9A4PgH.js',
+    'centrochange_core/public/premium/style-DSrvz-nZ.js',
+    'centrochange_core/public/css/login_v1.css',
+    'centrochange_core/public/js/login_v1.js',
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
-                           'centrochange_core/security/install.py',
                            'centrochange_core/operations/workspace.py',
                            'centrochange_core/finance/reporting.py',
                            'centrochange_core/operations/client_landing.py',
                            'centrochange_core/finance/reporting_acceptance.py',
                            'centrochange_core/security/dev_acceptance.py',
-                           'centrochange_core/security/fixture_cleanup.py'}
+                           'centrochange_core/security/fixture_cleanup.py',
+                           'centrochange_core/security/install.py',
+                           'centrochange_core/operations/website_brand.py',
+                           'centrochange_core/templates/cc_web_base.html',
+                           'centrochange_core/translations/it.csv'}
 ENDPOINT_MODULES = ('catalog', 'scoped_api', 'operations.profiles',
                     'finance.payments', 'finance.documents')
 
@@ -116,6 +121,11 @@ def check_source(root, manifest):
     require('csrf-token' in html and 'premium/app.js' in html and
             all(item in js for item in ('Archivi', 'catalog.records', 'payments.records', 'profiles.patients')),
             'Production React/Frappe wiring missing')
+    login_base = (root / APP / 'centrochange_core/templates/cc_web_base.html').read_text()
+    login_brand = (root / APP / 'centrochange_core/operations/website_brand.py').read_text()
+    require('css/login_v1.css' in login_base and 'js/login_v1.js' in login_base and
+            'premium/logo.webp' in login_brand,
+            'Native Frappe Login candidate assets missing')
 
 
 def check_image(bench, manifest, built=False):

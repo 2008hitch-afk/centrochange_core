@@ -38,6 +38,8 @@ Sign Up,Registrazione
 Signup Disabled,Registrazione non disponibile
 Home,Pagina iniziale
 Invalid login credentials,Credenziali non valide
+"Invalid credentials, try again.","Credenziali non valide. Controlla email e password e riprova."
+Resend,Invia di nuovo
 Patient,Paziente
 Add Patient,Aggiungi paziente
 Patient Demographics,Dati del paziente

@@ -43,8 +43,8 @@ def context(values):
     if getattr(frappe.local,'path',None)=='login':
         values.title='Centro Change — Accesso'
         values.cc_login_ui=True
-        # Native login macro retains structure/logic; remove the upstream logo source too.
-        values.logo='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"/%3E'
+        # Native login macro retains structure/logic; use the original Centro Change mark.
+        values.logo='/assets/centrochange_core/premium/logo.webp'
 
 
 def client_language():
