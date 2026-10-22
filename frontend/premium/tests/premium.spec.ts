@@ -6,7 +6,7 @@ const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro
 const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
 
-async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true, appointmentState: Partial<typeof appointment> = {}, bootState: Partial<typeof boot> = {}, agendaRows: typeof appointment[] | null = null) {
+async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true, appointmentState: Partial<typeof appointment> = {}, bootState: Partial<typeof boot> = {}, agendaRows: typeof appointment[] | null = null, financeState: Partial<typeof financeBoot> = {}) {
   await page.route('**/api/method/**', async route => {
     const req = route.request()
     const method = new URL(req.url()).pathname.split('/api/method/')[1]
@@ -15,7 +15,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     let message: unknown = null
     let status = 200
     if (method.endsWith('operations.workspace.bootstrap')) message = { ...boot, ...bootState }
-    else if (method.endsWith('finance.reporting.bootstrap')) { if (financeAllowed) message = financeBoot; else status = 403 }
+    else if (method.endsWith('finance.reporting.bootstrap')) { if (financeAllowed) message = { ...financeBoot, ...financeState }; else status = 403 }
     else if (method.endsWith('operations.workspace.agenda')) message = { appointments: agendaRows ?? [{ ...appointment, ...appointmentState }], truncated: false }
     else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
@@ -191,7 +191,7 @@ test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo'
 test('UAT alias demo: record esatti in Agenda, ricerca e schede, ID API invariati', async ({ page }, testInfo) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   const demo_labels = { 'PAT-001': 'Paziente 1', 'Paziente Sintetico': 'Paziente 1', 'PR-001': 'Professionista 1', 'Dott.ssa Rossi': 'Professionista 1', 'SERV-001': 'Servizio 1', 'Prima visita': 'Servizio 1', 'CENTRO-A': 'Centro A' }
-  await mockApi(page, writes, false, {}, { demo_labels } as Partial<typeof boot>)
+  await mockApi(page, writes, true, {}, { demo_labels } as Partial<typeof boot>, null, { demo_labels: { 'PAT-001': 'Cliente 1', 'Paziente Sintetico': 'Cliente 1' } } as Partial<typeof financeBoot>)
   await page.goto('./')
   await expect(page.locator('.week-event').first()).toContainText('Paziente 1')
   await expect(page.locator('.week-professional')).toContainText('Professionista 1')
@@ -366,7 +366,7 @@ test('navigazione finanza, pazienti e report usa endpoint di dominio', async ({ 
 
 test('compensi: regola, cattura e confronto usano i contratti auditati', async ({ page }) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
-  await mockApi(page, writes)
+  await mockApi(page, writes, true, {}, {}, null, { demo_labels: { 'ITEM-001': 'Servizio 1', 'RULE-001': 'Regola 1', 'INV-001': 'Fattura professionista 1', 'EXPECT-001': 'Atteso 1' } } as Partial<typeof financeBoot>)
   await page.goto('./')
   await openSection(page, 'Finanza')
   await page.getByRole('tab', { name: 'Professionisti' }).click()

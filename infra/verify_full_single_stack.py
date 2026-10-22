@@ -33,7 +33,7 @@ PREMIUM_ADDED = {
     'centrochange_core/public/premium/app.css',
     'centrochange_core/public/premium/public.js',
     'centrochange_core/public/premium/logo.webp',
-    'centrochange_core/public/premium/style-DtRIwQ1r.js',
+    'centrochange_core/public/premium/style-DVdSvQJu.js',
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
                            'centrochange_core/operations/workspace.py',

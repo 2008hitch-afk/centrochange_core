@@ -3,9 +3,13 @@ import type { Boot, FinanceBoot } from './api'
 // Exact IDs and display strings come from the private, versioned UAT manifest.
 // This map is presentation-only: all API calls retain canonical identifiers.
 let labels: Record<string, string> = {}
+let operationalLabels: Record<string, string> = {}
+let financialLabels: Record<string, string> = {}
 
 export function configureDemoLabels(boot: Boot | null, financeBoot: FinanceBoot | null) {
-  labels = { ...(boot?.demo_labels ?? {}), ...(financeBoot?.demo_labels ?? {}) }
+  operationalLabels = boot?.demo_labels ?? {}
+  financialLabels = financeBoot?.demo_labels ?? {}
+  labels = { ...operationalLabels, ...financialLabels }
 }
 
 export function demoText(value: unknown): string {
@@ -13,9 +17,19 @@ export function demoText(value: unknown): string {
   return labels[original] ?? original
 }
 
-export function demoPreferred(identifier: unknown, fallback: unknown): string {
+// Patient and Customer may have the same Frappe name in synthetic fixtures.
+// Keep the two authorized projections separate to avoid showing a fiscal
+// Customer label in a clinical/operational Patient context.
+export function demoPatient(identifier: unknown, fallback: unknown): string {
   const id = String(identifier ?? '')
-  return labels[id] ?? demoText(fallback)
+  const display = String(fallback ?? '')
+  return operationalLabels[id] ?? operationalLabels[display] ?? (display || id)
+}
+
+export function demoCustomer(identifier: unknown, fallback: unknown): string {
+  const id = String(identifier ?? '')
+  const display = String(fallback ?? '')
+  return financialLabels[id] ?? financialLabels[display] ?? (display || id)
 }
 
 export function demoMatches(value: unknown, query: string): boolean {
