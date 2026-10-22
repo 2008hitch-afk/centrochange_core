@@ -94,6 +94,7 @@ test('UAT priority: live weekly grid, Professionals, report and manifest-owned d
     await expect(page.locator('tbody tr')).toHaveCount(1)
     await page.locator('tbody tr').first().click()
     await expect(page.getByRole('dialog')).toContainText('Professionista 1')
+    await expect(page.getByRole('dialog')).toContainText('Scheda professionista')
     await page.screenshot({ path: info.outputPath('uat-live-professionals.png'), fullPage: true })
     await page.goto('/premium#Pazienti')
     await expect(page.locator('tbody')).toContainText('Paziente 1')
