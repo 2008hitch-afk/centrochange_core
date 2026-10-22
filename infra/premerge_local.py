@@ -82,9 +82,17 @@ def main():
                             "command": argv, "exit_code": result.returncode}
                     if playwright:
                         try:
-                            stats = json.loads(result.stdout)["stats"]
+                            outcome = json.loads(result.stdout)
+                            stats = outcome["stats"]
                             item["tests"] = {key: stats.get(key, 0) for key in
                                              ("expected", "unexpected", "flaky", "skipped")}
+                            def failed_specs(suites):
+                                for suite in suites:
+                                    for spec in suite.get("specs", []):
+                                        if not spec.get("ok", False):
+                                            yield {"file": spec.get("file"), "title": spec.get("title")}
+                                    yield from failed_specs(suite.get("suites", []))
+                            item["failed_specs"] = list(failed_specs(outcome.get("suites", [])))
                         except (ValueError, KeyError):
                             item["tests"] = "NOT_VERIFIED"
                     elif label.startswith("Python unit"):

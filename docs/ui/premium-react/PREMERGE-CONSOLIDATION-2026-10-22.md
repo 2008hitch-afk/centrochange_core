@@ -6,6 +6,8 @@
 
 `.github/workflows/premerge.yml` runs only on same-repository PRs or manual dispatch; avoiding duplicate push and PR runs conserves the account's included minutes. It uses a read-only token, commit-pinned checkout/setup actions, no secrets, private fixture, DEV URL, Docker service or `pull_request_target`. The backend job verifies the complete source manifest, pinned image recipe, Python syntax and 44 offline regression tests. The frontend job uses the committed npm lockfile, typechecks, rebuilds, compares tracked assets to the manifest, and runs both Playwright suites against local Vite and **synthetic intercepted API responses** at 1440×900 and 390×844. These jobs cannot prove Frappe permissions, schema migration or restore. Actual run status is reported on the PR, not inferred from this file.
 
+The Owner has selected the local VPS pre-merge suite while GitHub Actions is unavailable. Run `python3 infra/premerge_local.py --ref <candidate-sha> --report /tmp/cc-premerge-<candidate-sha>.json` from a clean #150 worktree. The command creates a disposable detached Git worktree, installs only lockfile-pinned frontend packages there, runs the source manifest, Python regressions, React typecheck/build, asset parity and both synthetic Playwright suites, and writes a machine-readable report outside Git. It does not access Docker, a Frappe Site or the DEV. A local PASS is **not** GitHub CI PASS or live Frappe PASS. The existing workflow remains available but is not a consolidation dependency.
+
 ## Reviewed high-risk surfaces
 
 | Surface | Source / effect | Required integration gate |
@@ -22,7 +24,18 @@ No new DocType JSON or DocPerm JSON is added by #150 relative to #149, but the i
 
 The app tree at #146 HEAD `83f1cb17bb213b47c256781b346ee434c0f23a4b` is byte-identical to its earlier commit `1f88207c6a71c4bf0252b912fe83313337cab16f`; later #146 changes are documentation, browser probes, an installer and an infra test. #150 pins the entire backend app from `1f88207` plus an explicit allowlist of reviewed React/API changes and verifies every file hash. **This is source equivalence, not Git ancestry or approval of #146's historical installer.** Do not apply both installer paths to DEV or merge #146 blindly with #150; review its base chain and decide whether to integrate, supersede or retain its non-overlapping evidence before product merge. No duplicate DocType or alternate runtime is proposed.
 
-Read-only `git merge-tree --write-tree` between current #146 and #150 HEADs reports six textual/add-add conflicts: `finance/reporting.py`, `finance/reporting_acceptance.py`, `operations/client_landing.py`, `security/dev_acceptance.py`, `security/fixture_cleanup.py` and `infra/security_acceptance.py`. Thus #146 and #150 are **not** directly mergeable despite app snapshot parity. Resolve each against the approved `1f88207` snapshot plus reviewed #150 deltas in a later authorized integration branch; do not overwrite the scoped API/security code with the historical native-UI branch or silently drop #146 evidence. This checkpoint performs no merge or rebase.
+Read-only `git merge-tree --write-tree` between #146 `83f1cb17` and #150 reports six textual/add-add conflicts. Each #146 blob matches the approved `1f88207` backend baseline byte for byte; each #150 blob differs because of later reviewed changes. The proposed resolution for every conflict is the **#150 blob**, subject to final-tree tests. This preserves the baseline and the subsequent React/API/security changes; it does not merge or rebase either PR.
+
+| Conflicting path under `app/centrochange_core/centrochange_core/` unless stated | #146 = baseline `1f88207` blob | Proposed #150 blob |
+|---|---|---|
+| `finance/reporting.py` | `ec525765` | `86c2220d` |
+| `finance/reporting_acceptance.py` | `670ad6df` | `9080750e` |
+| `operations/client_landing.py` | `662f95ca` | `6ea164a9` |
+| `security/dev_acceptance.py` | `f6b18439` | `862c99e3` |
+| `security/fixture_cleanup.py` | `d16f0cec` | `72a81f3a` |
+| `infra/security_acceptance.py` | `b32c8213` | `371d9c2b` |
+
+The #146 historical installer and its two passing unit tests remain evidence, not a second runtime installation path. Before any later authorized merge, recheck these blob identities at the then-current HEADs and run the local full-source suite on the final candidate. Do not mechanically take the #146 side or discard its documentary evidence.
 
 ## Isolated migration rehearsal — prepared, not executed by this checkpoint
 
