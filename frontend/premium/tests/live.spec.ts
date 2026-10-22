@@ -100,8 +100,8 @@ test('UAT priority: live weekly grid, Professionals, report and manifest-owned d
   } finally { await context.close() }
 })
 
-test('UAT priority: secretariat professional report has no financial details', async ({ browser }) => {
-  const context = await roleContext(browser, 'secretariat')
+test('UAT priority: professional report has no financial details without Finance role', async ({ browser }) => {
+  const context = await roleContext(browser, 'professional_a')
   try {
     const page = await context.newPage()
     await page.goto('/premium#Report')
