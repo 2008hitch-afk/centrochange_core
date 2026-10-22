@@ -47,8 +47,11 @@ test('same Site shell, compiled assets and responsive archive navigation', async
     await expect(page.locator('main#main')).toBeFocused()
     await expect(page.locator('.breadcrumbs strong')).toHaveText('Agenda')
     await expect(page.locator('meta[name="csrf-token"]')).toHaveAttribute('content', /.+/)
+    if (info.project.name === 'mobile') {
+      await expect(page.locator('.sidebar')).toHaveAttribute('inert', '')
+      await page.getByRole('button', { name: 'Apri menu' }).click()
+    }
     await expect(page.locator('.sidebar nav').first().getByRole('button', { name: 'Agenda', exact: true })).toBeVisible()
-    if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Apri menu' }).click()
     await page.getByRole('button', { name: 'Archivi', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Archivi' })).toBeVisible()
     await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Articoli' }).click()
@@ -262,15 +265,15 @@ test('seven identities and Guest: scoped API, cross-center, native access', asyn
       if (role !== 'manager') denied(cross)
       const profile = await context.request.get(endpoint('operations.profiles.patients'), {
         params: { center: fixture.center_a, limit: 1 } })
-      if (role === 'manager' || role === 'secretariat' || role.startsWith('professional_'))
+      if (['manager', 'secretariat', 'professional_a', 'professional_c'].includes(role))
         expect(profile.ok(), `profiles ${role}`).toBeTruthy()
-      else {
+      else if (role === 'finance') {
         expect(profile.ok(), `profiles ${role}`).toBeTruthy()
         expect((await profile.json()).message.rows).toEqual([])
-      }
+      } else denied(profile)
       const finance = await context.request.get(endpoint('finance.payments.detail'), {
         params: { center: fixture.center_a, name: fixture.payment_a } })
-      if (['manager', 'secretariat', 'finance', 'accountant'].includes(role))
+      if (['manager', 'secretariat', 'finance'].includes(role))
         expect(finance.ok(), `payments ${role}`).toBeTruthy()
       else denied(finance)
     } finally { await context.close() }
