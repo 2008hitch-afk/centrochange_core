@@ -4,6 +4,7 @@ The private manifest is the sole ownership source. Missing or malformed manifest
 fail closed: no display aliases are returned and canonical records are unchanged.
 """
 import json
+from collections import Counter
 from pathlib import Path
 
 import frappe
@@ -97,7 +98,7 @@ def operational_aliases(center, patients, practitioners, services, packages, cen
     return result
 
 
-def finance_aliases(center, scopes, customers, suppliers, practitioners, items):
+def finance_aliases(center, scopes, customers, suppliers, practitioners, items, visible_patients=()):
     data = _manifest()
     if not data:
         return {}
@@ -111,6 +112,17 @@ def finance_aliases(center, scopes, customers, suppliers, practitioners, items):
     for row in customers:
         if row.name in customer_order:
             _put(result, row.name, f'Cliente {customer_order.index(row.name) + 1}')
+    # Finance's approved patient report may project Patient identities without
+    # granting Patient DocType read. Namespace those aliases: a Patient and its
+    # Customer can share a Frappe name, but must retain distinct display labels.
+    patient_names = {row['name']: row['label'] for row in visible_patients
+                     if row.get('name') in patient_order and isinstance(row.get('label'), str)}
+    display_counts = Counter(patient_names.values())
+    for name, display in patient_names.items():
+        label = f'Paziente {patient_order.index(name) + 1}'
+        result[f'Patient::{name}'] = label
+        if display and display_counts[display] == 1:
+            result[f'PatientDisplay::{display}'] = label
     practitioner_order = fixture['practitioners']
     supplier_order = [frappe.db.get_value('Healthcare Practitioner', practitioner, 'supplier') for practitioner in practitioner_order]
     for row in suppliers:

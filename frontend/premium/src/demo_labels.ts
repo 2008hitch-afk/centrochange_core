@@ -23,7 +23,8 @@ export function demoText(value: unknown): string {
 export function demoPatient(identifier: unknown, fallback: unknown): string {
   const id = String(identifier ?? '')
   const display = String(fallback ?? '')
-  return operationalLabels[id] ?? operationalLabels[display] ?? (display || id)
+  return operationalLabels[id] ?? operationalLabels[display] ??
+    financialLabels[`Patient::${id}`] ?? financialLabels[`PatientDisplay::${display}`] ?? (display || id)
 }
 
 export function demoCustomer(identifier: unknown, fallback: unknown): string {

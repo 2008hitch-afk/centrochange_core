@@ -118,7 +118,11 @@ def bootstrap(center=None):
     suppliers=masters('Supplier',['name','supplier_name','tax_id'])
     items=_bounded('Item',{'disabled':0,'is_stock_item':0},['name','item_name','is_purchase_item','is_sales_item'])
     from centrochange_core.uat.display import finance_aliases
-    demo_labels=finance_aliases(center,scopes,customers,suppliers,practitioners,items) if center else {}
+    visible_patients=[]
+    if center and frappe.conf.get('cc_synthetic_dev')==1 and frappe.conf.get('cc_uat_demo')==1:
+        from centrochange_core.finance.patient_reporting import _groups
+        visible_patients=[patient for group in _groups(center).values() for patient in group['patients']]
+    demo_labels=finance_aliases(center,scopes,customers,suppliers,practitioners,items,visible_patients) if center else {}
     return {'centers':scopes,'center':center,'can_write':allowed(write=True),'is_manager':is_manager(),
         'customers':customers,'suppliers':suppliers,
         'accounts':masters('Account',['name','root_type','account_type','is_group','disabled','company']),

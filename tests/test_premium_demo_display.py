@@ -90,8 +90,12 @@ class DemoDisplayTests(unittest.TestCase):
             [Record(name='CUS-A', customer_name='Cliente di prova')],
             [Record(name='SUP-A', supplier_name='Fornitore di prova')],
             [Record(name='PR-A', practitioner_name=TAG + ' Marco')],
-            [Record(name='ITEM-A', item_name='Visita di prova')])
+            [Record(name='ITEM-A', item_name='Visita di prova')],
+            [{'name': 'PAT-A', 'label': TAG + ' Alfa'}])
         self.assertEqual(finance['CUS-A'], 'Cliente 1')
+        self.assertEqual(finance['Patient::PAT-A'], 'Paziente 1')
+        self.assertEqual(finance['PatientDisplay::' + TAG + ' Alfa'], 'Paziente 1')
+        self.assertNotIn('PAT-A', finance)
         self.assertEqual(finance['PAY-A'], 'Pagamento 1')
         self.assertEqual(finance['INV-A'], 'Fattura paziente 1')
         self.assertNotIn('BANK-B', finance)
@@ -99,6 +103,7 @@ class DemoDisplayTests(unittest.TestCase):
         denied = self.display.finance_aliases('CENTER-A', [], [], [], [], [])
         self.assertNotIn('INV-A', denied)
         self.assertNotIn('PAY-A', denied)
+        self.assertNotIn('Patient::PAT-A', denied)
 
     def test_missing_manifest_or_gate_returns_no_aliases(self):
         path = Path(self.tmp.name) / 'private/uat/demo.json'

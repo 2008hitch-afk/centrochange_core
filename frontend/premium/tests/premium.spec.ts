@@ -6,7 +6,7 @@ const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro
 const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
 
-async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true, appointmentState: Partial<typeof appointment> = {}, bootState: Partial<typeof boot> = {}, agendaRows: typeof appointment[] | null = null, financeState: Partial<typeof financeBoot> = {}) {
+async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true, appointmentState: Partial<typeof appointment> = {}, bootState: Partial<typeof boot> = {}, agendaRows: typeof appointment[] | null = null, financeState: Partial<typeof financeBoot> = {}, opsAllowed = true) {
   await page.route('**/api/method/**', async route => {
     const req = route.request()
     const method = new URL(req.url()).pathname.split('/api/method/')[1]
@@ -14,7 +14,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     if (req.method() === 'POST') writes.push({ method, body, headers: req.headers() })
     let message: unknown = null
     let status = 200
-    if (method.endsWith('operations.workspace.bootstrap')) message = { ...boot, ...bootState }
+    if (method.endsWith('operations.workspace.bootstrap')) { if (opsAllowed) message = { ...boot, ...bootState }; else status = 403 }
     else if (method.endsWith('finance.reporting.bootstrap')) { if (financeAllowed) message = { ...financeBoot, ...financeState }; else status = 403 }
     else if (method.endsWith('operations.workspace.agenda')) message = { appointments: agendaRows ?? [{ ...appointment, ...appointmentState }], truncated: false }
     else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
@@ -223,6 +223,18 @@ test('UAT alias demo: fattura e soggetto leggibili in Finanza, valore non censit
   await expect(page.locator('.finance-panel tbody')).toContainText('Fattura paziente 1')
   await expect(page.locator('.finance-panel tbody')).toContainText('Cliente 1')
   await expect(page.locator('.finance-panel tbody')).toContainText('80,00')
+})
+
+test('UAT alias demo: Finanza sola distingue Patient e Customer con nome coincidente', async ({ page }) => {
+  const demo_labels = { 'CUS-001': 'Cliente 1', 'Paziente Sintetico': 'Cliente 1', 'Patient::PAT-001': 'Paziente 1', 'PatientDisplay::Paziente Sintetico': 'Paziente 1' }
+  await mockApi(page, [], true, {}, {}, null, { demo_labels } as Partial<typeof financeBoot>, false)
+  await page.goto('./')
+  await expect(page.getByRole('button', { name: 'Pazienti', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Report dettagliati' }).click()
+  const drawer = page.getByRole('dialog', { name: 'Report dettagliati' })
+  await expect(drawer.locator('tbody')).toContainText('Cliente 1')
+  await drawer.locator('tbody tr').first().click()
+  await expect(drawer.getByText('Paziente 1')).toBeVisible()
 })
 
 test('schermate principali renderizzate e fotografate', async ({ page }, testInfo) => {

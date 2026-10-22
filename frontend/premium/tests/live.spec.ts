@@ -115,6 +115,26 @@ test('UAT priority: professional report has no financial details without Finance
   } finally { await context.close() }
 })
 
+test('UAT priority: Finance-only demo Patient aliases follow the authorized report scope', async ({ browser }) => {
+  const context = await roleContext(browser, 'finance')
+  try {
+    const operational = await context.request.get(endpoint('operations.workspace.bootstrap'), { params: { center: fixture.center_a } })
+    denied(operational)
+    const response = await context.request.get(endpoint('finance.reporting.bootstrap'), { params: { center: fixture.center_a } })
+    expect(response.ok()).toBeTruthy()
+    const labels = (await response.json()).message.demo_labels as Record<string, string>
+    const report = await context.request.get(endpoint('finance.patient_reporting.patient_view'), { params: { center: fixture.center_a, start: '2026-09-01', end: '2026-10-22' } })
+    expect(report.ok()).toBeTruthy()
+    const patients = ((await report.json()).message.rows as { patients: { name: string; label: string }[] }[]).flatMap(group => group.patients)
+    const owned = patients.filter(patient => labels[`Patient::${patient.name}`])
+    expect(owned.length).toBeGreaterThan(0)
+    for (const patient of owned) {
+      expect(labels[`PatientDisplay::${patient.label}`]).toBe(labels[`Patient::${patient.name}`])
+      expect(labels[patient.name]).not.toBe(labels[`Patient::${patient.name}`])
+    }
+  } finally { await context.close() }
+})
+
 test('all eleven live archives render a list or a genuine empty state', async ({ browser }, info) => {
   const context = await roleContext(browser, 'manager')
   try {
