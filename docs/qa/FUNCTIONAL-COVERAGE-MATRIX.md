@@ -57,7 +57,7 @@
 | Ordine | Interfaccia / area | Traccia React o integrazione | Issue | Stato |
 |---:|---|---|---|---|
 | 01 | Login e autenticazione | Login nativo Frappe `/login`, sessione e redirect verso `/premium`; logout in `frontend/premium/src/main.tsx` | [#158](https://github.com/2008hitch-afk/centrochange_core/issues/158) | `ACTIVE / PARTIAL / DEV_TECHNICAL_PASS / OWNER_UAT_PASS_LIMITED / INTEGRATION_GATE` |
-| 02 | Shell, navigazione, centro attivo e ricerca | `main.tsx`; shell/sidebar/header e fallback per ruolo | Da creare dopo 01 | `QUEUED` |
+| 02 | Shell, navigazione, centro attivo e ricerca | `main.tsx`; shell/sidebar/header e fallback per ruolo | [#161](https://github.com/2008hitch-afk/centrochange_core/issues/161) | `QUEUED / NON AVVIATO` |
 | 03 | Agenda e prenotazioni | `views.tsx`; `operations.workspace.*`, `scheduling.booking.*` | Da creare | `QUEUED` |
 | 04 | Pazienti, storico, assegnazioni, note e pacchetti | `views.tsx`, `patient_assignments.tsx`, `patient_packages.tsx`, `note_history.tsx` | Da creare | `QUEUED` |
 | 05 | Professionisti e accessi per professionista | `views.tsx`, `professional_workflow.tsx` | Da creare | `QUEUED` |
