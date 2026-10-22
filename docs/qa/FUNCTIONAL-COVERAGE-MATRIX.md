@@ -1,7 +1,7 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
 **Stato:** `AUDIT-00_COMPLETE / BASELINE_OPERATIVA_APPROVATA / PR_159_DRAFT_UNMERGED` — 22/10/2026. L'Owner ha autorizzato l'avvio del ciclo per interfaccia; **non** ha approvato come PASS le singole funzionalità, il merge della PR o il passaggio in produzione.
-**Master:** [#156](https://github.com/2008hitch-afk/centrochange_core/issues/156) · **Inventario:** [#157](https://github.com/2008hitch-afk/centrochange_core/issues/157) · **Prima area:** [Login #158](https://github.com/2008hitch-afk/centrochange_core/issues/158).  
+**Master:** [#156](https://github.com/2008hitch-afk/centrochange_core/issues/156) · **Inventario:** [#157](https://github.com/2008hitch-afk/centrochange_core/issues/157) · **Prima area:** [Login #158](https://github.com/2008hitch-afk/centrochange_core/issues/158).
 **Regola:** questa matrice è un **indice verificabile di ciò che va controllato**, non un certificato di completezza, UAT o conformità. NESSUNA area è ancora `OWNER_DONE`.
 
 **Dettaglio per funzione:** [110 righe CSV](FUNCTIONAL-COVERAGE-DETAIL.csv), con fonte, decisione, perimetro, UI/API/backend separati, DocType, ruoli, dipendenze, prova, stato, issue, gap e approvazione Owner. [Inventario delle schermate, controlli e 11 archivi](PREMIUM-REACT-INTERFACE-INVENTORY.md). I 50 ID originari sono tutti presenti: `CC-CAP-006` è scomposta in prenotazione, spostamento/cancellazione e storico; 28 requisiti/limiti successivi `CC-EXT-*` coprono decisioni, UAT e vincoli che non erano nell'indice iniziale; 30 azioni `CC-ACT-*` scompongono processi composti. **110 righe ≠ 110 nuove funzionalità approvate**: alcune sono escluse, rinviate, gate o verifiche trasversali.
@@ -201,4 +201,3 @@ Il confronto con il modello dati esistente precede qualsiasi proposta futura: Pa
 - Alla fine di ogni sessione Codex aggiorna nel commento della issue attiva: commit/branch, risultato, test, evidenza, blocchi, prossimo passo concreto; il prossimo agente deve poter riprendere senza chat.
 - Le PR aperte (compresa #150) non vengono automaticamente fuse per accelerare l'audit. Le decisioni di merge, uso server, cambio schema/policy, dati reali, provider e produzione mantengono i propri gate.
 - Questo documento si aggiorna **insieme** alle prove dell'area, non prima di averle ottenute.
-
