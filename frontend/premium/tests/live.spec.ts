@@ -76,6 +76,13 @@ test('UAT priority: live weekly grid, Professionals, report and manifest-owned d
     })
     expect(Math.max(...alignment.widths) - Math.min(...alignment.widths)).toBeLessThanOrEqual(0.75)
     expect(Math.max(...alignment.drift)).toBeLessThanOrEqual(0.75)
+    const nameFit = await page.locator('.week-professional strong').first().evaluate(element => {
+      const style = getComputedStyle(element)
+      const context = document.createElement('canvas').getContext('2d')!
+      context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+      return { available: element.getBoundingClientRect().width, word: context.measureText('Professionista').width }
+    })
+    expect(nameFit.available).toBeGreaterThanOrEqual(nameFit.word)
     await page.screenshot({ path: info.outputPath('uat-live-week.png'), fullPage: true })
     const nav = page.locator('.sidebar nav').first()
     const labels = await nav.locator('.nav-item span:first-of-type').allTextContents()

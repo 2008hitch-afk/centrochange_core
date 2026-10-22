@@ -143,7 +143,7 @@ test('UAT Agenda: sette colonne uguali, professionisti per riga e prenotazione c
   tuesday.setUTCDate(tuesday.getUTCDate() + 1)
   const next = tuesday.toISOString().slice(0, 10)
   const second = { ...appointment, name: 'APP-002', practitioner: 'PR-002', practitioner_name: 'Dott. Bianchi', appointment_date: next }
-  await mockApi(page, [], true, {}, { practitioners: [...boot.practitioners, { name: 'PR-002', practitioner_name: 'Dott. Bianchi' }] }, [{ ...appointment, appointment_date: monday }, second])
+  await mockApi(page, [], true, {}, { practitioners: [...boot.practitioners, { name: 'PR-002', practitioner_name: 'Dott. Bianchi' }], demo_labels: { 'Dott.ssa Rossi': 'Professionista 1', 'Dott. Bianchi': 'Professionista 2' } } as Partial<typeof boot>, [{ ...appointment, appointment_date: monday }, second])
   await page.goto('./')
   await expect(page.locator('.segmented button.selected')).toHaveText('Settimana')
   await expect(page.locator('.week-day')).toHaveCount(7)
@@ -157,6 +157,14 @@ test('UAT Agenda: sette colonne uguali, professionisti per riga e prenotazione c
   })
   expect(Math.max(...geometry.widths) - Math.min(...geometry.widths)).toBeLessThanOrEqual(0.75)
   expect(Math.max(...geometry.delta)).toBeLessThanOrEqual(0.75)
+  const practitionerFit = await page.locator('.week-professional strong').first().evaluate(element => {
+    const style = getComputedStyle(element)
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')!
+    context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+    return { available: element.getBoundingClientRect().width, word: context.measureText('Professionista').width }
+  })
+  expect(practitionerFit.available).toBeGreaterThanOrEqual(practitionerFit.word)
   await page.screenshot({ path: `../../docs/evidence/issue-148/uat-agenda-week-${testInfo.project.name}.png`, fullPage: true })
   await page.locator(`.week-cell[data-date="${next}"][data-practitioner="PR-002"] .week-add`).click()
   await expect(page.getByRole('dialog', { name: 'Nuova prenotazione' }).getByLabel('Professionista')).toHaveValue('PR-002')
