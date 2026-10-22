@@ -6,7 +6,8 @@ import { Agenda, Patients, Professionals, ServiceCatalog, Availability, Reports,
 import { AuditLog } from './audit_log'
 import { MasterArchive, syntheticArchive } from './master_archive'
 import { ScopedArchive } from './scoped_archive'
-import { configureDemoLabels, demoText } from './demo_labels'
+import { configureDemoLabels } from './demo_labels'
+import { centerName } from './display_names'
 import { PatientQuickSearch } from './navigation_search'
 import './style.css'
 
@@ -118,7 +119,7 @@ function App() {
     </aside>
     {mobileOpen && <button className="scrim" aria-label="Chiudi menu" onClick={() => { setMobileOpen(false); requestAnimationFrame(() => menuToggle.current?.focus()) }} />}
     <div className="workspace" inert={mobileViewport && mobileOpen}>
-      <header className="topbar"><button ref={menuToggle} className="icon-button menu-toggle" aria-label="Apri menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu /></button><div className="breadcrumbs"><span>Area operativa</span><span className="breadcrumb-slash">/</span><strong>{currentView}</strong></div><div className="top-actions"><PatientQuickSearch key={center} boot={boot} center={center} onSelect={openPatient} onSearchAll={value => { setSelectedPatient(null); setQuery(value); switchView('Pazienti') }} />{centers.length > 0 && <label className="center-selector"><span className="sr-only">Centro</span><select value={center} onChange={e => changeCenter(e.target.value)}>{centers.map(c => <option key={c.name} value={c.name}>{demoText(c.branch || c.name)}</option>)}</select><ChevronDown /></label>}<div className="user-menu"><button className="top-avatar" aria-label="Menu utente" aria-expanded={userMenuOpen} onClick={() => setUserMenuOpen(open => !open)}>CC</button>{userMenuOpen && <div className="user-menu-panel"><strong>Centro Change</strong><span>Area riservata</span><button disabled={loggingOut} onClick={() => void logout()}><LogOut /> Esci</button></div>}</div></div></header>
+      <header className="topbar"><button ref={menuToggle} className="icon-button menu-toggle" aria-label="Apri menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu /></button><div className="breadcrumbs"><span>Area operativa</span><span className="breadcrumb-slash">/</span><strong>{currentView}</strong></div><div className="top-actions"><PatientQuickSearch key={center} boot={boot} center={center} onSelect={openPatient} onSearchAll={value => { setSelectedPatient(null); setQuery(value); switchView('Pazienti') }} />{centers.length > 0 && <label className="center-selector"><span className="sr-only">Centro</span><select value={center} onChange={e => changeCenter(e.target.value)}>{centers.map(c => <option key={c.name} value={c.name}>{centerName(c)}</option>)}</select><ChevronDown /></label>}<div className="user-menu"><button className="top-avatar" aria-label="Menu utente" aria-expanded={userMenuOpen} onClick={() => setUserMenuOpen(open => !open)}>CC</button>{userMenuOpen && <div className="user-menu-panel"><strong>Centro Change</strong><span>Area riservata</span><button disabled={loggingOut} onClick={() => void logout()}><LogOut /> Esci</button></div>}</div></div></header>
       <main id="main" className="content" tabIndex={-1}>
         {loading && <div className="loading-state" role="status"><div className="skeleton heading-skeleton" /><div className="skeleton wide-skeleton" /><div className="skeleton panel-skeleton" /></div>}
         {error && <div className="alert error" role="alert"><span>{error}</span><button onClick={() => setError('')} aria-label="Chiudi errore"><X /></button></div>}

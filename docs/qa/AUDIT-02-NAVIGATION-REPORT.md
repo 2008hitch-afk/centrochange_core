@@ -1,5 +1,7 @@
 # AUDIT-02 — Navigazione Premium React (#161)
 
+**Aggiornamento polish finale (22/10/2026):** diagnosi ID/etichette, correzioni e prove offline nella [nota dedicata](AUDIT-02-POLISH-REPORT.md). Il candidato DEV del Gate 2 e la fixture live non sono stati modificati da questo intervento. Le sei prove Owner restano PASS per quel candidato; il nuovo polish resta da collaudare sul DEV dopo gate specifico.
+
 **Stato:** `PARTIAL / OWNER_DEV_GATE`. Baseline `main` `335de5709e1c7b477be0b677f69913ecc2f6a9e6`; candidato nel branch `issue-161/premium-navigation`. La PR va revisionata, poi distribuita soltanto con gate Owner. Nessuna accettazione Owner o prova Frappe live del candidato è dichiarata.
 
 ## Baseline verificata

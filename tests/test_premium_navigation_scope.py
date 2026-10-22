@@ -24,7 +24,10 @@ class NavigationScopeTests(unittest.TestCase):
         self.actor_enabled = True
         self.patients = [Record(name='PAT-A', patient_name='Paziente A', uid='SYNTHETIC-A'),
                          Record(name='PAT-B', patient_name='Paziente B', uid='SYNTHETIC-B')]
+        self.practitioners = [Record(name='PRO-A', practitioner_name='Dott.ssa Rossi', user_id='user-a', status='Active'),
+                              Record(name='PRO-B', practitioner_name='Dott. Bianchi', user_id='user-b', status='Active')]
         self.assignments = {'CENTRO-A': ['PAT-A'], 'CENTRO-B': ['PAT-B']}
+        self.memberships = {'CENTRO-A': ['user-a'], 'CENTRO-B': ['user-b']}
         self.centers = [Record(name='CENTRO-A', branch='Centro A'), Record(name='CENTRO-B', branch='Centro B')]
         self.frappe = types.ModuleType('frappe')
         self.frappe.PermissionError = Denied
@@ -81,6 +84,13 @@ class NavigationScopeTests(unittest.TestCase):
     def current_rows(self, doctype, filters=None, fields=None, pluck=None):
         if doctype == 'CC Patient Assignment':
             return self.assignments[filters['center']]
+        if doctype == 'CC Center Membership':
+            return self.memberships[filters['center']]
+        if doctype == 'Healthcare Practitioner':
+            return [row for row in self.practitioners
+                    if row.user_id in filters['user_id'][1]
+                    and row.status == filters['status']
+                    and (not filters.get('name') or row.name == filters['name'])]
         if doctype == 'Mode of Payment':
             return []
         return []
@@ -99,6 +109,18 @@ class NavigationScopeTests(unittest.TestCase):
     def test_manager_bootstrap_only_contains_selected_center_patients(self):
         self.assertEqual([row.name for row in self.workspace.bootstrap('CENTRO-A')['patients']], ['PAT-A'])
         self.assertEqual([row.name for row in self.workspace.bootstrap('CENTRO-B')['patients']], ['PAT-B'])
+
+    def test_bootstrap_labels_are_scoped_and_identifiers_remain_canonical(self):
+        first = self.workspace.bootstrap('CENTRO-A')
+        second = self.workspace.bootstrap('CENTRO-B')
+        self.assertEqual([(row.name, row.branch) for row in first['centers']],
+                         [('CENTRO-A', 'Centro A'), ('CENTRO-B', 'Centro B')])
+        self.assertEqual([(row.name, row.practitioner_name) for row in first['practitioners']],
+                         [('PRO-A', 'Dott.ssa Rossi')])
+        self.assertEqual([(row.name, row.practitioner_name) for row in second['practitioners']],
+                         [('PRO-B', 'Dott. Bianchi')])
+        self.assertNotIn('PAT-B', [row.name for row in first['patients']])
+        self.assertNotIn('PAT-A', [row.name for row in second['patients']])
 
     def test_manager_search_only_contains_selected_center_patients(self):
         self.assertEqual([row.name for row in self.workspace.patient_search('CENTRO-A')['patients']], ['PAT-A'])

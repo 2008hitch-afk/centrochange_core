@@ -6,6 +6,83 @@ const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro
 const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
 
+test('AUDIT-02 polish: nomi disponibili, fallback trasparenti e ricerca A/B senza cambiare ID', async ({ page }, info) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', error => pageErrors.push(error.message))
+  const centers = [
+    { name: 'CC-HTTP-UAT0000001 A', branch: 'CC-HTTP-UAT0000001 A' },
+    { name: 'CC-HTTP-G2NAV161AA B', branch: 'CC-HTTP-G2NAV161AA B' }
+  ]
+  const patientA = { name: 'CC-HTTP-UAT0000001 PA', patient_name: 'Paziente di prova A' }
+  const patientB = { name: 'CC-HTTP-G2NAV161AA PB', patient_name: 'CC-HTTP-G2NAV161AA B' }
+  const professionalA = { name: 'CC-HTTP-UAT0000001 PR', practitioner_name: 'Dott.ssa Maria Rossi' }
+  const professionalB = { name: 'CC-HTTP-G2NAV161AA PR', practitioner_name: 'CC-HTTP-G2NAV161AA b' }
+  const professionalC = { name: 'CC-HTTP-G2NAV161AA PC', practitioner_name: 'CC-HTTP-G2NAV161AA c' }
+  const sessionA = { ...appointment, name: 'CC-HTTP-UAT0000001 APP', patient: patientA.name,
+    patient_name: patientA.patient_name, practitioner: professionalA.name, practitioner_name: professionalA.practitioner_name,
+    cc_center: centers[0].name, cc_service_label: 'CC-HTTP-UAT0000001 Visita' }
+  await mockApi(page, [], false)
+  await page.route('**/api/method/centrochange_core.operations.workspace.*', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    const center = url.searchParams.get('center') || centers[0].name
+    const inB = center === centers[1].name
+    let message: unknown
+    if (url.pathname.endsWith('workspace.bootstrap')) message = {
+      ...boot, center, centers, patients: [inB ? patientB : patientA],
+      practitioners: inB ? [professionalB, professionalC] : [professionalA],
+      demo_labels: inB ? {} : { [centers[0].name]: 'Centro A', [sessionA.cc_service_label]: 'Servizio 1' }
+    }
+    else if (url.pathname.endsWith('workspace.agenda')) message = { appointments: inB ? [] : [sessionA], truncated: false }
+    else if (url.pathname.endsWith('workspace.patient_search')) message = {
+      patients: [inB ? patientB : patientA], truncated: false
+    }
+    else if (url.pathname.endsWith('workspace.patient_history')) message = {
+      appointments: inB ? [] : [sessionA], packages: [], private_notes: [], settlements: [],
+      organizational_notes: inB ? [] : [{ name: 'NOTE-A', content: 'Riferimento CC-HTTP-UAT0000001 A',
+        creation: today + ' 11:00:00', authored_by: 'cc-uat@example.invalid', corrects: null }]
+    }
+    else return route.fallback()
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message }) })
+  })
+  await page.goto('./')
+  await expect(page).toHaveTitle(/Centro Change/)
+  const selector = page.locator('.center-selector select')
+  await expect(selector.locator('option').first()).toHaveText('Centro A')
+  await expect(selector.locator('option').last()).toHaveText('Centro di prova B')
+  await expect(page.locator('.week-professional strong')).toHaveText('Dott.ssa Maria Rossi')
+  await expect(page.locator('.week-row')).toHaveAttribute('data-practitioner', professionalA.name)
+  await page.screenshot({ path: info.outputPath('polish-agenda-a.png'), fullPage: true })
+
+  if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente di prova A')
+  await page.getByRole('option', { name: 'Paziente di prova A' }).click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer).toContainText('Paziente di prova A')
+  await expect(drawer.getByText('Servizio 1')).toBeVisible()
+  await expect(drawer).toContainText('Da chiudere')
+  await expect(drawer).not.toContainText('Pending')
+  await expect(drawer.getByText('Codice demo:')).toHaveCount(0)
+  // This is literal test note content, not a presentation mapping to rewrite.
+  await expect(drawer).toContainText('Riferimento CC-HTTP-UAT0000001 A')
+  await page.screenshot({ path: info.outputPath('polish-patient-a.png'), fullPage: true })
+  await drawer.getByRole('button', { name: 'Chiudi' }).click()
+
+  await selector.selectOption(centers[1].name)
+  await expect(selector).toHaveValue(centers[1].name)
+  await openSection(page, 'Agenda')
+  await expect(page.locator('.week-professional strong')).toHaveText(['Professionista di prova B', 'Professionista di prova C'])
+  await expect(page.locator('.week-row')).toHaveCount(2)
+  await expect(page.locator('.week-row').first()).toHaveAttribute('data-practitioner', professionalB.name)
+  await page.screenshot({ path: info.outputPath('polish-agenda-b.png'), fullPage: true })
+  await openSection(page, 'Pazienti')
+  await expect(page.locator('tbody')).toContainText('Paziente di prova B')
+  await expect(page.locator('tbody')).not.toContainText('Paziente di prova A')
+  await page.screenshot({ path: info.outputPath('polish-center-b.png'), fullPage: true })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+  expect(pageErrors).toEqual([])
+})
+
 async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true, appointmentState: Partial<typeof appointment> = {}, bootState: Partial<typeof boot> = {}, agendaRows: typeof appointment[] | null = null, financeState: Partial<typeof financeBoot> = {}, opsAllowed = true) {
   await page.route('**/api/method/**', async route => {
     const req = route.request()
