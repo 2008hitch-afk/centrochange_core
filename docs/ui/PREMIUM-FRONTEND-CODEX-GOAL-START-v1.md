@@ -1,6 +1,6 @@
 # Codex — avvio singolo Premium Frontend Goal (autorizzato Owner)
 
-**NON avviato da ChatGPT.** Da inviare nella sessione Codex sul progetto dopo aver verificato `codex --version`, disponibilità di `/goal` e checkout sicuro del ramo/PR che contiene il mandato. L'Owner ha APPROVATO il perimetro isolato con [HC-0005 DECISION-061](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-061-authorize-premium-react-frontend-macro-goal.md).
+**Documento storico di avvio (21/10/2026), non riutilizzare come mandato corrente.** Il macro-goal #148 è già stato eseguito nella PR #150 e sono intervenute DECISION-062–066. Il testo seguente conserva il prompt originario della [DECISION-061](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-061-authorize-premium-react-frontend-macro-goal.md); per nuovi interventi consultare #148, #156 e le decisioni approvate applicabili. Non creare un secondo goal né dedurre un'autorizzazione runtime da questo prompt.
 
 ## Preflight CLI
 

@@ -1,12 +1,14 @@
 # Centro Change — Mandato operativo Premium React Frontend (macro-goal #148)
 
-**Versione:** 1.0 — 21/10/2026  
-**Stato:** OWNER AUTHORIZED, EXECUTION NOT YET STARTED  
-**Cliente:** HC-0005 / CASE-001 / IMPLEMENTATION-001 / ITERATIVE_BUILD_INTEGRATION  
-**Goal:** `CENTROCHANGE-PREMIUM-FRONTEND-REBUILD` — [issue #148](https://github.com/2008hitch-afk/centrochange_core/issues/148)  
-**Autorità:** [HC-0005 DECISION-061](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-061-authorize-premium-react-frontend-macro-goal.md), approvazione Owner 21/10/2026.  
-**Architettura:** [HC-0005 DECISION-060](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-060-premium-react-frontend-architecture.md).  
+**Versione:** 1.0 — 21/10/2026
+**Stato storico al 21/10/2026:** OWNER AUTHORIZED, EXECUTION NOT YET STARTED
+**Cliente:** HC-0005 / CASE-001 / IMPLEMENTATION-001 / ITERATIVE_BUILD_INTEGRATION
+**Goal:** `CENTROCHANGE-PREMIUM-FRONTEND-REBUILD` — [issue #148](https://github.com/2008hitch-afk/centrochange_core/issues/148)
+**Autorità:** [HC-0005 DECISION-061](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-061-authorize-premium-react-frontend-macro-goal.md), approvazione Owner 21/10/2026.
+**Architettura:** [HC-0005 DECISION-060](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-060-premium-react-frontend-architecture.md).
 **Natura:** work package frontend aggregato nel perimetro funzionale MVP approvato, **NON GOAL-03**.
+
+> Aggiornamento 22/10/2026: questo è il mandato iniziale della DECISION-061, conservato per tracciabilità. Le successive DECISION-062–066 e i report di #148/PR #150 documentano single-stack, API, tentativi DEV e correzioni; per autorizzazioni operative usare il mandato corrente dell'issue. Il consolidamento #156 non autorizza nuovi deploy, migrate o merge.
 
 ## 1. Risultato
 

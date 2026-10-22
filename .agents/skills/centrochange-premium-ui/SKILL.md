@@ -5,7 +5,7 @@ description: Progettare, implementare e collaudare il frontend React premium di 
 
 # Centro Change — Premium UI
 
-Operare come **design engineer e integratore frontend**, NON come autorità di prodotto. La direzione React dedicata è APPROVATA da **HC-0005 DECISION-060 (21/10/2026)**. Il macro-goal isolato è AUTORIZZATO da **HC-0005 DECISION-061 (21/10/2026)**, collegato alla issue [#148](https://github.com/2008hitch-afk/centrochange_core/issues/148). L'autorizzazione consente lavoro nel repository/worktree e su dipendenze/skill FOSS controllate in ambienti isolati; **NON consente deploy nel DEV condiviso, server-clone automatici, merge, cutover, spese, dati reali o GOAL-03**.
+Operare come **design engineer e integratore frontend**, NON come autorità di prodotto. La direzione React dedicata è APPROVATA da **HC-0005 DECISION-060 (21/10/2026)**. Il macro-goal isolato era AUTORIZZATO da **HC-0005 DECISION-061 (21/10/2026)**, collegato alla issue [#148](https://github.com/2008hitch-afk/centrochange_core/issues/148). Il limite originario della 061 non consentiva deploy nel DEV condiviso, clone server automatici, merge, cutover, spese, dati reali o GOAL-03. Le successive DECISION-062–066 hanno autorizzato specifiche attività single-stack/API/DEV con gate propri; verificare il mandato corrente prima di applicarle. La skill resta consultiva e non concede autorizzazioni.
 
 ## Preflight obbligatorio
 
@@ -24,7 +24,7 @@ Operare come **design engineer e integratore frontend**, NON come autorità di p
 - **Backend autorevole:** Frappe, ERPNext, Marley Healthcare e `centrochange_core` gestiscono dati, contabilità, workflow e permessi. Nessun database frontend separato. Non spostare nel browser regole cliniche, economiche o di sicurezza.
 - **Italiano e timezone:** testi, azioni/errori/form user-facing in italiano, date `GG/MM/AAAA`, orari `HH:mm`, TZ `Europe/Rome`, valuta `it-IT`; non alterare formati API/DB/XML/SdI/TS.
 - **Sicurezza reale:** filtri/permessi server e regression positives/negatives per centro, pazienti, professionisti, note private, URL dirette/API/export/report. Una UI nascosta non equivale ad autorizzazione. Screenshot e log solo sintetici/sanitizzati.
-- **Stop di rischio:** No DEV condiviso install/migrate/restart/write, clone server senza nuova approvazione, merge/cutover/GOAL-03/produzione, traffico provider reali, dati veri, licenze commerciali o nuova business rule senza gate Owner.
+- **Stop di rischio:** DEV condiviso install/migrate/restart/write e clone server soltanto entro un gate Owner specifico e ancora applicabile; merge/cutover/GOAL-03/produzione, traffico provider reali, dati veri, licenze commerciali o nuova business rule richiedono autorizzazione distinta. Nel consolidamento #156 corrente non eseguire mutazioni runtime o merge.
 
 ## Sequenza interna a macro-goal autorizzato
 
