@@ -1,0 +1,75 @@
+name: Offline premerge
+
+on:
+  pull_request:
+    branches:
+      - main
+      - docs/premium-react-macrogoal-148-20261021
+      - issue-148/premium-react-frontend
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-premerge-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-offline:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+      - name: Verify full source and pinned image recipe
+        run: python3 infra/verify_full_single_stack.py --source
+      - name: Offline Python regressions (fake Frappe and temporary fixtures)
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: Python syntax
+        run: python3 -c "import ast,pathlib; [ast.parse(p.read_text()) for p in pathlib.Path('app/centrochange_core').rglob('*.py')]"
+
+  frontend-synthetic:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: frontend/premium
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.22.1'
+          cache: npm
+          cache-dependency-path: frontend/premium/package-lock.json
+      - name: Install exact lockfile dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build React assets
+        run: npm run build
+      - name: Verify generated assets match committed manifest
+        working-directory: .
+        run: |
+          git diff --exit-code -- app/centrochange_core/centrochange_core/public/premium
+          python3 infra/verify_full_single_stack.py --source
+      - name: Install pinned Playwright Chromium on ephemeral runner
+        run: npx playwright install --with-deps chromium
+      - name: Browser regressions with synthetic API fixtures only
+        env:
+          CI: '1'
+        run: |
+          npx playwright test --config=playwright.config.ts --workers=2
+          npx playwright test --config=playwright.scoped.config.ts --workers=2

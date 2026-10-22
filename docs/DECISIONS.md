@@ -457,12 +457,21 @@ Confini: **nessun mandato esecutivo Codex, nuova installazione, modifica runtime
 
 ## TD-034 — Autorizzazione macro-goal React premium in ambiente isolato (HC-0005 DECISION-061)
 
-**Stato: AUTORIZZAZIONE OWNER APPROVATA 21/10/2026; ESECUZIONE NON ANCORA AVVIATA.**
+**Stato al 21/10/2026: AUTORIZZAZIONE OWNER APPROVATA; ESECUZIONE ALLORA NON ANCORA AVVIATA.**
 
 La [HC-0005 DECISION-061](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-061-authorize-premium-react-frontend-macro-goal.md) autorizza un **unico** macro-goal Codex `CENTROCHANGE-PREMIUM-FRONTEND-REBUILD`, tracciato nella [issue #148](https://github.com/2008hitch-afk/centrochange_core/issues/148), subordinato alla direzione architetturale HC-0005 DECISION-060.
 
 Mandato operativo: `docs/ui/PREMIUM-FRONTEND-MACRO-GOAL-v1.md`, skill repo-local `.agents/skills/centrochange-premium-ui/SKILL.md` e supply-chain guardrail `docs/ui/PREMIUM-FRONTEND-SKILLS-LICENSES-v1.md`, tutti in **PR documentale preparatoria non mergiata** sino a review. Codex, quando avviato dall'Owner, può lavorare in branch/worktree isolato, con FOSS controllata, test e PR DRAFT, senza micropassaggi ordinari.
 
-**NON AUTORIZZA** installazione/mutazione del DEV condiviso (terza installazione #139 esclusa), clone server o host mutate senza gate mirato, licenze a pagamento, merge di prodotto, cutover, modifica UI primaria live, GOAL-03, produzione, dati reali/provider reali o Owner acceptance. Il lavoro UI storico #139 va riutilizzato/tracciato e non riavviato come una seconda UI finale; #109/PR #112 rimangono sospesi. GOAL-02 non cambia stato e la discrepanza issue #23 `closed` vs manifest `AUTHORIZED_ACTIVE` rimane esplicita.
+**La sola DECISION-061 non autorizzava** installazione/mutazione del DEV condiviso (terza installazione #139 esclusa), clone server o host mutate senza gate mirato, licenze a pagamento, merge di prodotto, cutover, modifica UI primaria live, GOAL-03, produzione, dati reali/provider reali o Owner acceptance. Il lavoro UI storico #139 va riutilizzato/tracciato e non riavviato come una seconda UI finale; #109/PR #112 rimangono sospesi. GOAL-02 non cambia stato e la discrepanza issue #23 `closed` vs manifest `AUTHORIZED_ACTIVE` rimane esplicita.
 
+## TD-035 — Evoluzione autorizzazioni Premium React (HC-0005 DECISION-062–066)
 
+**Stato al 22/10/2026:** decisioni canoniche HITCH 062–066 APPROVATE; la cronologia TD-033/034 resta valida per il proprio momento e perimetro.
+
+- [DECISION-062](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-062-single-stack-react-consolidation.md): un solo stack DEV; nessun laboratorio permanente aggiuntivo.
+- [DECISION-063](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-063-authorize-scoped-react-api-implementation.md): API React/Frappe circoscritte; nessuna policy o regola business implicita.
+- DECISION-064 e 065: tentativi DEV condizionati da backup/restore e stop sicuro; consultare i report di #148/PR #150 per gli esiti reali, senza inferire `PASS` dalla sola approvazione.
+- DECISION-066: correzione, regressione e prosecuzione entro il perimetro approvato; non autorizza merge o bypass dei gate materiali.
+
+Il consolidamento GitHub #156 corrente è un gate di integrazione: nessun merge, deploy, migrate DEV, cambio schema/ruoli o attivazione della UI primaria è autorizzato da questo log. Le decisioni HITCH e il mandato dell'issue attiva prevalgono su questo riepilogo.

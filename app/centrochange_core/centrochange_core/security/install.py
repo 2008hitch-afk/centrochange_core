@@ -13,6 +13,26 @@ CLINICAL_FIELDS = (
 )
 
 
+def ensure_property_setter(doctype, fieldname, property_name, value, property_type):
+	"""Avoid replacing an unchanged setter during every migration.
+
+	Frappe's pinned make_property_setter inserts a new document even when the
+	value is unchanged, creating a Deleted Document and Comment each time.
+	"""
+	current = frappe.get_all(
+		"Property Setter",
+		filters={"doc_type": doctype, "field_name": fieldname,
+			"property": property_name, "doctype_or_field": "DocField"},
+		fields=["value", "property_type", "is_system_generated"],
+		limit_page_length=2,
+	)
+	if len(current) == 1 and (str(current[0].value or "") == str(value) and
+			current[0].property_type == property_type and current[0].is_system_generated):
+		return
+	make_property_setter(doctype, fieldname, property_name, value, property_type,
+		validate_fields_for_doctype=False)
+
+
 def ensure_roles():
 	for role in ("CC Manager", "CC Professional", "CC Secretariat", "CC Finance"):
 		if not frappe.db.exists("Role", role):
@@ -77,11 +97,11 @@ def configure():
 					"amend", "report", "export", "import", "share", "print", "email", "select")}, **rights}).insert(ignore_permissions=True)
 		frappe.clear_cache(doctype=doctype)
 	# Capture duration once in the booking service; native fetch otherwise refreshes it on moves.
-	make_property_setter("Patient Appointment", "duration", "fetch_from", "", "Data", validate_fields_for_doctype=False)
+	ensure_property_setter("Patient Appointment", "duration", "fetch_from", "", "Data")
 	# A shared patient identity must never serve as cross-center clinical/private storage.
 	# Contextual notes/history remain distinct guarded records in subsequent waves.
 	for field in CLINICAL_FIELDS:
-		make_property_setter("Patient", field, "permlevel", 2, "Int", validate_fields_for_doctype=False)
+		ensure_property_setter("Patient", field, "permlevel", 2, "Int")
 	# Native uniqueness semantics require a database boundary, not a pre-insert query.
 	frappe.db.add_unique("Healthcare Practitioner", ["user_id"], constraint_name="cc_primary_practitioner_user")
 	frappe.db.add_unique("CC Center Membership", ["user", "center"], constraint_name="cc_user_center_membership")
