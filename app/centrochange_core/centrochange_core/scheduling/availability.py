@@ -27,7 +27,7 @@ def require_practitioner(practitioner, center):
 
 @frappe.whitelist(methods=['POST'])
 @atomic
-def set_schedule(practitioner,center,time_slots,reason):
+def set_schedule(practitioner,center,time_slots,reason,expected_modified=None):
 	lock()
 	identity=require_practitioner(practitioner,center)
 	if isinstance(time_slots,str):
@@ -47,6 +47,8 @@ def set_schedule(practitioner,center,time_slots,reason):
 	name=frappe.db.get_value('Practitioner Schedule',{'cc_practitioner':practitioner,'cc_center':center},for_update=True)
 	doc=frappe.get_doc('Practitioner Schedule',name,for_update=True) if name else frappe.get_doc({'doctype':'Practitioner Schedule',
 		'schedule_name':'CC-'+frappe.generate_hash(length=16),'cc_practitioner':practitioner,'cc_center':center})
+	if expected_modified is not None and ((name and str(doc.modified)!=str(expected_modified)) or (not name and expected_modified!='')):
+		frappe.throw('L’orario è cambiato: ricarica la disponibilità prima di salvare.')
 	before=[{'day':row.day,'from_time':str(get_time(row.from_time)),'to_time':str(get_time(row.to_time))} for row in doc.time_slots]
 	if name and before==slots and not doc.disabled:
 		return {'name':name}

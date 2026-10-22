@@ -97,6 +97,11 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
     else if (method.endsWith('operations.workspace.patient_history')) message = { appointments: [{ ...appointment, ...appointmentState }], packages: [], organizational_notes: [{ name: 'NOTE-002', content: 'Nota sintetica rettificata', creation: today + ' 12:00:00', authored_by: 'direzione@example.invalid', corrects: 'NOTE-001' }, { name: 'NOTE-001', content: 'Nota sintetica', creation: today + ' 11:00:00', authored_by: 'direzione@example.invalid', corrects: null }], private_notes: [], settlements: [] }
+    else if (method.endsWith('operations.workspace.appointment_events')) message = [
+      { event_type: 'APPOINTMENT_BOOKED', actor: 'direzione@example.invalid', event_time: today + ' 08:00:00', reason: 'Prenotazione sintetica', before: {}, after: { appointment_date: today, appointment_time: '09:00:00' } },
+      { event_type: 'APPOINTMENT_RESCHEDULED', actor: 'direzione@example.invalid', event_time: today + ' 08:30:00', reason: 'Spostamento sintetico', before: { appointment_date: today, appointment_time: '09:00:00' }, after: { appointment_date: today, appointment_time: '10:00:00' } },
+      { event_type: 'SESSION_AUTO_LOCKED', actor: 'scheduler@example.invalid', event_time: today + ' 09:00:00', reason: 'Scadenza sintetica', before: { closure: 'Pending' }, after: { closure: 'Auto Locked' } }
+    ]
     else if (method.endsWith('operations.workspace.schedules')) message = [{ name: 'SCHED-001', practitioner: 'PR-001', time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '18:00:00' }], absences: [] }]
     else if (method.endsWith('operations.reporting.summary')) message = { currencies: { EUR: { sessions: 1, performed: 0, due: 1, due_snapshot_amount: 80 } }, truncated: false }
     else if (method.endsWith('finance.reporting.summary')) message = { totals: { revenue_net: 600, collected: 400, receivable_outstanding: 200, purchase_net: 250, payable_outstanding: 80, expected_compensation: 120, unresolved_expectations: 0, sessions: 4 }, sales_invoices: [], purchase_invoices: [], scope_note: 'Dati sintetici.' }
@@ -249,6 +254,86 @@ test('UAT Agenda: sette colonne uguali, professionisti per riga e prenotazione c
   await page.getByLabel('Professionista', { exact: true }).selectOption('PR-002')
   await expect(page.locator('.week-row')).toHaveCount(1)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+})
+
+test('AUDIT-03 storico seduta mostra evento, prima/dopo e motivo senza confondere le note', async ({ page }, info) => {
+  await mockApi(page)
+  await page.goto('./#Agenda')
+  await page.locator('.week-event').first().click()
+  const drawer = page.getByRole('dialog')
+  await drawer.getByRole('tab', { name: 'Storico' }).click()
+  await expect(drawer.getByText('Prenotazione spostata')).toBeVisible()
+  await expect(drawer.getByText('Seduta bloccata automaticamente')).toBeVisible()
+  await expect(drawer.getByText('Spostamento sintetico')).toBeVisible()
+  await expect(drawer.getByText('09:00 → 10:00')).toBeVisible()
+  await expect(drawer).toContainText(todayItalian)
+  await expect(drawer.getByText('Le versioni delle note sono nella scheda Note.')).toBeVisible()
+  await page.screenshot({ path: info.outputPath('agenda-storico.png'), fullPage: true })
+})
+
+test('AUDIT-03 blocchi settimanali seguono il tempo e conservano giorno e professionista', async ({ page }) => {
+  const anchor = new Date(`${today}T12:00:00Z`)
+  const monday = new Date(anchor.getTime() - ((anchor.getUTCDay() + 6) % 7) * 86_400_000).toISOString().slice(0, 10)
+  await mockApi(page, [], true, {}, {}, [
+    { ...appointment, appointment_date: monday, appointment_time: '09:00:00' },
+    { ...appointment, name: 'APP-002', appointment_date: monday, appointment_time: '12:00:00' }
+  ])
+  await page.goto('./#Agenda')
+  const cell = page.locator(`.week-cell[data-date="${monday}"][data-practitioner="PR-001"]`)
+  await expect(cell.locator('.week-event')).toHaveCount(2)
+  const positions = await cell.locator('.week-event').evaluateAll(elements => elements.map(element => ({
+    time: element.getAttribute('data-time'), top: element.getBoundingClientRect().top
+  })))
+  expect(positions.map(item => item.time)).toEqual(['09:00', '12:00'])
+  expect(positions[1].top - positions[0].top).toBeGreaterThanOrEqual(140)
+  expect(positions[1].top - positions[0].top).toBeLessThanOrEqual(148)
+  const labelAndAxis = await page.locator('.week-professional').first().evaluate(element => ({
+    labelBottom: element.querySelector('strong')!.getBoundingClientRect().bottom,
+    axisTop: element.querySelector('.week-hour-axis span')!.getBoundingClientRect().top
+  }))
+  expect(labelAndAxis.axisTop).toBeGreaterThan(labelAndAxis.labelBottom)
+})
+
+test('AUDIT-03 modifica un giorno senza cancellare le altre fasce e annulla assenza esatta', async ({ page }, info) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.route('**/api/method/centrochange_core.operations.workspace.schedules*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: [{
+      name: 'SCHED-001', modified: '2026-10-22 10:00:00', practitioner: 'PR-001', time_slots: [
+        { day: 'Monday', from_time: '09:00:00', to_time: '12:00:00' },
+        { day: 'Tuesday', from_time: '14:00:00', to_time: '18:00:00' }
+      ], absences: [{ name: 'ABS-001', start_date: today, end_date: today, start_time: '11:00:00', end_time: '12:00:00' }]
+    }] }) })
+  })
+  await page.goto('./#Disponibilit%C3%A0')
+  await expect(page.getByText('Martedì')).toBeVisible()
+  await page.screenshot({ path: info.outputPath('agenda-disponibilita.png'), fullPage: true })
+  await page.getByRole('button', { name: 'Modifica orario' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Dalle').fill('10:00')
+  await dialog.getByLabel(/^Alle/).fill('13:00')
+  await dialog.getByLabel('Motivo').fill('Orario di prova')
+  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeTruthy()
+  expect(writes.find(write => write.method.endsWith('availability.set_schedule'))?.body.time_slots).toEqual([
+    { day: 'Tuesday', from_time: '14:00:00', to_time: '18:00:00' },
+    { day: 'Monday', from_time: '10:00', to_time: '13:00' }
+  ])
+  expect(writes.find(write => write.method.endsWith('availability.set_schedule'))?.body.expected_modified).toBe('2026-10-22 10:00:00')
+  await page.getByRole('button', { name: 'Annulla assenza' }).click()
+  await dialog.getByLabel('Motivo').fill('Annullamento di prova')
+  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(write => write.method.endsWith('availability.cancel_absence'))).toBeTruthy()
+  expect(writes.find(write => write.method.endsWith('availability.cancel_absence'))?.body).toEqual({ availability: 'ABS-001', reason: 'Annullamento di prova' })
+})
+
+test('AUDIT-03 non offre spostamento della seduta storica rinviato da DECISION-059', async ({ page }) => {
+  const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+  await mockApi(page, [], true, { appointment_date: yesterday, cc_closure_state: 'Reopened' })
+  await page.goto('./#Agenda')
+  if (new Date(`${today}T12:00:00Z`).getUTCDay() === 1) await page.getByRole('button', { name: 'Periodo precedente' }).click()
+  await page.locator('.week-event').first().click()
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Sposta' })).toHaveCount(0)
 })
 
 test('UAT Professionisti: navigazione, ricerca e scheda autorizzata', async ({ page }, testInfo) => {

@@ -79,6 +79,7 @@ def appointment_events(appointment):
              'APPOINTMENT_RESCHEDULED':('appointment_date','appointment_time'),
              'SESSION_CANCELLED':('late','economic'),
              'SESSION_CLOSED':('performed','economic'),
+             'SESSION_AUTO_LOCKED':('closure',),
              'SESSION_REOPENED':('closure',),
              'ECONOMIC_WAIVER':('economic','late'),
              'OPERATIONAL_SETTLEMENT':('paid','method')}
@@ -149,11 +150,11 @@ def schedules(center):
     for name in names:
         doc=frappe.get_doc('Practitioner Schedule',name)
         doc.check_permission('read')
-        absences=frappe.get_list('Practitioner Availability',filters={'cc_center':center,'scope_type':'Healthcare Practitioner','scope':doc.cc_practitioner,'type':'Unavailable','docstatus':1},fields=['start_date','end_date','start_time','end_time','repeat'],page_length=100)
+        absences=frappe.get_list('Practitioner Availability',filters={'cc_center':center,'scope_type':'Healthcare Practitioner','scope':doc.cc_practitioner,'type':'Unavailable','docstatus':1},fields=['name','start_date','end_date','start_time','end_time','repeat'],page_length=100)
         for absence in absences:
             absence.start_time=str(get_time(absence.start_time))
             absence.end_time=str(get_time(absence.end_time))
-        result.append({'name':name,'practitioner':doc.cc_practitioner,'absences':absences,'time_slots':[{'day':row.day,'from_time':str(get_time(row.from_time)),'to_time':str(get_time(row.to_time))} for row in doc.time_slots]})
+        result.append({'name':name,'modified':str(doc.modified),'practitioner':doc.cc_practitioner,'absences':absences,'time_slots':[{'day':row.day,'from_time':str(get_time(row.from_time)),'to_time':str(get_time(row.to_time))} for row in doc.time_slots]})
     return result
 
 
