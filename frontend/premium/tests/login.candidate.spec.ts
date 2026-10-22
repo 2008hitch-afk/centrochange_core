@@ -1,4 +1,4 @@
-/** #158: real synthetic Frappe sessions, candidate assets served by Playwright only. No DEV install. */
+/** #158: synthetic Frappe sessions. CC_LOGIN_INSTALLED=YES tests assets served by DEV without interception. */
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import { readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -11,6 +11,7 @@ if (!privatePath || resolve(privatePath).startsWith(root + '/') || (statSync(pri
   throw new Error('Private synthetic login fixture with mode 0600 required outside Git')
 }
 const fixture = JSON.parse(readFileSync(privatePath, 'utf8')) as Credentials
+const installed = process.env.CC_LOGIN_INSTALLED === 'YES'
 const roles: Role[] = ['m', 's', 'a', 'b', 'c', 'f', 't']
 if (!/^CC-HTTP-[A-Za-z0-9]{10}$/.test(fixture.tag) || fixture.centers?.length !== 2 ||
     roles.some(role => !fixture.users?.[role]?.name.endsWith('.invalid') || !fixture.users[role].password)) {
@@ -21,6 +22,7 @@ const candidateAssets = new Set(['app.js', 'app.css'])
 const chunk = /style-[A-Za-z0-9_-]+\.js$/
 
 async function useCandidate(page: Page) {
+  if (installed) return
   await page.route('**/assets/centrochange_core/premium/*', route => {
     const name = new URL(route.request().url()).pathname.split('/').at(-1) ?? ''
     if (!candidateAssets.has(name) && !chunk.test(name)) return route.continue()
@@ -76,6 +78,9 @@ test('native login: Guest, invalid credentials, seven roles and direct protected
       const page = await context.newPage()
       await useCandidate(page)
       await login(page, role)
+      const session = await context.request.get('/api/method/frappe.auth.get_logged_user')
+      expect(session.ok()).toBe(true)
+      expect((await session.json()).message).toBe(fixture.users[role].name)
       const expected = role === 'f' || role === 't' ? 'Finanza' : 'Agenda'
       await expect(page.locator('.breadcrumbs strong')).toHaveText(expected)
       const csrf = await page.locator('meta[name="csrf-token"]').getAttribute('content')
@@ -96,6 +101,10 @@ test('native login: Guest, invalid credentials, seven roles and direct protected
         params: { center: fixture.centers[0], kind: 'Item', limit: 1 }
       })
       expect(catalog.ok()).toBe(role === 'm')
+      const otherCenter = await context.request.get('/api/method/centrochange_core.catalog.records', {
+        params: { center: fixture.centers[1], kind: 'Item', limit: 1 }
+      })
+      expect(otherCenter.ok()).toBe(role === 'm')
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     } finally { await context.close() }
   }
@@ -103,10 +112,23 @@ test('native login: Guest, invalid credentials, seven roles and direct protected
 
 test('native login presentation candidate: brand, Italian error, keyboard, responsive', async ({ page }, info) => {
   await page.goto('/login?redirect-to=/premium')
-  await page.addStyleTag({ path: resolve(publicRoot, 'css/login_v1.css') })
-  await page.evaluate(() => document.querySelectorAll<HTMLImageElement>('.page-card-head .app-logo')
-    .forEach(image => { image.src = '/assets/centrochange_core/premium/logo.webp' }))
-  await page.addScriptTag({ path: resolve(publicRoot, 'js/login_v1.js') })
+  if (installed) {
+    for (const [kind, name] of [['css', 'login_v1.css'], ['js', 'login_v1.js']] as const) {
+      const url = `/assets/centrochange_core/${kind}/${name}`
+      await expect(page.locator(kind === 'css' ? `link[href="${url}"]` : `script[src="${url}"]`)).toHaveCount(1)
+      const response = await page.request.get(url)
+      expect(response.ok()).toBe(true)
+      expect(await response.text()).toBe(readFileSync(resolve(publicRoot, kind, name), 'utf8'))
+    }
+    const app = await page.request.get('/assets/centrochange_core/premium/app.js')
+    expect(app.ok()).toBe(true)
+    expect(await app.text()).toBe(readFileSync(resolve(publicRoot, 'premium/app.js'), 'utf8'))
+  } else {
+    await page.addStyleTag({ path: resolve(publicRoot, 'css/login_v1.css') })
+    await page.evaluate(() => document.querySelectorAll<HTMLImageElement>('.page-card-head .app-logo')
+      .forEach(image => { image.src = '/assets/centrochange_core/premium/logo.webp' }))
+    await page.addScriptTag({ path: resolve(publicRoot, 'js/login_v1.js') })
+  }
   await expect(page.getByRole('heading', { name: 'Accedi', level: 1 })).toBeVisible()
   await expect(page.locator('.form-login .login-error-banner')).toBeHidden()
   await expect(page.locator('.page-card-head .app-logo').first()).toHaveAttribute('alt', 'Centro Change')
@@ -122,7 +144,7 @@ test('native login presentation candidate: brand, Italian error, keyboard, respo
   await expect(page.locator('.form-login .login-error-banner')).toContainText('Credenziali non valide')
   await expect(page.locator('.form-login .login-error-banner')).not.toContainText('Invalid credentials')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-  await page.screenshot({ path: info.outputPath(`login-candidate-${info.project.name}.png`), fullPage: true })
+  await page.screenshot({ path: info.outputPath(`login-${installed ? 'live' : 'candidate'}-${info.project.name}.png`), fullPage: true })
   await page.getByRole('link', { name: 'Password dimenticata?' }).click()
   await expect(page.getByRole('heading', { name: 'Password dimenticata?', level: 1 })).toBeVisible()
   await page.getByRole('link', { name: 'Torna all’accesso' }).click()
@@ -133,15 +155,23 @@ test('native login presentation candidate: brand, Italian error, keyboard, respo
 test('candidate logout failure does not falsely confirm exit; retry succeeds', async ({ browser }, info) => {
   const { context, page } = await newCandidateContext(browser, 'm', info.project.name === 'mobile')
   try {
-    let failed = false
-    await page.route('**/api/method/logout', route => {
-      if (!failed) { failed = true; return route.fulfill({ status: 503, contentType: 'application/json', body: '{"exc":"Synthetic failure"}' }) }
-      return route.continue()
-    })
+    let token = ''
+    if (installed) {
+      token = await page.locator('meta[name="csrf-token"]').getAttribute('content') ?? ''
+      expect(token).toBeTruthy()
+      await page.locator('meta[name="csrf-token"]').evaluate(meta => meta.setAttribute('content', 'cc158-invalid-csrf'))
+    } else {
+      let failed = false
+      await page.route('**/api/method/logout', route => {
+        if (!failed) { failed = true; return route.fulfill({ status: 503, contentType: 'application/json', body: '{"exc":"Synthetic failure"}' }) }
+        return route.continue()
+      })
+    }
     await menuAction(page, 'Esci')
     await expect(page.getByRole('alert')).toContainText('Uscita non riuscita. Riprova.')
     await expect(page).toHaveURL(/\/premium$/)
     expect((await context.request.get('/premium', { maxRedirects: 0 })).status()).toBe(200)
+    if (installed) await page.locator('meta[name="csrf-token"]').evaluate((meta, value) => meta.setAttribute('content', value), token)
     if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Esci' }).click()
     else await menuAction(page, 'Esci')
     await expect(page).toHaveURL(/\/login\?redirect-to=\/premium/)
@@ -164,5 +194,20 @@ test('candidate detects expired cookie on an existing React page', async ({ brow
     })
     await expect(page).toHaveURL(/\/login\?redirect-to=\/premium/)
     await expect(page.locator('#login_email')).toBeVisible()
+  } finally { await context.close() }
+})
+
+test('Frappe session persists across shared Premium navigation', async ({ browser }, info) => {
+  const { context, page } = await newCandidateContext(browser, 'm', info.project.name === 'mobile')
+  try {
+    const token = await page.locator('meta[name="csrf-token"]').getAttribute('content')
+    await menuAction(page, 'Pazienti')
+    await expect(page.locator('.breadcrumbs strong')).toHaveText('Pazienti')
+    await menuAction(page, 'Agenda')
+    await expect(page.locator('.breadcrumbs strong')).toHaveText('Agenda')
+    await expect(page.locator('meta[name="csrf-token"]')).toHaveAttribute('content', token ?? '')
+    const session = await context.request.get('/api/method/frappe.auth.get_logged_user')
+    expect(session.ok()).toBe(true)
+    expect((await session.json()).message).toBe(fixture.users.m.name)
   } finally { await context.close() }
 })
