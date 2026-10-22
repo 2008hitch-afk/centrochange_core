@@ -8,6 +8,17 @@ export type Boot = { center: string; centers: Center[]; patients: Patient[]; pra
 export type FinanceBoot = { center: string; centers: Center[]; can_write: boolean; is_manager: boolean; customers: Row[]; suppliers: Row[]; accounts: Row[]; practitioners: Practitioner[]; items: Row[]; assignees: string[]; simulation_only: boolean; fiscal_verified: boolean; demo_labels?: Record<string, string> }
 
 const prefix = 'centrochange_core.'
+async function sessionExpired() {
+  if (location.pathname !== '/premium') return false
+  try {
+    const response = await fetch('/api/method/frappe.auth.get_logged_user', {
+      credentials: 'same-origin', headers: { Accept: 'application/json' }
+    })
+    if (response.status === 401 || response.status === 403) return true
+    if (!response.ok) return false
+    return (await response.json()).message === 'Guest'
+  } catch { return false }
+}
 export async function call<T>(method: string, args: Row = {}, write = false): Promise<T> {
   const url = '/api/method/' + (method.startsWith('frappe.') || method === 'logout' ? method : prefix + method)
   const headers: Record<string, string> = { Accept: 'application/json' }
@@ -25,7 +36,13 @@ export async function call<T>(method: string, args: Row = {}, write = false): Pr
   catch { throw new Error('Connessione non disponibile. Riprova.') }
   const payload = await response.json().catch(() => ({}))
   if (!response.ok || payload.exc) {
-    if (response.status === 401 || response.status === 403) throw new Error('Accesso negato o sessione scaduta. Verifica i permessi.')
+    if (response.status === 401 || response.status === 403) {
+      if (await sessionExpired()) {
+        location.replace('/login?redirect-to=/premium')
+        throw new Error('Sessione scaduta. Accedi di nuovo.')
+      }
+      throw new Error('Accesso negato. Verifica i permessi.')
+    }
     let message = 'Operazione non riuscita. Verifica i dati e riprova.'
     try {
       const server = JSON.parse(payload._server_messages ?? '[]')

@@ -1,6 +1,6 @@
 {% extends "templates/base.html" %}
 {% block favicon %}{% endblock %}
 {% block navbar %}<nav class="container py-3" aria-label="Centro Change"><a href="/centrochange">Centro Change</a></nav>{% endblock %}
-{% block footer %}<footer class="container py-3"><span>Centro Change</span></footer>{% if cc_login_ui %}{% include "templates/cc_ui_assets.html" %}{% endif %}{% endblock %}
+{% block footer %}<footer class="container py-3"><span>Centro Change</span></footer>{% if cc_login_ui %}{% include "templates/cc_ui_assets.html" %}<link rel="stylesheet" href="/assets/centrochange_core/css/login_v1.css"><script type="module" src="/assets/centrochange_core/js/login_v1.js"></script>{% endif %}{% endblock %}
 
 {% block head_include %}{{ super() }}{% include "templates/cc_ui_assets.html" %}{% endblock %}
