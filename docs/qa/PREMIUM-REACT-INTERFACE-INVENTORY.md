@@ -1,5 +1,13 @@
 # Centro Change — inventario interfacce Premium React (#157)
 
+## Addendum AUDIT-02 — navigazione (#161, 22/10/2026)
+
+La baseline corrente è `main` a `335de5709e1c7b477be0b677f69913ecc2f6a9e6`, dopo l'integrazione di #149, #150, #159 e #160. Il candidato AUDIT-02 è nel branch `issue-161/premium-navigation`. Il DEV osservato in sola lettura usa ancora l'immagine `sha256:569909d92601328a4f2f9cdef356fff547d84b28bc986321ff4aea30d9bca063`, con label sorgente `01abc5cb72b092b8c1738f6e097814d50292f114`: non è evidenza live del candidato #161. La sezione sottostante è il checkpoint storico AUDIT-00 e mantiene i suoi SHA.
+
+La shell `frontend/premium/src/main.tsx` espone sidebar, header, breadcrumb, footer, selettore del centro, menu utente, logout Frappe, hash route e ingresso nella prima vista consentita. `frontend/premium/src/navigation_search.tsx` usa `operations.workspace.patient_search` per suggerimenti paziente limitati al centro selezionato; il record scelto apre la scheda esistente in `views.tsx`. Gli ID restano canonici nelle chiamate; gli alias sintetici sono solo presentazione. `operations.workspace.bootstrap` e `patient_search` ora limitano i pazienti tramite assegnazioni attive `CC Patient Assignment` anche per Manager, prima della paginazione; la ricerca rifiuta centri non operativi. `Branch`, `CC Center Membership`, `Patient`, `User` e sessione Frappe restano fonti autorevoli. Nessun DocType, DocPerm, ruolo o sistema di login è stato aggiunto.
+
+Il report per azione, prove e limiti è [AUDIT-02-NAVIGATION-REPORT.md](AUDIT-02-NAVIGATION-REPORT.md). Le prove di questo candidato sono **offline e sintetiche**; segregazione e routing reali su sette ruoli più Guest, centro A/B e asset distribuiti restano `NOT_TESTED` finché l'Owner non autorizza il gate DEV. AUDIT-01 Login resta separato.
+
 **Checkpoint documentale:** 22/10/2026. Sorgente esaminata: PR draft [#150](https://github.com/2008hitch-afk/centrochange_core/pull/150), `96cecfc746cacba42aa25fbea2170736f6217821`. Immagine DEV osservata in sola lettura: sorgente `749eef346e9d259ce59266a5455311b45d498a76`, immagine `sha256:54db4262375457bee60f497029f8cf05f38e99bfab6ec9caa6762078a5f74b6f`. `git diff 749eef3..96cecfc` contiene solo evidenze, report e `frontend/premium/tests/live.spec.ts`: nessuna differenza nel codice applicativo. Immagine e manifest vanno comunque riconfermati prima di ciascun audit funzionale futuro. Qui non sono stati eseguiti workflow autenticati né POST.
 
 ## Chiavi di lettura

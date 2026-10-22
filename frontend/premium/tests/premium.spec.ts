@@ -532,6 +532,147 @@ test('hash diretto non apre finanza senza ruolo; errore API visibile', async ({ 
   await expect(page.getByRole('heading', { name: 'Finanza' })).toHaveCount(0)
 })
 
+test('AUDIT-02 ricerca globale trova il paziente nel centro e apre la scheda', async ({ page }, testInfo) => {
+  await mockApi(page)
+  const requests: string[] = []
+  page.on('request', request => {
+    if (request.url().includes('operations.workspace.patient_search')) requests.push(request.url())
+  })
+  await page.goto('./')
+  if (testInfo.project.name === 'mobile') await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
+  await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toBeVisible()
+  await page.screenshot({ path: `test-results/audit-02-search-${testInfo.project.name}.png`, fullPage: true })
+  expect(requests.some(url => new URL(url).searchParams.get('center') === 'CENTRO-A')).toBeTruthy()
+  await page.getByRole('option', { name: 'Paziente Sintetico' }).click()
+  await expect(page.getByRole('heading', { name: 'Pazienti', exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Paziente Sintetico' })).toBeVisible()
+})
+
+test('AUDIT-02 hash sconosciuto e non autorizzato convergono su route lecita', async ({ page }, testInfo) => {
+  await mockApi(page, [], false)
+  await page.goto('./#Finanza')
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Agenda')
+  await expect.poll(() => decodeURIComponent(new URL(page.url()).hash.slice(1))).toBe('Agenda')
+  await page.evaluate(() => { location.hash = '%ZZ' })
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Agenda')
+  await expect.poll(() => decodeURIComponent(new URL(page.url()).hash.slice(1))).toBe('Agenda')
+  if (testInfo.project.name === 'mobile') await page.getByRole('button', { name: 'Apri menu' }).click()
+  await page.getByRole('button', { name: 'Pazienti', exact: true }).click()
+  await page.reload()
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Pazienti')
+  await page.goBack()
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Agenda')
+})
+
+test('AUDIT-02 menu e ricerca mobile restano usabili con tastiera', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile')
+  await mockApi(page)
+  await page.goto('./')
+  await page.getByRole('button', { name: 'Apri menu' }).click()
+  await expect(page.getByRole('complementary', { name: 'Navigazione principale' }).getByRole('button', { name: 'Chiudi menu' })).toBeFocused()
+  await expect.poll(() => page.locator('.sidebar').evaluate(element => Math.round(new DOMMatrixReadOnly(getComputedStyle(element).transform).m41))).toBe(0)
+  expect(await page.locator('.sidebar').evaluate(element => Number(getComputedStyle(element).zIndex))).toBeGreaterThan(
+    await page.locator('.topbar').evaluate(element => Number(getComputedStyle(element).zIndex)))
+  const closeIsOnTop = await page.getByRole('complementary', { name: 'Navigazione principale' }).getByRole('button', { name: 'Chiudi menu' }).evaluate(element => {
+    const rect = element.getBoundingClientRect()
+    return element.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2))
+  })
+  expect(closeIsOnTop).toBe(true)
+  await page.screenshot({ path: 'test-results/audit-02-mobile-menu.png', fullPage: true })
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: 'Apri menu' })).toBeFocused()
+  await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
+  await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toBeFocused()
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
+  await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toHaveCount(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+})
+
+test('AUDIT-02 sidebar mobile chiusa non cattura Tab', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile')
+  await mockApi(page)
+  await page.goto('./')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('link', { name: 'Vai al contenuto' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: 'Apri menu' })).toBeFocused()
+})
+
+test('AUDIT-02 cambio centro scarta risultati tardivi della ricerca precedente', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await mockApi(page, [], true, {}, { centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }] })
+  let started = false
+  await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', async route => {
+    const selected = new URL(route.request().url()).searchParams.get('center')
+    if (selected === 'CENTRO-A') { started = true; await new Promise(resolve => setTimeout(resolve, 600)) }
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { patients: selected === 'CENTRO-A' ? boot.patients : [], truncated: false } }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', async route => {
+    const selected = new URL(route.request().url()).searchParams.get('center')
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, center: selected || 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }], patients: selected === 'CENTRO-B' ? [] : boot.patients } }) })
+  })
+  await page.goto('./')
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
+  await expect.poll(() => started).toBe(true)
+  await page.getByRole('combobox', { name: 'Centro' }).selectOption('CENTRO-B')
+  await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toHaveValue('')
+  await page.waitForTimeout(700)
+  await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toHaveCount(0)
+})
+
+test('AUDIT-02 ricerca globale mostra errore ed esito vuoto senza dati di altri centri', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', async route => {
+    const query = new URL(route.request().url()).searchParams.get('query')
+    await route.fulfill(query === 'errore'
+      ? { status: 503, contentType: 'application/json', body: JSON.stringify({ exc: 'Unavailable' }) }
+      : { contentType: 'application/json', body: JSON.stringify({ message: { patients: [], truncated: false } }) })
+  })
+  await page.goto('./')
+  const search = page.getByRole('combobox', { name: 'Ricerca globale pazienti' })
+  await search.fill('errore')
+  await expect(page.getByRole('alert', { name: '' }).filter({ hasText: 'Ricerca non disponibile' })).toBeVisible()
+  await search.fill('nessuno')
+  await expect(page.getByText('Nessun paziente trovato nel centro.')).toBeVisible()
+})
+
+test('AUDIT-02 menu utente usa logout Frappe e footer coerente', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./')
+  await expect(page.locator('.app-footer')).toHaveText('Centro Change · Area riservata')
+  await page.getByRole('button', { name: 'Menu utente' }).click()
+  await page.getByRole('button', { name: 'Esci', exact: true }).last().click()
+  await expect(page).toHaveURL(/\/login\?redirect-to=\/premium/)
+  const logout = writes.find(write => write.method === 'logout')
+  expect(logout?.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
+})
+
+test('AUDIT-02 utente solo Finanza riceve landing e URL consentiti', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await mockApi(page, [], true, {}, {}, null, { can_write: false, is_manager: false }, false)
+  await page.goto('./#Agenda')
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Finanza')
+  await expect.poll(() => decodeURIComponent(new URL(page.url()).hash.slice(1))).toBe('Finanza')
+  await expect(page.getByRole('button', { name: 'Pazienti', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toBeDisabled()
+})
+
+test('AUDIT-02 ricerca globale segnala risultati troncati', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { patients: boot.patients, truncated: true } }) }))
+  await page.goto('./')
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
+  await expect(page.getByText('Mostrati i primi 50 risultati. Affina la ricerca.')).toBeVisible()
+})
+
 test('date umane e cambio ora Europe/Rome conservano giorno canonico', async ({ page }) => {
   await mockApi(page)
   await page.goto('./')
