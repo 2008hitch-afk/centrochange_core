@@ -35,7 +35,8 @@ async function login(page: Page, role: Role) {
   await page.locator('#login_email').fill(fixture.users[role].name)
   await page.locator('#login_password').fill(fixture.users[role].password)
   await page.locator('.form-login button[type=submit]').click()
-  await expect(page).toHaveURL(/\/premium$/)
+  const entry = role === 'f' || role === 't' ? 'Finanza' : 'Agenda'
+  await expect(page).toHaveURL(new RegExp(`/premium#${entry}$`))
   await expect(page.locator('main#main')).toBeVisible()
   await expect(page.locator('.loading-state')).toBeHidden()
   await expect(page.locator('.breadcrumbs strong')).toContainText(/Agenda|Finanza/)
@@ -169,7 +170,7 @@ test('candidate logout failure does not falsely confirm exit; retry succeeds', a
     }
     await menuAction(page, 'Esci')
     await expect(page.getByRole('alert')).toContainText('Uscita non riuscita. Riprova.')
-    await expect(page).toHaveURL(/\/premium$/)
+    await expect(page).toHaveURL(/\/premium#Agenda$/)
     expect((await context.request.get('/premium', { maxRedirects: 0 })).status()).toBe(200)
     if (installed) await page.locator('meta[name="csrf-token"]').evaluate((meta, value) => meta.setAttribute('content', value), token)
     if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Esci' }).click()

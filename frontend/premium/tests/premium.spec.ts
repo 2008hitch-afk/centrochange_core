@@ -6,6 +6,83 @@ const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro
 const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
 
+test('AUDIT-02 polish: nomi disponibili, fallback trasparenti e ricerca A/B senza cambiare ID', async ({ page }, info) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', error => pageErrors.push(error.message))
+  const centers = [
+    { name: 'CC-HTTP-UAT0000001 A', branch: 'CC-HTTP-UAT0000001 A' },
+    { name: 'CC-HTTP-G2NAV161AA B', branch: 'CC-HTTP-G2NAV161AA B' }
+  ]
+  const patientA = { name: 'CC-HTTP-UAT0000001 PA', patient_name: 'Paziente di prova A' }
+  const patientB = { name: 'CC-HTTP-G2NAV161AA PB', patient_name: 'CC-HTTP-G2NAV161AA B' }
+  const professionalA = { name: 'CC-HTTP-UAT0000001 PR', practitioner_name: 'Dott.ssa Maria Rossi' }
+  const professionalB = { name: 'CC-HTTP-G2NAV161AA PR', practitioner_name: 'CC-HTTP-G2NAV161AA b' }
+  const professionalC = { name: 'CC-HTTP-G2NAV161AA PC', practitioner_name: 'CC-HTTP-G2NAV161AA c' }
+  const sessionA = { ...appointment, name: 'CC-HTTP-UAT0000001 APP', patient: patientA.name,
+    patient_name: patientA.patient_name, practitioner: professionalA.name, practitioner_name: professionalA.practitioner_name,
+    cc_center: centers[0].name, cc_service_label: 'CC-HTTP-UAT0000001 Visita' }
+  await mockApi(page, [], false)
+  await page.route('**/api/method/centrochange_core.operations.workspace.*', async route => {
+    const request = route.request()
+    const url = new URL(request.url())
+    const center = url.searchParams.get('center') || centers[0].name
+    const inB = center === centers[1].name
+    let message: unknown
+    if (url.pathname.endsWith('workspace.bootstrap')) message = {
+      ...boot, center, centers, patients: [inB ? patientB : patientA],
+      practitioners: inB ? [professionalB, professionalC] : [professionalA],
+      demo_labels: inB ? {} : { [centers[0].name]: 'Centro A', [sessionA.cc_service_label]: 'Servizio 1' }
+    }
+    else if (url.pathname.endsWith('workspace.agenda')) message = { appointments: inB ? [] : [sessionA], truncated: false }
+    else if (url.pathname.endsWith('workspace.patient_search')) message = {
+      patients: [inB ? patientB : patientA], truncated: false
+    }
+    else if (url.pathname.endsWith('workspace.patient_history')) message = {
+      appointments: inB ? [] : [sessionA], packages: [], private_notes: [], settlements: [],
+      organizational_notes: inB ? [] : [{ name: 'NOTE-A', content: 'Riferimento CC-HTTP-UAT0000001 A',
+        creation: today + ' 11:00:00', authored_by: 'cc-uat@example.invalid', corrects: null }]
+    }
+    else return route.fallback()
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message }) })
+  })
+  await page.goto('./')
+  await expect(page).toHaveTitle(/Centro Change/)
+  const selector = page.locator('.center-selector select')
+  await expect(selector.locator('option').first()).toHaveText('Centro A')
+  await expect(selector.locator('option').last()).toHaveText('Centro di prova B')
+  await expect(page.locator('.week-professional strong')).toHaveText('Dott.ssa Maria Rossi')
+  await expect(page.locator('.week-row')).toHaveAttribute('data-practitioner', professionalA.name)
+  await page.screenshot({ path: info.outputPath('polish-agenda-a.png'), fullPage: true })
+
+  if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente di prova A')
+  await page.getByRole('option', { name: 'Paziente di prova A' }).click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer).toContainText('Paziente di prova A')
+  await expect(drawer.getByText('Servizio 1')).toBeVisible()
+  await expect(drawer).toContainText('Da chiudere')
+  await expect(drawer).not.toContainText('Pending')
+  await expect(drawer.getByText('Codice demo:')).toHaveCount(0)
+  // This is literal test note content, not a presentation mapping to rewrite.
+  await expect(drawer).toContainText('Riferimento CC-HTTP-UAT0000001 A')
+  await page.screenshot({ path: info.outputPath('polish-patient-a.png'), fullPage: true })
+  await drawer.getByRole('button', { name: 'Chiudi' }).click()
+
+  await selector.selectOption(centers[1].name)
+  await expect(selector).toHaveValue(centers[1].name)
+  await openSection(page, 'Agenda')
+  await expect(page.locator('.week-professional strong')).toHaveText(['Professionista di prova B', 'Professionista di prova C'])
+  await expect(page.locator('.week-row')).toHaveCount(2)
+  await expect(page.locator('.week-row').first()).toHaveAttribute('data-practitioner', professionalB.name)
+  await page.screenshot({ path: info.outputPath('polish-agenda-b.png'), fullPage: true })
+  await openSection(page, 'Pazienti')
+  await expect(page.locator('tbody')).toContainText('Paziente di prova B')
+  await expect(page.locator('tbody')).not.toContainText('Paziente di prova A')
+  await page.screenshot({ path: info.outputPath('polish-center-b.png'), fullPage: true })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+  expect(pageErrors).toEqual([])
+})
+
 async function mockApi(page: Page, writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [], financeAllowed = true, appointmentState: Partial<typeof appointment> = {}, bootState: Partial<typeof boot> = {}, agendaRows: typeof appointment[] | null = null, financeState: Partial<typeof financeBoot> = {}, opsAllowed = true) {
   await page.route('**/api/method/**', async route => {
     const req = route.request()
@@ -530,6 +607,147 @@ test('hash diretto non apre finanza senza ruolo; errore API visibile', async ({ 
   await page.goto('./#Finanza')
   await expect(page.getByRole('heading', { name: 'Agenda' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Finanza' })).toHaveCount(0)
+})
+
+test('AUDIT-02 ricerca globale trova il paziente nel centro e apre la scheda', async ({ page }, testInfo) => {
+  await mockApi(page)
+  const requests: string[] = []
+  page.on('request', request => {
+    if (request.url().includes('operations.workspace.patient_search')) requests.push(request.url())
+  })
+  await page.goto('./')
+  if (testInfo.project.name === 'mobile') await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
+  await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toBeVisible()
+  await page.screenshot({ path: `test-results/audit-02-search-${testInfo.project.name}.png`, fullPage: true })
+  expect(requests.some(url => new URL(url).searchParams.get('center') === 'CENTRO-A')).toBeTruthy()
+  await page.getByRole('option', { name: 'Paziente Sintetico' }).click()
+  await expect(page.getByRole('heading', { name: 'Pazienti', exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Paziente Sintetico' })).toBeVisible()
+})
+
+test('AUDIT-02 hash sconosciuto e non autorizzato convergono su route lecita', async ({ page }, testInfo) => {
+  await mockApi(page, [], false)
+  await page.goto('./#Finanza')
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Agenda')
+  await expect.poll(() => decodeURIComponent(new URL(page.url()).hash.slice(1))).toBe('Agenda')
+  await page.evaluate(() => { location.hash = '%ZZ' })
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Agenda')
+  await expect.poll(() => decodeURIComponent(new URL(page.url()).hash.slice(1))).toBe('Agenda')
+  if (testInfo.project.name === 'mobile') await page.getByRole('button', { name: 'Apri menu' }).click()
+  await page.getByRole('button', { name: 'Pazienti', exact: true }).click()
+  await page.reload()
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Pazienti')
+  await page.goBack()
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Agenda')
+})
+
+test('AUDIT-02 menu e ricerca mobile restano usabili con tastiera', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile')
+  await mockApi(page)
+  await page.goto('./')
+  await page.getByRole('button', { name: 'Apri menu' }).click()
+  await expect(page.getByRole('complementary', { name: 'Navigazione principale' }).getByRole('button', { name: 'Chiudi menu' })).toBeFocused()
+  await expect.poll(() => page.locator('.sidebar').evaluate(element => Math.round(new DOMMatrixReadOnly(getComputedStyle(element).transform).m41))).toBe(0)
+  expect(await page.locator('.sidebar').evaluate(element => Number(getComputedStyle(element).zIndex))).toBeGreaterThan(
+    await page.locator('.topbar').evaluate(element => Number(getComputedStyle(element).zIndex)))
+  const closeIsOnTop = await page.getByRole('complementary', { name: 'Navigazione principale' }).getByRole('button', { name: 'Chiudi menu' }).evaluate(element => {
+    const rect = element.getBoundingClientRect()
+    return element.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2))
+  })
+  expect(closeIsOnTop).toBe(true)
+  await page.screenshot({ path: 'test-results/audit-02-mobile-menu.png', fullPage: true })
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: 'Apri menu' })).toBeFocused()
+  await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
+  await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toBeFocused()
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
+  await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toHaveCount(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+})
+
+test('AUDIT-02 sidebar mobile chiusa non cattura Tab', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile')
+  await mockApi(page)
+  await page.goto('./')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('link', { name: 'Vai al contenuto' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('button', { name: 'Apri menu' })).toBeFocused()
+})
+
+test('AUDIT-02 cambio centro scarta risultati tardivi della ricerca precedente', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await mockApi(page, [], true, {}, { centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }] })
+  let started = false
+  await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', async route => {
+    const selected = new URL(route.request().url()).searchParams.get('center')
+    if (selected === 'CENTRO-A') { started = true; await new Promise(resolve => setTimeout(resolve, 600)) }
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { patients: selected === 'CENTRO-A' ? boot.patients : [], truncated: false } }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', async route => {
+    const selected = new URL(route.request().url()).searchParams.get('center')
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, center: selected || 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }], patients: selected === 'CENTRO-B' ? [] : boot.patients } }) })
+  })
+  await page.goto('./')
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
+  await expect.poll(() => started).toBe(true)
+  await page.getByRole('combobox', { name: 'Centro' }).selectOption('CENTRO-B')
+  await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toHaveValue('')
+  await page.waitForTimeout(700)
+  await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toHaveCount(0)
+})
+
+test('AUDIT-02 ricerca globale mostra errore ed esito vuoto senza dati di altri centri', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', async route => {
+    const query = new URL(route.request().url()).searchParams.get('query')
+    await route.fulfill(query === 'errore'
+      ? { status: 503, contentType: 'application/json', body: JSON.stringify({ exc: 'Unavailable' }) }
+      : { contentType: 'application/json', body: JSON.stringify({ message: { patients: [], truncated: false } }) })
+  })
+  await page.goto('./')
+  const search = page.getByRole('combobox', { name: 'Ricerca globale pazienti' })
+  await search.fill('errore')
+  await expect(page.getByRole('alert', { name: '' }).filter({ hasText: 'Ricerca non disponibile' })).toBeVisible()
+  await search.fill('nessuno')
+  await expect(page.getByText('Nessun paziente trovato nel centro.')).toBeVisible()
+})
+
+test('AUDIT-02 menu utente usa logout Frappe e footer coerente', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./')
+  await expect(page.locator('.app-footer')).toHaveText('Centro Change · Area riservata')
+  await page.getByRole('button', { name: 'Menu utente' }).click()
+  await page.getByRole('button', { name: 'Esci', exact: true }).last().click()
+  await expect(page).toHaveURL(/\/login\?redirect-to=\/premium/)
+  const logout = writes.find(write => write.method === 'logout')
+  expect(logout?.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
+})
+
+test('AUDIT-02 utente solo Finanza riceve landing e URL consentiti', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await mockApi(page, [], true, {}, {}, null, { can_write: false, is_manager: false }, false)
+  await page.goto('./#Agenda')
+  await expect(page.locator('.breadcrumbs strong')).toHaveText('Finanza')
+  await expect.poll(() => decodeURIComponent(new URL(page.url()).hash.slice(1))).toBe('Finanza')
+  await expect(page.getByRole('button', { name: 'Pazienti', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toBeDisabled()
+})
+
+test('AUDIT-02 ricerca globale segnala risultati troncati', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop')
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { patients: boot.patients, truncated: true } }) }))
+  await page.goto('./')
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
+  await expect(page.getByText('Mostrati i primi 50 risultati. Affina la ricerca.')).toBeVisible()
 })
 
 test('date umane e cambio ora Europe/Rome conservano giorno canonico', async ({ page }) => {

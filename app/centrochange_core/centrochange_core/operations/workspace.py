@@ -16,6 +16,14 @@ def require_actor():
         frappe.throw('Non hai accesso alla schermata operativa.',frappe.PermissionError)
 
 
+def center_patient_names(center):
+    """Patient IDs visible in the selected operational center, even for Managers."""
+    if is_manager():
+        return current_rows('CC Patient Assignment', {'center': center, 'active': 1}, pluck='patient')
+    from centrochange_core.security.guards import patient_contexts
+    return [patient for patient, assigned_center in patient_contexts() if assigned_center == center]
+
+
 @frappe.whitelist()
 def agenda(center,start,end):
     require_actor()
@@ -102,13 +110,10 @@ def bootstrap(center=None):
     if center not in [row.name for row in available]:
         frappe.throw('La sede selezionata non è disponibile.',frappe.PermissionError)
     try:
-        patients=frappe.get_list('Patient',fields=['name','patient_name'],page_length=500,order_by='patient_name')
+        patients=frappe.get_list('Patient',filters={'name':['in',center_patient_names(center) or ['']]},
+            fields=['name','patient_name'],page_length=500,order_by='patient_name')
     except frappe.PermissionError:
         patients=[]
-    from centrochange_core.security.guards import patient_contexts
-    if not is_manager():
-        contexts=patient_contexts()
-        patients=[row for row in patients if (row.name,center) in contexts]
     memberships=current_rows('CC Center Membership',{'center':center,'active':1},pluck='user')
     filters={'status':'Active','user_id':['in',memberships or ['']]}
     if 'CC Professional' in roles() and not is_manager():
@@ -207,12 +212,12 @@ def management_context(center):
 def patient_search(center, query=''):
     """Permission-aware bounded operational identity search; never clinical content."""
     require_actor(); require_center(center)
+    from centrochange_core.security.guards import operational_centers
+    if center not in [row.name for row in operational_centers()]:
+        frappe.throw('La sede selezionata non è disponibile.', frappe.PermissionError)
     query=str(query or '').strip()
     if len(query)>140:frappe.throw('Il testo di ricerca è troppo lungo.')
-    filters={}
-    if not is_manager():
-        from centrochange_core.security.guards import patient_contexts
-        filters['name']=['in',[p for p,c in patient_contexts() if c==center] or ['']]
+    filters={'name':['in',center_patient_names(center) or ['']]}
     text='%'+query.replace('\\','\\\\').replace('%','\\%').replace('_','\\_')+'%'
     # Non-manager roles use document-scoped Patient permissions, not generic list rights.
     # The narrow internal query is confined to exact current authorized patient/center pairs.
