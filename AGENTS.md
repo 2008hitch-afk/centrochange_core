@@ -61,6 +61,18 @@ Fonte canonica: `2008hitch-afk/hitch-client-discovery/clients/HC-0005/decisions/
 
 **La decisione non autorizza implementazione né avvio del macro-goal**. In assenza di mandato operativo specifico, limitarsi ad analisi e proposta: niente installazioni, modifiche al server, PR di prodotto, merge, cutover o GOAL-03. Mantenere immutati gli stati delle PR esistenti e le limitazioni su dati reali e provider.
 
+### Mandato isolato autorizzato — HC-0005 DECISION-061 (21/10/2026)
+
+**Aggiornamento successivo:** l'Owner ha approvato il macro-goal `CENTROCHANGE-PREMIUM-FRONTEND-REBUILD` su [issue #148](https://github.com/2008hitch-afk/centrochange_core/issues/148), con [HC-0005 DECISION-061](https://github.com/2008hitch-afk/hitch-client-discovery/blob/main/clients/HC-0005/decisions/DECISION-061-authorize-premium-react-frontend-macro-goal.md). La clausola precedente rimane come **confine storico della sola DECISION-060** e non deve essere interpretata come diniego del nuovo mandato.
+
+**Perimetro originario della DECISION-061:** Codex, quando avviato esplicitamente dall'Owner, poteva lavorare autonomamente su frontend React e test nel solo **branch/worktree e sviluppo isolato autorizzato**, creando sottoissue e PR DRAFT, usando skill/librerie gratuite solo dopo review/pin/licenze. Deve leggere `docs/ui/PREMIUM-FRONTEND-MACRO-GOAL-v1.md`, `docs/ui/PREMIUM-FRONTEND-SKILLS-LICENSES-v1.md` e `.agents/skills/centrochange-premium-ui/SKILL.md`. Reindirizzare il lavoro UI sovrapposto di #139 senza cancellarne rehearsal, test o prove storiche.
+
+**Limiti originari della DECISION-061:** nessuna nuova installazione o mutazione del DEV condiviso, clone server senza autorizzazione specifica, merge di codice prodotto, cambio UI primaria, cutover, dati reali, provider reali, acquisti, GOAL-03, produzione o approvazione UAT implicita. Il current goal di delivery resta documentato come GOAL-02 con disallineamento issue #23 chiusa vs manifest ACTIVE; questa autorizzazione è un **macro-goal frontend specifico**, non una promozione di fase.
+
+**Aggiornamento 22/10/2026:** le successive DECISION-062 (single-stack), 063 (API scoped), 064 (primo tentativo DEV), 065 (secondo tentativo) e 066 (fix/retest/continue) sono approvate nel registro HC-0005. Hanno autorizzato interventi DEV delimitati e documentati in #148/PR #150; il divieto DEV della sola DECISION-061 non va applicato retroattivamente a tali interventi. Ogni nuova operazione runtime richiede comunque il proprio gate applicabile. Il consolidamento GitHub corrente (#156, PR #149/#150/#159/#160) **non autorizza** merge, deploy, migrate sul DEV, modifica di schema/ruoli, attivazione `cc_premium_primary` o produzione. Consultare sempre le decisioni canoniche HITCH e l'issue attiva: questo riepilogo non conferisce nuovi permessi.
+
+
+
 
 
 ## Documentazione upstream e verifica della versione pinned
