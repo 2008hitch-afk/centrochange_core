@@ -121,13 +121,19 @@ def run():
 
 
 @security.synthetic_test
-def prepare_http(fixture):
+def prepare_http(fixture, prepare_bank=True):
     if frappe.session.user!='Administrator' or frappe.conf.get('cc_synthetic_dev')!=1:
         frappe.throw('Synthetic DEV Administrator required')
     if isinstance(fixture,str):
         fixture=frappe.parse_json(fixture)
     assert fixture['tag'].startswith('CC-HTTP-')
-    banking_acceptance.prepare_http(fixture)
+    if prepare_bank:
+        banking_acceptance.prepare_http(fixture)
+    else:
+        from centrochange_core.finance.dev_profile import setup
+        setup(fixture['finance']['customer'])
+        from centrochange_core.finance import banking
+        banking.configure_bank(fixture['centers'][0],fixture['tag'])
     issuer='SYNTHETIC-'+fixture['tag']
     supplier=fixture['finance']['supplier']
     frappe.db.set_value('Supplier',supplier,'tax_id',issuer)

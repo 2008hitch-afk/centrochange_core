@@ -1,6 +1,7 @@
 """Synthetic security regression via bench, never a whitelisted API."""
 import frappe
 from functools import wraps
+from centrochange_core.security.audit import internal_write
 
 
 def synthetic_test(function):
@@ -41,8 +42,9 @@ def run(extra_checks=None):
 	try:
 		pro1, pro2 = user('professional-a', 'CC Professional'), user('professional-b', 'CC Professional')
 		secretary = user('secretariat-a', 'CC Secretariat')
-		center = frappe.get_doc({'doctype':'Branch', 'branch':'CC SYNTHETIC A'}).insert().name
-		other = frappe.get_doc({'doctype':'Branch', 'branch':'CC SYNTHETIC B'}).insert().name
+		with internal_write('cc_center_state_write'):
+			center = frappe.get_doc({'doctype':'Branch', 'branch':'CC SYNTHETIC A', 'cc_operational':1}).insert().name
+			other = frappe.get_doc({'doctype':'Branch', 'branch':'CC SYNTHETIC B', 'cc_operational':1}).insert().name
 		for principal in (pro1, pro2, secretary):
 			service.set_membership(principal, center, 1, 'Synthetic fixture')
 		prac1, prac2 = [frappe.get_doc({'doctype':'Healthcare Practitioner', 'first_name':label,
@@ -121,14 +123,24 @@ def run(extra_checks=None):
 
 @synthetic_test
 def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None,finance_users=False,commit=True,public_route=True):
+	if finance:
+		from centrochange_core.security.fixture_cleanup import require_native_accounting_cleanup
+		require_native_accounting_cleanup()
 	"""Create explicitly marked disposable HTTP fixtures; harness destroys them."""
 	if frappe.session.user != 'Administrator' or frappe.conf.get('cc_synthetic_dev') != 1:
 		frappe.throw('Synthetic DEV Administrator required')
 	from frappe.utils.password import update_password
 	if fixture_tag is not None and (fixture_tag != 'CC-HTTP-UAT0000001' or frappe.conf.get('cc_uat_demo') != 1):
 		frappe.throw('Explicit synthetic UAT configuration required')
-	if not commit and fixture_tag != 'CC-HTTP-UAT0000001':
-		frappe.throw('Deferred fixture commit is reserved for synthetic UAT')
+	if not commit and not frappe.in_test and fixture_tag != 'CC-HTTP-UAT0000001':
+		frappe.throw('Le fixture senza commit sono riservate ai test sintetici isolati')
+	public_route_name=None
+	if scheduling and public_route:
+		# The persistent UAT seed can already own Marco. Never replace its route.
+		public_route_name=next((name for name in ('Marco','Francesca')
+			if not frappe.db.exists('CC Public Booking Route',name)),None)
+		if public_route_name is None:
+			frappe.throw('No unused synthetic public booking route is available')
 	tag = fixture_tag or 'CC-HTTP-' + frappe.generate_hash(length=10)
 	result = {'tag':tag, 'users':{}, 'patients':[], 'practitioners':[], 'centers':[]}
 	identities=[('a','CC Professional'),('b','CC Professional'),('c','CC Professional'),('s','CC Secretariat'),('m','CC Manager')]
@@ -137,12 +149,13 @@ def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None
 	for label, role in identities:
 		name = tag.lower() + '-' + label + '@example.invalid'
 		frappe.get_doc({'doctype':'User','email':name,'first_name':tag+' '+label,
-			'enabled':1,'send_welcome_email':0,'roles':[{'role':role}]}).insert(ignore_permissions=True)
+			'enabled':1,'language':'it','send_welcome_email':0,'roles':[{'role':role}]}).insert(ignore_permissions=True)
 		password = frappe.generate_hash(length=32)
 		update_password(name,password)
 		result['users'][label]={'name':name,'password':password}
-	for label in ('A','B'):
-		result['centers'].append(frappe.get_doc({'doctype':'Branch','branch':tag+' '+label}).insert().name)
+	with internal_write('cc_center_state_write'):
+		for label in ('A','B'):
+			result['centers'].append(frappe.get_doc({'doctype':'Branch','branch':tag+' '+label,'cc_operational':1}).insert().name)
 	for principal in result['users'].values():
 		service.set_membership(principal['name'],result['centers'][0],1,tag)
 	for label in ('a','b'):
@@ -169,7 +182,7 @@ def create_http(scheduling=False,operations=False,finance=False,fixture_tag=None
 			[{'day':'Monday','from_time':'09:00:00','to_time':'12:00:00'}],tag)['name']
 		route=None
 		if public_route:
-			route=frappe.get_doc({'doctype':'CC Public Booking Route','route':'Marco','center':result['centers'][0],
+			route=frappe.get_doc({'doctype':'CC Public Booking Route','route':public_route_name,'center':result['centers'][0],
 			'practitioner':result['practitioners'][0],'appointment_type':profile.name,'enabled':1}).insert()
 		result['catalog']={'CC Public Booking Route':[route.name] if route else [],'Item':[item.name],'Price List':[price_list.name],'Appointment Type':[profile.name],
 			'Item Price':[price.name],'CC Center Service':[availability.name],'Practitioner Schedule':[schedule]}
@@ -212,6 +225,8 @@ def destroy_http(fixture):
 	assert tag.startswith('CC-HTTP-')
 	users=[row['name'] for row in fixture['users'].values()]
 	assert all(name.startswith(tag.lower()+'-') and name.endswith('@example.invalid') for name in users)
+	if pending_contacts(users)['pending']:
+		frappe.throw('Cleanup sospeso: job Contact della fixture ancora in esecuzione.')
 	# Exact ownership checks prevent this private helper from deleting arbitrary documents.
 	for doctype,names,field in [('Patient',fixture['patients'],'first_name'),
 		('Healthcare Practitioner',fixture['practitioners'],'first_name'),('Branch',fixture['centers'],'branch')]:
@@ -232,6 +247,14 @@ def destroy_http(fixture):
 	groups['CC Economic Source Link']=frappe.get_all('CC Economic Source Link',filters={'appointment':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
 	for transaction in ('Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction'):
 		groups[transaction]=frappe.get_all(transaction,filters={'cc_center':['in',fixture['centers']]},pluck='name')
+	if any(groups.get(kind) for kind in ('Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction')):
+		from centrochange_core.security.fixture_cleanup import require_native_accounting_cleanup
+		require_native_accounting_cleanup()
+	browser_pos=tag+' BROWSER POS'
+	if frappe.db.exists('Mode of Payment',browser_pos):
+		mode=frappe.get_doc('Mode of Payment',browser_pos)
+		assert mode.type in ('Bank','Cash') and all(row.company==frappe.db.get_value('Branch',fixture['centers'][0],'cc_company') for row in mode.accounts)
+		groups['Mode of Payment']=[browser_pos]
 	groups['Bank Account']=frappe.get_all('Bank Account',filters={'cc_center':['in',fixture['centers']]},pluck='name')
 	groups['Account']=[frappe.db.get_value('Bank Account',name,'account') for name in groups['Bank Account']]
 	assert all((frappe.db.get_value('Account',name,'account_name') or '').startswith('CC DEV BANK '+tag) for name in groups['Account'])
@@ -239,6 +262,20 @@ def destroy_http(fixture):
 		groups[protected]=frappe.get_all(protected,filters={'patient':['in',fixture['patients']]},pluck='name')
 	groups['Communication']=frappe.get_all('Communication',filters={'reference_doctype':'CC Payment Notice',
 		'reference_name':['in',groups['CC Payment Notice'] or ['']]},pluck='name')
+	groups['CC Booking Confirmation']=[]
+	# Public booking creates a simulated confirmation, its Communication and audit.
+	# The appointment is removed below; collect these exact dependents first.
+	if groups.get('Patient Appointment'):
+		from centrochange_core.security.fixture_cleanup import confirmation_dependents
+		appointments=groups['Patient Appointment']
+		confirmations=frappe.get_all('CC Booking Confirmation',filters={'appointment':['in',appointments]},
+			fields=['name','appointment','center','recipient','communication'],limit_page_length=0)
+		communications=frappe.get_all('Communication',filters={'reference_doctype':'Patient Appointment',
+			'reference_name':['in',appointments]},
+			fields=['name','reference_doctype','reference_name','recipients'],limit_page_length=0)
+		dependents=confirmation_dependents(appointments,fixture['centers'],confirmations,communications)
+		groups['CC Booking Confirmation']=dependents['CC Booking Confirmation']
+		groups['Communication']+=dependents['Communication']
 	vouchers=groups['Sales Invoice']+groups['Purchase Invoice']+groups['Payment Entry']
 	for ledger in ('GL Entry','Payment Ledger Entry'):
 		groups[ledger]=frappe.get_all(ledger,filters={'voucher_no':['in',vouchers or ['']]},pluck='name')
@@ -277,7 +314,7 @@ def destroy_http(fixture):
 	if fixture.get('catalog'):
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'Patient Appointment',
 			'reference_name':['in',groups.get('Patient Appointment') or ['']]},pluck='name')
-		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package','CC Economic Source Link','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Incoming Invoice','CC Unpaid Threshold','CC Compensation Rule','CC Professional Expectation','CC Professional Comparison','CC Admin Exception','CC Fiscal Transaction','CC Fiscal Attempt','CC TS Input Review'):
+		for protected in ('CC Private Note','CC Organizational Note','CC Patient Package','CC Economic Source Link','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Booking Confirmation','Communication','CC Incoming Invoice','CC Unpaid Threshold','CC Compensation Rule','CC Professional Expectation','CC Professional Comparison','CC Admin Exception','CC Fiscal Transaction','CC Fiscal Attempt','CC TS Input Review','CC Notification'):
 			groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':protected,'reference_name':['in',groups[protected] or ['']]},pluck='name')
 		groups['CC Audit Event']+=frappe.get_all('CC Audit Event',filters={'reference_doctype':'CC Patient Assignment',
 			'reference_name':['in',groups.get('CC Patient Assignment') or ['']]},pluck='name')
@@ -292,7 +329,54 @@ def destroy_http(fixture):
 		assert all((frappe.db.get_value(doctype,name,field) or '').startswith(prefix) for name in names)
 	groups['Address']=frappe.get_all('Dynamic Link',filters={'parenttype':'Address','link_doctype':'Customer',
 		'link_name':['in',groups['Customer'] or ['']]},pluck='parent')
+	# Native cancellation hooks still need source records such as CC Incoming
+	# Invoice. Clear owned audit and other dynamic links only after cancellation.
+	from centrochange_core.security.fixture_cleanup import owned_audit_ids,native_link_dependents,NATIVE_LINK_DEPENDENTS,fixture_incoming_target
+	def clear_post_cancel_links():
+		# Cancellation hooks can create new exception/notification rows. Every
+		# selected row belongs to the fixture by its center, patient, recipient,
+		# or exact reference to one of its native vouchers.
+		for dependent in NATIVE_LINK_DEPENDENTS:
+			if dependent=='CC Payment Override':
+				names=frappe.get_all(dependent,filters={'patient':['in',fixture['patients']]},pluck='name',limit_page_length=0)
+			elif dependent=='CC Notification':
+				names=frappe.get_all(dependent,filters={'recipient':['in',users]},pluck='name',limit_page_length=0)
+				for native in ('Bank Transaction','Payment Entry','Sales Invoice','Purchase Invoice'):
+					names+=frappe.get_all(dependent,filters={'reference_doctype':native,
+						'reference_name':['in',groups[native] or ['']]},pluck='name',limit_page_length=0)
+			else:
+				names=frappe.get_all(dependent,filters={'center':['in',fixture['centers']]},pluck='name',limit_page_length=0)
+			groups[dependent]=sorted(set(groups.get(dependent,[])+names))
+		fresh_audits=set(frappe.get_all('CC Audit Event',filters={'reason':tag},pluck='name',limit_page_length=0))
+		for dependent in (*NATIVE_LINK_DEPENDENTS,'Bank Transaction','Payment Entry','Sales Invoice','Purchase Invoice'):
+			fresh_audits.update(frappe.get_all('CC Audit Event',filters={'reference_doctype':dependent,
+				'reference_name':['in',groups.get(dependent) or ['']]},pluck='name',limit_page_length=0))
+		if fresh_audits:
+			rows=frappe.get_all('CC Audit Event',filters={'name':['in',sorted(fresh_audits)]},
+				fields=['name','reference_doctype','reference_name','reason'],limit_page_length=0)
+			owned_audit_ids(rows,{**groups,'CC Audit Event':sorted(fresh_audits)},tag)
+			frappe.db.delete('CC Audit Event',{'name':['in',sorted(fresh_audits)]})
+			groups['CC Audit Event']=sorted(set(groups.get('CC Audit Event',[]))|fresh_audits)
+		for dependent,names in native_link_dependents(groups).items():
+			if names:
+				if dependent=='CC Incoming Invoice':
+					# Purchase Invoice on_trash still reads the immutable XML source.
+					# Clear only its reverse link; remove the source after vouchers.
+					for name in names:
+						target=frappe.db.get_value(dependent,name,'purchase_invoice')
+						fixture_incoming_target(target,groups['Purchase Invoice'])
+						if target:
+							frappe.db.set_value(dependent,name,'purchase_invoice',None)
+					continue
+				for field in frappe.get_meta(dependent).get_table_fields():
+					frappe.db.delete(field.options,{'parenttype':dependent,'parent':['in',names]})
+				frappe.db.delete(dependent,{'name':['in',names]})
+	from centrochange_core.security.fixture_cleanup import native_accounting_cleanup
+	native_accounting_cleanup(groups, fixture['centers'], clear_post_cancel_links)
+	financial = {'Sales Invoice','Purchase Invoice','Payment Entry','Bank Transaction','GL Entry','Payment Ledger Entry'}
 	for doctype,names in groups.items():
+		if doctype in financial:
+			continue
 		if not names:
 			continue
 		for field in frappe.get_meta(doctype).get_table_fields():

@@ -6,4 +6,4 @@ class CCOrganizationalNote(Document):
 		validate_note(self)
 	def on_trash(self):
 		import frappe
-		frappe.throw("Notes are append-only",frappe.PermissionError)
+		frappe.throw("Le note restano nello storico e non possono essere sovrascritte.",frappe.PermissionError)

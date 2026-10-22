@@ -8,7 +8,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from security_acceptance import execute
+from security_acceptance import acceptance_base_url, execute
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--env-file',required=True)
     args=parser.parse_args()
     values={line.split('=',1)[0]:line.split('=',1)[1].strip() for line in Path(args.env_file).read_text().splitlines() if '=' in line and not line.startswith('#')}
-    root='http://127.0.0.1:'+values.get('HTTP_PORT','8082')
+    root=acceptance_base_url(values.get('HTTP_PORT','8082'))
     fixture=None
     checks=[]
     clients={}

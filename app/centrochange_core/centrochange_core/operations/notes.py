@@ -16,24 +16,24 @@ def require_context(patient,center):
 	if 'CC Professional' in roles():
 		filters['practitioner']=practitioner_for() or ''
 	elif 'CC Secretariat' not in roles():
-		frappe.throw('Operational note access denied',frappe.PermissionError)
+		frappe.throw('Non hai accesso alle note operative.',frappe.PermissionError)
 	if not current_rows('CC Patient Assignment',filters,pluck='name'):
-		frappe.throw('Patient is not assigned in this note context',frappe.PermissionError)
+		frappe.throw('Il paziente non è assegnato in questo contesto di note.',frappe.PermissionError)
 
 
 def require_private(doc,user=None):
 	user=user or frappe.session.user
 	if not enabled(user) or 'CC Professional' not in roles(user) or doc.practitioner!=practitioner_for(user) or doc.center not in centers(user):
-		frappe.throw('Confidential professional note access denied',frappe.PermissionError)
+		frappe.throw('Non hai accesso alle note professionali riservate.',frappe.PermissionError)
 	if not current_rows('CC Patient Assignment',{'patient':doc.patient,'center':doc.center,'practitioner':doc.practitioner,'active':1},pluck='name'):
-		frappe.throw('Confidential note patient assignment denied',frappe.PermissionError)
+		frappe.throw('Il paziente non è assegnato per questa nota riservata.',frappe.PermissionError)
 
 
 def validate_note(doc):
 	if not doc.is_new() or not frappe.flags.get('cc_notes_write'):
-		frappe.throw('Notes are append-only; use the guarded revision service',frappe.PermissionError)
+		frappe.throw('Le note restano nello storico: usa il servizio di rettifica autorizzato.',frappe.PermissionError)
 	if not doc.content or len(doc.content)>100000:
-		frappe.throw('A bounded note is required')
+		frappe.throw('Inserisci una nota entro i limiti previsti.')
 	doc.authored_by=frappe.session.user
 	if doc.doctype=='CC Private Note':
 		require_private(doc)
@@ -46,7 +46,7 @@ def validate_note(doc):
 		else:
 			require_context(previous.patient,previous.center)
 		if previous.patient!=doc.patient or previous.center!=doc.center or previous.practitioner!=doc.practitioner:
-			frappe.throw('Revision cannot change note context')
+			frappe.throw('La rettifica non può cambiare il contesto della nota.')
 
 
 @frappe.whitelist(methods=['POST'])
@@ -56,7 +56,7 @@ def add_note(patient,center,content,private=0,corrects=None):
 	lock()
 	private=frappe.utils.cint(private)
 	if private not in (0,1):
-		frappe.throw('Invalid note class')
+		frappe.throw('Il tipo di nota non è valido.')
 	doctype='CC Private Note' if private else 'CC Organizational Note'
 	doc=frappe.get_doc({'doctype':doctype,'patient':patient,'center':center,'content':content,
 		'practitioner':practitioner_for() if 'CC Professional' in roles() else None,
@@ -130,4 +130,4 @@ def request_guard():
 				return False
 		return False
 	if '/api/resource/CC Private Note' in path or '/api/v2/document/CC Private Note' in path or targets(frappe.form_dict):
-		frappe.throw('Private notes require an authorized clinical principal',frappe.PermissionError)
+		frappe.throw('Le note riservate richiedono un professionista clinico autorizzato.',frappe.PermissionError)

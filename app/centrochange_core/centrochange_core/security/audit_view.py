@@ -10,10 +10,10 @@ def events(start, end, event_type=None, reference=None, offset=0):
     require_manager()
     start, end = getdate(start), getdate(end)
     if end < start or end - start > timedelta(days=366):
-        frappe.throw('Select an audit interval of at most 367 days')
+        frappe.throw('Seleziona un intervallo del Registro di massimo 367 giorni.')
     offset = int(offset)
     if offset < 0 or offset > 100000:
-        frappe.throw('Invalid audit page')
+        frappe.throw('La pagina del Registro richiesta non è valida.')
     filters = {'event_time': ['between', [get_datetime(start), get_datetime(end + timedelta(days=1)) - timedelta(microseconds=1)]]}
     if event_type:
         filters['event_type'] = str(event_type)[:140]

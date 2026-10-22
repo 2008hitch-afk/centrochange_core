@@ -19,17 +19,17 @@ SERVICE_USER='cc-public-booking-service@example.invalid'
 @atomic
 def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointment_time,request_key):
 	if route not in ('Marco','Francesca') or not request_key or len(request_key)>140:
-		frappe.throw('Invalid first-meeting request')
+		frappe.throw('Controlla i dati del primo incontro.')
 	for value in (first_name,last_name):
 		if not isinstance(value,str) or not value.strip() or len(value)>80 or re.search(r'[<>\r\n]',value):
-			frappe.throw('Invalid patient identity')
+			frappe.throw('Controlla i dati identificativi del paziente.')
 	if not isinstance(email,str) or len(email)>140:
-		frappe.throw('Invalid email')
+		frappe.throw('Inserisci un indirizzo email valido.')
 	frappe.utils.validate_email_address(email,throw=True)
 	if frappe.conf.get('cc_synthetic_dev')==1 and not email.endswith('@example.invalid'):
-		frappe.throw('Synthetic DEV ingress accepts example.invalid identities only')
+		frappe.throw('Nel DEV sono consentite solo identità demo example.invalid.')
 	if not frappe.db.exists('Gender',sex):
-		frappe.throw('Invalid demographic value')
+		frappe.throw('Controlla il valore anagrafico selezionato.')
 	caller=frappe.session.user
 	payload={'route':route,'first_name':first_name.strip(),'last_name':last_name.strip(),'email':email.lower(),
 		'sex':sex,'appointment_date':str(getdate(appointment_date)),'appointment_time':str(get_time(appointment_time))}
@@ -39,23 +39,25 @@ def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointm
 		frappe.set_user(SERVICE_USER)
 		lock()
 		if not enabled(SERVICE_USER):
-			frappe.throw('Public booking service unavailable',frappe.PermissionError)
+			frappe.throw('La prenotazione pubblica non è disponibile.',frappe.PermissionError)
 		name=frappe.db.get_value('Patient Appointment',{'cc_booking_key':key},for_update=True)
 		if name:
 			if frappe.db.get_value('Patient Appointment',name,'cc_public_payload_hash',for_update=True)!=fingerprint:
-				frappe.throw('Request key has a different first-meeting payload')
+				frappe.throw('La richiesta è già stata usata con dati diversi.')
 			from centrochange_core.operations.booking_confirmation import confirm
 			return {'name':name,'replay':True,'confirmation':confirm(name,route,payload['email'])}
 		configuration=frappe.get_doc('CC Public Booking Route',route,for_update=True)
+		if not frappe.db.get_value('Branch',configuration.center,'cc_operational',for_update=True):
+			frappe.throw('Percorso primo incontro non disponibile.',frappe.PermissionError)
 		if not configuration.enabled or not frappe.db.get_value('Appointment Type',configuration.appointment_type,'cc_first_meeting',for_update=True):
-			frappe.throw('First-meeting route unavailable',frappe.PermissionError)
+			frappe.throw('Percorso primo incontro non disponibile.',frappe.PermissionError)
 		practitioner=frappe.get_doc('Healthcare Practitioner',configuration.practitioner,for_update=True)
 		from centrochange_core.security.guards import centers
 		if practitioner.status!='Active' or configuration.center not in centers(practitioner.user_id):
-			frappe.throw('First-meeting practitioner unavailable')
+			frappe.throw('Il professionista del primo incontro non è disponibile.')
 		# Existing identities require authorized human matching; never let public input link them.
 		if frappe.db.get_value('Patient',{'email':payload['email']},for_update=True):
-			frappe.throw('Existing identity requires administrative booking')
+			frappe.throw('L’identità esiste già: rivolgiti alla segreteria per prenotare.')
 		context={'practitioner':configuration.practitioner,'center':configuration.center,
 			'appointment_type':configuration.appointment_type}
 		with internal_write('cc_public_ingress'):
@@ -91,17 +93,19 @@ def available_slots(route,start_date):
 	from centrochange_core.security.guards import current_rows,centers
 	from centrochange_core.scheduling.booking import snapshot,validate_slot
 	if route not in ('Marco','Francesca'):
-		frappe.throw('Unsupported first-meeting route')
+		frappe.throw('Percorso primo incontro non supportato.')
 	date=getdate(start_date)
 	today=datetime.now(ZoneInfo('Europe/Rome')).date()
 	if date<today or date>today+timedelta(days=120):
-		frappe.throw('Choose a date within the next 120 days')
+		frappe.throw('Scegli una data futura entro 120 giorni.')
 	configuration=frappe.get_doc('CC Public Booking Route',route)
+	if not frappe.db.get_value('Branch',configuration.center,'cc_operational'):
+		frappe.throw('Percorso primo incontro non disponibile.',frappe.PermissionError)
 	if not configuration.enabled or not frappe.db.get_value('Appointment Type',configuration.appointment_type,'cc_first_meeting'):
-		frappe.throw('First-meeting route unavailable',frappe.PermissionError)
+		frappe.throw('Percorso primo incontro non disponibile.',frappe.PermissionError)
 	practitioner=frappe.get_doc('Healthcare Practitioner',configuration.practitioner)
 	if not enabled(SERVICE_USER) or practitioner.status!='Active' or configuration.center not in centers(practitioner.user_id):
-		frappe.throw('First-meeting route unavailable',frappe.PermissionError)
+		frappe.throw('Percorso primo incontro non disponibile.',frappe.PermissionError)
 	profile=snapshot(configuration.appointment_type,configuration.center)
 	duration=float(profile['duration'])
 	schedules=current_rows('Practitioner Schedule',{'cc_practitioner':configuration.practitioner,'cc_center':configuration.center,'disabled':0},pluck='name')

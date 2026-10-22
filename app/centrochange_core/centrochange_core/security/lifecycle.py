@@ -17,7 +17,7 @@ def lock():
 	frappe.flags.cc_permission_current_read = True
 	# Current read after acquiring the serialization row, including waiting requests.
 	if frappe.session.user == "Guest" or not frappe.db.get_value("User", frappe.session.user, "enabled", for_update=True):
-		frappe.throw("Disabled or anonymous principal cannot mutate permissions", frappe.PermissionError)
+		frappe.throw("Un account anonimo o disattivato non può modificare gli accessi.", frappe.PermissionError)
 
 
 def reconcile_user(user):
@@ -61,7 +61,7 @@ def set_membership(user, center, active, reason):
 	require_manager()
 	active = int(frappe.utils.cint(active))
 	if active not in (0, 1) or user in ("Guest", "Administrator"):
-		frappe.throw("Invalid operational center membership")
+		frappe.throw("L’appartenenza operativa alla sede non è valida.")
 	name = frappe.db.get_value("CC Center Membership", {"user": user, "center": center}, for_update=True)
 	doc = frappe.get_doc("CC Center Membership", name, for_update=True) if name else frappe.get_doc({
 		"doctype": "CC Center Membership", "user": user, "center": center,
@@ -84,11 +84,11 @@ def set_assignment(patient, center, practitioner=None, active=1, reason=None):
 	require_operations(center)
 	active = int(frappe.utils.cint(active))
 	if active not in (0, 1):
-		frappe.throw("Invalid assignment state")
+		frappe.throw("Lo stato dell’assegnazione non è valido.")
 	if practitioner and active:
 		identity = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 		if identity.status != "Active" or not identity.user_id or not enabled(identity.user_id) or center not in centers(identity.user_id):
-			frappe.throw("Practitioner must be active and assigned to this center")
+			frappe.throw("Il professionista deve essere attivo e assegnato a questa sede.")
 	filters = {"patient": patient, "center": center, "practitioner": practitioner or ["is", "not set"]}
 	name = frappe.db.get_value("CC Patient Assignment", filters, for_update=True)
 	doc = frappe.get_doc("CC Patient Assignment", name, for_update=True) if name else frappe.get_doc({
@@ -111,7 +111,7 @@ def reassign(patient, center, old_practitioner, new_practitioner, reason):
 	lock()
 	require_operations(center)
 	if old_practitioner == new_practitioner:
-		frappe.throw("Reassignment requires distinct practitioners")
+		frappe.throw("La riassegnazione richiede due professionisti diversi.")
 	# Both operations remain in the same request transaction: deny before granting.
 	set_assignment(patient, center, old_practitioner, 0, reason)
 	return set_assignment(patient, center, new_practitioner, 1, reason)
@@ -125,10 +125,10 @@ def set_practitioner_state(practitioner, active, reason):
 	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 	active = int(frappe.utils.cint(active))
 	if active not in (0, 1) or doc.user_id in (None, "", "Guest", "Administrator"):
-		frappe.throw("A valid linked operational principal is required")
+		frappe.throw("Serve un account operativo valido e collegato.")
 	user = frappe.get_doc("User", doc.user_id, for_update=True)
 	if "CC Professional" not in roles(user.name):
-		frappe.throw("Principal is not a Centro Change professional")
+		frappe.throw("L’account non appartiene a un professionista Centro Change.")
 	before = {"status": doc.status, "enabled": user.enabled}
 	after = {"status": "Active" if active else "Disabled", "enabled": active}
 	if before == after:
@@ -150,12 +150,12 @@ def replace_principal(practitioner, new_user, reason):
 	require_manager()
 	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 	if new_user in ("Administrator", "Guest") or not enabled(new_user) or "CC Professional" not in roles(new_user):
-		frappe.throw("Replacement must be an enabled Centro Change professional")
+		frappe.throw("Il sostituto deve essere un professionista Centro Change attivo.")
 	old_user = doc.user_id
 	if old_user == new_user:
 		return {"user": new_user}
 	if old_user in ("Administrator", "Guest"):
-		frappe.throw("Cannot replace a built-in principal")
+		frappe.throw("Un account tecnico integrato non può essere sostituito.")
 	# Reconciliation revokes the old principal and grants the new one in one transaction.
 	with internal_write("cc_permission_write"):
 		doc.user_id = new_user
@@ -169,22 +169,22 @@ def replace_principal(practitioner, new_user, reason):
 
 def protected_relationship(doc, method=None):
 	if not frappe.flags.get("cc_permission_write"):
-		frappe.throw("Permission relationships must use the Centro Change service", frappe.PermissionError)
+		frappe.throw("Le relazioni di accesso richiedono il servizio autorizzato Centro Change.", frappe.PermissionError)
 
 
 def protect_share(doc, method=None):
 	if doc.share_doctype=='File':
 		from centrochange_core.finance.files import managed
 		if managed(frappe.get_doc('File',doc.share_name)):
-			frappe.throw('Financial payloads cannot be manually shared',frappe.PermissionError)
+			frappe.throw('I documenti finanziari non possono essere condivisi manualmente.',frappe.PermissionError)
 	if doc.share_doctype=='Communication' and frappe.db.get_value('Communication',doc.share_name,'reference_doctype')=='CC Payment Notice':
-		frappe.throw('Financial payment communication cannot be shared outside its parent scope',frappe.PermissionError)
+		frappe.throw('La comunicazione di pagamento non può essere condivisa fuori dal suo ambito.',frappe.PermissionError)
 	if doc.share_doctype in ('CC Economic Source Link','Customer','Supplier','Cost Center','Account','Sales Invoice','Purchase Invoice','Payment Entry','GL Entry','Payment Ledger Entry','Bank Transaction','Bank Account','CC Payment Agreement','CC Payment Override','CC Payment Notice','CC Incoming Invoice','CC Compensation Rule','CC Professional Expectation','CC Professional Comparison','CC Admin Exception','CC Fiscal Transaction','CC Fiscal Attempt','CC TS Input Review'):
-		frappe.throw('Accounting shares cannot override the finance scope',frappe.PermissionError)
+		frappe.throw('La condivisione contabile non può ampliare l’accesso Finance.',frappe.PermissionError)
 	if doc.share_doctype == "CC Private Note":
-		frappe.throw("Private notes cannot be shared", frappe.PermissionError)
+		frappe.throw("Le note riservate non possono essere condivise.", frappe.PermissionError)
 	if doc.share_doctype in ("Patient", "Healthcare Practitioner") and not frappe.flags.get("cc_permission_write"):
-		frappe.throw("Clinical identity shares are service-controlled", frappe.PermissionError)
+		frappe.throw("La condivisione dei dati clinici è gestita dal servizio autorizzato.", frappe.PermissionError)
 
 
 def practitioner_updated(doc, method=None):
@@ -204,10 +204,10 @@ def user_updated(doc, method=None):
 
 def protect_user_permission(doc, method=None):
 	if doc.allow == "Healthcare Practitioner" and not frappe.flags.get("cc_permission_write"):
-		frappe.throw("Practitioner user permissions are service-controlled", frappe.PermissionError)
+		frappe.throw("I permessi del professionista sono gestiti dal servizio autorizzato.", frappe.PermissionError)
 
 
 def protect_user_lifecycle(doc, method=None):
 	previous = doc.get_doc_before_save()
 	if previous and previous.enabled != doc.enabled and frappe.db.exists("Healthcare Practitioner", {"user_id": doc.name}) and not frappe.flags.get("cc_permission_write"):
-		frappe.throw("Professional enable/disable must use the atomic lifecycle service", frappe.PermissionError)
+		frappe.throw("L’attivazione del professionista richiede il servizio di gestione autorizzato.", frappe.PermissionError)

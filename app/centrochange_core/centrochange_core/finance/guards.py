@@ -4,7 +4,7 @@ from centrochange_core.security.guards import enabled,is_manager,roles,centers,c
 
 def require_finance_manager():
     if not is_manager():
-        frappe.throw('Finance configuration requires management',frappe.PermissionError)
+        frappe.throw('La configurazione Finance è riservata alla Direzione.',frappe.PermissionError)
 
 
 def allowed(user=None,write=False):
@@ -18,19 +18,22 @@ def allowed(user=None,write=False):
 
 def require_finance(center,write=False):
     if not allowed(write=write) or not is_manager() and center not in centers():
-        frappe.throw('Center finance access denied',frappe.PermissionError)
+        frappe.throw('Non hai accesso alla Finanza di questa sede.',frappe.PermissionError)
+    if write:
+        from centrochange_core.security.guards import require_operational_center
+        require_operational_center(center)
 
 
 def patient_context(patient,center,write=False):
     require_finance(center,write)
     if not is_manager() and not current_rows('CC Patient Assignment',{'patient':patient,'center':center,'active':1},pluck='name'):
-        frappe.throw('Accounting patient context denied',frappe.PermissionError)
+        frappe.throw('Non hai accesso al contesto contabile del paziente.',frappe.PermissionError)
 
 
 def require_synthetic():
     from centrochange_core.dev_bootstrap import COMPANY
     if frappe.conf.get('cc_synthetic_dev')!=1 or not frappe.db.exists('Company',COMPANY):
-        frappe.throw('DEV accounting requires the explicitly marked synthetic runtime',frappe.PermissionError)
+        frappe.throw('La contabilità DEV richiede un ambiente esplicitamente sintetico.',frappe.PermissionError)
     return COMPANY
 
 

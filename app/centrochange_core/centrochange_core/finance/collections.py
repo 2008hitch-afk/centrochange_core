@@ -15,13 +15,13 @@ from centrochange_core.operations.lifecycle import ROME,now_utc,start_utc
 def agree(patient,center,mode,reason,due_date=None):
     lock(); require_synthetic(); patient_context(patient,center,True)
     if mode not in ('Immediate','Month End','Specific Date'):
-        frappe.throw('Choose an explicit supported payment agreement')
+        frappe.throw('Seleziona un accordo di pagamento supportato.')
     if mode=='Specific Date':
         if not due_date or frappe.utils.getdate(due_date)<now_utc().astimezone(ROME).date():
-            frappe.throw('An agreed current/future payment date is required')
+            frappe.throw('Indica una data di pagamento concordata, odierna o futura.')
         due_date=frappe.utils.getdate(due_date)
     elif due_date:
-        frappe.throw('Only a specific-date agreement accepts an explicit date')
+        frappe.throw('Solo un accordo con data specifica accetta una data esplicita.')
     previous=_agreement(patient,center)
     if previous and previous.mode==mode and str(previous.due_date or '')==str(due_date or ''):
         return {'name':previous.name,'replay':True}
@@ -75,7 +75,7 @@ def _debts(patient,center):
             deadline=_end_date(date.replace(day=monthrange(date.year,date.month)[1]))
         elif row.cc_payment_terms_mode=='Specific Date':
             if not row.cc_payment_agreed_date and not override:
-                frappe.throw('Specific payment terms require their immutable agreed date')
+                frappe.throw('I termini di pagamento devono conservare la data concordata.')
             deadline=_end_date(row.cc_payment_agreed_date) if row.cc_payment_agreed_date else None
         else:
             deadline=(start_utc(frappe._dict(row))+timedelta(minutes=frappe.utils.flt(row.duration))).astimezone(ROME)
@@ -106,7 +106,7 @@ def require_booking(doc):
     # Generic authorization runs first; this hook reveals no fiscal/clinical detail to a professional.
     at=start_utc(doc).astimezone(ROME)
     if any(d['name']!=doc.name and d['deadline']<at for d in _booking_debts(doc.patient)):
-        frappe.throw('Payment review required before a subsequent session; contact secretariat')
+        frappe.throw('Serve una verifica dei pagamenti prima della prossima seduta: contatta la segreteria.')
 
 
 @frappe.whitelist(methods=['POST'])
@@ -114,24 +114,24 @@ def require_booking(doc):
 def override(patient,center,reference_doctype,reference_name,due_date,request_key,reason):
     lock(); require_synthetic(); patient_context(patient,center,True)
     if not reason or not reason.strip():
-        frappe.throw('A business reason is required')
+        frappe.throw('Indica il motivo operativo.')
     if not due_date:
-        frappe.throw('A new explicit due date is required')
+        frappe.throw('Indica la nuova scadenza.')
     due=frappe.utils.getdate(due_date)
     if due<now_utc().astimezone(ROME).date():
-        frappe.throw('An authorized current/future new due date is required')
+        frappe.throw('La nuova scadenza autorizzata deve essere odierna o futura.')
     identity=sha256(serialize([frappe.session.user,request_key]).encode()).hexdigest()
     if not request_key or len(str(request_key))>160:
-        frappe.throw('A bounded idempotency key is required')
+        frappe.throw('Indica un identificativo valido per la richiesta.')
     fingerprint=sha256(serialize([patient,center,reference_doctype,reference_name,str(due),reason]).encode()).hexdigest()
     existing=frappe.db.get_value('CC Payment Override',{'request_key':identity},for_update=True)
     if existing:
         if frappe.db.get_value('CC Payment Override',existing,'request_hash')!=fingerprint:
-            frappe.throw('Idempotency key payload differs')
+            frappe.throw('La richiesta è già stata usata con dati diversi.')
         return {'name':existing,'replay':True}
     debt=next((d for d in _debts(patient,center) if d['doctype']==reference_doctype and d['name']==reference_name),None)
     if not debt or due<=debt['due_date']:
-        frappe.throw('Choose an open debt and extend its effective due date')
+        frappe.throw('Seleziona un debito aperto e una scadenza successiva a quella attuale.')
     with internal_write('cc_operation_write'):
         doc=frappe.get_doc({'doctype':'CC Payment Override','patient':patient,'center':center,
             'reference_doctype':reference_doctype,'reference_name':reference_name,'due_date':due,'reason':reason,
@@ -159,7 +159,7 @@ def _notice(patient,center,reason):
         return {'blocked':True,'notice':existing,'replay':True}
     email=frappe.db.get_value('Patient',patient,'email')
     if email and not email.lower().endswith('@example.invalid'):
-        frappe.throw('DEV payment email accepts only synthetic example.invalid recipients',frappe.PermissionError)
+        frappe.throw('Nel DEV le email di pagamento accettano solo destinatari demo example.invalid.',frappe.PermissionError)
     amounts='; '.join(f"{debt['amount']:.2f} {debt['currency']} — scadenza {debt['due_date']}" for debt in overdue)
     native_bank=frappe.db.get_value('Branch',center,'cc_bank_account')
     bank_name=frappe.db.get_value('Bank Account',native_bank,'bank') if native_bank else None

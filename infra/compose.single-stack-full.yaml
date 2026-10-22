@@ -1,0 +1,140 @@
+# Canonical #148 topology after the Owner gate. Do not combine with historical overrides.
+# Existing Site/DB/volumes/network/port are retained. No configurator or auto-migrate.
+name: centrochange-dev
+
+x-application: &application
+  image: ${CC_SINGLE_FULL_IMAGE:?Pin the full candidate image}
+  pull_policy: never
+  restart: unless-stopped
+  volumes:
+    - centrochange-dev-sites:/home/frappe/frappe-bench/sites
+  networks: [centrochange-dev-net]
+
+services:
+  backend:
+    <<: *application
+    mem_limit: 900m
+    memswap_limit: 900m
+    environment:
+      GUNICORN_THREADS: "4"
+      GUNICORN_WORKERS: "2"
+      GUNICORN_TIMEOUT: "120"
+    depends_on:
+      db: {condition: service_healthy}
+      redis-cache: {condition: service_healthy}
+      redis-queue: {condition: service_healthy}
+
+  frontend:
+    <<: *application
+    command: ["nginx-entrypoint.sh"]
+    mem_limit: 160m
+    memswap_limit: 160m
+    networks:
+      centrochange-dev-net:
+        aliases: [centrochange.local]
+    environment:
+      BACKEND: backend:8000
+      SOCKETIO: websocket:9000
+      FRAPPE_SITE_NAME_HEADER: centrochange.local
+      UPSTREAM_REAL_IP_ADDRESS: 127.0.0.1
+      UPSTREAM_REAL_IP_HEADER: X-Forwarded-For
+      UPSTREAM_REAL_IP_RECURSIVE: "off"
+    ports:
+      - "127.0.0.1:${HTTP_PORT:?Set local DEV HTTP_PORT}:8080"
+    depends_on:
+      backend: {condition: service_started}
+      websocket: {condition: service_started}
+
+  websocket:
+    <<: *application
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    mem_limit: 160m
+    memswap_limit: 160m
+    depends_on:
+      redis-queue: {condition: service_healthy}
+
+  queue-short:
+    <<: *application
+    command: ["bench", "worker", "--queue", "short,default"]
+    mem_limit: 320m
+    memswap_limit: 320m
+    depends_on:
+      db: {condition: service_healthy}
+      redis-cache: {condition: service_healthy}
+      redis-queue: {condition: service_healthy}
+
+  queue-long:
+    <<: *application
+    command: ["bench", "worker", "--queue", "long,default,short"]
+    mem_limit: 320m
+    memswap_limit: 320m
+    depends_on:
+      db: {condition: service_healthy}
+      redis-cache: {condition: service_healthy}
+      redis-queue: {condition: service_healthy}
+
+  scheduler:
+    <<: *application
+    command: ["bench", "schedule"]
+    mem_limit: 160m
+    memswap_limit: 160m
+    depends_on:
+      db: {condition: service_healthy}
+      redis-cache: {condition: service_healthy}
+      redis-queue: {condition: service_healthy}
+
+  db:
+    image: mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c
+    restart: unless-stopped
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--skip-character-set-client-handshake"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:?Read private DEV env file}
+      MARIADB_AUTO_UPGRADE: "1"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 120s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - centrochange-dev-db-data:/var/lib/mysql
+    networks: [centrochange-dev-net]
+
+  redis-cache:
+    image: redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9
+    restart: unless-stopped
+    mem_limit: 128m
+    memswap_limit: 128m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - centrochange-dev-redis-cache-data:/data
+    networks: [centrochange-dev-net]
+
+  redis-queue:
+    image: redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9
+    restart: unless-stopped
+    mem_limit: 128m
+    memswap_limit: 128m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - centrochange-dev-redis-queue-data:/data
+    networks: [centrochange-dev-net]
+
+volumes:
+  centrochange-dev-sites: {name: centrochange-dev-sites, external: true}
+  centrochange-dev-db-data: {name: centrochange-dev-db-data, external: true}
+  centrochange-dev-redis-cache-data: {name: centrochange-dev-redis-cache-data, external: true}
+  centrochange-dev-redis-queue-data: {name: centrochange-dev-redis-queue-data, external: true}
+
+networks:
+  centrochange-dev-net: {name: centrochange-dev-net, external: true}

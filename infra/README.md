@@ -1,5 +1,7 @@
 # Centro Change DEV runtime
 
+> **#148 single-stack:** la recipe è `Dockerfile.single-stack-full` con `compose.single-stack-full.yaml` e `verify_full_single_stack.py`. I tentativi, il rollback e la successiva installazione DEV delimitata sono registrati nei report DECISION-064–066 e nel report UAT del 22/10/2026; verificare immagine/HEAD effettive prima di qualsiasi nuova operazione. Il [piano storico di esecuzione](../docs/ui/premium-react/SINGLE-STACK-COMPLETE-REBUILD-EXECUTION-PLAN.md) non autorizza un nuovo deploy o migrate. Il vecchio `Dockerfile`/`compose.yaml` sotto è il bootstrap GOAL-01 storico e non va usato per installare il candidato React. Il precedente overlay premium è stato revocato.
+
 Questo Compose project è il bootstrap DEV di WP-00 / issue #21. È isolato dagli altri progetti. Vedi `docs/RUNTIME-BASELINE.md` per naming e pin storici e `docs/evidence/WP-00-2026-10-04.md` per lo stato della nuova validazione.
 
 Il build recupera Builder e Marley/Healthcare ai tag dichiarati nel Dockerfile e verifica i commit esatti. Gli asset includono Frappe, ERPNext, Builder, Healthcare e Centro Change. `socketio_port=9000` viene impostato prima del build Marley; gli asset compilati sono copiati nella directory `assets` che l'entrypoint ufficiale espone nel volume sites.
