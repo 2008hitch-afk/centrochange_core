@@ -36,6 +36,7 @@ PREMIUM_ADDED = {
     'centrochange_core/public/premium/style-UB9A4PgH.js',
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
+                           'centrochange_core/security/install.py',
                            'centrochange_core/operations/workspace.py',
                            'centrochange_core/finance/reporting.py',
                            'centrochange_core/operations/client_landing.py',
