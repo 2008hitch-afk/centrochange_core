@@ -4,7 +4,7 @@
 
 ## CI contract
 
-`.github/workflows/premerge.yml` runs only on same-repository PRs, the #150 branch push or manual dispatch. It uses a read-only token, commit-pinned checkout/setup actions, no secrets, private fixture, DEV URL, Docker service or `pull_request_target`. The backend job verifies the complete source manifest, pinned image recipe, Python syntax and 44 offline regression tests. The frontend job uses the committed npm lockfile, typechecks, rebuilds, compares tracked assets to the manifest, and runs both Playwright suites against local Vite and **synthetic intercepted API responses** at 1440×900 and 390×844. These jobs cannot prove Frappe permissions, schema migration or restore. Actual run status is reported on the PR, not inferred from this file.
+`.github/workflows/premerge.yml` runs only on same-repository PRs or manual dispatch; avoiding duplicate push and PR runs conserves the account's included minutes. It uses a read-only token, commit-pinned checkout/setup actions, no secrets, private fixture, DEV URL, Docker service or `pull_request_target`. The backend job verifies the complete source manifest, pinned image recipe, Python syntax and 44 offline regression tests. The frontend job uses the committed npm lockfile, typechecks, rebuilds, compares tracked assets to the manifest, and runs both Playwright suites against local Vite and **synthetic intercepted API responses** at 1440×900 and 390×844. These jobs cannot prove Frappe permissions, schema migration or restore. Actual run status is reported on the PR, not inferred from this file.
 
 ## Reviewed high-risk surfaces
 

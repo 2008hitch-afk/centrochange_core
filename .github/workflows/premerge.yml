@@ -1,9 +1,6 @@
 name: Offline premerge
 
 on:
-  push:
-    branches:
-      - issue-148/premium-react-frontend
   pull_request:
     branches:
       - main
