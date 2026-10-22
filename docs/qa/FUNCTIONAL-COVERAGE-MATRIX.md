@@ -1,6 +1,6 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
-**Stato:** `AUDIT-00_COMPLETE / DOCUMENTARY_INVENTORY / OWNER_REVIEW_PENDING` — 22/10/2026.
+**Stato:** `AUDIT-00_COMPLETE / BASELINE_OPERATIVA_APPROVATA / PR_159_DRAFT_UNMERGED` — 22/10/2026. L'Owner ha autorizzato l'avvio del ciclo per interfaccia; **non** ha approvato come PASS le singole funzionalità, il merge della PR o il passaggio in produzione.
 **Master:** [#156](https://github.com/2008hitch-afk/centrochange_core/issues/156) · **Inventario:** [#157](https://github.com/2008hitch-afk/centrochange_core/issues/157) · **Prima area:** [Login #158](https://github.com/2008hitch-afk/centrochange_core/issues/158).  
 **Regola:** questa matrice è un **indice verificabile di ciò che va controllato**, non un certificato di completezza, UAT o conformità. NESSUNA area è ancora `OWNER_DONE`.
 
@@ -11,7 +11,7 @@
 | `PASS` | 2 | Solo due percorsi UAT mirati, con prova `LIVE-22` precedente; Owner ancora `PENDING` |
 | `PARTIAL` | 61 | Codice e/o prove parziali; manca almeno una verifica del requisito completo |
 | `NOT_TESTED` | 35 | Nessuna prova specifica sufficiente per l'azione o il processo |
-| `BLOCKED` | 12 | Fuori scope, rinviato, non autorizzato o gate Owner non superato; non equivale a bug |
+| `BLOCKED` (storico) | 12 | **8 fuori perimetro/rinviati/sostituiti**, **3 non autorizzati**, **1 gate di attivazione React in attesa Owner**. Nessuno equivale automaticamente a difetto |
 | `FAIL` | 0 | Nessun difetto funzionale riprodotto in questo audit documentale |
 
 ## A. Fonti e baseline
@@ -47,6 +47,8 @@
 **Scope:** `BASE` = attivo nella capability map originale; `FIN` = Finance/Admin approvato nella delivery; `DEF` = differito nella baseline originale, da rivalutare con decisioni successive; `SOST` = sostituito; `EXCL` = escluso nell'ambito storico. Le autorità HC-0005 approvate più recenti prevalgono.
 
 **Ricognizione UI:** `INDICATA` = il codice/documentazione React contiene un percorso plausibile, **non** significa funzione approvata; `DA_RICONCILIARE` = esiste flusso limitrofo o report con gap; `NO_UI` = lavoro infrastrutturale/di backend; `NON_RILEVATA` = nessuna corrispondenza puntuale stabilita.
+
+**Separazione fondamentale per ogni prossima interfaccia:** lo **scope del requisito** (`APPROVATO`, `RINVIATO`, `ESCLUSO`, `NON_AUTORIZZATO`, `DA_VALIDARE`) è indipendente dall'**esito della verifica** (`PASS`, `FAIL`, `PARTIAL`, `NOT_TESTED`, `BLOCKED_BY_DEPENDENCY`). Le 12 righe storicamente etichettate `BLOCKED` conservano tale valore nel CSV come dato di AUDIT-00, ma durante l'audit per-area devono essere riportate nel registro di scope appropriato e **non conteggiate come 12 errori**. Le capacità `DA_VALIDARE` non autorizzano implementazioni finché l'Owner non ne conferma il perimetro.
 
 **Verifica:** i prospetti D/E sono l'indice storico, con `AUDIT` come promemoria, non l'esito aggiornato. L'esito puntuale e l'approvazione Owner sono nel CSV. `PASS` vale solo per il controllo esatto associato alla prova indicata; `PARTIAL` include codice presente ma scenario non completamente verificato; `BLOCKED` identifica anche scope formalmente rinviato. Nessun esito `OWNER_DONE` in AUDIT-00.
 
