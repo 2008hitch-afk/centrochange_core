@@ -1,6 +1,10 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
-## Addendum UX-04 — 23/10/2026 (candidato PR #168, non distribuito)
+## Esito installazione AUDIT-04 — 23/10/2026
+
+La PR DRAFT #168 riconciliata con #169 è installata sul solo DEV come immagine `sha256:be800b7e2a72dc8e0d75b6d5fce205243cb0d8f2939b43d985dd7ef0247fe496` dal commit applicativo `373e6ccfa26ec86572c17c202b19c7ee2097fc02`. Gate cifrato, restore isolato, CI, UAT clone e smoke DEV: **PASS**. Owner UAT e merge: **PENDING**. La matrice CSV mantiene 110 righe e gli stati funzionali già circoscritti; le fotografie storiche sotto descrivono le fasi precedenti. [Rapporto finale](AUDIT-04-DEV-INSTALL-2026-10-23.md).
+
+## Addendum UX-04 — 23/10/2026 (fotografia precedente all'installazione)
 
 La prosecuzione Owner di #167 corregge tre difetti di presentazione: UX-04-01 titolo unico nella scheda Patient, UX-04-02 ricerca globale pazienti richiamabile dall'icona della topbar anziché campo permanente, UX-04-03 nomi Marley reali dove disponibili e riferimento opaco stabile per le anagrafiche sintetiche incomplete. Il Patient e il Customer restano distinti; gli ID canonici sono usati dalle API e non sono rinominati. L'Agenda riceve nome e cognome dei Patient presenti negli appuntamenti già autorizzati, senza dipendere dal bootstrap limitato a 500. La ricerca resta filtrata dal server per centro e ruolo. Dettagli e prove nel [rapporto UX-04](AUDIT-04-UX-REMEDIATION.md).
 

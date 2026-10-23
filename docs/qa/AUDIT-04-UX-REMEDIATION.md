@@ -1,5 +1,7 @@
 # AUDIT-04 #167 — Prosecuzione UX-04, PR DRAFT #168
 
+> Aggiornamento 23/10/2026: il candidato riconciliato è stato installato sul DEV; questo testo conserva la cronologia preinstallazione. [Esito e prove finali](AUDIT-04-DEV-INSTALL-2026-10-23.md).
+
 **Stato del candidato:** la prova storica `READY_FOR_DEV_GATE` sulla HEAD `5e23be2eacbf7259aef4ff5934ef538c7942152e` è descritta sotto. La PR #168 ora incorpora il routing della PR #169 tramite il commit `45303b815040f55636fc713b41a981276303d0a8`; `SINGLE_CLIENT_UI_PREMIUM_ONLY` resta attiva sul DEV. La nuova HEAD integrata richiede CI, immagine e UAT isolato propri prima del gate installazione autorizzato nella Issue #167. Il DEV non è ancora stato modificato da AUDIT-04.
 
 ## Correzioni

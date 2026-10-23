@@ -1,5 +1,7 @@
 # AUDIT-04 #167 — Pazienti Premium React: rapporto tecnico
 
+> Aggiornamento 23/10/2026: la successiva versione riconciliata con la PR #169 è stata installata sul DEV. Questo rapporto documenta il candidato precedente; [esito e prove finali](AUDIT-04-DEV-INSTALL-2026-10-23.md).
+
 **Data:** 23/10/2026. **Baseline:** `main` `fa4ea4033e95301c25271d88d7d8c008b035f5c0`. **Branch:** `issue-167/patients-audit`. **Commit applicativo collaudato:** `c07b2c72eed7901abb51b0aac48e043df4b06c1f`. **Stato:** verifiche tecniche isolate `PASS`; Owner `PENDING`; DEV condiviso `NOT_TESTED` per questo candidato. Nessun merge o deploy DEV.
 
 ## Perimetro e modifiche
