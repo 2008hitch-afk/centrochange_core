@@ -19,6 +19,8 @@ function useDialogFocus(onClose: () => void) {
     const items = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])') ?? []).filter(el => el.getClientRects().length > 0)
     items()[0]?.focus()
     const keydown = (e: KeyboardEvent) => {
+      const dialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"]'))
+      if (dialogs.at(-1) !== ref.current) return
       if (e.key === 'Escape') { e.preventDefault(); closeRef.current(); return }
       if (e.key !== 'Tab') return
       const focusable = items(); if (!focusable.length) { e.preventDefault(); return }

@@ -19,6 +19,13 @@ export function syntheticLetter(value: unknown): string | null {
   return match ? match[1].toLocaleUpperCase('it-IT') : null
 }
 
+const syntheticPatientLetter = (value: unknown): string | null => {
+  const letter = syntheticLetter(value)
+  if (letter) return letter
+  const match = /^CC-HTTP-[A-Za-z0-9]{10}\s+(OWN|CROSS)$/.exec(String(value ?? '').trim())
+  return match?.[1] === 'OWN' ? 'A' : match?.[1] === 'CROSS' ? 'B' : null
+}
+
 export function configureDemoLabels(boot: Boot | null, financeBoot: FinanceBoot | null) {
   operationalLabels = boot?.demo_labels ?? {}
   financialLabels = financeBoot?.demo_labels ?? {}
@@ -27,7 +34,10 @@ export function configureDemoLabels(boot: Boot | null, financeBoot: FinanceBoot 
 
 export function demoText(value: unknown): string {
   const original = String(value ?? '')
-  return labels[original] ?? original
+  if (labels[original] != null) return labels[original]
+  const fixture = /^CC-HTTP-[A-Za-z0-9]{10}\s+(SESSION|PACKAGE)$/i.exec(original.trim())
+  if (fixture) return fixture[1].toUpperCase() === 'SESSION' ? 'Servizio di prova' : 'Pacchetto di prova'
+  return original
 }
 
 // Patient and Customer may have the same Frappe name in synthetic fixtures.
@@ -36,7 +46,7 @@ export function demoText(value: unknown): string {
 export function demoPatient(identifier: unknown, fallback: unknown): string {
   const id = String(identifier ?? '')
   const display = String(fallback ?? '').trim()
-  const letter = syntheticLetter(display || id)
+  const letter = syntheticPatientLetter(display || id)
   return operationalLabels[id] ?? operationalLabels[display] ??
     financialLabels[`Patient::${id}`] ?? financialLabels[`PatientDisplay::${display}`] ??
     (syntheticCode(display || id)

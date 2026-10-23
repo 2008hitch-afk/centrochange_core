@@ -145,6 +145,39 @@ class NavigationScopeTests(unittest.TestCase):
         with self.assertRaises(Denied):
             self.workspace.bootstrap('CENTRO-B')
 
+    def test_appointment_events_only_release_allowed_fields_after_record_guard(self):
+        import json
+        calls = []
+        self.frappe.get_doc = lambda *args: types.SimpleNamespace(
+            name=args[1], patient='PAT-A', cc_center='CENTRO-A',
+            check_permission=lambda mode: calls.append(('permission', mode)))
+        event = Record(event_type='APPOINTMENT_RESCHEDULED', actor='user-a',
+                       event_time='2026-10-22 10:00:00', reason='Prova sintetica',
+                       before_state=json.dumps({'appointment_time': '09:00:00', 'secret': 'hidden'}),
+                       after_state=json.dumps({'appointment_time': '10:00:00', 'secret': 'hidden'}))
+        def scoped_rows(doctype, filters, fields):
+            calls.append(('rows', doctype, filters))
+            return [event]
+        with patch.object(self.workspace, 'require_context', side_effect=lambda *args: calls.append(('context', *args))), \
+             patch.object(self.workspace, 'current_rows', side_effect=scoped_rows):
+            result = self.workspace.appointment_events('APP-A')
+        self.assertEqual(calls[0], ('context', 'PAT-A', 'CENTRO-A'))
+        self.assertEqual(calls[1], ('permission', 'read'))
+        self.assertEqual(calls[2][2]['reference_name'], 'APP-A')
+        self.assertEqual(result[0]['before'], {'appointment_time': '09:00:00'})
+        self.assertEqual(result[0]['after'], {'appointment_time': '10:00:00'})
+
+    def test_appointment_events_denies_foreign_context_and_disabled_actor(self):
+        self.frappe.get_doc = lambda *args: types.SimpleNamespace(
+            name=args[1], patient='PAT-B', cc_center='CENTRO-B',
+            check_permission=lambda mode: self.fail('Permission read after foreign context'))
+        with patch.object(self.workspace, 'require_context', side_effect=Denied('foreign')):
+            with self.assertRaises(Denied):
+                self.workspace.appointment_events('APP-B')
+        self.actor_enabled = False
+        with self.assertRaises(Denied):
+            self.workspace.appointment_events('APP-B')
+
 
 if __name__ == '__main__':
     unittest.main()

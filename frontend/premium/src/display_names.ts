@@ -43,7 +43,20 @@ const closureNames: Record<string, string> = {
   Pending: 'Da chiudere', Closed: 'Chiusa', 'Auto Locked': 'Bloccata', Reopened: 'Riaperta'
 }
 const economyNames: Record<string, string> = {
-  Due: 'Dovuta', 'Non Due': 'Non dovuta', 'Package Covered': 'Coperta da pacchetto', Waived: 'Rinuncia economica'
+  Pending: 'Da definire', Due: 'Dovuta', 'Non Due': 'Non dovuta',
+  'Package Covered': 'Coperta da pacchetto', Waived: 'Rinuncia economica'
 }
 export const closureName = (value: unknown) => closureNames[String(value ?? '')] ?? String(value ?? '—')
 export const economyName = (value: unknown) => economyNames[String(value ?? '')] ?? String(value ?? '—')
+
+const syntheticAuditRoles: Record<string, string> = {
+  m: 'Manager di prova', s: 'Segreteria di prova', a: 'Professionista di prova A',
+  b: 'Professionista di prova B', c: 'Professionista di prova C',
+  f: 'Finanza di prova', t: 'Contabilità di prova'
+}
+
+export const auditActorName = (value: unknown) => {
+  const raw = String(value ?? '').trim()
+  const match = /^cc-http-[a-z0-9]{10}-([msabcft])@example\.invalid$/i.exec(raw)
+  return match ? syntheticAuditRoles[match[1].toLowerCase()] : raw || 'Autore non disponibile'
+}

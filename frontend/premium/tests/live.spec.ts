@@ -265,15 +265,16 @@ test('seven identities and Guest: scoped API, cross-center, native access', asyn
       if (role !== 'manager') denied(cross)
       const profile = await context.request.get(endpoint('operations.profiles.patients'), {
         params: { center: fixture.center_a, limit: 1 } })
-      if (['manager', 'secretariat', 'professional_a', 'professional_c'].includes(role))
-        expect(profile.ok(), `profiles ${role}`).toBeTruthy()
-      else if (role === 'finance') {
-        expect(profile.ok(), `profiles ${role}`).toBeTruthy()
-        expect((await profile.json()).message.rows).toEqual([])
-      } else denied(profile)
+      // This scoped read returns an empty list for members with no patient
+      // assignment. Professional B has an authorized UAT assignment.
+      expect(profile.ok(), `profiles ${role}`).toBeTruthy()
+      const patients = (await profile.json()).message.rows as { name: string }[]
+      if (['professional_c', 'finance', 'accountant'].includes(role))
+        expect(patients, `no patient scope for ${role}`).toEqual([])
+      else expect(patients.length, `assigned patient scope for ${role}`).toBeGreaterThan(0)
       const finance = await context.request.get(endpoint('finance.payments.detail'), {
         params: { center: fixture.center_a, name: fixture.payment_a } })
-      if (['manager', 'secretariat', 'finance'].includes(role))
+      if (['manager', 'secretariat', 'finance', 'accountant'].includes(role))
         expect(finance.ok(), `payments ${role}`).toBeTruthy()
       else denied(finance)
     } finally { await context.close() }

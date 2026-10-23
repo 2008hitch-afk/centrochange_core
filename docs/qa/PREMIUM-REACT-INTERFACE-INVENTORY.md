@@ -1,5 +1,13 @@
 # Centro Change — inventario interfacce Premium React (#157)
 
+## Addendum stato operativo — 23/10/2026
+
+- **Login #158:** integrazione PR #160 in `main`; UAT Owner limitato.
+- **AUDIT-02 navigazione #161:** chiuso/completato; PR #163 integrata in `main`; i testi della sezione AUDIT-02 seguente sono un checkpoint datato.
+- **AUDIT-03 Agenda #164:** accettazione funzionale Owner del 23/10; PR [#166](https://github.com/2008hitch-afk/centrochange_core/pull/166) ancora **DRAFT non fusa**, SHA `e5b688a93b9218ed46091966bd794823a14e2274`; deroga DECISION-032 via popup per amministrativi approvata su prove automatizzate **browser/Frappe/MariaDB isolati**. Sul DEV versione candidata installata secondo report Codex e smoke PASS, ma nessuna fixture contabile idonea per replicare il popup; niente dichiarazioni `PASS_LIVE_DEV` su tale caso. L'Owner ha visto Agenda e dettaglio/spostamento, **non** il popup reale su DEV.
+- **AUDIT-04 Pazienti:** successivo secondo la sequenza approvata, **non avviato** fino alla chiusura e autorizzazione specifica.
+- **Rif. di dettaglio:** [matrice funzionale](FUNCTIONAL-COVERAGE-MATRIX.md), [CSV requisiti](FUNCTIONAL-COVERAGE-DETAIL.csv), [rapporto AUDIT-03](AUDIT-03-AGENDA-TECHNICAL-REVIEW.md), [tracker #156](https://github.com/2008hitch-afk/centrochange_core/issues/156). Nessuna modifica alla fonte di verità Frappe/ERPNext/Marley.
+
 ## Addendum AUDIT-02 — navigazione (#161, 22/10/2026)
 
 La baseline corrente è `main` a `335de5709e1c7b477be0b677f69913ecc2f6a9e6`, dopo l'integrazione di #149, #150, #159 e #160. Il candidato AUDIT-02 è nel branch `issue-161/premium-navigation`. Il DEV osservato in sola lettura usa ancora l'immagine `sha256:569909d92601328a4f2f9cdef356fff547d84b28bc986321ff4aea30d9bca063`, con label sorgente `01abc5cb72b092b8c1738f6e097814d50292f114`: non è evidenza live del candidato #161. La sezione sottostante è il checkpoint storico AUDIT-00 e mantiene i suoi SHA.

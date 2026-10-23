@@ -33,12 +33,15 @@ PREMIUM_ADDED = {
     'centrochange_core/public/premium/app.css',
     'centrochange_core/public/premium/public.js',
     'centrochange_core/public/premium/logo.webp',
-    'centrochange_core/public/premium/style-B1yrmfFv.js',
+    'centrochange_core/public/premium/style-Bdo21b0O.js',
     'centrochange_core/public/css/login_v1.css',
     'centrochange_core/public/js/login_v1.js',
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
+                           'centrochange_core/finance/collections.py',
+                           'centrochange_core/scheduling/booking.py',
                            'centrochange_core/operations/workspace.py',
+                           'centrochange_core/scheduling/availability.py',
                            'centrochange_core/finance/reporting.py',
                            'centrochange_core/operations/client_landing.py',
                            'centrochange_core/finance/reporting_acceptance.py',
@@ -49,7 +52,8 @@ REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
                            'centrochange_core/templates/cc_web_base.html',
                            'centrochange_core/translations/it.csv'}
 ENDPOINT_MODULES = ('catalog', 'scoped_api', 'operations.profiles',
-                    'finance.payments', 'finance.documents')
+                    'finance.payments', 'finance.documents',
+                    'finance.collections', 'scheduling.booking')
 
 
 def require(value, message):

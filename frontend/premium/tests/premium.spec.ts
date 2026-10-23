@@ -1,4 +1,107 @@
 import { expect, test, type Page } from '@playwright/test'
+import { configureDemoLabels, demoPatient, demoText } from '../src/demo_labels'
+import { auditActorName, economyName } from '../src/display_names'
+
+test('AUDIT-03: historical state and owned synthetic audit actor stay readable', () => {
+  expect(economyName('Pending')).toBe('Da definire')
+  expect(auditActorName('cc-http-1234567890-m@example.invalid')).toBe('Manager di prova')
+  expect(auditActorName('maria.rossi@example.invalid')).toBe('maria.rossi@example.invalid')
+})
+
+test('AUDIT-03: vista giorno usa la stessa etichetta servizio della settimana', async ({ page }) => {
+  const service = 'CC-HTTP-AbCd123456 SESSION'
+  await mockApi(page, [], true, {}, {}, [{ ...appointment, cc_service_label: service }])
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Giorno', exact: true }).click()
+  await expect(page.locator('.rbc-event')).toContainText('Servizio di prova')
+  await expect(page.locator('.rbc-event')).not.toContainText(service)
+})
+
+test('AUDIT-03: una seduta futura non offre chiusura anticipata', async ({ page }) => {
+  const future = new Date(`${today}T12:00:00Z`)
+  future.setUTCDate(future.getUTCDate() + 7)
+  await mockApi(page, [], true, {}, {}, [{ ...appointment, appointment_date: future.toISOString().slice(0, 10) }])
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Periodo successivo' }).click()
+  await page.locator('.week-event').first().click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer.getByRole('button', { name: 'Sposta', exact: true })).toBeVisible()
+  await expect(drawer.getByRole('button', { name: 'Chiudi seduta' })).toHaveCount(0)
+})
+
+test('AUDIT-03: spostamento bloccato mostra due debiti e deroga contestuale autorizzata', async ({ page }, info) => {
+  const future = new Date(`${today}T12:00:00Z`)
+  future.setUTCDate(future.getUTCDate() + 7)
+  const day = future.toISOString().slice(0, 10)
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, {}, [{ ...appointment, appointment_date: day }])
+  await page.route('**/api/method/centrochange_core.scheduling.booking.reschedule*', async route => {
+    const method = new URL(route.request().url()).pathname
+    if (method.endsWith('reschedule_payment_blockers')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { blocked: true, can_override: true, debts: [
+        { center: 'CENTRO-A', reference_doctype: 'Sales Invoice', reference_name: 'INV-1', amount: 80, currency: 'EUR', due_date: today, original_due_date: today },
+        { center: 'CENTRO-A', reference_doctype: 'Patient Appointment', reference_name: 'APP-OLD', amount: 40, currency: 'EUR', due_date: today, original_due_date: today }
+      ] } }) })
+    } else if (method.endsWith('reschedule_with_payment_override')) {
+      writes.push({ method, body: route.request().postDataJSON(), headers: route.request().headers() })
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { name: 'APP-001', replay: false } }) })
+    } else {
+      writes.push({ method, body: route.request().postDataJSON(), headers: route.request().headers() })
+      await route.fulfill({ status: 417, contentType: 'application/json', body: JSON.stringify({ exc: 'ValidationError', _server_messages: JSON.stringify([JSON.stringify({ message: 'Serve una verifica dei pagamenti prima della prossima seduta: contatta la segreteria.' })]) }) })
+    }
+  })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Periodo successivo' }).click()
+  await page.locator('.week-event').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await drawer.getByRole('button', { name: 'Sposta', exact: true }).click()
+  await drawer.getByRole('textbox', { name: /Motivo/ }).fill('Spostamento di prova')
+  await drawer.getByRole('button', { name: 'Conferma', exact: true }).click()
+  const popup = page.getByRole('dialog', { name: 'Verifica pagamenti prima dello spostamento' })
+  await expect(popup.getByText('Fattura 1')).toBeVisible()
+  await expect(popup.getByText('Seduta non fatturata 2')).toBeVisible()
+  await page.screenshot({ path: info.outputPath('payment-block-override.png') })
+  await popup.getByRole('textbox', { name: 'Motivazione della deroga' }).fill('Deroga di prova')
+  await popup.getByRole('button', { name: 'Autorizza e procedi' }).click()
+  await expect(popup).toHaveCount(0)
+  const action = writes.find(write => write.method.endsWith('reschedule_with_payment_override'))!
+  expect(action.body.expected_references).toEqual([
+    { reference_doctype: 'Sales Invoice', reference_name: 'INV-1' },
+    { reference_doctype: 'Patient Appointment', reference_name: 'APP-OLD' }
+  ])
+  expect(action.body.override_reason).toBe('Deroga di prova')
+  expect(action.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
+})
+
+test('AUDIT-03: utente senza permesso vede blocco ma non può derogare', async ({ page }) => {
+  const future = new Date(`${today}T12:00:00Z`)
+  future.setUTCDate(future.getUTCDate() + 7)
+  await mockApi(page, [], true, {}, { roles: ['CC Professional'] }, [{ ...appointment, appointment_date: future.toISOString().slice(0, 10) }])
+  await page.route('**/api/method/centrochange_core.scheduling.booking.reschedule*', async route => {
+    if (route.request().method() === 'GET') await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { blocked: true, can_override: false, debts: [] } }) })
+    else await route.fulfill({ status: 417, contentType: 'application/json', body: JSON.stringify({ exc: 'ValidationError', _server_messages: JSON.stringify([JSON.stringify({ message: 'Serve una verifica dei pagamenti prima della prossima seduta: contatta la segreteria.' })]) }) })
+  })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Periodo successivo' }).click()
+  await page.locator('.week-event').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await drawer.getByRole('button', { name: 'Sposta', exact: true }).click()
+  await drawer.getByRole('textbox', { name: /Motivo/ }).fill('Spostamento di prova')
+  await drawer.getByRole('button', { name: 'Conferma', exact: true }).click()
+  const popup = page.getByRole('dialog', { name: 'Verifica pagamenti prima dello spostamento' })
+  await expect(popup.getByText('il tuo ruolo non può autorizzare una deroga')).toBeVisible()
+  await expect(popup.getByRole('button', { name: 'Autorizza e procedi' })).toHaveCount(0)
+})
+
+test('AUDIT-03: owned synthetic Agenda records show readable labels without changing canonical IDs', () => {
+  configureDemoLabels(null, null)
+  const tag = 'CC-HTTP-AbCd123456'
+  expect(demoPatient(`${tag} OWN`, `${tag} OWN`)).toBe('Paziente di prova A')
+  expect(demoPatient(`${tag} CROSS`, `${tag} CROSS`)).toBe('Paziente di prova B')
+  expect(demoText(`${tag} Session`)).toBe('Servizio di prova')
+  expect(demoText(`${tag} PACKAGE`)).toBe('Pacchetto di prova')
+  expect(demoText('Servizio reale')).toBe('Servizio reale')
+})
 
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 const todayItalian = `${today.slice(8, 10)}/${today.slice(5, 7)}/${today.slice(0, 4)}`
@@ -97,6 +200,11 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
     else if (method.endsWith('operations.workspace.patient_history')) message = { appointments: [{ ...appointment, ...appointmentState }], packages: [], organizational_notes: [{ name: 'NOTE-002', content: 'Nota sintetica rettificata', creation: today + ' 12:00:00', authored_by: 'direzione@example.invalid', corrects: 'NOTE-001' }, { name: 'NOTE-001', content: 'Nota sintetica', creation: today + ' 11:00:00', authored_by: 'direzione@example.invalid', corrects: null }], private_notes: [], settlements: [] }
+    else if (method.endsWith('operations.workspace.appointment_events')) message = [
+      { event_type: 'APPOINTMENT_BOOKED', actor: 'direzione@example.invalid', event_time: today + ' 08:00:00', reason: 'Prenotazione sintetica', before: {}, after: { appointment_date: today, appointment_time: '09:00:00' } },
+      { event_type: 'APPOINTMENT_RESCHEDULED', actor: 'direzione@example.invalid', event_time: today + ' 08:30:00', reason: 'Spostamento sintetico', before: { appointment_date: today, appointment_time: '09:00:00' }, after: { appointment_date: today, appointment_time: '10:00:00' } },
+      { event_type: 'SESSION_AUTO_LOCKED', actor: 'scheduler@example.invalid', event_time: today + ' 09:00:00', reason: 'Scadenza sintetica', before: { closure: 'Pending' }, after: { closure: 'Auto Locked' } }
+    ]
     else if (method.endsWith('operations.workspace.schedules')) message = [{ name: 'SCHED-001', practitioner: 'PR-001', time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '18:00:00' }], absences: [] }]
     else if (method.endsWith('operations.reporting.summary')) message = { currencies: { EUR: { sessions: 1, performed: 0, due: 1, due_snapshot_amount: 80 } }, truncated: false }
     else if (method.endsWith('finance.reporting.summary')) message = { totals: { revenue_net: 600, collected: 400, receivable_outstanding: 200, purchase_net: 250, payable_outstanding: 80, expected_compensation: 120, unresolved_expectations: 0, sessions: 4 }, sales_invoices: [], purchase_invoices: [], scope_note: 'Dati sintetici.' }
@@ -249,6 +357,86 @@ test('UAT Agenda: sette colonne uguali, professionisti per riga e prenotazione c
   await page.getByLabel('Professionista', { exact: true }).selectOption('PR-002')
   await expect(page.locator('.week-row')).toHaveCount(1)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+})
+
+test('AUDIT-03 storico seduta mostra evento, prima/dopo e motivo senza confondere le note', async ({ page }, info) => {
+  await mockApi(page)
+  await page.goto('./#Agenda')
+  await page.locator('.week-event').first().click()
+  const drawer = page.getByRole('dialog')
+  await drawer.getByRole('tab', { name: 'Storico' }).click()
+  await expect(drawer.getByText('Prenotazione spostata')).toBeVisible()
+  await expect(drawer.getByText('Seduta bloccata automaticamente')).toBeVisible()
+  await expect(drawer.getByText('Spostamento sintetico')).toBeVisible()
+  await expect(drawer.getByText('09:00 → 10:00')).toBeVisible()
+  await expect(drawer).toContainText(todayItalian)
+  await expect(drawer.getByText('Le versioni delle note sono nella scheda Note.')).toBeVisible()
+  await page.screenshot({ path: info.outputPath('agenda-storico.png'), fullPage: true })
+})
+
+test('AUDIT-03 blocchi settimanali seguono il tempo e conservano giorno e professionista', async ({ page }) => {
+  const anchor = new Date(`${today}T12:00:00Z`)
+  const monday = new Date(anchor.getTime() - ((anchor.getUTCDay() + 6) % 7) * 86_400_000).toISOString().slice(0, 10)
+  await mockApi(page, [], true, {}, {}, [
+    { ...appointment, appointment_date: monday, appointment_time: '09:00:00' },
+    { ...appointment, name: 'APP-002', appointment_date: monday, appointment_time: '12:00:00' }
+  ])
+  await page.goto('./#Agenda')
+  const cell = page.locator(`.week-cell[data-date="${monday}"][data-practitioner="PR-001"]`)
+  await expect(cell.locator('.week-event')).toHaveCount(2)
+  const positions = await cell.locator('.week-event').evaluateAll(elements => elements.map(element => ({
+    time: element.getAttribute('data-time'), top: element.getBoundingClientRect().top
+  })))
+  expect(positions.map(item => item.time)).toEqual(['09:00', '12:00'])
+  expect(positions[1].top - positions[0].top).toBeGreaterThanOrEqual(140)
+  expect(positions[1].top - positions[0].top).toBeLessThanOrEqual(148)
+  const labelAndAxis = await page.locator('.week-professional').first().evaluate(element => ({
+    labelBottom: element.querySelector('strong')!.getBoundingClientRect().bottom,
+    axisTop: element.querySelector('.week-hour-axis span')!.getBoundingClientRect().top
+  }))
+  expect(labelAndAxis.axisTop).toBeGreaterThan(labelAndAxis.labelBottom)
+})
+
+test('AUDIT-03 modifica un giorno senza cancellare le altre fasce e annulla assenza esatta', async ({ page }, info) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.route('**/api/method/centrochange_core.operations.workspace.schedules*', async route => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: [{
+      name: 'SCHED-001', modified: '2026-10-22 10:00:00', practitioner: 'PR-001', time_slots: [
+        { day: 'Monday', from_time: '09:00:00', to_time: '12:00:00' },
+        { day: 'Tuesday', from_time: '14:00:00', to_time: '18:00:00' }
+      ], absences: [{ name: 'ABS-001', start_date: today, end_date: today, start_time: '11:00:00', end_time: '12:00:00' }]
+    }] }) })
+  })
+  await page.goto('./#Disponibilit%C3%A0')
+  await expect(page.getByText('Martedì')).toBeVisible()
+  await page.screenshot({ path: info.outputPath('agenda-disponibilita.png'), fullPage: true })
+  await page.getByRole('button', { name: 'Modifica orario' }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Dalle').fill('10:00')
+  await dialog.getByLabel(/^Alle/).fill('13:00')
+  await dialog.getByLabel('Motivo').fill('Orario di prova')
+  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeTruthy()
+  expect(writes.find(write => write.method.endsWith('availability.set_schedule'))?.body.time_slots).toEqual([
+    { day: 'Tuesday', from_time: '14:00:00', to_time: '18:00:00' },
+    { day: 'Monday', from_time: '10:00', to_time: '13:00' }
+  ])
+  expect(writes.find(write => write.method.endsWith('availability.set_schedule'))?.body.expected_modified).toBe('2026-10-22 10:00:00')
+  await page.getByRole('button', { name: 'Annulla assenza' }).click()
+  await dialog.getByLabel('Motivo').fill('Annullamento di prova')
+  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(write => write.method.endsWith('availability.cancel_absence'))).toBeTruthy()
+  expect(writes.find(write => write.method.endsWith('availability.cancel_absence'))?.body).toEqual({ availability: 'ABS-001', reason: 'Annullamento di prova' })
+})
+
+test('AUDIT-03 non offre spostamento della seduta storica rinviato da DECISION-059', async ({ page }) => {
+  const yesterday = new Date(Date.parse(`${today}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
+  await mockApi(page, [], true, { appointment_date: yesterday, cc_closure_state: 'Reopened' })
+  await page.goto('./#Agenda')
+  if (new Date(`${today}T12:00:00Z`).getUTCDay() === 1) await page.getByRole('button', { name: 'Periodo precedente' }).click()
+  await page.locator('.week-event').first().click()
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Sposta' })).toHaveCount(0)
 })
 
 test('UAT Professionisti: navigazione, ricerca e scheda autorizzata', async ({ page }, testInfo) => {
