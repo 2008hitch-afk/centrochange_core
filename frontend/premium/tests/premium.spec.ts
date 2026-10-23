@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
 import { configureDemoLabels, demoPatient, demoText } from '../src/demo_labels'
+import { auditActorName, economyName } from '../src/display_names'
+
+test('AUDIT-03: historical state and owned synthetic audit actor stay readable', () => {
+  expect(economyName('Pending')).toBe('Da definire')
+  expect(auditActorName('cc-http-1234567890-m@example.invalid')).toBe('Manager di prova')
+  expect(auditActorName('maria.rossi@example.invalid')).toBe('maria.rossi@example.invalid')
+})
 
 test('AUDIT-03: owned synthetic Agenda records show readable labels without changing canonical IDs', () => {
   configureDemoLabels(null, null)

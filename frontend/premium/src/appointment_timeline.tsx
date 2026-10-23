@@ -1,6 +1,6 @@
 import { type Row, displayDate, time } from './api'
 import { Empty } from './ui'
-import { closureName, economyName } from './display_names'
+import { auditActorName, closureName, economyName } from './display_names'
 
 const events: Record<string, string> = {
   APPOINTMENT_BOOKED: 'Prenotazione creata',
@@ -40,7 +40,7 @@ export function AppointmentTimeline({ rows }: { rows: Row[] }) {
       .filter(key => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
     return <article key={`${String(row.event_type)}-${String(row.event_time)}-${index}`}>
       <strong>{events[String(row.event_type)] ?? 'Modifica registrata'}</strong>
-      <span>{stamp(row.event_time)} · {String(row.actor || 'Autore non disponibile')}</span>
+      <span>{stamp(row.event_time)} · {auditActorName(row.actor)}</span>
       {Boolean(row.reason) && <p><b>Motivo:</b> {String(row.reason)}</p>}
       {changes.length > 0 && <dl>{changes.map(key => <div key={key}><dt>{fields[key] ?? 'Dettaglio'}</dt><dd>{key in before ? `${fact(key, before[key])} → ${fact(key, after[key])}` : fact(key, after[key])}</dd></div>)}</dl>}
     </article>
