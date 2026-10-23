@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 
 type Role = 'manager' | 'secretariat' | 'professional_a' | 'professional_b' | 'professional_c' | 'finance' | 'accountant'
 type Fixture = { synthetic_only: true; tag: string; center_a: string; center_b: string;
-  patient_a: string; patient_b: string; practitioner_a: string; practitioner_b: string;
+  patient_a: string; patient_b: string; patient_mvp: string; patient_real: string; practitioner_a: string; practitioner_b: string;
   template: string; package: string; appointment_type: string; manager_second: string; roles: Record<Role, string> }
 const path = process.env.CC_PATIENTS_ISOLATED_FIXTURE
 if (!path || process.env.CC_PATIENTS_ISOLATED !== 'YES') throw new Error('Private AUDIT-04 clone fixture required')
@@ -20,7 +20,7 @@ const fixture = JSON.parse(readFileSync(privateFile(path), 'utf8')) as Fixture
 const roles: Role[] = ['manager', 'secretariat', 'professional_a', 'professional_b', 'professional_c', 'finance', 'accountant']
 if (fixture.synthetic_only !== true || !/^CC-HTTP-[A-Za-z0-9]{10}$/.test(fixture.tag) ||
     !fixture.center_a || !fixture.center_b || fixture.center_a === fixture.center_b ||
-    !fixture.patient_a || !fixture.patient_b || !fixture.template || !fixture.package ||
+    !fixture.patient_a || !fixture.patient_b || !/^CC-MVP-POS-/.test(fixture.patient_mvp) || !/^CC-MVP-POS-/.test(fixture.patient_real) || !fixture.template || !fixture.package ||
     !fixture.appointment_type || !fixture.manager_second || roles.some(role => !fixture.roles[role]))
   throw new Error('AUDIT-04 fixture inventory incomplete')
 for (const role of roles) privateFile(fixture.roles[role])
@@ -44,21 +44,21 @@ async function post(ctx: BrowserContext, token: string, name: string, args: Reco
 test('UX-04 live isolato: nome Patient reale, fallback onesto, ricerca contestuale e centro A/B', async ({ browser }, info) => {
   const ctx = await context(browser, 'manager')
   try {
-    const detail = await get(ctx, 'operations.profiles.patient_detail', { center: fixture.center_a, name: fixture.patient_a })
+    const detail = await get(ctx, 'operations.profiles.patient_detail', { center: fixture.center_a, name: fixture.patient_real })
     expect(detail.response.ok()).toBeTruthy()
     const displayName = `${detail.body.message.first_name} ${detail.body.message.last_name}`.trim()
     expect(displayName).not.toMatch(/^CC-/i)
     const firstName = String(detail.body.message.first_name)
     const boot = await get(ctx, 'operations.workspace.bootstrap', { center: fixture.center_a })
     expect(boot.response.ok()).toBeTruthy()
-    const own = (boot.body.message?.patients ?? []).find((row: { name: string }) => row.name === fixture.patient_a)
+    const own = (boot.body.message?.patients ?? []).find((row: { name: string }) => row.name === fixture.patient_real)
     expect(own).toMatchObject({ first_name: detail.body.message.first_name, last_name: detail.body.message.last_name })
     const searched = await get(ctx, 'operations.workspace.patient_search', { center: fixture.center_a, query: firstName })
     expect(searched.response.ok()).toBeTruthy()
-    expect((searched.body.message?.patients ?? []).map((row: { name: string }) => row.name)).toContain(fixture.patient_a)
+    expect((searched.body.message?.patients ?? []).map((row: { name: string }) => row.name)).toContain(fixture.patient_real)
     const foreign = await get(ctx, 'operations.workspace.patient_search', { center: fixture.center_b, query: firstName })
     expect(foreign.response.ok()).toBeTruthy()
-    expect((foreign.body.message?.patients ?? []).map((row: { name: string }) => row.name)).not.toContain(fixture.patient_a)
+    expect((foreign.body.message?.patients ?? []).map((row: { name: string }) => row.name)).not.toContain(fixture.patient_real)
 
     const page = await ctx.newPage()
     await page.goto('/premium/#Pazienti')
@@ -66,12 +66,12 @@ test('UX-04 live isolato: nome Patient reale, fallback onesto, ricerca contestua
     await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toHaveCount(0)
     await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(firstName)
     await expect(page.locator('tbody')).toContainText(displayName)
-    await expect(page.locator('tbody')).not.toContainText(fixture.patient_a)
+    await expect(page.locator('tbody')).not.toContainText(fixture.patient_real)
     await page.locator('tbody tr').first().click()
     const drawer = page.getByRole('dialog', { name: displayName })
     await expect(drawer.getByRole('heading', { name: displayName })).toHaveCount(1)
     await expect(drawer.getByRole('heading', { name: 'Anagrafica' })).toBeVisible()
-    await expect(drawer).not.toContainText(fixture.patient_a)
+    await expect(drawer).not.toContainText(fixture.patient_real)
     await page.screenshot({ path: info.outputPath(`ux-04-live-patient-${info.project.name}.png`), fullPage: true })
     await drawer.getByRole('button', { name: 'Chiudi' }).click()
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_b)
@@ -105,6 +105,47 @@ test('UX-04 live isolato: nuova proiezione Patient non allarga ruoli o accesso d
   } finally { await guest.close() }
 })
 
+test('UX-04 live isolato: CC-MVP-POS incompleto resta distinguibile dopo refresh; Agenda proietta solo sedute autorizzate', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  const manager = await context(browser, 'manager')
+  try {
+    const page = await manager.newPage()
+    await page.goto('/premium/#Pazienti')
+    const token = await csrf(page)
+    await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_mvp)
+    await expect(page.locator('tbody')).toContainText('Anagrafica da completare · scheda')
+    await expect(page.locator('tbody')).not.toContainText(fixture.patient_mvp)
+    const before = await page.locator('tbody tr').first().innerText()
+    await page.reload()
+    await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_mvp)
+    await expect(page.locator('tbody tr').first()).toHaveText(before)
+    await page.screenshot({ path: info.outputPath('ux-04-live-mvp-fallback-desktop.png'), fullPage: true })
+    const foreign = await get(manager, 'operations.workspace.patient_search', { center: fixture.center_b, query: fixture.patient_mvp })
+    expect(foreign.response.ok()).toBeTruthy()
+    expect((foreign.body.message?.patients ?? []).map((row: { name: string }) => row.name)).not.toContain(fixture.patient_mvp)
+    const booked = await post(manager, token, 'scheduling.booking.book', {
+      patient: fixture.patient_mvp, practitioner: fixture.practitioner_a, center: fixture.center_a,
+      appointment_type: fixture.appointment_type, appointment_date: '2099-01-12', appointment_time: '09:00:00',
+      request_key: fixture.tag + '-ux04-mvp-agenda', reason: 'Seduta sintetica per proiezione Agenda' })
+    expect(booked.response.ok()).toBeTruthy()
+    for (const role of ['manager', 'secretariat', 'professional_a'] as Role[]) {
+      const ctx = await context(browser, role)
+      try {
+        const agenda = await get(ctx, 'operations.workspace.agenda', { center: fixture.center_a, start: '2099-01-12', end: '2099-01-18' })
+        expect(agenda.response.ok(), `${role} Agenda HTTP`).toBeTruthy()
+        const row = (agenda.body.message?.appointments ?? []).find((item: { patient: string }) => item.patient === fixture.patient_mvp)
+        expect(row, `${role} sees only assigned synthetic appointment`).toBeTruthy()
+        expect(row.patient_first_name).toMatch(/^CC-MVP-POS-/)
+        expect(row.patient_last_name).toBeFalsy()
+        const denied = await get(ctx, 'operations.workspace.agenda', { center: fixture.center_b, start: '2099-01-12', end: '2099-01-18' })
+        if (denied.response.ok()) expect((denied.body.message?.appointments ?? []).some((item: { patient: string }) => item.patient === fixture.patient_mvp)).toBeFalsy()
+      } finally { await ctx.close() }
+    }
+  } finally { await manager.close() }
+})
+
 test('scheda Pazienti reale: ricerca, profilo, note, pacchetto e responsive', async ({ browser }, info) => {
   const ctx = await context(browser, 'manager')
   try {
@@ -115,11 +156,11 @@ test('scheda Pazienti reale: ricerca, profilo, note, pacchetto e responsive', as
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
     await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag + '-inesistente')
     await expect(page.getByText('Nessun paziente trovato')).toBeVisible()
-    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_a)
     await expect(page.locator('tbody tr')).toHaveCount(1)
     await page.locator('tbody tr').first().click()
     const drawer = page.getByRole('dialog')
-    await expect(drawer.getByRole('heading', { name: /Paziente/ }).first()).toBeVisible()
+    await expect(drawer.getByRole('heading', { level: 2 })).toHaveCount(1)
     await expect(drawer.getByRole('heading', { name: 'Anagrafica' })).toBeVisible()
     await expect(drawer.getByRole('heading', { name: 'Note organizzative' })).toBeVisible()
     await expect(drawer.getByRole('heading', { name: 'Pacchetti' })).toBeVisible()
@@ -289,7 +330,7 @@ test('browser reale: form paziente, validazione, nota e persistenza', async ({ b
     const page = await ctx.newPage()
     await page.goto('/premium/#Pazienti')
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
-    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_a)
     await expect(page.locator('tbody tr')).toHaveCount(1)
     await page.locator('tbody tr').click()
     const drawer = page.getByRole('dialog')
@@ -304,7 +345,7 @@ test('browser reale: form paziente, validazione, nota e persistenza', async ({ b
     await expect(drawer.getByRole('heading', { name: /Paziente prova interfaccia/ }).first()).toBeVisible()
     await page.reload()
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
-    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_a)
     await page.locator('tbody tr').click()
     await expect(page.getByRole('dialog').getByText('Paziente prova interfaccia').first()).toBeVisible()
     const note = page.getByRole('dialog').getByRole('textbox', { name: 'Nuova nota organizzativa' })
@@ -490,7 +531,7 @@ test('storico seduta reale: prenotazione, riserva, cancellazione e rilascio pacc
     const after = await get(manager, 'operations.workspace.appointment_events', { appointment: name })
     expect(after.body.message.some((row: { event_type: string }) => row.event_type === 'SESSION_CANCELLED')).toBeTruthy()
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
-    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_a)
     await page.locator('tbody tr').first().click()
     const drawer = page.getByRole('dialog')
     if (inVisibleHistory) {
@@ -598,7 +639,7 @@ test('ultima revoca: Direzione legge storico, scritture bloccate e riattivazione
       expect(direct.response.ok()).toBeFalsy()
     }
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
-    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_a)
     await expect(page.locator('tbody tr').filter({ hasText: 'Storico' }).first()).toBeVisible()
     await page.locator('tbody tr').filter({ hasText: 'Storico' }).first().click()
     const drawer = page.getByRole('dialog')
@@ -755,7 +796,7 @@ test('storico oltre cento sedute: limite e avviso espliciti', async ({ browser }
     expect(history.body.message.truncated).toBe(true)
     expect(history.body.message.appointments).toHaveLength(100)
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
-    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_a)
     await page.locator('tbody tr').first().click()
     await expect(page.getByRole('dialog').getByText('Mostrate le ultime 100 sedute.')).toBeVisible()
   } finally { await manager.close() }
