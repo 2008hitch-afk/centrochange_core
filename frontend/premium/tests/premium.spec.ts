@@ -29,6 +29,70 @@ test('AUDIT-03: una seduta futura non offre chiusura anticipata', async ({ page 
   await expect(drawer.getByRole('button', { name: 'Chiudi seduta' })).toHaveCount(0)
 })
 
+test('AUDIT-03: spostamento bloccato mostra due debiti e deroga contestuale autorizzata', async ({ page }, info) => {
+  const future = new Date(`${today}T12:00:00Z`)
+  future.setUTCDate(future.getUTCDate() + 7)
+  const day = future.toISOString().slice(0, 10)
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, {}, [{ ...appointment, appointment_date: day }])
+  await page.route('**/api/method/centrochange_core.scheduling.booking.reschedule*', async route => {
+    const method = new URL(route.request().url()).pathname
+    if (method.endsWith('reschedule_payment_blockers')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { blocked: true, can_override: true, debts: [
+        { center: 'CENTRO-A', reference_doctype: 'Sales Invoice', reference_name: 'INV-1', amount: 80, currency: 'EUR', due_date: today, original_due_date: today },
+        { center: 'CENTRO-A', reference_doctype: 'Patient Appointment', reference_name: 'APP-OLD', amount: 40, currency: 'EUR', due_date: today, original_due_date: today }
+      ] } }) })
+    } else if (method.endsWith('reschedule_with_payment_override')) {
+      writes.push({ method, body: route.request().postDataJSON(), headers: route.request().headers() })
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { name: 'APP-001', replay: false } }) })
+    } else {
+      writes.push({ method, body: route.request().postDataJSON(), headers: route.request().headers() })
+      await route.fulfill({ status: 417, contentType: 'application/json', body: JSON.stringify({ exc: 'ValidationError', _server_messages: JSON.stringify([JSON.stringify({ message: 'Serve una verifica dei pagamenti prima della prossima seduta: contatta la segreteria.' })]) }) })
+    }
+  })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Periodo successivo' }).click()
+  await page.locator('.week-event').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await drawer.getByRole('button', { name: 'Sposta', exact: true }).click()
+  await drawer.getByRole('textbox', { name: /Motivo/ }).fill('Spostamento di prova')
+  await drawer.getByRole('button', { name: 'Conferma', exact: true }).click()
+  const popup = page.getByRole('dialog', { name: 'Verifica pagamenti prima dello spostamento' })
+  await expect(popup.getByText('Fattura 1')).toBeVisible()
+  await expect(popup.getByText('Seduta non fatturata 2')).toBeVisible()
+  await page.screenshot({ path: info.outputPath('payment-block-override.png') })
+  await popup.getByRole('textbox', { name: 'Motivazione della deroga' }).fill('Deroga di prova')
+  await popup.getByRole('button', { name: 'Autorizza e procedi' }).click()
+  await expect(popup).toHaveCount(0)
+  const action = writes.find(write => write.method.endsWith('reschedule_with_payment_override'))!
+  expect(action.body.expected_references).toEqual([
+    { reference_doctype: 'Sales Invoice', reference_name: 'INV-1' },
+    { reference_doctype: 'Patient Appointment', reference_name: 'APP-OLD' }
+  ])
+  expect(action.body.override_reason).toBe('Deroga di prova')
+  expect(action.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
+})
+
+test('AUDIT-03: utente senza permesso vede blocco ma non può derogare', async ({ page }) => {
+  const future = new Date(`${today}T12:00:00Z`)
+  future.setUTCDate(future.getUTCDate() + 7)
+  await mockApi(page, [], true, {}, { roles: ['CC Professional'] }, [{ ...appointment, appointment_date: future.toISOString().slice(0, 10) }])
+  await page.route('**/api/method/centrochange_core.scheduling.booking.reschedule*', async route => {
+    if (route.request().method() === 'GET') await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { blocked: true, can_override: false, debts: [] } }) })
+    else await route.fulfill({ status: 417, contentType: 'application/json', body: JSON.stringify({ exc: 'ValidationError', _server_messages: JSON.stringify([JSON.stringify({ message: 'Serve una verifica dei pagamenti prima della prossima seduta: contatta la segreteria.' })]) }) })
+  })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Periodo successivo' }).click()
+  await page.locator('.week-event').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await drawer.getByRole('button', { name: 'Sposta', exact: true }).click()
+  await drawer.getByRole('textbox', { name: /Motivo/ }).fill('Spostamento di prova')
+  await drawer.getByRole('button', { name: 'Conferma', exact: true }).click()
+  const popup = page.getByRole('dialog', { name: 'Verifica pagamenti prima dello spostamento' })
+  await expect(popup.getByText('il tuo ruolo non può autorizzare una deroga')).toBeVisible()
+  await expect(popup.getByRole('button', { name: 'Autorizza e procedi' })).toHaveCount(0)
+})
+
 test('AUDIT-03: owned synthetic Agenda records show readable labels without changing canonical IDs', () => {
   configureDemoLabels(null, null)
   const tag = 'CC-HTTP-AbCd123456'

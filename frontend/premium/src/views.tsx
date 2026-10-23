@@ -3,7 +3,7 @@ import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar'
 import dayjs from 'dayjs'
 import 'dayjs/locale/it'
 import { Plus, ChevronLeft, ChevronRight, RefreshCw, Filter, Download, CalendarDays, Check, Search, ArrowRight, UserRound, Clock3 } from 'lucide-react'
-import { type Appointment, type Boot, type FinanceBoot, type Patient, type Row, ops, finance, schedule, call, requestKey, romeToday, displayDate, money, time } from './api'
+import { type Appointment, type Boot, type FinanceBoot, type Patient, type ReschedulePaymentBlock, type Row, ops, finance, schedule, call, requestKey, romeToday, displayDate, money, time } from './api'
 import { type Feedback, Button, Chip, DataTable, DateInput, Drawer, Empty, Field, FormError, Heading, Metric, Modal, SearchableSelect, dateColumn, moneyColumn, useAction } from './ui'
 import { FinanceActions } from './finance_actions'
 import { FinanceCreate } from './finance_create'
@@ -84,6 +84,7 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
 }
 
 function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: { row: Appointment; boot: Boot; center: string; onClose: () => void; onSuccess: () => void; feedback: Feedback }) {
+  const overrideKeys = useRef<Record<string, string>>({})
   const [tab, setTab] = useState<'Seduta' | 'Storico' | 'Note'>('Seduta')
   const [history, setHistory] = useState<Row | null>(null)
   const [events, setEvents] = useState<Row[] | null>(null)
@@ -92,6 +93,11 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: 
   const [reason, setReason] = useState('')
   const [moveDate, setMoveDate] = useState(row.appointment_date)
   const [moveTime, setMoveTime] = useState(time(row.appointment_time))
+  const [paymentBlock, setPaymentBlock] = useState<ReschedulePaymentBlock | null>(null)
+  const [overrideReason, setOverrideReason] = useState('')
+  const [overrideDue, setOverrideDue] = useState('')
+  const [moveBusy, setMoveBusy] = useState(false)
+  const [moveError, setMoveError] = useState('')
   const [paid, setPaid] = useState(Boolean(row.cc_paid))
   const [paymentMethod, setPaymentMethod] = useState(boot.payment_methods[0] ?? '')
   const [note, setNote] = useState('')
@@ -133,17 +139,48 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: 
     ...(administrative && ['Due', 'Package Covered'].includes(row.cc_economic_state ?? '') ? [{ id: 'waive', label: 'Rinuncia economica' }] : [])
   ]
   const submit = async () => {
-    const args = action === 'move' ? { appointment: row.name, appointment_date: moveDate, appointment_time: moveTime, reason } : action === 'close' ? { appointment: row.name, paid: paid ? 1 : 0, mode_of_payment: paid ? paymentMethod : null, reason } : { appointment: row.name, reason }
-    const method = action === 'move' ? schedule : ops
-    const name = action === 'move' ? 'booking.reschedule' : `lifecycle.${action}`
-    if (await run(() => method(name, args, true))) setAction('')
+    if (action === 'move') {
+      setMoveBusy(true); setMoveError('')
+      const args = { appointment: row.name, appointment_date: moveDate, appointment_time: moveTime, reason }
+      try {
+        await schedule('booking.reschedule', args, true)
+        feedback('Prenotazione spostata.'); setAction(''); onSuccess()
+      } catch (cause) {
+        const message = getError(cause)
+        if (message.includes('Serve una verifica dei pagamenti prima della prossima seduta')) {
+          try {
+            const block = await schedule<ReschedulePaymentBlock>('booking.reschedule_payment_blockers', {
+              appointment: row.name, appointment_date: moveDate, appointment_time: moveTime
+            })
+            if (block.blocked) { setPaymentBlock(block); setOverrideDue(moveDate); setOverrideReason('') }
+            else setMoveError('La posizione dei pagamenti è cambiata. Riprova lo spostamento.')
+          } catch (previewError) { setMoveError(getError(previewError)) }
+        } else setMoveError(message)
+      } finally { setMoveBusy(false) }
+      return
+    }
+    const args = action === 'close' ? { appointment: row.name, paid: paid ? 1 : 0, mode_of_payment: paid ? paymentMethod : null, reason } : { appointment: row.name, reason }
+    if (await run(() => ops(`lifecycle.${action}`, args, true))) setAction('')
+  }
+  const authorizeAndMove = async () => {
+    if (!paymentBlock?.can_override) return
+    setMoveBusy(true); setMoveError('')
+    const args = { appointment: row.name, appointment_date: moveDate, appointment_time: moveTime, reason,
+      override_reason: overrideReason, due_date: overrideDue,
+      expected_references: paymentBlock.debts.map(debt => ({ reference_doctype: debt.reference_doctype, reference_name: debt.reference_name })) }
+    const key = JSON.stringify(args)
+    try {
+      await schedule('booking.reschedule_with_payment_override', { ...args, request_key: overrideKeys.current[key] ??= requestKey() }, true)
+      setPaymentBlock(null); setAction(''); feedback('Deroga registrata e prenotazione spostata.'); onSuccess()
+    } catch (cause) { setMoveError(getError(cause)) }
+    finally { setMoveBusy(false) }
   }
   const entries = (key: string) => Array.isArray(history?.[key]) ? history[key] as Row[] : []
-  return <Drawer title={fullName(row)} onClose={onClose}><div className="detail-summary"><Chip tone={row.status === 'Cancelled' ? 'bad' : row.cc_performed ? 'good' : 'blue'}>{row.status === 'Cancelled' ? 'Cancellata' : row.cc_performed ? 'Svolta' : 'Prenotata'}</Chip><h3>{demoText(row.cc_service_label) || 'Seduta'}</h3><p><CalendarDays size={16} /> {displayDate(row.appointment_date)} · {time(row.appointment_time)}</p><p><UserRound size={16} /> {practitionerNameFor(row.practitioner, boot.practitioners, row.practitioner_name)}</p><p><Clock3 size={16} /> {row.duration} min · {money(row.cc_price_snapshot, row.cc_currency_snapshot || 'EUR')}</p></div><div className="detail-tabs" role="tablist">{(['Seduta', 'Storico', 'Note'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div>
-    {tab === 'Seduta' && <><div className="detail-section"><h3>Stato operativo</h3><p>Chiusura: {closureName(row.cc_closure_state)}<br />Economia: {economyName(row.cc_economic_state)}</p><div className="action-grid">{actions.map(a => <Button key={a.id} variant={a.id === 'close' ? 'primary' : a.id === 'cancel' ? 'danger' : 'secondary'} onClick={() => setAction(a.id)}>{a.label}</Button>)}</div></div>{action && <form className="action-form" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{actions.find(a => a.id === action)?.label}</h3>{action === 'move' && <div className="form-grid"><Field label="Nuova data"><DateInput value={moveDate} onChange={setMoveDate} required /></Field><Field label="Nuova ora"><input type="time" value={moveTime} onChange={e => setMoveTime(e.target.value)} required /></Field></div>}{action === 'close' && <><label className="checkbox-row"><input type="checkbox" checked={paid} onChange={e => setPaid(e.target.checked)} /> Pagata</label>{paid && <Field label="Metodo di pagamento" required><select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required>{boot.payment_methods.map(p => <option key={p}>{p}</option>)}</select></Field>}</>}<Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setAction('')}>Annulla</Button><Button disabled={busy} type="submit">{busy ? 'Salvataggio…' : 'Conferma'}</Button></div></form>}</>}
+  return <><Drawer title={fullName(row)} onClose={onClose}><div className="detail-summary"><Chip tone={row.status === 'Cancelled' ? 'bad' : row.cc_performed ? 'good' : 'blue'}>{row.status === 'Cancelled' ? 'Cancellata' : row.cc_performed ? 'Svolta' : 'Prenotata'}</Chip><h3>{demoText(row.cc_service_label) || 'Seduta'}</h3><p><CalendarDays size={16} /> {displayDate(row.appointment_date)} · {time(row.appointment_time)}</p><p><UserRound size={16} /> {practitionerNameFor(row.practitioner, boot.practitioners, row.practitioner_name)}</p><p><Clock3 size={16} /> {row.duration} min · {money(row.cc_price_snapshot, row.cc_currency_snapshot || 'EUR')}</p></div><div className="detail-tabs" role="tablist">{(['Seduta', 'Storico', 'Note'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div>
+    {tab === 'Seduta' && <><div className="detail-section"><h3>Stato operativo</h3><p>Chiusura: {closureName(row.cc_closure_state)}<br />Economia: {economyName(row.cc_economic_state)}</p><div className="action-grid">{actions.map(a => <Button key={a.id} variant={a.id === 'close' ? 'primary' : a.id === 'cancel' ? 'danger' : 'secondary'} onClick={() => setAction(a.id)}>{a.label}</Button>)}</div></div>{action && <form className="action-form" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{actions.find(a => a.id === action)?.label}</h3>{action === 'move' && <div className="form-grid"><Field label="Nuova data"><DateInput value={moveDate} onChange={value => { setMoveDate(value); setPaymentBlock(null) }} required /></Field><Field label="Nuova ora"><input type="time" value={moveTime} onChange={e => { setMoveTime(e.target.value); setPaymentBlock(null) }} required /></Field></div>}{action === 'close' && <><label className="checkbox-row"><input type="checkbox" checked={paid} onChange={e => setPaid(e.target.checked)} /> Pagata</label>{paid && <Field label="Metodo di pagamento" required><select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required>{boot.payment_methods.map(p => <option key={p}>{p}</option>)}</select></Field>}</>}<Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={action === 'move' ? moveError : error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setAction(''); setPaymentBlock(null) }}>Annulla</Button><Button disabled={busy || moveBusy} type="submit">{busy || moveBusy ? 'Salvataggio…' : 'Conferma'}</Button></div></form>}</>}
     {tab === 'Storico' && <div className="detail-section"><h3>Eventi della seduta</h3><p className="scope-note">Modifiche e motivi relativi a questa seduta. Le versioni delle note sono nella scheda Note.</p>{eventsError && <p className="inline-error" role="alert">{eventsError}</p>}{!events && !eventsError ? <p role="status">Caricamento eventi…</p> : events && <AppointmentTimeline rows={events} />}<h3>Altre sedute del paziente</h3>{!history ? <p role="status">Caricamento sedute…</p> : entries('appointments').length ? <div className="timeline">{entries('appointments').map((a, i) => <article key={i}><strong>{displayDate(a.appointment_date)} · {demoText(a.cc_service_label) || 'Seduta'}</strong><span>{closureName(a.cc_closure_state)} · {economyName(a.cc_economic_state)}</span></article>)}</div> : <Empty title="Nessun'altra seduta nel centro" />}<h3>Pacchetti</h3>{entries('packages').map((p, i) => <p key={i}>{demoText(p.label)} · Residue: {String(p.remaining)}</p>)}</div>}
     {tab === 'Note' && <div className="detail-section"><h3>Note organizzative</h3><NoteHistory rows={entries('organizational_notes')} onCorrect={n => { setNote(String(n.content ?? '')); setPrivateNote(false); setCorrects(String(n.name)) }} />{boot.roles.includes('CC Professional') && <><h3>Note riservate</h3><NoteHistory rows={entries('private_notes')} privateNotes onCorrect={n => { setNote(String(n.content ?? '')); setPrivateNote(true); setCorrects(String(n.name)) }} /></>}<form onSubmit={e => { e.preventDefault(); void run(() => ops('notes.add_note', { patient: row.patient, center, content: note, private: privateNote ? 1 : 0, corrects }, true), 'Nota registrata.').then(ok => { if (ok) { setNote(''); setCorrects(null); setHistory(null); void ops<Row>('workspace.patient_history', { patient: row.patient, center }).then(setHistory) } }) }}><Field label={corrects ? "Rettifica nota" : "Nuova nota"}><textarea required value={note} onChange={e => setNote(e.target.value)} maxLength={100000} /></Field>{boot.roles.includes('CC Professional') && <label className="checkbox-row"><input type="checkbox" checked={privateNote} onChange={e => setPrivateNote(e.target.checked)} /> Nota professionale riservata</label>}<FormError error={error} /><Button disabled={busy || !note} type="submit">{corrects ? "Registra rettifica" : "Aggiungi nota"}</Button></form></div>}
-  </Drawer>
+  </Drawer>{paymentBlock && <Modal title="Verifica pagamenti prima dello spostamento" onClose={() => { setPaymentBlock(null); setMoveError('') }}><p className="scope-note">La prenotazione resta invariata finché la verifica non viene completata.</p>{paymentBlock.can_override ? <form onSubmit={e => { e.preventDefault(); void authorizeAndMove() }}><p>Posizioni che impediscono lo spostamento:</p><ul className="payment-block-list">{paymentBlock.debts.map((debt, index) => <li key={`${debt.reference_doctype}:${debt.reference_name}`}><strong>{debt.reference_doctype === 'Sales Invoice' ? 'Fattura' : 'Seduta non fatturata'} {index + 1}</strong><span>{money(debt.amount, debt.currency)} · scadenza {displayDate(debt.due_date)} · {centerNameFor(debt.center, boot.centers)}</span></li>)}</ul><p className="scope-note">Debito, fatture e scadenze originarie restano conservati nello storico.</p><Field label="Motivazione della deroga" required><textarea value={overrideReason} onChange={e => setOverrideReason(e.target.value)} required maxLength={2000} /></Field><Field label="Nuova scadenza" required><DateInput value={overrideDue} onChange={setOverrideDue} required /></Field><FormError error={moveError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setPaymentBlock(null); setMoveError('') }}>Annulla</Button><Button disabled={moveBusy || !overrideReason.trim() || !overrideDue} type="submit">{moveBusy ? 'Verifica in corso…' : 'Autorizza e procedi'}</Button></div></form> : <><p role="alert">Serve una verifica dei pagamenti. Contatta la segreteria o la Direzione: il tuo ruolo non può autorizzare una deroga.</p><div className="form-actions"><Button onClick={() => setPaymentBlock(null)}>Chiudi</Button></div></>}</Modal>}</>
 }
 
 export function Patients({ boot, center, query, selectedPatient, feedback, refreshBoot }: Context & { query: string; selectedPatient?: Patient | null; refreshBoot: () => Promise<void> }) {

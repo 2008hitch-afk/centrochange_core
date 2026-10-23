@@ -1,6 +1,7 @@
 """Canonical native appointments with guarded, serialized and idempotent booking."""
 from datetime import datetime,timedelta
 from hashlib import sha256
+from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 import frappe
@@ -206,3 +207,90 @@ def reschedule(appointment,appointment_date,appointment_time,reason):
 		doc.save(ignore_permissions=True)
 	append('APPOINTMENT_RESCHEDULED',doc.doctype,doc.name,before,after,reason)
 	return {'name':doc.name,'replay':False}
+
+
+def _payment_blockers(doc,appointment_date,appointment_time):
+	"""Recompute the payment hold for the proposed slot, across patient centers."""
+	from centrochange_core.finance.collections import _booking_debts
+	from centrochange_core.operations.lifecycle import ROME,start_utc
+	at=start_utc(SimpleNamespace(appointment_date=getdate(appointment_date),
+		appointment_time=get_time(appointment_time))).astimezone(ROME)
+	return sorted((debt for debt in _booking_debts(doc.patient)
+		if debt['name']!=doc.name and debt['deadline']<at),
+		key=lambda debt:(debt['doctype'],debt['name']))
+
+
+def _payment_override_allowed(patient,debts):
+	from centrochange_core.finance.guards import allowed,patient_context
+	if not allowed(write=True):
+		return False
+	try:
+		for center in sorted({debt['center'] for debt in debts}):
+			patient_context(patient,center,True)
+	except frappe.PermissionError:
+		return False
+	return True
+
+
+@frappe.whitelist(methods=['GET'])
+def reschedule_payment_blockers(appointment,appointment_date,appointment_time):
+	"""Show debt details only if the actor could authorize every blocking position."""
+	doc=frappe.get_doc('Patient Appointment',appointment)
+	doc.check_permission('read')
+	require_booking(doc.patient,doc.practitioner,doc.cc_center)
+	debts=_payment_blockers(doc,appointment_date,appointment_time)
+	if not debts:
+		return {'blocked':False,'can_override':False,'debts':[]}
+	if not _payment_override_allowed(doc.patient,debts):
+		return {'blocked':True,'can_override':False,'debts':[]}
+	return {'blocked':True,'can_override':True,'debts':[
+		{'center':debt['center'],'reference_doctype':debt['doctype'],
+		 'reference_name':debt['name'],'amount':debt['amount'],
+		 'currency':debt['currency'],'due_date':str(debt['due_date']),
+		 'original_due_date':str(debt['original_due_date'])}
+		for debt in debts]}
+
+
+@frappe.whitelist(methods=['POST'])
+@atomic
+def reschedule_with_payment_override(appointment,appointment_date,appointment_time,reason,
+		override_reason,due_date,request_key,expected_references):
+	"""Defer every blocking debt and move in one transaction or roll all of it back."""
+	lock()
+	doc=frappe.get_doc('Patient Appointment',appointment,for_update=True)
+	doc.check_permission('read')
+	require_booking(doc.patient,doc.practitioner,doc.cc_center)
+	if not request_key or len(str(request_key))>120:
+		frappe.throw('Indica un identificativo valido per la richiesta.')
+	if not override_reason or not override_reason.strip():
+		frappe.throw('Indica il motivo della deroga.')
+	if not due_date:
+		frappe.throw('Indica la nuova scadenza.')
+	from centrochange_core.finance.collections import override
+	from centrochange_core.finance.guards import patient_context
+	from centrochange_core.operations.lifecycle import ROME,now_utc
+	due=getdate(due_date)
+	if due<now_utc().astimezone(ROME).date() or due<getdate(appointment_date):
+		frappe.throw('La nuova scadenza deve coprire la data dello spostamento.')
+	debts=_payment_blockers(doc,appointment_date,appointment_time)
+	if not debts and getdate(doc.appointment_date)==getdate(appointment_date) and get_time(doc.appointment_time)==get_time(appointment_time):
+		# A network retry after a committed move is a normal reschedule replay.
+		return reschedule(appointment,appointment_date,appointment_time,reason)
+	if not debts or not _payment_override_allowed(doc.patient,debts):
+		frappe.throw('La deroga richiede una posizione bloccante e un accesso amministrativo autorizzato.',frappe.PermissionError)
+	import json
+	try:
+		refs=json.loads(expected_references) if isinstance(expected_references,str) else expected_references
+	except (TypeError,ValueError):
+		refs=None
+	current=[{'reference_doctype':debt['doctype'],'reference_name':debt['name']} for debt in debts]
+	if not isinstance(refs,list) or not all(isinstance(ref,dict) and set(ref)=={'reference_doctype','reference_name'} for ref in refs) or sorted(refs,key=lambda ref:(ref['reference_doctype'],ref['reference_name']))!=current:
+		frappe.throw('La posizione dei pagamenti è cambiata. Riprova lo spostamento.')
+	for debt in debts:
+		patient_context(doc.patient,debt['center'],True)
+		if due<=getdate(debt['due_date']):
+			frappe.throw('La nuova scadenza deve essere successiva a tutte le scadenze attuali.')
+		override(doc.patient,debt['center'],debt['doctype'],debt['name'],due,
+			f"{request_key}:{sha256((debt['doctype']+':'+debt['name']).encode()).hexdigest()[:20]}",override_reason)
+	# reschedule runs its normal authorization, slot, closure and debt guards again.
+	return reschedule(appointment,appointment_date,appointment_time,reason)

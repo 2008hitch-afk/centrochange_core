@@ -99,7 +99,7 @@ def position(patient,center):
 def _booking_debts(patient):
     # Shared Patient identity: changing center must not bypass a previous-session hold.
     scopes=current_rows('Patient Appointment',{'patient':patient,'cc_economic_state':'Due'},pluck='cc_center')
-    return [debt for center in sorted({c for c in scopes if c}) for debt in _debts(patient,center)]
+    return [dict(debt,center=center) for center in sorted({c for c in scopes if c}) for debt in _debts(patient,center)]
 
 
 def require_booking(doc):
