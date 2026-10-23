@@ -39,6 +39,7 @@ PREMIUM_ADDED = {
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
                            'centrochange_core/security/lifecycle.py',
+                           'centrochange_core/operations/notes.py',
                            'centrochange_core/finance/collections.py',
                            'centrochange_core/scheduling/booking.py',
                            'centrochange_core/operations/workspace.py',
