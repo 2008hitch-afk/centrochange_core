@@ -3,7 +3,7 @@ import { type Boot, type Row, call } from './api'
 import { practitionerName, practitionerNameFor } from './display_names'
 import { type Feedback, Button, Chip, Field, FormError, SearchableSelect, useAction } from './ui'
 
-export function PatientAssignments({ boot, patient, center, feedback }: { boot: Boot; patient: string; center: string; feedback: Feedback }) {
+export function PatientAssignments({ boot, patient, center, feedback, onSuccess }: { boot: Boot; patient: string; center: string; feedback: Feedback; onSuccess: () => void }) {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -14,7 +14,7 @@ export function PatientAssignments({ boot, patient, center, feedback }: { boot: 
   const [active, setActive] = useState('1')
   const [reason, setReason] = useState('')
   const canManage = boot.roles.some(r => r === 'CC Manager' || r === 'CC Secretariat')
-  const { busy, error, run } = useAction(feedback, () => { setMode(null); setReload(n => n + 1) })
+  const { busy, error, run } = useAction(feedback, () => { setMode(null); setReload(n => n + 1); onSuccess() })
   useEffect(() => {
     let live = true
     setLoading(true); setLoadError('')

@@ -64,8 +64,11 @@ def issue(template,patient,centers,request_key,reason,valid_until=None,practitio
 		frappe.throw('Il modello pacchetto non è attivo.')
 	if valid_until and getdate(valid_until)<frappe.utils.getdate():
 		frappe.throw('La scadenza del pacchetto è nel passato.')
-	if practitioner and not frappe.db.exists('Healthcare Practitioner',practitioner):
-		frappe.throw('Il professionista del pacchetto non è valido.')
+	if practitioner:
+		from centrochange_core.security.guards import centers as practitioner_centers, enabled
+		identity=frappe.get_doc('Healthcare Practitioner',practitioner)
+		if identity.status!='Active' or not identity.user_id or not enabled(identity.user_id) or not set(centers).issubset(set(practitioner_centers(identity.user_id))):
+			frappe.throw('Il professionista del pacchetto deve essere attivo e assegnato alle sedi selezionate.')
 	with internal_write('cc_operation_write'):
 		doc=frappe.get_doc({'doctype':'CC Patient Package','template':template,'patient':patient,
 			'service_item':profile.service_item,'issue_key':key,'centers':[{'center':center} for center in centers],

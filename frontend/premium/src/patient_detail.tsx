@@ -33,6 +33,7 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
   const [events, setEvents] = useState<Row[] | null>(null)
   const manager = boot.roles.includes('CC Manager')
   const professional = boot.roles.includes('CC Professional')
+  const patientLabel = demoPatient(patient.name, String(profile?.patient_name ?? patient.patient_name))
 
   useEffect(() => {
     let live = true
@@ -77,8 +78,8 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
   }
   const correct = (row: Row, privateNote: boolean) => { setCorrects(String(row.name)); setNote(String(row.content ?? '')); setNotePrivate(privateNote) }
 
-  return <><Drawer title={demoPatient(patient.name, patient.patient_name)} onClose={onClose}>
-    <div className="detail-summary"><Chip tone="blue">Paziente</Chip><h3>{demoPatient(patient.name, patient.patient_name)}</h3></div>
+  return <><Drawer title={patientLabel} onClose={onClose}>
+    <div className="detail-summary"><Chip tone="blue">Paziente</Chip><h3>{patientLabel}</h3></div>
     {loading && <p role="status">Caricamento scheda paziente…</p>}
     {error && <p className="inline-error" role="alert">{error}</p>}
     {profile && <section className="detail-section"><h3>Anagrafica</h3><dl className="property-list"><div><dt>Nome</dt><dd>{profile.first_name || '—'}</dd></div><div><dt>Cognome</dt><dd>{profile.last_name || '—'}</dd></div><div><dt>Email</dt><dd>{profile.email || '—'}</dd></div></dl>{manager && <Button variant="secondary" onClick={() => { saveKey.current = requestKey(); setDraft({ ...profile }); setReason(''); setError('') }}>Modifica scheda</Button>}</section>}
@@ -87,6 +88,6 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
       <section className="detail-section"><h3>Note organizzative</h3><NoteHistory rows={history.organizational_notes} onCorrect={row => correct(row, false)} />{professional && <><h3>Note professionali riservate</h3><NoteHistory rows={history.private_notes} privateNotes onCorrect={row => correct(row, true)} /></>}<form onSubmit={event => { event.preventDefault(); void addNote() }}><Field label={corrects ? 'Rettifica nota' : 'Nuova nota organizzativa'} required><textarea value={note} onChange={event => setNote(event.target.value)} required maxLength={100000} /></Field>{professional && <label className="checkbox-row"><input type="checkbox" checked={notePrivate} onChange={event => { setNotePrivate(event.target.checked); setCorrects(null) }} /> Nota professionale riservata</label>}<FormError error={error} /><Button type="submit" disabled={noteBusy || !note.trim()}>{noteBusy ? 'Salvataggio…' : corrects ? 'Registra rettifica' : 'Aggiungi nota'}</Button></form></section>
       <PatientPackages boot={boot} patient={patient.name} center={center} packages={history.packages} feedback={feedback} onSuccess={refresh} />
     </>}
-    <PatientAssignments boot={boot} patient={patient.name} center={center} feedback={feedback} />
+    <PatientAssignments boot={boot} patient={patient.name} center={center} feedback={feedback} onSuccess={refresh} />
   </Drawer>{draft && <Modal title="Modifica paziente" onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); void save() }}><Field label="Nome" required><input required value={draft.first_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, first_name: event.target.value }) }} /></Field><Field label="Cognome"><input value={draft.last_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, last_name: event.target.value }) }} /></Field><Field label="Email"><input type="email" value={draft.email ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, email: event.target.value }) }} /></Field><Field label="Motivo" required><textarea required maxLength={500} value={reason} onChange={event => { saveKey.current = requestKey(); setReason(event.target.value) }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
 }
