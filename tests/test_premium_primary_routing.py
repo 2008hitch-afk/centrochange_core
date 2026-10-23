@@ -111,6 +111,19 @@ class PrimaryRoutingTests(unittest.TestCase):
         self.assertEqual(self.route('POST', '/api/method/centrochange_core.catalog.records').status_code,
                          200)
 
+    def test_error_responses_keep_auth_and_server_status(self):
+        self.frappe.conf['cc_premium_primary'] = 1
+        for status in (401, 403, 404, 500):
+            for path in ('/', '/app', '/desk', '/desk/patient', '/centrochange'):
+                with self.subTest(status=status, path=path):
+                    response = Response()
+                    response.status_code = status
+                    request = SimpleNamespace(method='GET', path=path)
+                    self.module.redirect_launcher(response, request)
+                    self.module.redirect_legacy_operational_routes(response, request)
+                    self.assertEqual(response.status_code, status)
+                    self.assertNotIn('Location', response.headers)
+
 
 if __name__ == '__main__':
     unittest.main()

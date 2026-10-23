@@ -54,6 +54,8 @@ def configure_existing_users():
 
 def redirect_launcher(response, request):
     """Redirect only exact launcher URLs; preserve valid document deep links."""
+    if response is None or response.status_code >= 400:
+        return
     if request.method not in ("GET", "HEAD") or request.path not in ("/", "/app", "/desk"):
         return
     target = client_home()
@@ -72,6 +74,8 @@ def redirect_legacy_operational_routes(response, request):
     as an error page, which leaves deep Desk URLs visible to client roles.
     """
     if not premium_primary():
+        return
+    if response is None or response.status_code >= 400:
         return
     if not request or request.method not in ("GET", "HEAD"):
         return

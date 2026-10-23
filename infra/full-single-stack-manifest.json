@@ -144,7 +144,7 @@
     "centrochange_core/operations/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "centrochange_core/operations/automation.py": "c515f883da15057b69dcb6ab885387a5a7a07e648edbf566b2c854b85e40a63c",
     "centrochange_core/operations/booking_confirmation.py": "3f81bbc90e25c25a9b030243478f740c8d9d1a75002ce984184257fd5a2ddae3",
-    "centrochange_core/operations/client_landing.py": "f7879b5a0a36b433a8b29dd812b286981779d1f542fde78218f8bc45d425823d",
+    "centrochange_core/operations/client_landing.py": "0e1187aa6897cda4299b9443fe5895eb5026976132efedf1ebf3dca6de1401ff",
     "centrochange_core/operations/confirmation_acceptance.py": "f111f6f01ccabc1f28f1f0dcde9008d56565939fb16b0f9374814f14e75f21a6",
     "centrochange_core/operations/dev_acceptance.py": "599d5c11388e785093b00d4b5ba109858626fec640a61bb4d1b66489bad32f03",
     "centrochange_core/operations/install.py": "8178630d7160135b0b5d7e71185694450b1eba532291c0ca9902f11b9e857a34",
