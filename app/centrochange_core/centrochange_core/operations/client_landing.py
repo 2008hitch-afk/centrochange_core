@@ -65,11 +65,14 @@ def redirect_launcher(response, request):
     response.set_data(b"")
 
 
-def redirect_legacy_operational_routes():
-    """After acceptance, navigate client roles to React; ACL remains server-side."""
+def redirect_legacy_operational_routes(response, request):
+    """Redirect legacy web responses after Frappe has authenticated the request.
+
+    A before_request hook cannot raise frappe.Redirect: Frappe's app catches it
+    as an error page, which leaves deep Desk URLs visible to client roles.
+    """
     if not premium_primary():
         return
-    request = getattr(frappe.local, "request", None)
     if not request or request.method not in ("GET", "HEAD"):
         return
     path = request.path.rstrip("/") or "/"
@@ -86,5 +89,7 @@ def redirect_legacy_operational_routes():
         ):
             return
         target = "/premium"
-    frappe.local.flags.redirect_location = target
-    raise frappe.Redirect
+    response.status_code = 302
+    response.headers["Location"] = target
+    response.headers["Cache-Control"] = "private, no-store"
+    response.set_data(b"")
