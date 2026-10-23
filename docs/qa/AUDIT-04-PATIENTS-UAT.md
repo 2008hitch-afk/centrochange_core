@@ -1,6 +1,6 @@
 # AUDIT-04 — Pazienti: oracle di accettazione
 
-**Issue:** #167. **Baseline:** `fa4ea4033e95301c25271d88d7d8c008b035f5c0` (`main`, 23/10/2026). **Ambiente di scrittura:** esclusivamente Site/DB temporanei e isolati. **Stato delle prove reali su questo branch:** NOT_TESTED fino alla compilazione del rapporto conclusivo.
+**Issue:** #167. **Baseline:** `fa4ea4033e95301c25271d88d7d8c008b035f5c0` (`main`, 23/10/2026). **Ambiente di scrittura:** esclusivamente Site/DB temporanei e isolati. **Stato:** `PASS_ISOLATED_REAL` per gli scenari esercitati nel [rapporto tecnico](AUDIT-04-PATIENTS-TECHNICAL-REVIEW.md); Owner `PENDING`, DEV `NOT_TESTED` per questo candidato.
 
 Le verifiche UI sintetiche sono `PASS_OFFLINE`; soltanto una sessione Frappe/MariaDB isolata può diventare `PASS_ISOLATED_REAL`. I test del DEV condiviso richiedono un gate Owner successivo. Nessun esito è accettazione Owner.
 

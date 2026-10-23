@@ -1,5 +1,18 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## Addendum AUDIT-04 Pazienti — 23/10/2026
+
+Issue [#167](https://github.com/2008hitch-afk/centrochange_core/issues/167), branch `issue-167/patients-audit`, baseline `main` `fa4ea4033e95301c25271d88d7d8c008b035f5c0`. Il candidato applicativo `c07b2c72eed7901abb51b0aac48e043df4b06c1f` è stato provato in un clone Frappe/MariaDB isolato con due centri e soli record sintetici. **Nessun deploy sul DEV condiviso e nessuna accettazione Owner.** Dettaglio e limiti nel [rapporto AUDIT-04](AUDIT-04-PATIENTS-TECHNICAL-REVIEW.md).
+
+| Prova | Esito | Confine |
+|---|---|---|
+| Python offline, manifest, React typecheck/build | 72 PASS; source/image parity PASS | Verifiche codice/build, non collaudo DEV |
+| Playwright sintetico | 132 PASS, 8 SKIP | Risposte simulate, non Frappe |
+| Playwright Frappe/MariaDB isolato | 17 PASS, 15 SKIP per casi API desktop-only | Browser desktop 1440×900 e mobile 390×844; sette ruoli più Guest; centro A/B |
+| Reviewer indipendente | Revisione statica `c07b2c7`; esito finale nel rapporto tecnico | CI GitHub e cleanup: vedere rapporto finale |
+
+La matrice CSV mantiene 110 righe: **10 PASS, 59 PARTIAL, 29 NOT_TESTED, 12 BLOCKED**. `PASS` delle righe Pazienti significa prova tecnica nel perimetro #167, con Owner `PENDING`; i requisiti trasversali restano `PARTIAL` dove altri moduli o export non sono stati esercitati. Oltre 100 sedute, la UI dichiara il limite; la paginazione completa resta un gap distinto. La consultazione dopo l'ultima revoca è Manager-only nel centro autorizzato; l'operatività resta bloccata fino a una nuova assegnazione. Il backend conserva ID, permessi e fonte dati canonici.
+
 ## Addendum operativo verificato — 23/10/2026 (AUDIT-03)
 
 Questo addendum **prevale per lo stato operativo** sui checkpoint storici AUDIT-00/01/02 del 22/10 sottostanti; non sostituisce i requisiti né trasforma evidenza parziale in PASS.

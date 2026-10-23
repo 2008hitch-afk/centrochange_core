@@ -218,6 +218,14 @@ test('AUDIT-02 polish: nomi disponibili, fallback trasparenti e ricerca A/B senz
     patient_name: patientA.patient_name, practitioner: professionalA.name, practitioner_name: professionalA.practitioner_name,
     cc_center: centers[0].name, cc_service_label: 'CC-HTTP-UAT0000001 Visita' }
   await mockApi(page, [], false)
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_detail*', route => {
+    const name = new URL(route.request().url()).searchParams.get('name')
+    const row = name === patientB.name ? patientB : patientA
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: {
+      ...row, first_name: row.patient_name, last_name: '', email: 'paziente@example.invalid',
+      modified: '2026-10-23 12:00:00', active_assignment: true,
+    } }) })
+  })
   await page.route('**/api/method/centrochange_core.operations.workspace.*', async route => {
     const request = route.request()
     const url = new URL(request.url())

@@ -146,6 +146,14 @@ test('note private: solo professionista assegnato, versioni append-only e revoca
     expect(JSON.stringify(managed.body)).not.toContain('PRIVATE CORRECTION')
     const direct = await get(manager, 'frappe.client.get_list', { doctype: 'CC Private Note', fields: '["name","content"]' })
     expect(direct.response.ok()).toBeFalsy()
+    const record = await get(manager, 'frappe.client.get', { doctype: 'CC Private Note', name: note.body.message.name })
+    expect(record.response.ok()).toBeFalsy()
+    expect(JSON.stringify(record.body)).not.toContain('PRIVATE CORRECTION')
+    const exportAttempt = await manager.request.get('/api/method/frappe.desk.reportview.export_query', {
+      params: { doctype: 'CC Private Note', file_format_type: 'CSV',
+        fields: '["CC Private Note","name"],["CC Private Note","content"]', filters: '[]' } })
+    expect(exportAttempt.ok()).toBeFalsy()
+    expect(await exportAttempt.text()).not.toContain('PRIVATE CORRECTION')
   } finally { await pro.close(); await manager.close() }
 })
 
@@ -340,21 +348,29 @@ test('pacchetto dedicato: professionista privo di membership nel centro negato',
   test.skip(info.project.name !== 'desktop')
   const manager = await context(browser, 'manager')
   const userB = fixture.tag.toLowerCase() + '-b@example.invalid'
+  let restoreMembership = false
+  let token = ''
+  const membership = { user: userB, center: fixture.center_a, reason: 'Verifica sintetica centro pacchetto' }
   try {
     const page = await manager.newPage()
     await page.goto('/premium/#Pazienti')
-    const token = await csrf(page)
-    const membership = { user: userB, center: fixture.center_a, reason: 'Verifica sintetica centro pacchetto' }
+    token = await csrf(page)
     const revoke = await post(manager, token, 'security.lifecycle.set_membership', { ...membership, active: 0 })
     expect(revoke.response.ok()).toBeTruthy()
+    restoreMembership = true
     const issue = await post(manager, token, 'operations.packages.issue', {
       template: fixture.template, patient: fixture.patient_a, centers: [fixture.center_a],
       practitioner: fixture.practitioner_b, reason: 'Test professionista fuori centro',
       request_key: fixture.tag + '-wrong-practitioner-center' })
     expect(issue.response.ok()).toBeFalsy()
-    const restore = await post(manager, token, 'security.lifecycle.set_membership', { ...membership, active: 1 })
-    expect(restore.response.ok()).toBeTruthy()
-  } finally { await manager.close() }
+  } finally {
+    try {
+      if (restoreMembership) {
+        const restore = await post(manager, token, 'security.lifecycle.set_membership', { ...membership, active: 1 })
+        expect(restore.response.ok(), 'Ripristino membership sintetica obbligatorio').toBeTruthy()
+      }
+    } finally { await manager.close() }
+  }
 })
 
 test('storico seduta reale: prenotazione, riserva, cancellazione e rilascio pacchetto', async ({ browser }, info) => {
@@ -370,26 +386,41 @@ test('storico seduta reale: prenotazione, riserva, cancellazione e rilascio pacc
       reason: 'Fascia UAT sintetica per storico' })
     expect(schedule.response.ok()).toBeTruthy()
     const key = fixture.tag + '-history-' + Date.now().toString(36)
+    const issued = await post(manager, token, 'operations.packages.issue', {
+      template: fixture.template, patient: fixture.patient_a, centers: [fixture.center_a],
+      practitioner: fixture.practitioner_a, reason: 'Pacchetto sintetico per storico', request_key: key + '-package' })
+    expect(issued.response.ok()).toBeTruthy()
+    const packageName = issued.body.message.name as string
+    const todayRome = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+    const [year, month, day] = todayRome.split('-').map(Number)
+    let dateMs = Date.UTC(year, month - 1, day) + 14 * 86_400_000
+    while (new Date(dateMs).getUTCDay() !== 1) dateMs += 86_400_000
+    const appointmentDate = new Date(dateMs).toISOString().slice(0, 10)
     const booked = await post(manager, token, 'scheduling.booking.book', {
       patient: fixture.patient_a, practitioner: fixture.practitioner_a, center: fixture.center_a,
-      appointment_type: fixture.appointment_type, appointment_date: '2099-01-12',
-      appointment_time: '09:00:00', patient_package: fixture.package,
+      appointment_type: fixture.appointment_type, appointment_date: appointmentDate,
+      appointment_time: '10:30:00', patient_package: packageName,
       request_key: key, reason: 'Prenotazione UAT sintetica' })
-    expect(booked.response.ok()).toBeTruthy()
+    const bookingError = booked.body._server_messages ? JSON.parse(booked.body._server_messages).map((entry: string) => JSON.parse(entry).message).join('; ') : ''
+    expect(booked.response.ok(), `prenotazione sintetica: HTTP ${booked.response.status()} ${bookingError}`).toBeTruthy()
     const name = booked.body.message.name as string
-    const reserved = await get(manager, 'operations.packages.balance', { package: fixture.package, center: fixture.center_a })
+    let cancelCompleted = false
+    try {
+    const reserved = await get(manager, 'operations.packages.balance', { package: packageName, center: fixture.center_a })
     expect(reserved.body.message.reserved).toBe(1)
     const history = await get(manager, 'operations.workspace.patient_history', { patient: fixture.patient_a, center: fixture.center_a })
     expect(history.response.ok()).toBeTruthy()
-    expect(history.body.message.appointments.some((row: { name: string }) => row.name === name)).toBeTruthy()
+    const inVisibleHistory = history.body.message.appointments.some((row: { name: string }) => row.name === name)
+    if (!history.body.message.truncated) expect(inVisibleHistory).toBeTruthy()
     const events = await get(manager, 'operations.workspace.appointment_events', { appointment: name })
     expect(events.response.ok()).toBeTruthy()
     expect(events.body.message.some((row: { event_type: string }) => row.event_type === 'APPOINTMENT_BOOKED')).toBeTruthy()
     const canceled = await post(manager, token, 'operations.lifecycle.cancel', {
       appointment: name, reason: 'Cancellazione UAT sintetica' })
     expect(canceled.response.ok()).toBeTruthy()
+    cancelCompleted = true
     expect(canceled.body.message.late).toBe(false)
-    const released = await get(manager, 'operations.packages.balance', { package: fixture.package, center: fixture.center_a })
+    const released = await get(manager, 'operations.packages.balance', { package: packageName, center: fixture.center_a })
     expect(released.body.message.reserved).toBe(0)
     expect(released.body.message.remaining).toBe(1)
     const after = await get(manager, 'operations.workspace.appointment_events', { appointment: name })
@@ -398,10 +429,19 @@ test('storico seduta reale: prenotazione, riserva, cancellazione e rilascio pacc
     await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
     await page.locator('tbody tr').first().click()
     const drawer = page.getByRole('dialog')
-    await drawer.locator('button.patient-history-item').filter({ hasText: '12/01/2099' }).first().click()
-    await expect(drawer.getByText('Prenotazione creata').first()).toBeVisible()
-    await expect(drawer.getByText('Seduta cancellata').first()).toBeVisible()
+    if (inVisibleHistory) {
+      await drawer.locator('button.patient-history-item').filter({ hasText: appointmentDate.split('-').reverse().join('/') }).first().click()
+      await expect(drawer.getByText('Prenotazione creata').first()).toBeVisible()
+      await expect(drawer.getByText('Seduta cancellata').first()).toBeVisible()
+    } else {
+      expect(history.body.message.truncated).toBe(true)
+      await expect(drawer.getByText('Mostrate le ultime 100 sedute.')).toBeVisible()
+    }
     await page.screenshot({ path: info.outputPath('patients-live-history.png'), fullPage: true })
+    } finally {
+      if (!cancelCompleted) await post(manager, token, 'operations.lifecycle.cancel', {
+        appointment: name, reason: 'Pulizia prenotazione UAT sintetica dopo errore' }).catch(() => undefined)
+    }
   } finally { await manager.close() }
 })
 
@@ -517,4 +557,142 @@ test('ultima revoca: Direzione legge storico, scritture bloccate e riattivazione
     }
     await manager.close(); await professional.close(); await secretariat.close()
   }
+})
+
+test('Segreteria: note organizzative, assegnazione e pacchetto nei limiti autorizzati', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  const secretary = await context(browser, 'secretariat')
+  const manager = await context(browser, 'manager')
+  let extraAssignment = false
+  try {
+    const page = await secretary.newPage()
+    await page.goto('/premium/#Pazienti')
+    const token = await csrf(page)
+    const note = await post(secretary, token, 'operations.notes.add_note', {
+      patient: fixture.patient_a, center: fixture.center_a, private: 0,
+      content: fixture.tag + ' SEGRETERIA ORGANIZZATIVA' })
+    expect(note.response.ok()).toBeTruthy()
+    const corrected = await post(secretary, token, 'operations.notes.add_note', {
+      patient: fixture.patient_a, center: fixture.center_a, private: 0,
+      content: fixture.tag + ' SEGRETERIA RETTIFICA', corrects: note.body.message.name })
+    expect(corrected.response.ok()).toBeTruthy()
+    const view = await get(secretary, 'operations.workspace.patient_history', {
+      patient: fixture.patient_a, center: fixture.center_a })
+    expect(view.response.ok()).toBeTruthy()
+    expect(view.body.message.organizational_notes.some((row: { name: string }) => row.name === corrected.body.message.name)).toBeTruthy()
+    const suffix = Date.now().toString(36)
+    const issue = await post(secretary, token, 'operations.packages.issue', {
+      template: fixture.template, patient: fixture.patient_a, centers: [fixture.center_a],
+      practitioner: fixture.practitioner_a, valid_until: '2099-12-31',
+      reason: 'Pacchetto Segreteria sintetico', request_key: fixture.tag + '-secretary-issue-' + suffix })
+    expect(issue.response.ok()).toBeTruthy()
+    const adjustment = await post(secretary, token, 'operations.packages.adjust', {
+      package: issue.body.message.name, units: 1, reason: 'Rettifica Segreteria sintetica',
+      request_key: fixture.tag + '-secretary-adjust-' + suffix })
+    expect(adjustment.response.ok()).toBeTruthy()
+    const expired = await post(secretary, token, 'operations.packages.issue', {
+      template: fixture.template, patient: fixture.patient_a, centers: [fixture.center_a],
+      valid_until: '2020-01-01', reason: 'DEVE FALLIRE',
+      request_key: fixture.tag + '-secretary-expired-' + suffix })
+    expect(expired.response.ok()).toBeFalsy()
+    const assigned = await post(secretary, token, 'security.lifecycle.set_assignment', {
+      patient: fixture.patient_a, center: fixture.center_a, practitioner: fixture.practitioner_b,
+      active: 1, reason: 'Assegnazione Segreteria sintetica' })
+    expect(assigned.response.ok()).toBeTruthy()
+    extraAssignment = true
+    const history = await get(manager, 'operations.workspace.patient_history', {
+      patient: fixture.patient_a, center: fixture.center_a })
+    expect(history.response.ok()).toBeTruthy()
+    expect(history.body.message.assignment_events.some((row: { practitioner: string; active: number }) =>
+      row.practitioner === fixture.practitioner_b && row.active === 1)).toBeTruthy()
+  } finally {
+    if (extraAssignment) {
+      const page = await secretary.newPage()
+      await page.goto('/premium/#Pazienti')
+      const token = await csrf(page)
+      const revoked = await post(secretary, token, 'security.lifecycle.set_assignment', {
+        patient: fixture.patient_a, center: fixture.center_a, practitioner: fixture.practitioner_b,
+        active: 0, reason: 'Ripristino fixture Segreteria sintetica' })
+      expect(revoked.response.ok()).toBeTruthy()
+    }
+    await secretary.close(); await manager.close()
+  }
+})
+
+test('riassegnazione reale: grant nuovo, revoca precedente e ritorno allo stato fixture', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  const manager = await context(browser, 'manager')
+  const previous = await context(browser, 'professional_a')
+  const next = await context(browser, 'professional_b')
+  let moved = false
+  try {
+    const page = await manager.newPage()
+    await page.goto('/premium/#Pazienti')
+    const token = await csrf(page)
+    const change = await post(manager, token, 'security.lifecycle.reassign', {
+      patient: fixture.patient_a, center: fixture.center_a,
+      old_practitioner: fixture.practitioner_a, new_practitioner: fixture.practitioner_b,
+      reason: 'Riassegnazione UAT sintetica' })
+    expect(change.response.ok()).toBeTruthy()
+    moved = true
+    const priorDenied = await get(previous, 'operations.profiles.patient_detail', {
+      center: fixture.center_a, name: fixture.patient_a })
+    const newGranted = await get(next, 'operations.profiles.patient_detail', {
+      center: fixture.center_a, name: fixture.patient_a })
+    expect(priorDenied.response.ok()).toBeFalsy()
+    expect(newGranted.response.ok()).toBeTruthy()
+    const audit = await get(manager, 'operations.workspace.patient_history', {
+      patient: fixture.patient_a, center: fixture.center_a })
+    expect(audit.response.ok()).toBeTruthy()
+    expect(audit.body.message.assignment_events.some((row: { practitioner: string; active: number }) =>
+      row.practitioner === fixture.practitioner_b && row.active === 1)).toBeTruthy()
+  } finally {
+    if (moved) {
+      const page = await manager.newPage()
+      await page.goto('/premium/#Pazienti')
+      const token = await csrf(page)
+      const restored = await post(manager, token, 'security.lifecycle.reassign', {
+        patient: fixture.patient_a, center: fixture.center_a,
+        old_practitioner: fixture.practitioner_b, new_practitioner: fixture.practitioner_a,
+        reason: 'Ripristino riassegnazione UAT sintetica' })
+      expect(restored.response.ok()).toBeTruthy()
+    }
+    await manager.close(); await previous.close(); await next.close()
+  }
+})
+
+test('storico oltre cento sedute: limite e avviso espliciti', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  test.setTimeout(180_000)
+  const manager = await context(browser, 'manager')
+  try {
+    const page = await manager.newPage()
+    await page.goto('/premium/#Pazienti')
+    const token = await csrf(page)
+    const schedule = await post(manager, token, 'scheduling.availability.set_schedule', {
+      practitioner: fixture.practitioner_a, center: fixture.center_a,
+      time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '12:00:00' }],
+      reason: 'Fascia sintetica per limite storico' })
+    expect(schedule.response.ok()).toBeTruthy()
+    let firstMonday = Date.UTC(2100, 0, 1)
+    while (new Date(firstMonday).getUTCDay() !== 1) firstMonday += 86_400_000
+    for (let index = 0; index < 101; index++) {
+      const appointmentDate = new Date(firstMonday + index * 7 * 86_400_000).toISOString().slice(0, 10)
+      const booked = await post(manager, token, 'scheduling.booking.book', {
+        patient: fixture.patient_a, practitioner: fixture.practitioner_a, center: fixture.center_a,
+        appointment_type: fixture.appointment_type, appointment_date: appointmentDate,
+        appointment_time: '09:00:00', request_key: fixture.tag + '-history-limit-' + index,
+        reason: 'Seduta sintetica per limite storico' })
+      expect(booked.response.ok(), `prenotazione sintetica ${index + 1}: HTTP ${booked.response.status()}`).toBeTruthy()
+    }
+    const history = await get(manager, 'operations.workspace.patient_history', {
+      patient: fixture.patient_a, center: fixture.center_a })
+    expect(history.response.ok()).toBeTruthy()
+    expect(history.body.message.truncated).toBe(true)
+    expect(history.body.message.appointments).toHaveLength(100)
+    await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await page.locator('tbody tr').first().click()
+    await expect(page.getByRole('dialog').getByText('Mostrate le ultime 100 sedute.')).toBeVisible()
+  } finally { await manager.close() }
 })
