@@ -55,6 +55,7 @@ class NavigationScopeTests(unittest.TestCase):
         booking.snapshot = lambda *args: {}
         packages = types.ModuleType('centrochange_core.operations.packages')
         packages._balance = lambda *args: {}
+        packages.balance = lambda *args: {}
         display = types.ModuleType('centrochange_core.uat.display')
         display.operational_aliases = lambda *args: {}
         modules = {
@@ -177,6 +178,34 @@ class NavigationScopeTests(unittest.TestCase):
         self.actor_enabled = False
         with self.assertRaises(Denied):
             self.workspace.appointment_events('APP-B')
+
+    def test_patient_assignment_history_exposes_only_scoped_event_metadata(self):
+        import json
+        assignment = Record(name='ASSIGN-A', practitioner='PRO-A')
+        event = Record(reference_name='ASSIGN-A', actor='manager@example.invalid',
+                       event_time='2026-10-23 10:00:00', reason='Cambio di prova',
+                       after_state=json.dumps({'active': 0, 'private_content': 'MUST_NOT_LEAK'}))
+        def scoped_rows(doctype, filters=None, fields=None, pluck=None):
+            if doctype == 'CC Patient Assignment':
+                self.assertEqual(filters, {'patient': 'PAT-A', 'center': 'CENTRO-A'})
+                return [assignment]
+            if doctype == 'CC Audit Event':
+                self.assertEqual(filters['reference_name'], ['in', ['ASSIGN-A']])
+                return [event]
+            return []
+        with patch.object(self.workspace, 'current_rows', side_effect=scoped_rows):
+            result = self.workspace.patient_history('PAT-A', 'CENTRO-A')
+        self.assertEqual(result['assignment_events'], [{
+            'practitioner': 'PRO-A', 'active': 0, 'actor': 'manager@example.invalid',
+            'event_time': '2026-10-23 10:00:00', 'reason': 'Cambio di prova',
+        }])
+        self.assertNotIn('MUST_NOT_LEAK', str(result))
+
+    def test_patient_history_checks_context_before_querying_assignments(self):
+        with patch.object(self.workspace, 'require_context', side_effect=Denied('foreign')), \
+             patch.object(self.workspace, 'current_rows', side_effect=AssertionError('unexpected query')):
+            with self.assertRaises(Denied):
+                self.workspace.patient_history('PAT-B', 'CENTRO-A')
 
 
 if __name__ == '__main__':

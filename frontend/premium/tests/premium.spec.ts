@@ -109,6 +109,99 @@ const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro
 const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
 
+test('AUDIT-04 scheda paziente: profilo autorizzato, note e storico', async ({ page }, info) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { name: 'PAT-001', patient_name: 'Paziente Sintetico', first_name: 'Paziente', last_name: 'Sintetico', email: 'paziente@example.invalid', modified: '2026-10-23 12:00:00' } }) }))
+  await page.goto('./#Pazienti')
+  await page.locator('tbody tr').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await expect(drawer.getByText('paziente@example.invalid')).toBeVisible()
+  await expect(drawer.getByText(todayItalian, { exact: false }).first()).toBeVisible()
+  await page.screenshot({ path: info.outputPath(`patients-detail-${info.project.name}.png`), fullPage: true })
+  await drawer.getByRole('button', { name: 'Modifica scheda' }).click()
+  const edit = page.getByRole('dialog', { name: 'Modifica paziente' })
+  await edit.getByRole('textbox', { name: /^Nome \*/ }).fill('Persona')
+  await edit.getByRole('textbox', { name: 'Motivo' }).fill('Correzione sintetica')
+  await edit.getByRole('button', { name: 'Salva' }).click()
+  await expect.poll(() => writes.some(write => write.method.endsWith('operations.profiles.patient_save'))).toBe(true)
+  expect(writes.find(write => write.method.endsWith('operations.profiles.patient_save'))?.body).toMatchObject({ center: 'CENTRO-A', name: 'PAT-001', expected_version: '2026-10-23 12:00:00', first_name: 'Persona' })
+  await drawer.getByRole('textbox', { name: 'Nuova nota organizzativa' }).fill('Osservazione di prova')
+  await drawer.getByRole('button', { name: 'Aggiungi nota' }).click()
+  await expect.poll(() => writes.some(write => write.method.endsWith('operations.notes.add_note'))).toBe(true)
+  expect(writes.find(write => write.method.endsWith('operations.notes.add_note'))?.body).toMatchObject({ patient: 'PAT-001', center: 'CENTRO-A', private: 0 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+})
+
+test('AUDIT-04 ricerca Pazienti segnala caricamento, troncamento ed errore senza risultati obsoleti', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', async route => {
+    const query = new URL(route.request().url()).searchParams.get('query')
+    if (query === 'lento') await new Promise(resolve => setTimeout(resolve, 500))
+    await route.fulfill(query === 'errore'
+      ? { status: 503, contentType: 'application/json', body: JSON.stringify({ exc: 'Unavailable' }) }
+      : { contentType: 'application/json', body: JSON.stringify({ message: { patients: query === 'nessuno' ? [] : boot.patients, truncated: query === 'molti' } }) })
+  })
+  await page.goto('./#Pazienti')
+  const search = page.getByRole('textbox', { name: 'Cerca pazienti' })
+  await search.fill('lento')
+  await expect(page.getByRole('status').filter({ hasText: 'Caricamento pazienti' })).toBeVisible()
+  await search.fill('molti')
+  await expect(page.getByText('Mostrati i primi 50 risultati. Affina la ricerca.')).toBeVisible()
+  await search.fill('errore')
+  await expect(page.getByRole('alert').filter({ hasText: 'Operazione non riuscita' })).toBeVisible()
+  await expect(page.locator('tbody tr')).toHaveCount(0)
+  await search.fill('nessuno')
+  await expect(page.getByText('Nessun paziente trovato nel centro.')).toBeVisible()
+})
+
+test('AUDIT-04 due emissioni volontarie identiche usano chiavi diverse', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./#Pazienti')
+  await page.locator('tbody tr').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await expect(drawer).toBeVisible()
+  for (let count = 0; count < 2; count++) {
+    await drawer.getByRole('button', { name: 'Emetti pacchetto' }).click()
+    await drawer.getByRole('combobox', { name: 'Modello' }).selectOption('TEMPLATE-001')
+    await drawer.getByRole('textbox', { name: 'Motivo' }).fill('Emissione sintetica')
+    await drawer.getByRole('button', { name: 'Conferma' }).click()
+    await expect.poll(() => writes.filter(write => write.method.endsWith('operations.packages.issue')).length).toBe(count + 1)
+  }
+  const keys = writes.filter(write => write.method.endsWith('operations.packages.issue')).map(write => write.body.request_key)
+  expect(keys[0]).not.toBe(keys[1])
+})
+
+test('AUDIT-04 assegnazioni ricercabili e riassegnazione usa servizio scoped', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, { practitioners: [boot.practitioners[0], { name: 'PR-002', practitioner_name: 'Dott. Verdi' }] })
+  await page.goto('./#Pazienti')
+  await page.locator('tbody tr').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await drawer.getByRole('button', { name: 'Riassegna' }).click()
+  await drawer.getByRole('searchbox', { name: 'Filtra professionista attuale' }).fill('Rossi')
+  await drawer.getByRole('combobox', { name: 'Professionista attuale' }).selectOption('PR-001')
+  await drawer.getByRole('searchbox', { name: 'Filtra nuovo professionista' }).fill('Verdi')
+  await drawer.getByRole('combobox', { name: 'Nuovo professionista' }).selectOption('PR-002')
+  await drawer.getByRole('textbox', { name: 'Motivo' }).fill('Riassegnazione sintetica')
+  await drawer.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.some(write => write.method.endsWith('security.lifecycle.reassign'))).toBe(true)
+  expect(writes.find(write => write.method.endsWith('security.lifecycle.reassign'))?.body).toMatchObject({ patient: 'PAT-001', center: 'CENTRO-A', old_practitioner: 'PR-001', new_practitioner: 'PR-002' })
+})
+
+test('AUDIT-04 note private solo in vista professionista, edit paziente solo Manager', async ({ page }) => {
+  await mockApi(page, [], false, {}, { roles: ['CC Professional'] })
+  await page.route('**/api/method/centrochange_core.operations.workspace.patient_history*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { appointments: [], packages: [], organizational_notes: [], private_notes: [{ name: 'PN-1', content: 'Segreto sintetico', authored_by: 'pro@example.invalid', creation: today + ' 12:00:00', corrects: null }], settlements: [] } }) }))
+  await page.goto('./#Pazienti')
+  await page.locator('tbody tr').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await expect(drawer.getByText('Segreto sintetico')).toBeVisible()
+  await expect(drawer.getByRole('button', { name: 'Modifica scheda' })).toHaveCount(0)
+  await expect(drawer.getByRole('button', { name: 'Emetti pacchetto' })).toHaveCount(0)
+  await expect(drawer.getByRole('button', { name: 'Gestisci assegnazione' })).toHaveCount(0)
+})
+
 test('AUDIT-02 polish: nomi disponibili, fallback trasparenti e ricerca A/B senza cambiare ID', async ({ page }, info) => {
   const pageErrors: string[] = []
   page.on('pageerror', error => pageErrors.push(error.message))
@@ -198,6 +291,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('finance.reporting.bootstrap')) { if (financeAllowed) message = { ...financeBoot, ...financeState }; else status = 403 }
     else if (method.endsWith('operations.workspace.agenda')) message = { appointments: agendaRows ?? [{ ...appointment, ...appointmentState }], truncated: false }
     else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
+    else if (method.endsWith('operations.profiles.patient_detail')) message = { name: 'PAT-001', patient_name: 'Paziente Sintetico', first_name: 'Paziente', last_name: 'Sintetico', email: 'paziente@example.invalid', modified: '2026-10-23 12:00:00' }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
     else if (method.endsWith('operations.workspace.patient_history')) message = { appointments: [{ ...appointment, ...appointmentState }], packages: [], organizational_notes: [{ name: 'NOTE-002', content: 'Nota sintetica rettificata', creation: today + ' 12:00:00', authored_by: 'direzione@example.invalid', corrects: 'NOTE-001' }, { name: 'NOTE-001', content: 'Nota sintetica', creation: today + ' 11:00:00', authored_by: 'direzione@example.invalid', corrects: null }], private_notes: [], settlements: [] }
     else if (method.endsWith('operations.workspace.appointment_events')) message = [

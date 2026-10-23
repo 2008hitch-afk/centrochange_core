@@ -112,6 +112,12 @@ def reassign(patient, center, old_practitioner, new_practitioner, reason):
 	require_operations(center)
 	if old_practitioner == new_practitioner:
 		frappe.throw("La riassegnazione richiede due professionisti diversi.")
+	# A stale selection must never grant the new professional access while the
+	# actual previous assignment remains active. Lock the current row first.
+	if not frappe.db.get_value('CC Patient Assignment', {
+		'patient': patient, 'center': center, 'practitioner': old_practitioner, 'active': 1,
+	}, 'name', for_update=True):
+		frappe.throw('Il professionista precedente non è più assegnato: aggiorna la scheda.')
 	# Both operations remain in the same request transaction: deny before granting.
 	set_assignment(patient, center, old_practitioner, 0, reason)
 	return set_assignment(patient, center, new_practitioner, 1, reason)

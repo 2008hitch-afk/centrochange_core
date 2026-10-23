@@ -10,6 +10,7 @@ import { FinanceCreate } from './finance_create'
 import { ProfessionalWorkflow } from './professional_workflow'
 import { PatientAssignments } from './patient_assignments'
 import { PatientPackages } from './patient_packages'
+import { PatientDetail } from './patient_detail'
 import { FinanceReports } from './finance_reports'
 import { financeFieldLabel, financeFieldValue } from './finance_locale'
 import { NoteHistory } from './note_history'
@@ -187,14 +188,26 @@ export function Patients({ boot, center, query, selectedPatient, feedback, refre
   const [search, setSearch] = useState(query)
   const [rows, setRows] = useState<Patient[]>(boot.patients)
   const [selected, setSelected] = useState<Patient | null>(null)
-  const [history, setHistory] = useState<Row | null>(null)
-  const [historyReload, setHistoryReload] = useState(0)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [truncated, setTruncated] = useState(false)
   useEffect(() => { setSearch(query) }, [query])
   useEffect(() => { if (selectedPatient) setSelected(selectedPatient) }, [selectedPatient])
-  useEffect(() => { if (!center) return; const term = search.trim().toLocaleLowerCase('it-IT'); const aliases = boot.patients.filter(row => `${row.name} ${row.patient_name} ${demoPatient(row.name, row.patient_name)}`.toLocaleLowerCase('it-IT').includes(term)); if (term && aliases.some(row => demoPatient(row.name, row.patient_name) !== row.patient_name)) { setRows(aliases); setError(''); return } let live = true; ops<{ patients: Patient[] }>('workspace.patient_search', { center, query: search }).then(r => { if (live) { setRows(r.patients); setError('') } }).catch(e => { if (live) setError(getError(e)) }); return () => { live = false } }, [center, search, boot])
-  useEffect(() => { if (!selected) return; let live = true; setHistory(null); ops<Row>('workspace.patient_history', { patient: selected.name, center }).then(r => { if (live) setHistory(r) }).catch(e => feedback(getError(e), true)); return () => { live = false } }, [selected, center, historyReload])
-  return <><Heading eyebrow="PERCORSO PAZIENTE" title="Pazienti" subtitle="Cerca, consulta e segui il percorso operativo nel centro." /><section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco pazienti</h2><p>{rows.length} {rows.length === 1 ? "risultato" : "risultati"} nel centro selezionato</p></div><label className="search-inline"><Search size={17} /><input placeholder="Cerca per nome o codice" aria-label="Cerca pazienti" value={search} onChange={e => setSearch(e.target.value)} /></label></div>{error && <p className="inline-error">{error}</p>}<DataTable rows={rows as unknown as Row[]} columns={[{ key: 'patient_name', label: 'Paziente', render: (v, row) => <strong>{demoPatient(row.name, v)}</strong> }, { key: 'name', label: '', render: () => <ArrowRight size={17} /> }]} onRow={r => setSelected(r as Patient)} /></section>{selected && <Drawer title={demoPatient(selected.name, selected.patient_name)} onClose={() => setSelected(null)}><div className="detail-summary"><Chip tone="blue">Paziente</Chip><h3>{demoPatient(selected.name, selected.patient_name)}</h3></div>{!history ? <p className="detail-section">Caricamento storico…</p> : <div className="detail-section"><h3>Sedute</h3>{(history.appointments as Row[] ?? []).map((a, i) => <article className="note" key={i}><strong>{displayDate(a.appointment_date)} · {demoText(a.cc_service_label) || 'Seduta'}</strong><small>{closureName(a.cc_closure_state)}</small></article>)}<h3>Note organizzative</h3><NoteHistory rows={history.organizational_notes as Row[] ?? []} /></div>}<PatientPackages boot={boot} patient={selected.name} center={center} packages={history?.packages as Row[] ?? []} feedback={feedback} onSuccess={() => { setHistoryReload(n => n + 1); void refreshBoot() }} /><PatientAssignments boot={boot} patient={selected.name} center={center} feedback={feedback} /></Drawer>}</>
+  useEffect(() => {
+    if (!center) return
+    const term = search.trim().toLocaleLowerCase('it-IT')
+    const aliases = boot.patients.filter(row => `${row.name} ${row.patient_name} ${demoPatient(row.name, row.patient_name)}`.toLocaleLowerCase('it-IT').includes(term))
+    if (term && aliases.some(row => demoPatient(row.name, row.patient_name) !== row.patient_name)) {
+      setRows(aliases); setError(''); setLoading(false); setTruncated(false); return
+    }
+    let live = true
+    setRows([]); setLoading(true); setError(''); setTruncated(false)
+    ops<{ patients: Patient[]; truncated: boolean }>('workspace.patient_search', { center, query: search })
+      .then(result => { if (live) { setRows(result.patients); setTruncated(result.truncated); setLoading(false) } })
+      .catch(cause => { if (live) { setRows([]); setError(getError(cause)); setLoading(false) } })
+    return () => { live = false }
+  }, [center, search, boot])
+  return <><Heading eyebrow="PERCORSO PAZIENTE" title="Pazienti" subtitle="Cerca, consulta e segui il percorso operativo nel centro." /><section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco pazienti</h2><p>{rows.length} {rows.length === 1 ? 'risultato' : 'risultati'} nel centro selezionato</p></div><label className="search-inline"><Search size={17} /><input placeholder="Cerca per nome o codice" aria-label="Cerca pazienti" value={search} onChange={event => setSearch(event.target.value)} /></label></div>{loading && <p className="panel-loading" role="status">Caricamento pazienti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{truncated && <p className="scope-note">Mostrati i primi 50 risultati. Affina la ricerca.</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'patient_name', label: 'Paziente', render: (value, row) => <strong>{demoPatient(row.name, value)}</strong> }, { key: 'name', label: '', render: () => <ArrowRight size={17} /> }]} onRow={row => setSelected(row as Patient)} /> : <Empty title="Nessun paziente trovato nel centro." />)}</section>{selected && <PatientDetail boot={boot} patient={selected} center={center} feedback={feedback} onClose={() => setSelected(null)} onSuccess={() => { void refreshBoot() }} />}</>
 }
 
 export function Professionals({ boot, center }: { boot: Boot; center: string }) {

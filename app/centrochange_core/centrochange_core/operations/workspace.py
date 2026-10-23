@@ -63,9 +63,27 @@ def patient_history(patient,center):
         doc=frappe.get_doc('CC Patient Package',row.name)
         if center in [eligible.center for eligible in doc.centers]:
             packages.append({'name':row.name,'label':frappe.db.get_value('CC Package Template',row.template,'title'),
-                **balance(row.name,center)})
+                'valid_until':str(doc.valid_until) if doc.valid_until else None,
+                'practitioner':doc.practitioner,**balance(row.name,center)})
+    assignment_rows=current_rows('CC Patient Assignment',{'patient':patient,'center':center},
+        fields=['name','practitioner'])
+    names=[row.name for row in assignment_rows]
+    practitioners={row.name:row.practitioner for row in assignment_rows}
+    assignment_events=[]
+    if names:
+        events=current_rows('CC Audit Event',{'reference_doctype':'CC Patient Assignment',
+            'reference_name':['in',names],'event_type':'PATIENT_ASSIGNMENT'},
+            fields=['reference_name','actor','event_time','reason','after_state'])
+        if len(events)>200:
+            frappe.throw('Storico assegnazioni troppo esteso: contatta la Direzione.')
+        for event in sorted(events,key=lambda item:item.event_time,reverse=True):
+            after=json.loads(event.after_state or '{}')
+            assignment_events.append({'practitioner':practitioners[event.reference_name],
+                'active':int(after.get('active',0)),'actor':event.actor,
+                'event_time':event.event_time,'reason':event.reason})
     return {'appointments':appointments[:100],'truncated':len(appointments)>100,
-        'settlements':settlements,'organizational_notes':organizational,'private_notes':private,'packages':packages}
+        'settlements':settlements,'organizational_notes':organizational,'private_notes':private,
+        'packages':packages,'assignment_events':assignment_events}
 
 
 @frappe.whitelist(methods=['GET'])
