@@ -233,6 +233,10 @@ def destroy_http(fixture):
 		assert all((frappe.db.get_value(doctype,name,field) or '').startswith(tag+' ') for name in names)
 	groups={'Patient':fixture['patients'],'Healthcare Practitioner':fixture['practitioners'],
 		'Branch':fixture['centers'],'User':users}
+	# Native User creation may leave Notification Settings after the User is
+	# removed. Select by the exact owned user IDs, including their child rows.
+	groups['Notification Settings']=frappe.get_all('Notification Settings',
+		filters={'name':['in',users]},pluck='name',limit_page_length=0)
 	if fixture.get('catalog'):
 		assert all((frappe.db.get_value('Item',name,'item_name') or '').startswith(tag+' ') for name in fixture['catalog']['Item'])
 		groups.update(fixture['catalog'])
@@ -386,6 +390,12 @@ def destroy_http(fixture):
 			('Comment',{'reference_doctype':doctype,'reference_name':['in',names]})]:
 			frappe.db.delete(dependent,filters)
 		frappe.db.delete(doctype,{'name':['in',names]})
+	# Low-level fixture deletion does not invoke the native search-index hook.
+	# Remove only entries for exact document IDs already proven test-owned.
+	for doctype,names in groups.items():
+		if names:
+			frappe.db.sql('DELETE FROM `__global_search` WHERE doctype=%s AND name IN %s',
+				(doctype,tuple(names)))
 	frappe.db.delete('User Permission',{'user':['in',users]})
 	frappe.db.delete('DocShare',{'user':['in',users]})
 	frappe.db.delete('Sessions',{'user':['in',users]})
@@ -396,6 +406,8 @@ def destroy_http(fixture):
 	for user in users:
 		frappe.clear_cache(user=user)
 	assert not any(frappe.db.exists(doctype,{'name':['in',names]}) for doctype,names in groups.items() if names)
+	assert not any(frappe.db.sql('SELECT 1 FROM `__global_search` WHERE doctype=%s AND name IN %s LIMIT 1',
+		(doctype,tuple(names))) for doctype,names in groups.items() if names)
 	return {'cleanup':'PASS'}
 
 
