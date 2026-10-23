@@ -169,6 +169,11 @@ test('pacchetti: chiave replay, nuova emissione, rettifica e saldo reale', async
     const second = await post(ctx, token, 'operations.packages.issue', { ...issueArgs, request_key: fixture.tag + '-issue-b' })
     expect(second.response.ok()).toBeTruthy()
     expect(second.body.message.name).not.toBe(first.body.message.name)
+    const packageFilter = JSON.stringify({ patient: fixture.patient_a, template: fixture.template })
+    const beforeConcurrent = await get(ctx, 'frappe.client.get_list', {
+      doctype: 'CC Patient Package', fields: '["name"]', filters: packageFilter, limit_page_length: '1000' })
+    expect(beforeConcurrent.response.ok()).toBeTruthy()
+    const beforeNames = new Set((beforeConcurrent.body.message as { name: string }[]).map(row => row.name))
     const concurrentArgs = { ...issueArgs, request_key: fixture.tag + '-concurrent-' + Date.now().toString(36) }
     const [parallelA, parallelB] = await Promise.all([
       post(ctx, token, 'operations.packages.issue', concurrentArgs),
@@ -177,6 +182,20 @@ test('pacchetti: chiave replay, nuova emissione, rettifica e saldo reale', async
     expect(parallelA.response.ok() && parallelB.response.ok(),
       `concurrent HTTP ${parallelA.response.status()}/${parallelB.response.status()} types ${parallelA.body.exc_type ?? '-'} / ${parallelB.body.exc_type ?? '-'}`).toBeTruthy()
     expect(parallelA.body.message.name).toBe(parallelB.body.message.name)
+    const concurrentPackage = parallelA.body.message.name as string
+    const afterConcurrent = await get(ctx, 'frappe.client.get_list', {
+      doctype: 'CC Patient Package', fields: '["name"]', filters: packageFilter, limit_page_length: '1000' })
+    expect(afterConcurrent.response.ok()).toBeTruthy()
+    expect((afterConcurrent.body.message as { name: string }[]).map(row => row.name).filter(name => !beforeNames.has(name))).toEqual([concurrentPackage])
+    const grant = await get(ctx, 'frappe.client.get_list', {
+      doctype: 'CC Package Ledger', fields: '["name"]',
+      filters: JSON.stringify({ package: concurrentPackage, event_type: 'GRANT' }) })
+    const audit = await get(ctx, 'frappe.client.get_list', {
+      doctype: 'CC Audit Event', fields: '["name"]',
+      filters: JSON.stringify({ reference_doctype: 'CC Patient Package', reference_name: concurrentPackage, event_type: 'PACKAGE_ISSUED' }) })
+    expect(grant.response.ok() && audit.response.ok()).toBeTruthy()
+    expect(grant.body.message).toHaveLength(1)
+    expect(audit.body.message).toHaveLength(1)
     const packageName = first.body.message.name
     const adjustArgs = { package: packageName, units: 1, reason: 'Rettifica sintetica', request_key: fixture.tag + '-adjust' }
     const adjust = await post(ctx, token, 'operations.packages.adjust', adjustArgs)
@@ -427,4 +446,75 @@ test('cancellazione tardiva sintetica: unità pacchetto consumata una sola volta
     expect(balance.body.message.remaining).toBe(0)
     expect(balance.body.message.reserved).toBe(0)
   } finally { await manager.close() }
+})
+
+test('ultima revoca: Direzione legge storico, scritture bloccate e riattivazione', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  const manager = await context(browser, 'manager')
+  const professional = await context(browser, 'professional_a')
+  const secretariat = await context(browser, 'secretariat')
+  const revoked: string[] = []
+  try {
+    const page = await manager.newPage()
+    await page.goto('/premium/#Pazienti')
+    const token = await csrf(page)
+    const assignments = await get(manager, 'frappe.client.get_list', {
+      doctype: 'CC Patient Assignment', fields: '["name","patient","center","practitioner","active"]',
+      filters: JSON.stringify({ patient: fixture.patient_a, center: fixture.center_a, active: 1 }) })
+    expect(assignments.response.ok()).toBeTruthy()
+    expect(assignments.body.message.length).toBeGreaterThan(0)
+    for (const row of assignments.body.message as { practitioner: string }[]) {
+      expect([fixture.practitioner_a, fixture.practitioner_b]).toContain(row.practitioner)
+      const result = await post(manager, token, 'security.lifecycle.set_assignment', {
+        patient: fixture.patient_a, center: fixture.center_a, practitioner: row.practitioner,
+        active: 0, reason: 'Revoca UAT sintetica e reversibile' })
+      expect(result.response.ok()).toBeTruthy()
+      revoked.push(row.practitioner)
+    }
+    const search = await get(manager, 'operations.workspace.patient_search', { center: fixture.center_a, query: fixture.tag })
+    expect(search.response.ok()).toBeTruthy()
+    expect(search.body.message.patients.find((row: { name: string }) => row.name === fixture.patient_a)?.active_assignment).toBe(false)
+    const profile = await get(manager, 'operations.profiles.patient_detail', { center: fixture.center_a, name: fixture.patient_a })
+    expect(profile.response.ok()).toBeTruthy()
+    expect(profile.body.message.active_assignment).toBe(false)
+    const history = await get(manager, 'operations.workspace.patient_history', { center: fixture.center_a, patient: fixture.patient_a })
+    expect(history.response.ok()).toBeTruthy()
+    expect(history.body.message.assignment_events.some((row: { active: number }) => row.active === 0)).toBeTruthy()
+    const deniedNote = await post(manager, token, 'operations.notes.add_note', {
+      center: fixture.center_a, patient: fixture.patient_a, content: 'NON SALVARE', private: 0 })
+    expect(deniedNote.response.ok()).toBeFalsy()
+    const deniedAdjustment = await post(manager, token, 'operations.packages.adjust', {
+      package: fixture.package, units: 1, request_key: fixture.tag + '-historical-adjust', reason: 'NON SALVARE' })
+    expect(deniedAdjustment.response.ok()).toBeFalsy()
+    for (const actor of [professional, secretariat]) {
+      const hidden = await get(actor, 'operations.workspace.patient_search', { center: fixture.center_a, query: fixture.tag })
+      expect(hidden.response.ok()).toBeTruthy()
+      expect(hidden.body.message.patients.some((row: { name: string }) => row.name === fixture.patient_a)).toBeFalsy()
+      const direct = await get(actor, 'operations.profiles.patient_detail', { center: fixture.center_a, name: fixture.patient_a })
+      expect(direct.response.ok()).toBeFalsy()
+    }
+    await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await expect(page.locator('tbody tr').filter({ hasText: 'Storico' }).first()).toBeVisible()
+    await page.locator('tbody tr').filter({ hasText: 'Storico' }).first().click()
+    const drawer = page.getByRole('dialog')
+    await expect(drawer.getByText('Nessuna assegnazione attiva in questo centro.')).toBeVisible()
+    await expect(drawer.getByText('Assegnazione revocata').first()).toBeVisible()
+    await expect(drawer.getByRole('button', { name: 'Modifica scheda' })).toHaveCount(0)
+    await expect(drawer.getByRole('button', { name: 'Emetti pacchetto' })).toHaveCount(0)
+    await page.screenshot({ path: info.outputPath('patients-live-historical.png'), fullPage: true })
+  } finally {
+    if (revoked.length) {
+      const recoveryPage = await manager.newPage()
+      await recoveryPage.goto('/premium/#Pazienti')
+      const token = await csrf(recoveryPage)
+      for (const practitioner of revoked) {
+        const restored = await post(manager, token, 'security.lifecycle.set_assignment', {
+          patient: fixture.patient_a, center: fixture.center_a, practitioner, active: 1,
+          reason: 'Ripristino fixture UAT sintetica' })
+        expect(restored.response.ok()).toBeTruthy()
+      }
+    }
+    await manager.close(); await professional.close(); await secretariat.close()
+  }
 })

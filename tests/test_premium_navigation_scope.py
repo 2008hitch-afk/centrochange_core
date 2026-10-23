@@ -27,6 +27,7 @@ class NavigationScopeTests(unittest.TestCase):
         self.practitioners = [Record(name='PRO-A', practitioner_name='Dott.ssa Rossi', user_id='user-a', status='Active'),
                               Record(name='PRO-B', practitioner_name='Dott. Bianchi', user_id='user-b', status='Active')]
         self.assignments = {'CENTRO-A': ['PAT-A'], 'CENTRO-B': ['PAT-B']}
+        self.historical_assignments = {'CENTRO-A': [], 'CENTRO-B': []}
         self.memberships = {'CENTRO-A': ['user-a'], 'CENTRO-B': ['user-b']}
         self.centers = [Record(name='CENTRO-A', branch='Centro A'), Record(name='CENTRO-B', branch='Centro B')]
         self.frappe = types.ModuleType('frappe')
@@ -47,7 +48,7 @@ class NavigationScopeTests(unittest.TestCase):
         guards.require_center = lambda center: None if self.manager or center == 'CENTRO-A' else self.frappe.throw('Centro negato', Denied)
         guards.current_rows = self.current_rows
         guards.operational_centers = lambda: self.centers if self.manager else self.centers[:1]
-        guards.patient_contexts = lambda: {('PAT-A', 'CENTRO-A')}
+        guards.patient_contexts = lambda: {(name, center) for center, names in self.assignments.items() for name in names}
         guards.practitioner_for = lambda: 'PRO-A'
         notes = types.ModuleType('centrochange_core.operations.notes')
         notes.require_context = lambda *args: None
@@ -84,7 +85,12 @@ class NavigationScopeTests(unittest.TestCase):
 
     def current_rows(self, doctype, filters=None, fields=None, pluck=None):
         if doctype == 'CC Patient Assignment':
-            return self.assignments[filters['center']]
+            names = list(self.assignments[filters['center']])
+            if filters.get('active') != 1:
+                names += self.historical_assignments[filters['center']]
+            if filters.get('patient'):
+                names = [name for name in names if name == filters['patient']]
+            return names
         if doctype == 'CC Center Membership':
             return self.memberships[filters['center']]
         if doctype == 'Healthcare Practitioner':
@@ -124,8 +130,8 @@ class NavigationScopeTests(unittest.TestCase):
         self.assertNotIn('PAT-A', [row.name for row in second['patients']])
 
     def test_manager_search_only_contains_selected_center_patients(self):
-        self.assertEqual([row.name for row in self.workspace.patient_search('CENTRO-A')['patients']], ['PAT-A'])
-        self.assertEqual([row.name for row in self.workspace.patient_search('CENTRO-B')['patients']], ['PAT-B'])
+        self.assertEqual([row['name'] for row in self.workspace.patient_search('CENTRO-A')['patients']], ['PAT-A'])
+        self.assertEqual([row['name'] for row in self.workspace.patient_search('CENTRO-B')['patients']], ['PAT-B'])
         self.assertEqual(self.workspace.patient_search('CENTRO-A', 'Paziente B')['patients'], [])
         with self.assertRaises(Denied):
             self.workspace.patient_search('CENTRO-NON-OPERATIVO', 'Paziente')
@@ -138,9 +144,19 @@ class NavigationScopeTests(unittest.TestCase):
         with self.assertRaises(Denied):
             self.workspace.patient_search('CENTRO-A')
 
+    def test_manager_historical_search_does_not_enter_operational_bootstrap(self):
+        self.assignments['CENTRO-A'] = []
+        self.historical_assignments['CENTRO-A'] = ['PAT-A']
+        self.assertEqual(self.workspace.bootstrap('CENTRO-A')['patients'], [])
+        result = self.workspace.patient_search('CENTRO-A')['patients']
+        self.assertEqual([(row['name'], row['active_assignment']) for row in result], [('PAT-A', False)])
+        self.assertFalse(self.workspace.require_history_context('PAT-A', 'CENTRO-A'))
+        self.manager = False
+        self.assertEqual(self.workspace.patient_search('CENTRO-A')['patients'], [])
+
     def test_professional_scope_and_denied_center(self):
         self.manager = False
-        self.assertEqual([row.name for row in self.workspace.patient_search('CENTRO-A')['patients']], ['PAT-A'])
+        self.assertEqual([row['name'] for row in self.workspace.patient_search('CENTRO-A')['patients']], ['PAT-A'])
         with self.assertRaises(Denied):
             self.workspace.patient_search('CENTRO-B')
         with self.assertRaises(Denied):
@@ -159,7 +175,7 @@ class NavigationScopeTests(unittest.TestCase):
         def scoped_rows(doctype, filters, fields):
             calls.append(('rows', doctype, filters))
             return [event]
-        with patch.object(self.workspace, 'require_context', side_effect=lambda *args: calls.append(('context', *args))), \
+        with patch.object(self.workspace, 'require_history_context', side_effect=lambda *args: calls.append(('context', *args))), \
              patch.object(self.workspace, 'current_rows', side_effect=scoped_rows):
             result = self.workspace.appointment_events('APP-A')
         self.assertEqual(calls[0], ('context', 'PAT-A', 'CENTRO-A'))
@@ -172,7 +188,7 @@ class NavigationScopeTests(unittest.TestCase):
         self.frappe.get_doc = lambda *args: types.SimpleNamespace(
             name=args[1], patient='PAT-B', cc_center='CENTRO-B',
             check_permission=lambda mode: self.fail('Permission read after foreign context'))
-        with patch.object(self.workspace, 'require_context', side_effect=Denied('foreign')):
+        with patch.object(self.workspace, 'require_history_context', side_effect=Denied('foreign')):
             with self.assertRaises(Denied):
                 self.workspace.appointment_events('APP-B')
         self.actor_enabled = False
@@ -187,8 +203,9 @@ class NavigationScopeTests(unittest.TestCase):
                        after_state=json.dumps({'active': 0, 'private_content': 'MUST_NOT_LEAK'}))
         def scoped_rows(doctype, filters=None, fields=None, pluck=None):
             if doctype == 'CC Patient Assignment':
-                self.assertEqual(filters, {'patient': 'PAT-A', 'center': 'CENTRO-A'})
-                return [assignment]
+                self.assertEqual({key: filters[key] for key in ('patient', 'center')},
+                                 {'patient': 'PAT-A', 'center': 'CENTRO-A'})
+                return ['ASSIGN-A'] if pluck else [assignment]
             if doctype == 'CC Audit Event':
                 self.assertEqual(filters['reference_name'], ['in', ['ASSIGN-A']])
                 return [event]
@@ -203,9 +220,10 @@ class NavigationScopeTests(unittest.TestCase):
 
     def test_patient_history_checks_context_before_querying_assignments(self):
         with patch.object(self.workspace, 'require_context', side_effect=Denied('foreign')), \
-             patch.object(self.workspace, 'current_rows', side_effect=AssertionError('unexpected query')):
+             patch.object(self.workspace, 'current_rows', return_value=[]) as rows:
             with self.assertRaises(Denied):
                 self.workspace.patient_history('PAT-B', 'CENTRO-A')
+        self.assertEqual(rows.call_count, 1)
 
 
 if __name__ == '__main__':

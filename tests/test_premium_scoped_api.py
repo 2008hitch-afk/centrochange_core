@@ -193,8 +193,8 @@ class ScopedApiTest(unittest.TestCase):
         spec.loader.exec_module(profiles)
         result = profiles.patients('A')
         self.assertEqual(result, {'rows': [], 'has_more': False})
-        self.assertEqual(calls[-1][0], 'Patient')
-        self.assertEqual(calls[-1][1]['filters']['name'], ['in', ['']])
+        patient_query = next(kwargs for doctype, kwargs in calls if doctype == 'Patient')
+        self.assertEqual(patient_query['filters']['name'], ['in', ['']])
 
     def test_create_and_replay(self):
         first = self.api.create('create', 'A', 'Item', {'item_name': 'Nuovo'}, ('item_name',), 'KC', 'motivo')

@@ -16,12 +16,26 @@ def require_actor():
         frappe.throw('Non hai accesso alla schermata operativa.',frappe.PermissionError)
 
 
-def center_patient_names(center):
-    """Patient IDs visible in the selected operational center, even for Managers."""
+def center_patient_names(center, include_historical=False):
+    """Patient IDs in a center; historical records are Manager search only."""
     if is_manager():
-        return current_rows('CC Patient Assignment', {'center': center, 'active': 1}, pluck='patient')
+        filters={'center':center}
+        if not include_historical:
+            filters['active']=1
+        return current_rows('CC Patient Assignment', filters, pluck='patient')
     from centrochange_core.security.guards import patient_contexts
     return [patient for patient, assigned_center in patient_contexts() if assigned_center == center]
+
+
+def require_history_context(patient, center):
+    """Read historical center records only for a Manager still authorized there."""
+    require_center(center)
+    if is_manager() and current_rows('CC Patient Assignment',
+            {'patient':patient,'center':center},pluck='name'):
+        return bool(current_rows('CC Patient Assignment',
+            {'patient':patient,'center':center,'active':1},pluck='name'))
+    require_context(patient,center)
+    return True
 
 
 @frappe.whitelist()
@@ -41,7 +55,7 @@ def agenda(center,start,end):
 @frappe.whitelist()
 def patient_history(patient,center):
     require_actor()
-    require_context(patient,center)
+    active_context=require_history_context(patient,center)
     appointments=frappe.get_list('Patient Appointment',filters={'patient':patient,'cc_center':center},
         fields=APPOINTMENT_FIELDS,order_by='appointment_date desc,appointment_time desc,name',page_length=101)
     for row in appointments:
@@ -57,14 +71,14 @@ def patient_history(patient,center):
     if 'CC Professional' in roles():
         private=frappe.get_list('CC Private Note',filters={'patient':patient,'center':center},
             fields=['name','content','authored_by','creation','corrects'],order_by='creation desc',page_length=100)
-    from centrochange_core.operations.packages import balance
+    from centrochange_core.operations.packages import balance, _balance
     packages=[]
     for row in frappe.get_list('CC Patient Package',filters={'patient':patient},fields=['name','template'],page_length=100):
         doc=frappe.get_doc('CC Patient Package',row.name)
         if center in [eligible.center for eligible in doc.centers]:
             packages.append({'name':row.name,'label':frappe.db.get_value('CC Package Template',row.template,'title'),
                 'valid_until':str(doc.valid_until) if doc.valid_until else None,
-                'practitioner':doc.practitioner,**balance(row.name,center)})
+                'practitioner':doc.practitioner,**(balance(row.name,center) if active_context else _balance(row.name))})
     assignment_rows=current_rows('CC Patient Assignment',{'patient':patient,'center':center},
         fields=['name','practitioner'])
     names=[row.name for row in assignment_rows]
@@ -91,7 +105,7 @@ def appointment_events(appointment):
     """Operational timeline scoped to one readable appointment, without audit-table access."""
     require_actor()
     doc=frappe.get_doc('Patient Appointment',appointment)
-    require_context(doc.patient,doc.cc_center)
+    require_history_context(doc.patient,doc.cc_center)
     doc.check_permission('read')
     allowed={'APPOINTMENT_BOOKED':('appointment_date','appointment_time'),
              'APPOINTMENT_RESCHEDULED':('appointment_date','appointment_time'),
@@ -236,7 +250,9 @@ def patient_search(center, query=''):
         frappe.throw('La sede selezionata non è disponibile.', frappe.PermissionError)
     query=str(query or '').strip()
     if len(query)>140:frappe.throw('Il testo di ricerca è troppo lungo.')
-    filters={'name':['in',center_patient_names(center) or ['']]}
+    all_names=set(center_patient_names(center,include_historical=True))
+    active_names=set(center_patient_names(center))
+    filters={'name':['in',list(all_names) or ['']]}
     text='%'+query.replace('\\','\\\\').replace('%','\\%').replace('_','\\_')+'%'
     # Non-manager roles use document-scoped Patient permissions, not generic list rights.
     # The narrow internal query is confined to exact current authorized patient/center pairs.
@@ -244,4 +260,5 @@ def patient_search(center, query=''):
     rows=lookup('Patient',filters=filters,
         or_filters={k:['like',text] for k in ['patient_name','first_name','last_name','name','uid']},
         fields=['name','patient_name','uid'],order_by='patient_name,name',page_length=51)
-    return {'patients':rows[:50],'truncated':len(rows)>50}
+    return {'patients':[{**row,'active_assignment':row.name in active_names} for row in rows[:50]],
+        'truncated':len(rows)>50}

@@ -130,6 +130,7 @@ def adjust(package,units,request_key,reason):
 	doc.check_permission('read')
 	for row in doc.centers:
 		require_operations(row.center)
+		require_context(doc.patient,row.center)
 	units=frappe.utils.cint(units)
 	if not units or abs(units)>9999 or not request_key or len(request_key)>140:
 		frappe.throw('La rettifica del pacchetto non è valida.')
