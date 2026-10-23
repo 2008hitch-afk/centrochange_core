@@ -144,7 +144,7 @@ def bootstrap(center=None):
         frappe.throw('La sede selezionata non è disponibile.',frappe.PermissionError)
     try:
         patients=frappe.get_list('Patient',filters={'name':['in',center_patient_names(center) or ['']]},
-            fields=['name','patient_name'],page_length=500,order_by='patient_name')
+            fields=['name','patient_name','first_name','last_name'],page_length=500,order_by='patient_name')
     except frappe.PermissionError:
         patients=[]
     memberships=current_rows('CC Center Membership',{'center':center,'active':1},pluck='user')
@@ -259,6 +259,6 @@ def patient_search(center, query=''):
     lookup=frappe.get_list if is_manager() else frappe.get_all
     rows=lookup('Patient',filters=filters,
         or_filters={k:['like',text] for k in ['patient_name','first_name','last_name','name','uid']},
-        fields=['name','patient_name','uid'],order_by='patient_name,name',page_length=51)
+        fields=['name','patient_name','first_name','last_name','uid'],order_by='patient_name,name',page_length=51)
     return {'patients':[{**row,'active_assignment':row.name in active_names} for row in rows[:50]],
         'truncated':len(rows)>50}

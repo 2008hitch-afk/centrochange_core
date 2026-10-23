@@ -33,7 +33,8 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
   const [events, setEvents] = useState<Row[] | null>(null)
   const manager = boot.roles.includes('CC Manager')
   const professional = boot.roles.includes('CC Professional')
-  const patientLabel = demoPatient(patient.name, String(profile?.patient_name ?? patient.patient_name))
+  const patientLabel = demoPatient(patient.name, profile?.patient_name ?? patient.patient_name,
+    profile?.first_name ?? patient.first_name, profile?.last_name ?? patient.last_name)
   const historical = profile?.active_assignment === false
 
   useEffect(() => {
@@ -80,7 +81,6 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
   const correct = (row: Row, privateNote: boolean) => { setCorrects(String(row.name)); setNote(String(row.content ?? '')); setNotePrivate(privateNote) }
 
   return <><Drawer title={patientLabel} onClose={onClose}>
-    <div className="detail-summary"><Chip tone="blue">Paziente</Chip><h3>{patientLabel}</h3></div>
     {loading && <p role="status">Caricamento scheda paziente…</p>}
     {error && <p className="inline-error" role="alert">{error}</p>}
     {profile && <section className="detail-section"><h3>Anagrafica</h3>{historical && <p className="scope-note" role="status">Nessuna assegnazione attiva in questo centro. La scheda è consultabile come storico; per riprendere le operazioni, registra una nuova assegnazione autorizzata.</p>}<dl className="property-list"><div><dt>Nome</dt><dd>{profile.first_name || '—'}</dd></div><div><dt>Cognome</dt><dd>{profile.last_name || '—'}</dd></div><div><dt>Email</dt><dd>{profile.email || '—'}</dd></div></dl>{manager && !historical && <Button variant="secondary" onClick={() => { saveKey.current = requestKey(); setDraft({ ...profile }); setReason(''); setError('') }}>Modifica scheda</Button>}</section>}

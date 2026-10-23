@@ -37,3 +37,7 @@
 .payment-block-list { list-style: none; margin: 1rem 0; padding: 0; display: grid; gap: .65rem; }
 .payment-block-list li { display: grid; gap: .2rem; padding: .8rem 1rem; border: 1px solid var(--border, #dce3e1); border-radius: .7rem; }
 .payment-block-list span { color: var(--muted, #53615e); }
+
+/* Patient lookup is a contextual action, never a permanent topbar field. */
+.topbar{position:relative}.quick-search .mobile-search-toggle{display:grid}.quick-search .search-shell{display:none}.quick-search.quick-search-mobile-open .search-shell{display:flex;position:absolute;top:calc(100% + 4px);right:160px;left:auto;width:min(360px,calc(100vw - 24px));height:48px;background:#fff;box-shadow:0 12px 24px #1d3a5724;z-index:31}.quick-search.quick-search-mobile-open .quick-search-close{display:grid;flex:0 0 34px}.quick-search.quick-search-mobile-open .search-shell input{width:100%;font-size:14px}
+@media(max-width:760px){.quick-search.quick-search-mobile-open .search-shell{top:60px;left:10px;right:10px;width:auto}}

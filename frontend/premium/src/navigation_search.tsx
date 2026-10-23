@@ -34,7 +34,7 @@ export function PatientQuickSearch({ boot, center, onSelect, onSearchAll }: Prop
       ops<{ patients: Patient[]; truncated: boolean }>('workspace.patient_search', { center, query: term }).then(data => {
         if (!live) return
         const aliases = boot.patients.filter(row =>
-          demoPatient(row.name, row.patient_name).toLocaleLowerCase('it-IT').includes(term.toLocaleLowerCase('it-IT')))
+          demoPatient(row.name, row.patient_name, row.first_name, row.last_name).toLocaleLowerCase('it-IT').includes(term.toLocaleLowerCase('it-IT')))
         const merged = [...new Map([...data.patients, ...aliases].map(row => [row.name, row])).values()]
         setRows(merged.slice(0, 50))
         setTruncated(Boolean(data.truncated) || merged.length > 50)
@@ -55,7 +55,7 @@ export function PatientQuickSearch({ boot, center, onSelect, onSearchAll }: Prop
   }
   const close = () => {
     setOpen(false)
-    if (mobileOpen) { setMobileOpen(false); requestAnimationFrame(() => toggle.current?.focus()) }
+    setMobileOpen(false); requestAnimationFrame(() => toggle.current?.focus())
   }
   const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') { event.preventDefault(); close() }
@@ -68,11 +68,11 @@ export function PatientQuickSearch({ boot, center, onSelect, onSearchAll }: Prop
     }
   }
   return <div className={`quick-search ${mobileOpen ? 'quick-search-mobile-open' : ''}`} ref={container}>
-    <button className="icon-button mobile-search-toggle" ref={toggle} aria-label="Apri ricerca pazienti" aria-expanded={mobileOpen} onClick={() => { setMobileOpen(true); requestAnimationFrame(() => input.current?.focus()) }}><Search /></button>
+    <button className="icon-button mobile-search-toggle" ref={toggle} aria-label="Apri ricerca pazienti" aria-expanded={mobileOpen} disabled={!boot} onClick={() => { setMobileOpen(true); requestAnimationFrame(() => input.current?.focus()) }}><Search /></button>
     <div className="search-shell"><Search aria-hidden="true" /><input ref={input} type="search" role="combobox" aria-label="Ricerca globale pazienti" aria-autocomplete="list" aria-expanded={open && term.length >= 2} aria-controls={open && term.length >= 2 ? 'quick-patient-results' : undefined} aria-activedescendant={active >= 0 && open ? `quick-patient-${active}` : undefined} value={query} maxLength={140} onChange={event => { setQuery(event.target.value); setOpen(true) }} onFocus={() => { if (term.length >= 2) setOpen(true) }} onKeyDown={onKeyDown} placeholder="Cerca pazienti..." disabled={!boot} />
       {mobileOpen && <button className="icon-button quick-search-close" aria-label="Chiudi ricerca pazienti" onClick={close}><X /></button>}
       {open && term.length >= 2 && <div className="quick-results" id="quick-patient-results" role="listbox" aria-label="Risultati pazienti">
-        {loading ? <p role="status">Ricerca in corso…</p> : error ? <p role="alert">{error}</p> : rows.length ? <>{rows.map((row, index) => <button key={row.name} id={`quick-patient-${index}`} type="button" role="option" aria-selected={active === index} onMouseEnter={() => setActive(index)} onClick={() => choose(row)}>{demoPatient(row.name, row.patient_name)}</button>)}{truncated && <p>Mostrati i primi 50 risultati. Affina la ricerca.</p>}</> : <p>Nessun paziente trovato nel centro.</p>}
+        {loading ? <p role="status">Ricerca in corso…</p> : error ? <p role="alert">{error}</p> : rows.length ? <>{rows.map((row, index) => <button key={row.name} id={`quick-patient-${index}`} type="button" role="option" aria-selected={active === index} onMouseEnter={() => setActive(index)} onClick={() => choose(row)}>{demoPatient(row.name, row.patient_name, row.first_name, row.last_name)}</button>)}{truncated && <p>Mostrati i primi 50 risultati. Affina la ricerca.</p>}</> : <p>Nessun paziente trovato nel centro.</p>}
       </div>}
     </div>
   </div>

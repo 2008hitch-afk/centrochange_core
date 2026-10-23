@@ -22,8 +22,8 @@ class NavigationScopeTests(unittest.TestCase):
     def setUp(self):
         self.manager = True
         self.actor_enabled = True
-        self.patients = [Record(name='PAT-A', patient_name='Paziente A', uid='SYNTHETIC-A'),
-                         Record(name='PAT-B', patient_name='Paziente B', uid='SYNTHETIC-B')]
+        self.patients = [Record(name='PAT-A', patient_name='Paziente A', first_name='Giulia', last_name='Neri', uid='SYNTHETIC-A'),
+                         Record(name='PAT-B', patient_name='Paziente B', first_name='Lucia', last_name='Verdi', uid='SYNTHETIC-B')]
         self.practitioners = [Record(name='PRO-A', practitioner_name='Dott.ssa Rossi', user_id='user-a', status='Active'),
                               Record(name='PRO-B', practitioner_name='Dott. Bianchi', user_id='user-b', status='Active')]
         self.assignments = {'CENTRO-A': ['PAT-A'], 'CENTRO-B': ['PAT-B']}
@@ -109,7 +109,8 @@ class NavigationScopeTests(unittest.TestCase):
                 rows = [row for row in rows if row.name in filters['name'][1]]
             if or_filters:
                 term = next(iter(or_filters.values()))[1].strip('%').lower()
-                rows = [row for row in rows if term in row.patient_name.lower() or term in row.name.lower()]
+                rows = [row for row in rows if any(term in str(row.get(field, '')).lower()
+                        for field in ('patient_name', 'first_name', 'last_name', 'name', 'uid'))]
             return rows
         return []
 
@@ -135,6 +136,21 @@ class NavigationScopeTests(unittest.TestCase):
         self.assertEqual(self.workspace.patient_search('CENTRO-A', 'Paziente B')['patients'], [])
         with self.assertRaises(Denied):
             self.workspace.patient_search('CENTRO-NON-OPERATIVO', 'Paziente')
+
+    def test_patient_name_projection_uses_existing_fields_without_widening_scope(self):
+        with patch.object(self.frappe, 'get_list', wraps=self.get_list) as query:
+            boot = self.workspace.bootstrap('CENTRO-A')
+            found = self.workspace.patient_search('CENTRO-A', 'Giulia')
+        self.assertEqual([(row.name, row.first_name, row.last_name) for row in boot['patients']],
+                         [('PAT-A', 'Giulia', 'Neri')])
+        self.assertEqual([(row['name'], row['first_name'], row['last_name']) for row in found['patients']],
+                         [('PAT-A', 'Giulia', 'Neri')])
+        patient_queries = [call for call in query.call_args_list if call.args[0] == 'Patient']
+        self.assertEqual(len(patient_queries), 2)
+        for call in patient_queries:
+            self.assertEqual(set(call.kwargs['fields']) & {'first_name', 'last_name'},
+                             {'first_name', 'last_name'})
+            self.assertEqual(call.kwargs['filters']['name'][1], ['PAT-A'])
 
     def test_empty_assignment_and_disabled_user_fail_closed(self):
         self.assignments['CENTRO-A'] = []

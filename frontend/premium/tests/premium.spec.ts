@@ -96,11 +96,41 @@ test('AUDIT-03: utente senza permesso vede blocco ma non può derogare', async (
 test('AUDIT-03: owned synthetic Agenda records show readable labels without changing canonical IDs', () => {
   configureDemoLabels(null, null)
   const tag = 'CC-HTTP-AbCd123456'
-  expect(demoPatient(`${tag} OWN`, `${tag} OWN`)).toBe('Paziente di prova A')
-  expect(demoPatient(`${tag} CROSS`, `${tag} CROSS`)).toBe('Paziente di prova B')
+  expect(demoPatient(`${tag} OWN`, `${tag} OWN`)).toMatch(/^Anagrafica da completare · scheda [A-Z0-9]+$/)
+  expect(demoPatient(`${tag} CROSS`, `${tag} CROSS`)).not.toBe(demoPatient(`${tag} OWN`, `${tag} OWN`))
+  expect(demoPatient('CC-MVP-POS-1', 'CC-MVP-POS-1', 'Giulia', 'Neri')).toBe('Giulia Neri')
+  expect(demoPatient('CC-MVP-POS-1', 'CC-MVP-POS-1')).not.toContain('CC-MVP')
   expect(demoText(`${tag} Session`)).toBe('Servizio di prova')
   expect(demoText(`${tag} PACKAGE`)).toBe('Pacchetto di prova')
   expect(demoText('Servizio reale')).toBe('Servizio reale')
+})
+
+test('AUDIT-04 UX: nome Marley reale in Agenda e Pazienti, drawer senza duplicati, ricerca contestuale', async ({ page }, info) => {
+  const patient = { name: 'CC-MVP-POS-TEST-1', patient_name: 'CC-MVP-POS-TEST-1', first_name: 'Giulia', last_name: 'Neri' }
+  const row = { ...appointment, patient: patient.name, patient_name: patient.patient_name }
+  await mockApi(page, [], true, {}, { patients: [patient] }, [row])
+  await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { patients: [patient], truncated: false } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_detail*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...patient, email: '', modified: '2026-10-23 12:00:00', active_assignment: true } }) }))
+  await page.goto('./#Agenda')
+  await expect(page.locator('.week-event').first()).toContainText('Giulia Neri')
+  await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Apri ricerca pazienti' })).toBeVisible()
+  await page.screenshot({ path: info.outputPath(`audit-04-ux-agenda-${info.project.name}.png`), fullPage: true })
+  await openSection(page, 'Pazienti')
+  await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill('Giulia')
+  await expect(page.locator('tbody')).toContainText('Giulia Neri')
+  await expect(page.locator('tbody')).not.toContainText(patient.name)
+  await page.screenshot({ path: info.outputPath(`audit-04-ux-list-${info.project.name}.png`), fullPage: true })
+  await page.locator('tbody tr').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Giulia Neri' })
+  await expect(drawer.getByRole('heading', { name: 'Giulia Neri' })).toHaveCount(1)
+  await expect(drawer.getByRole('heading', { name: 'Anagrafica' })).toBeVisible()
+  await expect(drawer.getByText(patient.name)).toHaveCount(0)
+  await page.screenshot({ path: info.outputPath(`audit-04-ux-patient-${info.project.name}.png`), fullPage: true })
+  await page.reload()
+  await expect(page.locator('tbody')).toContainText('Giulia Neri')
 })
 
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
@@ -258,7 +288,7 @@ test('AUDIT-02 polish: nomi disponibili, fallback trasparenti e ricerca A/B senz
   await expect(page.locator('.week-row')).toHaveAttribute('data-practitioner', professionalA.name)
   await page.screenshot({ path: info.outputPath('polish-agenda-a.png'), fullPage: true })
 
-  if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
+  await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
   await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente di prova A')
   await page.getByRole('option', { name: 'Paziente di prova A' }).click()
   const drawer = page.getByRole('dialog')
@@ -280,7 +310,8 @@ test('AUDIT-02 polish: nomi disponibili, fallback trasparenti e ricerca A/B senz
   await expect(page.locator('.week-row').first()).toHaveAttribute('data-practitioner', professionalB.name)
   await page.screenshot({ path: info.outputPath('polish-agenda-b.png'), fullPage: true })
   await openSection(page, 'Pazienti')
-  await expect(page.locator('tbody')).toContainText('Paziente di prova B')
+  await expect(page.locator('tbody')).toContainText('Anagrafica da completare · scheda')
+  await expect(page.locator('tbody')).not.toContainText(patientB.name)
   await expect(page.locator('tbody')).not.toContainText('Paziente di prova A')
   await page.screenshot({ path: info.outputPath('polish-center-b.png'), fullPage: true })
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
@@ -563,26 +594,26 @@ test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo'
   await page.screenshot({ path: `../../docs/evidence/issue-148/uat-report-professionisti-${testInfo.project.name}.png`, fullPage: true })
 })
 
-test('UAT alias demo: record esatti in Agenda, ricerca e schede, ID API invariati', async ({ page }, testInfo) => {
+test('UAT Patient: nome reale prevale su alias demo, ID API invariati', async ({ page }, testInfo) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
-  const demo_labels = { 'PAT-001': 'Paziente 1', 'Paziente Sintetico': 'Paziente 1', 'PR-001': 'Professionista 1', 'Dott.ssa Rossi': 'Professionista 1', 'SERV-001': 'Servizio 1', 'Prima visita': 'Servizio 1', 'CENTRO-A': 'Centro A' }
+  const demo_labels = { 'PAT-001': 'Paziente Sintetico', 'Paziente Sintetico': 'Paziente Sintetico', 'PR-001': 'Professionista 1', 'Dott.ssa Rossi': 'Professionista 1', 'SERV-001': 'Servizio 1', 'Prima visita': 'Servizio 1', 'CENTRO-A': 'Centro A' }
   await mockApi(page, writes, true, {}, { demo_labels } as Partial<typeof boot>, null, { demo_labels: { 'PAT-001': 'Cliente 1', 'Paziente Sintetico': 'Cliente 1' } } as Partial<typeof financeBoot>)
   await page.goto('./')
-  await expect(page.locator('.week-event').first()).toContainText('Paziente 1')
+  await expect(page.locator('.week-event').first()).toContainText('Paziente Sintetico')
   await expect(page.locator('.week-professional')).toContainText('Professionista 1')
   await openSection(page, 'Pazienti')
-  await page.getByRole('textbox', { name: 'Cerca pazienti' }).last().fill('Paziente 1')
+  await page.getByRole('textbox', { name: 'Cerca pazienti' }).last().fill('Paziente Sintetico')
   await expect(page.locator('tbody tr')).toHaveCount(1)
-  await expect(page.locator('tbody')).toContainText('Paziente 1')
+  await expect(page.locator('tbody')).toContainText('Paziente Sintetico')
   await page.reload()
-  await expect(page.locator('tbody')).toContainText('Paziente 1')
+  await expect(page.locator('tbody')).toContainText('Paziente Sintetico')
   await openSection(page, 'Professionisti')
   await expect(page.locator('tbody')).toContainText('Professionista 1')
   await openSection(page, 'Servizi')
   await expect(page.locator('tbody')).toContainText('Servizio 1')
   await openSection(page, 'Agenda')
   await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
-  await expect(page.getByRole('dialog').getByRole('option', { name: 'Paziente 1' })).toHaveCount(1)
+  await expect(page.getByRole('dialog').getByRole('option', { name: 'Paziente Sintetico' })).toHaveCount(1)
   await page.getByRole('dialog').getByRole('textbox', { name: 'Motivo' }).fill('Verifica alias UAT')
   await page.getByRole('button', { name: 'Conferma prenotazione' }).click()
   expect(writes.at(-1)?.body.patient).toBe('PAT-001')
@@ -609,7 +640,7 @@ test('UAT alias demo: Finanza sola distingue Patient e Customer con nome coincid
   const drawer = page.getByRole('dialog', { name: 'Report dettagliati' })
   await expect(drawer.locator('tbody')).toContainText('Cliente 1')
   await drawer.locator('tbody tr').first().click()
-  await expect(drawer.getByText('Paziente 1')).toBeVisible()
+  await expect(drawer.getByText('Paziente Sintetico')).toBeVisible()
 })
 
 test('schermate principali renderizzate e fotografate', async ({ page }, testInfo) => {
@@ -906,7 +937,7 @@ test('AUDIT-02 ricerca globale trova il paziente nel centro e apre la scheda', a
     if (request.url().includes('operations.workspace.patient_search')) requests.push(request.url())
   })
   await page.goto('./')
-  if (testInfo.project.name === 'mobile') await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
+  await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
   await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
   await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toBeVisible()
   await page.screenshot({ path: `test-results/audit-02-search-${testInfo.project.name}.png`, fullPage: true })
@@ -982,9 +1013,12 @@ test('AUDIT-02 cambio centro scarta risultati tardivi della ricerca precedente',
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, center: selected || 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }], patients: selected === 'CENTRO-B' ? [] : boot.patients } }) })
   })
   await page.goto('./')
+  await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
   await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
   await expect.poll(() => started).toBe(true)
   await page.getByRole('combobox', { name: 'Centro' }).selectOption('CENTRO-B')
+  await expect(page.getByRole('button', { name: 'Apri ricerca pazienti' })).toHaveAttribute('aria-expanded', 'false')
+  await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
   await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toHaveValue('')
   await page.waitForTimeout(700)
   await expect(page.getByRole('option', { name: 'Paziente Sintetico' })).toHaveCount(0)
@@ -1000,6 +1034,7 @@ test('AUDIT-02 ricerca globale mostra errore ed esito vuoto senza dati di altri 
       : { contentType: 'application/json', body: JSON.stringify({ message: { patients: [], truncated: false } }) })
   })
   await page.goto('./')
+  await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
   const search = page.getByRole('combobox', { name: 'Ricerca globale pazienti' })
   await search.fill('errore')
   await expect(page.getByRole('alert', { name: '' }).filter({ hasText: 'Ricerca non disponibile' })).toBeVisible()
@@ -1027,7 +1062,7 @@ test('AUDIT-02 utente solo Finanza riceve landing e URL consentiti', async ({ pa
   await expect(page.locator('.breadcrumbs strong')).toHaveText('Finanza')
   await expect.poll(() => decodeURIComponent(new URL(page.url()).hash.slice(1))).toBe('Finanza')
   await expect(page.getByRole('button', { name: 'Pazienti', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Apri ricerca pazienti' })).toBeDisabled()
 })
 
 test('AUDIT-02 ricerca globale segnala risultati troncati', async ({ page }, testInfo) => {
@@ -1036,6 +1071,7 @@ test('AUDIT-02 ricerca globale segnala risultati troncati', async ({ page }, tes
   await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', route =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { patients: boot.patients, truncated: true } }) }))
   await page.goto('./')
+  await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
   await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Paziente')
   await expect(page.getByText('Mostrati i primi 50 risultati. Affina la ricerca.')).toBeVisible()
 })
