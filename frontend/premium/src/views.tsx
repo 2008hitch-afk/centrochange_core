@@ -184,15 +184,13 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: 
   </Drawer>{paymentBlock && <Modal title="Verifica pagamenti prima dello spostamento" onClose={() => { setPaymentBlock(null); setMoveError('') }}><p className="scope-note">La prenotazione resta invariata finché la verifica non viene completata.</p>{paymentBlock.can_override ? <form onSubmit={e => { e.preventDefault(); void authorizeAndMove() }}><p>Posizioni che impediscono lo spostamento:</p><ul className="payment-block-list">{paymentBlock.debts.map((debt, index) => <li key={`${debt.reference_doctype}:${debt.reference_name}`}><strong>{debt.reference_doctype === 'Sales Invoice' ? 'Fattura' : 'Seduta non fatturata'} {index + 1}</strong><span>{money(debt.amount, debt.currency)} · scadenza {displayDate(debt.due_date)} · {centerNameFor(debt.center, boot.centers)}</span></li>)}</ul><p className="scope-note">Debito, fatture e scadenze originarie restano conservati nello storico.</p><Field label="Motivazione della deroga" required><textarea value={overrideReason} onChange={e => setOverrideReason(e.target.value)} required maxLength={2000} /></Field><Field label="Nuova scadenza" required><DateInput value={overrideDue} onChange={setOverrideDue} required /></Field><FormError error={moveError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setPaymentBlock(null); setMoveError('') }}>Annulla</Button><Button disabled={moveBusy || !overrideReason.trim() || !overrideDue} type="submit">{moveBusy ? 'Verifica in corso…' : 'Autorizza e procedi'}</Button></div></form> : <><p role="alert">Serve una verifica dei pagamenti. Contatta la segreteria o la Direzione: il tuo ruolo non può autorizzare una deroga.</p><div className="form-actions"><Button onClick={() => setPaymentBlock(null)}>Chiudi</Button></div></>}</Modal>}</>
 }
 
-export function Patients({ boot, center, query, selectedPatient, feedback, refreshBoot }: Context & { query: string; selectedPatient?: Patient | null; refreshBoot: () => Promise<void> }) {
-  const [search, setSearch] = useState(query)
+export function Patients({ boot, center, feedback, refreshBoot }: Context & { refreshBoot: () => Promise<void> }) {
+  const [search, setSearch] = useState('')
   const [rows, setRows] = useState<Patient[]>(boot.patients)
   const [selected, setSelected] = useState<Patient | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [truncated, setTruncated] = useState(false)
-  useEffect(() => { setSearch(query) }, [query])
-  useEffect(() => { if (selectedPatient) setSelected(selectedPatient) }, [selectedPatient])
   useEffect(() => {
     if (!center) return
     const term = search.trim().toLocaleLowerCase('it-IT')

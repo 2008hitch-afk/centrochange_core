@@ -536,8 +536,12 @@ test('storico seduta reale: prenotazione, riserva, cancellazione e rilascio pacc
     const drawer = page.getByRole('dialog')
     if (inVisibleHistory) {
       await drawer.locator('button.patient-history-item').filter({ hasText: appointmentDate.split('-').reverse().join('/') }).first().click()
+      await expect(drawer).toHaveAttribute('aria-label', 'Dettaglio seduta')
       await expect(drawer.getByText('Prenotazione creata').first()).toBeVisible()
       await expect(drawer.getByText('Seduta cancellata').first()).toBeVisible()
+      await expect(page.getByRole('dialog')).toHaveCount(1)
+      await drawer.getByRole('button', { name: 'Torna alla scheda paziente' }).click()
+      await expect(drawer.getByRole('heading', { name: 'Sedute' })).toBeVisible()
     } else {
       expect(history.body.message.truncated).toBe(true)
       await expect(drawer.getByText('Mostrate le ultime 100 sedute.')).toBeVisible()
@@ -547,6 +551,34 @@ test('storico seduta reale: prenotazione, riserva, cancellazione e rilascio pacc
       if (!cancelCompleted) await post(manager, token, 'operations.lifecycle.cancel', {
         appointment: name, reason: 'Pulizia prenotazione UAT sintetica dopo errore' }).catch(() => undefined)
     }
+  } finally { await manager.close() }
+})
+
+test('UX-04 live isolato: topbar senza ricerca globale e riassegnazione a campo unico', async ({ browser }, info) => {
+  const manager = await context(browser, 'manager')
+  try {
+    const page = await manager.newPage()
+    await page.goto('/premium/#Agenda')
+    await expect(page.getByRole('button', { name: 'Apri ricerca pazienti' })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Pazienti', exact: true }).click()
+    await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_a)
+    await page.locator('tbody tr').first().click()
+    const drawer = page.getByRole('dialog')
+    await drawer.getByRole('button', { name: 'Riassegna' }).click()
+    const oldField = drawer.getByRole('combobox', { name: 'Professionista attuale' })
+    const nextField = drawer.getByRole('combobox', { name: 'Nuovo professionista' })
+    await expect(drawer.locator('.searchable-select select')).toHaveCount(0)
+    await oldField.click()
+    await drawer.locator(`[role="option"][data-value="${fixture.practitioner_a}"]`).click()
+    await nextField.click()
+    await expect(drawer.locator(`[role="option"][data-value="${fixture.practitioner_a}"]`)).toHaveCount(0)
+    await drawer.locator(`[role="option"][data-value="${fixture.practitioner_b}"]`).click()
+    await drawer.getByRole('textbox', { name: 'Motivo' }).fill('Solo verifica UI, nessuna scrittura')
+    await expect(drawer.getByRole('button', { name: 'Conferma' })).toBeEnabled()
+    await page.screenshot({ path: info.outputPath(`ux-04-live-combobox-${info.project.name}.png`), fullPage: true })
+    await drawer.getByRole('button', { name: 'Cancella nuovo professionista' }).click()
+    await expect(drawer.getByRole('button', { name: 'Conferma' })).toBeDisabled()
   } finally { await manager.close() }
 })
 
