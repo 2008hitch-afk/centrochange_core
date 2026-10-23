@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { type Boot, type Row, call, displayDate, ops, requestKey } from './api'
 import { demoText } from './demo_labels'
-import { practitionerName } from './display_names'
+import { practitionerName, practitionerNameFor } from './display_names'
 import { type Feedback, Button, DateInput, Field, FormError, SearchableSelect, useAction } from './ui'
 
 export const sessionCountLabel = (value: number) => `${value} ${value === 1 ? 'seduta' : 'sedute'}`
@@ -39,7 +39,7 @@ export function PatientPackages({ boot, patient, center, packages, feedback, onS
     if (saved) delete keys.current[id]
   }
   return <section className="detail-section"><h3>Pacchetti</h3>
-    {packages.length ? packages.map(p => <article className="note" key={String(p.name)}><strong>{demoText(p.label ?? p.name)}</strong><small>Disponibili: {String(p.available ?? '—')} · Riservate: {String(p.reserved ?? '—')} · Residue: {String(p.remaining ?? '—')}</small><small>Validità: {p.valid_until ? displayDate(p.valid_until) : 'senza scadenza'} · Professionista: {p.practitioner ? boot.practitioners.find(row => row.name === p.practitioner)?.practitioner_name ?? 'Professionista non visibile' : 'nessuno dedicato'}</small></article>) : <p>Nessun pacchetto nel centro selezionato.</p>}
+    {packages.length ? packages.map(p => <article className="note" key={String(p.name)}><strong>{demoText(p.label ?? p.name)}</strong><small>Disponibili: {String(p.available ?? '—')} · Riservate: {String(p.reserved ?? '—')} · Residue: {String(p.remaining ?? '—')}</small><small>Validità: {p.valid_until ? displayDate(p.valid_until) : 'senza scadenza'} · Professionista: {p.practitioner ? practitionerNameFor(String(p.practitioner), boot.practitioners) : 'nessuno dedicato'}</small></article>) : <p>Nessun pacchetto nel centro selezionato.</p>}
     {canManage && !readOnly && <div className="action-grid"><Button type="button" variant="secondary" onClick={() => { setMode('issue'); setLoadError('') }}>Emetti pacchetto</Button>{packages.length > 0 && <Button type="button" variant="secondary" onClick={() => { setMode('adjust'); setLoadError('') }}>Rettifica saldo</Button>}</div>}
     {mode && !readOnly && <form className="action-form" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{mode === 'issue' ? 'Emetti pacchetto' : 'Rettifica saldo'}</h3>
       {mode === 'issue' ? <><SearchableSelect label="Modello" options={templates.map(t => ({ value: String(t.name), label: `${demoText(t.title)} · ${sessionCountLabel(Number(t.units))}` }))} value={template} onChange={setTemplate} required /><SearchableSelect label="Professionista dedicato" options={boot.practitioners.map(p => ({ value: p.name, label: practitionerName(p) }))} value={practitioner} onChange={setPractitioner} empty="Nessuno" /><Field label="Valido fino al"><DateInput value={validUntil} onChange={setValidUntil} /></Field><p className="scope-note">Il pacchetto vale nel centro selezionato. Le unità provengono dal modello autorizzato.</p></>

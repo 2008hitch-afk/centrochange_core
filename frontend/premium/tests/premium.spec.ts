@@ -1,11 +1,17 @@
 import { expect, test, type Page } from '@playwright/test'
 import { configureDemoLabels, demoPatient, demoText } from '../src/demo_labels'
-import { auditActorName, economyName } from '../src/display_names'
+import { auditActorName, economyName, practitionerNameFor } from '../src/display_names'
 import { availableUnitLabel, sessionCountLabel } from '../src/patient_packages'
 
 test('AUDIT-04 UX-04-04: quantità 0/1/2 leggibili nelle due select', () => {
   expect([0, 1, 2].map(sessionCountLabel)).toEqual(['0 sedute', '1 seduta', '2 sedute'])
   expect([0, 1, 2].map(availableUnitLabel)).toEqual(['0 unità disponibili', '1 unità disponibile', '2 unità disponibili'])
+})
+
+test('AUDIT-04 UX: pacchetto mostra il nome professionista senza codice fixture', () => {
+  const id = 'CC-HTTP-AbCd123456 a'
+  expect(practitionerNameFor(id, [{ name: id, practitioner_name: id }])).toBe('Professionista di prova A')
+  expect(practitionerNameFor('PR-001', [{ name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }])).toBe('Dott.ssa Rossi')
 })
 
 test('AUDIT-03: historical state and owned synthetic audit actor stay readable', () => {
