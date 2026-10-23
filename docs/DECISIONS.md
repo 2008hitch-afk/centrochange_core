@@ -474,4 +474,10 @@ Mandato operativo: `docs/ui/PREMIUM-FRONTEND-MACRO-GOAL-v1.md`, skill repo-local
 - DECISION-064 e 065: tentativi DEV condizionati da backup/restore e stop sicuro; consultare i report di #148/PR #150 per gli esiti reali, senza inferire `PASS` dalla sola approvazione.
 - DECISION-066: correzione, regressione e prosecuzione entro il perimetro approvato; non autorizza merge o bypass dei gate materiali.
 
+## TD-036 — Una sola UI cliente Premium React sul DEV (Issue #167)
+
+La [decisione Owner SINGLE_CLIENT_UI_PREMIUM_ONLY](https://github.com/2008hitch-afk/centrochange_core/issues/167#issuecomment-6372823297) fissa Premium React come unica interfaccia per utenti cliente e personale operativo. Frappe, ERPNext, Marley e `centrochange_core` restano backend canonici. Login nativo Frappe e Desk per account tecnici dedicati restano disponibili; un ruolo cliente non usa Desk come fallback, anche se l'account possiede `System Manager`.
+
+La decisione autorizza la correzione degli alias `/app` e `/desk`, la nuova immagine correttiva e il cutover reversibile del solo Site DEV `centrochange.local`, subordinati a CI, review indipendente, backup cifrato, restore isolato, rollback, fingerprint e test reali per ruolo. Non autorizza PR #168, merge, migrate, cambi di schema/ruolo/permesso, produzione o dati storici. `PREMIUM_PRIMARY_DEV_ROUTING_PASS` riguarda l'ingresso e non anticipa l'accettazione dei GOAL funzionali delle singole aree.
+
 Il consolidamento GitHub #156 corrente è un gate di integrazione: nessun merge, deploy, migrate DEV, cambio schema/ruoli o attivazione della UI primaria è autorizzato da questo log. Le decisioni HITCH e il mandato dell'issue attiva prevalgono su questo riepilogo.

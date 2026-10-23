@@ -47,6 +47,8 @@ A goal does not automatically authorize the next goal where a separate HITCH gat
 
 Technical evidence (distinct from formal authority): GOAL-01 [Completion report](MVP-GOAL-COMPLETION-REPORT-2026-10-05.md); GOAL-02 **TECHNICAL DONE / UAT READY**, [Completion report](GOAL-02-COMPLETION-REPORT-2026-10-05.md). Owner visual UAT / final acceptance pending; no automatic stack merge.
 
+Per la UI cliente del DEV, la [decisione Owner `SINGLE_CLIENT_UI_PREMIUM_ONLY` (#167)](https://github.com/2008hitch-afk/centrochange_core/issues/167#issuecomment-6372823297) richiede soltanto Premium React. Il cutover del routing è distinto dall'accettazione funzionale di Agenda, Pazienti e delle altre aree. Desk Frappe rimane esclusivamente per account tecnici dedicati; GOAL-03 e produzione non sono autorizzati da questa decisione.
+
 ## 4. GOAL-01 — MVP DEV End-to-End
 
 **Issue:** #22
