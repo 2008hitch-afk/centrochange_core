@@ -1,6 +1,6 @@
 # AUDIT-04 #167 — Prosecuzione UX-04, PR DRAFT #168
 
-**Stato del candidato:** `READY_FOR_DEV_GATE` dopo PASS tecnico locale, Frappe isolato e GitHub Actions sulla HEAD `5e23be2eacbf7259aef4ff5934ef538c7942152e`; sviluppo in branch `issue-167/patients-audit`, DEV **non modificato**. La decisione `SINGLE_CLIENT_UI_PREMIUM_ONLY` è già attiva sul DEV tramite PR #169 e rimane vincolante. Questa PR non incorpora ancora #169: prima di un futuro gate DEV occorre costruire un candidato che contenga entrambi gli alberi e verificare routing, manifest e SHA risultanti.
+**Stato del candidato:** la prova storica `READY_FOR_DEV_GATE` sulla HEAD `5e23be2eacbf7259aef4ff5934ef538c7942152e` è descritta sotto. La PR #168 ora incorpora il routing della PR #169 tramite il commit `45303b815040f55636fc713b41a981276303d0a8`; `SINGLE_CLIENT_UI_PREMIUM_ONLY` resta attiva sul DEV. La nuova HEAD integrata richiede CI, immagine e UAT isolato propri prima del gate installazione autorizzato nella Issue #167. Il DEV non è ancora stato modificato da AUDIT-04.
 
 ## Correzioni
 
@@ -9,6 +9,7 @@
 | UX-04-01 | Titolo Patient ripetuto e chip generico nella scheda | Un solo titolo con identità derivata dai campi Marley esistenti; rimossi duplicati di presentazione |
 | UX-04-02 | Ricerca globale sempre visibile nella topbar | Pulsante discreto che apre campo e risultati contestuali, con focus/Escape; ricerca locale Pazienti e API scoped intatte |
 | UX-04-03 | `patient_name` e fixture tecnici apparivano come nomi o alias fiscali; Agenda dipendeva dal bootstrap limitato a 500 | `first_name`/`last_name` proiettati nelle API già autorizzate di lista, ricerca e Agenda. Nome completo reale prioritario; in mancanza, riferimento opaco stabile e dicitura «Anagrafica da completare». Nessun ID o dato fiscale modificato |
+| UX-04-04 | Plurali invariabili nei selettori di pacchetto | Formattazione coerente `0/1/2 sedute` e `0/1/2 unità disponibili` in Pazienti e prenotazione Agenda; solo copy UI |
 
 Il clone isolato del primo candidato ha mostrato che otto Patient posseduti dal manifest UAT avevano `name`, `patient_name` e `first_name` tecnici, con `last_name` vuoto. Non è possibile ricostruire un nome reale da questi dati; la UI lo segnala apertamente. Una fixture nuova posseduta dal test ha consentito di verificare un nome completo reale. L'ID resta nelle chiamate API; Customer e documenti fiscali non vengono rinominati.
 
@@ -20,7 +21,7 @@ Il clone isolato del primo candidato ha mostrato che otto Patient posseduti dal 
 - Reviewer indipendente: la prima review ha trovato nome incompleto ambiguo, Agenda oltre 500 e test live dipendente dallo stato. La seconda review del diff ha verificato il ramo `get_all` ristretto agli appuntamenti già autorizzati per Segreteria/Professionista e non ha trovato blocker statici. La prova HTTP Agenda su Manager, Segreteria e Professionista è PASS nel clone; un test Python impedisce la regressione `get_list` Patient senza DocPerm.
 - DEV condiviso: `NOT_TESTED` per questa PR; nessun deploy o cambiamento di dati, schema, ruoli o permessi autorizzato in questa fase. L'immagine backend DEV è rimasta `sha256:540f8f87c2802cd35fa85ecdbe48f38037a5611fb3e3f4d0fdae5b861fde267c`. Le dieci risorse Docker del clone finale sono state rimosse per ID verificato; backup cifrato e prove private restano fuori Git.
 
-**Gate DEV residuo:** autorizzazione specifica #167 dopo riconciliazione PR #169, CI su SHA finale, nuovo checkpoint cifrato completo, restore isolato PASS e rollback indipendente. Solo allora eventuale installazione dei sei servizi applicativi previsti; nessun merge automatico.
+**Gate DEV residuo:** autorizzazione `DEV_INSTALL_ALLOWED` già registrata in #167. Resta condizionato a CI e UAT isolato sulla SHA integrata, nuovo checkpoint cifrato completo, restore isolato PASS e rollback indipendente. Solo allora installazione dei sei servizi applicativi previsti; nessun merge automatico.
 
 ## Screenshot rappresentativi
 
@@ -30,6 +31,6 @@ Il clone isolato del primo candidato ha mostrato che otto Patient posseduti dal 
 
 ## Esito e decisione DEV
 
-`READY_FOR_DEV_GATE`, subordinato ai check GitHub sullo SHA pubblicato, significa che il codice di presentazione e le API scoped sono pronti alla **richiesta del gate di installazione**, non che il DEV sia già aggiornato o che l'Owner abbia accettato Pazienti. La PR #168 resta DRAFT. Il gate deve: (1) riconciliare PR #169, ancora DRAFT, così che l'immagine target includa il routing Premium primario; (2) eseguire CI sull'ultimo SHA e verificare manifest/image/source parity; (3) checkpoint cifrato nuovo, restore reale isolato e rollback indipendente; (4) sostituire soltanto i sei servizi applicativi se tutti i controlli sono PASS; (5) verificare `/premium/#Pazienti`, accessi diretti, ruoli, centri e `cc_premium_primary=1` senza toccare schema, dati storici o produzione. La nuova autorizzazione `DEV_INSTALL_ALLOWED` della Issue #167 è obbligatoria.
+`READY_FOR_DEV_GATE` della prova storica non dimostra che la HEAD integrata sia installata o che l'Owner abbia accettato Pazienti. La PR #168 resta DRAFT. Il routing #169 è ora riconciliato nel sorgente; per la nuova HEAD restano: (1) CI e UAT isolato; (2) manifest/image/source parity; (3) checkpoint cifrato nuovo, restore reale isolato e rollback indipendente; (4) switch dei soli sei servizi applicativi se tutti i controlli sono PASS; (5) verifica non mutativa di `/premium/#Pazienti`, accessi diretti, ruoli, centri e `cc_premium_primary=1`. Il gate `DEV_INSTALL_ALLOWED` è già registrato nella Issue #167.
 
 GitHub Actions `Offline premerge` [run 40019553473](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40019553473) sul commit `5e23be2eacbf7259aef4ff5934ef538c7942152e`: `backend-offline` PASS e `frontend-synthetic` PASS. Il workflow non usa DEV, segreti o dati reali. Dopo questo aggiornamento documentale verificare nuovamente i checks sulla HEAD risultante; i test locali non sono CI GitHub.
