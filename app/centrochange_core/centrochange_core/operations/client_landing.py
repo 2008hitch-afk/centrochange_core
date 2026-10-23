@@ -20,7 +20,7 @@ def client_home(user=None):
     if user in ("Guest", "Administrator"):
         return None
     roles = set(frappe.get_roles(user))
-    if premium_primary() and roles & CLIENT_ROLES and "System Manager" not in roles:
+    if premium_primary() and roles & CLIENT_ROLES:
         return "/premium"
     if roles & OPERATING_ROLES:
         return "/app/cc-unified-desk?cc_view=agenda"
@@ -78,9 +78,12 @@ def redirect_legacy_operational_routes():
     else:
         user = frappe.session.user
         roles = set(frappe.get_roles(user)) if user not in ("Guest", "Administrator") else set()
-        if not roles & CLIENT_ROLES or "System Manager" in roles:
+        if not roles & CLIENT_ROLES:
             return
-        if path not in LEGACY_WEB and not (path == "/app" or path.startswith("/app/")):
+        if path not in LEGACY_WEB and not any(
+            path == prefix or path.startswith(prefix + "/")
+            for prefix in ("/app", "/desk")
+        ):
             return
         target = "/premium"
     frappe.local.flags.redirect_location = target
