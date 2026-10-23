@@ -1,6 +1,22 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
-**Stato:** `AUDIT-00_COMPLETE / BASELINE_OPERATIVA_APPROVATA / PR_159_DRAFT_UNMERGED` — 22/10/2026. L'Owner ha autorizzato l'avvio del ciclo per interfaccia; **non** ha approvato come PASS le singole funzionalità, il merge della PR o il passaggio in produzione.
+## Addendum operativo verificato — 23/10/2026 (AUDIT-03)
+
+Questo addendum **prevale per lo stato operativo** sui checkpoint storici AUDIT-00/01/02 del 22/10 sottostanti; non sostituisce i requisiti né trasforma evidenza parziale in PASS.
+
+| Sequenza | GOAL / interfaccia | Stato aggiornato e gate |
+|---|---|---|
+| 01 | Login/autenticazione #158 | PR #160 integrata in `main`; UAT Owner limitato; gli eventuali scenari non provati restano tali |
+| 02 | Shell/navigazione/ricerca #161 | **AUDIT-02 completato**, PR #163 integrata, fixture cleanup registrato |
+| 03 | Agenda/prenotazioni #164 | **OWNER_ACCEPTED funzionale il 23/10**: Agenda e dettaglio/spostamento visti e approvati manualmente; deroga economica DECISION-032 accettata sulla base di UAT automatico su Site isolato, senza riproduzione manuale del popup sul DEV. PR **DRAFT #166**, SHA `e5b688a93b9218ed46091966bd794823a14e2274`, **non integrata**; DEV aggiornato secondo rapporto Codex. Lo stato `DONE` formale e il merge restano soggetti a gate separati |
+| 04 | Pazienti, storico, assegnazioni, note e pacchetti | **QUEUED / non avviato**; prossimo GOAL proposto dopo chiusura formale AUDIT-03 e specifica autorizzazione Owner |
+| 05–14 | Aree successive | Non iniziate come GOAL verticali in questo ciclo; mantenere l'ordine previsto sotto salvo decisioni Owner sulle dipendenze |
+
+**Evidenze AUDIT-03:** [PR #166](https://github.com/2008hitch-afk/centrochange_core/pull/166), [commento Owner](https://github.com/2008hitch-afk/centrochange_core/pull/166#issuecomment-6368684104); CI automatico e manuale PASS dichiarati e commit CI automatico verificato; UAT browser reale su **copia isolata** con debiti fatturati/non fatturati, CSRF, autorizzazioni, audit e retry; eliminazione copie per ID; backup/restore e promozione dell'immagine DEV `sha256:b48f73861b5fa53a6c1b79d874409ae4f08dfbcd9d3e87621b19285c094095a6` documentati in PR. Sul DEV soltanto smoke e regressioni non mutative, **nessuna fixture contabile persistente**; lo specifico caso cross-center HTTP/CSRF congiunto rimane `NOT_TESTED`. La dichiarazione di reviewer indipendente PASS è nel rapporto Codex, ma **nessuna review GitHub formale** compare nella PR #166 al checkpoint.
+
+**Confini:** l'accettazione funzionale Owner **non autorizza** automaticamente merge, produzione, attivazione `cc_premium_primary=1`, schema/DocPerm/ruoli, né il GOAL #04. Per chiudere #164 verificare report UAT finali, evidenze reviewer, stato fixture/DEV, aggiornamento matrice/tracker #156 e ottenere autorizzazione specifica al merge. Il 404 su Issue #164/PR #165 va trattato come limitazione di accesso, non prova della loro inesistenza.
+
+**Stato storico AUDIT-00:** `AUDIT-00_COMPLETE / BASELINE_OPERATIVA_APPROVATA / PR_159_DRAFT_UNMERGED` — 22/10/2026. L'Owner ha autorizzato l'avvio del ciclo per interfaccia; **non** ha approvato come PASS le singole funzionalità, il merge della PR o il passaggio in produzione.
 **Master:** [#156](https://github.com/2008hitch-afk/centrochange_core/issues/156) · **Inventario:** [#157](https://github.com/2008hitch-afk/centrochange_core/issues/157) · **Prima area:** [Login #158](https://github.com/2008hitch-afk/centrochange_core/issues/158).
 **Regola:** questa matrice è un **indice verificabile di ciò che va controllato**, non un certificato di completezza, UAT o conformità. NESSUNA area è ancora `OWNER_DONE`.
 
@@ -52,7 +68,7 @@
 
 **Verifica:** i prospetti D/E sono l'indice storico, con `AUDIT` come promemoria, non l'esito aggiornato. L'esito puntuale e l'approvazione Owner sono nel CSV. `PASS` vale solo per il controllo esatto associato alla prova indicata; `PARTIAL` include codice presente ma scenario non completamente verificato; `BLOCKED` identifica anche scope formalmente rinviato. Nessun esito `OWNER_DONE` in AUDIT-00.
 
-## C. Indice aree — ordine di lavoro proposto
+## C. Indice aree — ordine storico proposto in AUDIT-00 (stato aggiornato nell'addendum)
 
 | Ordine | Interfaccia / area | Traccia React o integrazione | Issue | Stato |
 |---:|---|---|---|---|
