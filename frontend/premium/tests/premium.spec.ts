@@ -17,6 +17,18 @@ test('AUDIT-03: vista giorno usa la stessa etichetta servizio della settimana', 
   await expect(page.locator('.rbc-event')).not.toContainText(service)
 })
 
+test('AUDIT-03: una seduta futura non offre chiusura anticipata', async ({ page }) => {
+  const future = new Date(`${today}T12:00:00Z`)
+  future.setUTCDate(future.getUTCDate() + 7)
+  await mockApi(page, [], true, {}, {}, [{ ...appointment, appointment_date: future.toISOString().slice(0, 10) }])
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Periodo successivo' }).click()
+  await page.locator('.week-event').first().click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer.getByRole('button', { name: 'Sposta', exact: true })).toBeVisible()
+  await expect(drawer.getByRole('button', { name: 'Chiudi seduta' })).toHaveCount(0)
+})
+
 test('AUDIT-03: owned synthetic Agenda records show readable labels without changing canonical IDs', () => {
   configureDemoLabels(null, null)
   const tag = 'CC-HTTP-AbCd123456'

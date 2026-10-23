@@ -121,8 +121,12 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: 
   const nowRome = romeToday()
   const clockRome = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date())
   const futureSlot = row.appointment_date > nowRome || (row.appointment_date === nowRome && time(row.appointment_time) > clockRome)
+  const [startHour, startMinute] = time(row.appointment_time).split(':').map(Number)
+  const [nowHour, nowMinute] = clockRome.split(':').map(Number)
+  const sessionEnded = row.appointment_date < nowRome || (row.appointment_date === nowRome &&
+    startHour * 60 + startMinute + Number(row.duration || 60) <= nowHour * 60 + nowMinute)
   const actions = [
-    ...(mutable && (row.status !== 'Closed' || row.cc_closure_state === 'Reopened') ? [{ id: 'close', label: 'Chiudi seduta' }] : []),
+    ...(mutable && sessionEnded && (row.status !== 'Closed' || row.cc_closure_state === 'Reopened') ? [{ id: 'close', label: 'Chiudi seduta' }] : []),
     ...(mutable && futureSlot ? [{ id: 'move', label: 'Sposta' }] : []),
     ...(mutable && !row.cc_performed ? [{ id: 'cancel', label: 'Cancella' }] : []),
     ...(administrative && finalized ? [{ id: 'reopen', label: 'Riapri' }] : []),
