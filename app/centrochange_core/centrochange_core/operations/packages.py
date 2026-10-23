@@ -1,7 +1,7 @@
 """Patient-package balances are derived exclusively from append-only events."""
 import frappe
 from frappe.utils import getdate
-from centrochange_core.security.audit import append,atomic,internal_write
+from centrochange_core.security.audit import append,atomic,internal_write,retry_deadlock_once
 from centrochange_core.security.guards import is_manager,require_operations,current_rows
 from centrochange_core.security.lifecycle import lock
 from centrochange_core.operations.notes import require_context
@@ -39,6 +39,7 @@ def _append(package,kind,remaining,reserved,key,reason,appointment=None,center=N
 
 
 @frappe.whitelist(methods=['POST'])
+@retry_deadlock_once
 @atomic
 def issue(template,patient,centers,request_key,reason,valid_until=None,practitioner=None):
 	lock()

@@ -31,13 +31,26 @@ def atomic(function):
 		try:
 			return function(*args, **kwargs)
 		except Exception as error:
-			if frappe.db.is_deadlocked(error):
+			if isinstance(error, frappe.QueryDeadlockError) or frappe.db.is_deadlocked(error):
 				# MariaDB already aborted the transaction and discarded every savepoint.
 				# Reset callbacks and preserve the actual retryable cause, not a 1305 mask.
 				frappe.db.rollback()
 			else:
 				frappe.db.rollback(save_point=point)
 			raise
+	return wrapped
+
+
+def retry_deadlock_once(function):
+	"""Retry a DB-only service once after ``atomic`` resets a deadlocked transaction."""
+	from functools import wraps
+
+	@wraps(function)
+	def wrapped(*args, **kwargs):
+		try:
+			return function(*args, **kwargs)
+		except frappe.QueryDeadlockError:
+			return function(*args, **kwargs)
 	return wrapped
 
 

@@ -6,7 +6,7 @@ import { resolve } from 'node:path'
 type Role = 'manager' | 'secretariat' | 'professional_a' | 'professional_b' | 'professional_c' | 'finance' | 'accountant'
 type Fixture = { synthetic_only: true; tag: string; center_a: string; center_b: string;
   patient_a: string; patient_b: string; practitioner_a: string; practitioner_b: string;
-  template: string; roles: Record<Role, string> }
+  template: string; package: string; appointment_type: string; manager_second: string; roles: Record<Role, string> }
 const path = process.env.CC_PATIENTS_ISOLATED_FIXTURE
 if (!path || process.env.CC_PATIENTS_ISOLATED !== 'YES') throw new Error('Private AUDIT-04 clone fixture required')
 const repo = resolve(process.cwd(), '../..')
@@ -20,9 +20,11 @@ const fixture = JSON.parse(readFileSync(privateFile(path), 'utf8')) as Fixture
 const roles: Role[] = ['manager', 'secretariat', 'professional_a', 'professional_b', 'professional_c', 'finance', 'accountant']
 if (fixture.synthetic_only !== true || !/^CC-HTTP-[A-Za-z0-9]{10}$/.test(fixture.tag) ||
     !fixture.center_a || !fixture.center_b || fixture.center_a === fixture.center_b ||
-    !fixture.patient_a || !fixture.patient_b || !fixture.template || roles.some(role => !fixture.roles[role]))
+    !fixture.patient_a || !fixture.patient_b || !fixture.template || !fixture.package ||
+    !fixture.appointment_type || !fixture.manager_second || roles.some(role => !fixture.roles[role]))
   throw new Error('AUDIT-04 fixture inventory incomplete')
 for (const role of roles) privateFile(fixture.roles[role])
+privateFile(fixture.manager_second)
 const method = (name: string) => '/api/method/centrochange_core.' + name
 async function context(browser: Browser, role: Role) { return browser.newContext({ storageState: fixture.roles[role] }) }
 async function csrf(page: { locator: (selector: string) => { getAttribute: (name: string) => Promise<string | null> } }) {
@@ -47,6 +49,8 @@ test('scheda Pazienti reale: ricerca, profilo, note, pacchetto e responsive', as
     expect(shell?.ok()).toBeTruthy()
     await expect(page.getByRole('heading', { name: 'Pazienti', exact: true })).toBeVisible()
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag + '-inesistente')
+    await expect(page.getByText('Nessun paziente trovato')).toBeVisible()
     await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
     await expect(page.locator('tbody tr')).toHaveCount(1)
     await page.locator('tbody tr').first().click()
@@ -106,6 +110,9 @@ test('Manager: salvataggio versionato, CSRF e riassegnazione stale fail closed',
     const args = { center: fixture.center_a, name: fixture.patient_a, first_name: 'Paziente prova', last_name: 'Sintetico', email, expected_version: record.modified, request_key: key, reason: 'Correzione anagrafica sintetica' }
     const saved = await post(ctx, token, 'operations.profiles.patient_save', args)
     expect(saved.response.ok()).toBeTruthy()
+    const replay = await post(ctx, token, 'operations.profiles.patient_save', args)
+    expect(replay.response.ok()).toBeTruthy()
+    expect(replay.body.message.modified).toBe(saved.body.message.modified)
     const stale = await post(ctx, token, 'operations.profiles.patient_save', { ...args, request_key: key + '-stale' })
     expect(stale.response.ok()).toBeFalsy()
     const after = await get(ctx, 'operations.profiles.patient_detail', { center: fixture.center_a, name: fixture.patient_a })
@@ -145,10 +152,14 @@ test('note private: solo professionista assegnato, versioni append-only e revoca
 test('pacchetti: chiave replay, nuova emissione, rettifica e saldo reale', async ({ browser }, info) => {
   test.skip(info.project.name !== 'desktop')
   const ctx = await context(browser, 'manager')
+  const secondManager = await browser.newContext({ storageState: fixture.manager_second })
   try {
     const page = await ctx.newPage()
     await page.goto('/premium/#Pazienti')
     const token = await csrf(page)
+    const secondPage = await secondManager.newPage()
+    await secondPage.goto('/premium/#Pazienti')
+    const secondToken = await csrf(secondPage)
     const issueArgs = { template: fixture.template, patient: fixture.patient_a, centers: [fixture.center_a], practitioner: fixture.practitioner_a, reason: 'Emissione sintetica', request_key: fixture.tag + '-issue-a' }
     const first = await post(ctx, token, 'operations.packages.issue', issueArgs)
     expect(first.response.ok()).toBeTruthy()
@@ -158,6 +169,14 @@ test('pacchetti: chiave replay, nuova emissione, rettifica e saldo reale', async
     const second = await post(ctx, token, 'operations.packages.issue', { ...issueArgs, request_key: fixture.tag + '-issue-b' })
     expect(second.response.ok()).toBeTruthy()
     expect(second.body.message.name).not.toBe(first.body.message.name)
+    const concurrentArgs = { ...issueArgs, request_key: fixture.tag + '-concurrent-' + Date.now().toString(36) }
+    const [parallelA, parallelB] = await Promise.all([
+      post(ctx, token, 'operations.packages.issue', concurrentArgs),
+      post(secondManager, secondToken, 'operations.packages.issue', concurrentArgs),
+    ])
+    expect(parallelA.response.ok() && parallelB.response.ok(),
+      `concurrent HTTP ${parallelA.response.status()}/${parallelB.response.status()} types ${parallelA.body.exc_type ?? '-'} / ${parallelB.body.exc_type ?? '-'}`).toBeTruthy()
+    expect(parallelA.body.message.name).toBe(parallelB.body.message.name)
     const packageName = first.body.message.name
     const adjustArgs = { package: packageName, units: 1, reason: 'Rettifica sintetica', request_key: fixture.tag + '-adjust' }
     const adjust = await post(ctx, token, 'operations.packages.adjust', adjustArgs)
@@ -169,7 +188,7 @@ test('pacchetti: chiave replay, nuova emissione, rettifica e saldo reale', async
     expect(balance.body.message.remaining).toBe(adjust.body.message.remaining)
     const overdraw = await post(ctx, token, 'operations.packages.adjust', { ...adjustArgs, units: -9999, request_key: fixture.tag + '-overdraw' })
     expect(overdraw.response.ok()).toBeFalsy()
-  } finally { await ctx.close() }
+  } finally { await ctx.close(); await secondManager.close() }
 })
 
 test('browser reale: form paziente, validazione, nota e persistenza', async ({ browser }, info) => {
@@ -191,7 +210,7 @@ test('browser reale: form paziente, validazione, nota e persistenza', async ({ b
     await edit.getByRole('textbox', { name: 'Motivo' }).fill('Correzione UAT sintetica')
     await edit.getByRole('button', { name: 'Salva' }).click()
     await expect(edit).toBeHidden()
-    await expect(drawer.getByRole('heading', { name: 'Paziente prova interfaccia' })).toBeVisible()
+    await expect(drawer.getByRole('heading', { name: /Paziente prova interfaccia/ }).first()).toBeVisible()
     await page.reload()
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
     await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
@@ -200,7 +219,11 @@ test('browser reale: form paziente, validazione, nota e persistenza', async ({ b
     const note = page.getByRole('dialog').getByRole('textbox', { name: 'Nuova nota organizzativa' })
     await note.fill(fixture.tag + ' NOTA UI')
     await page.getByRole('dialog').getByRole('button', { name: 'Aggiungi nota' }).click()
-    await expect(page.getByRole('dialog').getByText(fixture.tag + ' NOTA UI')).toBeVisible()
+    await expect(page.getByRole('dialog').locator('.note p').filter({ hasText: fixture.tag + ' NOTA UI' }).first()).toBeVisible()
+    await page.getByRole('dialog').locator('.note').filter({ hasText: fixture.tag + ' NOTA UI' }).first().getByRole('button', { name: 'Rettifica' }).click()
+    await page.getByRole('dialog').getByRole('textbox', { name: 'Rettifica nota' }).fill(fixture.tag + ' NOTA UI RETTIFICATA')
+    await page.getByRole('dialog').getByRole('button', { name: 'Registra rettifica' }).click()
+    await expect(page.getByRole('dialog').locator('.note p').filter({ hasText: fixture.tag + ' NOTA UI RETTIFICATA' }).first()).toBeVisible()
     await page.screenshot({ path: info.outputPath('patients-live-edit-note.png'), fullPage: true })
   } finally { await ctx.close() }
 })
@@ -263,6 +286,37 @@ test('pacchetti e note: richieste dirette fuori contesto negate', async ({ brows
   } finally { await manager.close(); await accountant.close(); await pro.close() }
 })
 
+test('scritture dirette negate per ruolo e paziente non assegnato', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  for (const role of ['secretariat', 'professional_b', 'finance'] as const) {
+    const ctx = await context(browser, role)
+    try {
+      const page = await ctx.newPage()
+      await page.goto('/premium/#Pazienti')
+      const token = await csrf(page)
+      if (role === 'secretariat') {
+        const detail = await get(ctx, 'operations.profiles.patient_detail', { center: fixture.center_a, name: fixture.patient_a })
+        expect(detail.response.ok()).toBeTruthy()
+        const denied = await post(ctx, token, 'operations.profiles.patient_save', {
+          center: fixture.center_a, name: fixture.patient_a, first_name: 'Non autorizzato',
+          last_name: 'Sintetico', email: '', expected_version: detail.body.message.modified,
+          request_key: fixture.tag + '-secretariat-write', reason: 'Verifica permesso' })
+        expect(denied.response.ok()).toBeFalsy()
+      } else if (role === 'professional_b') {
+        const denied = await post(ctx, token, 'operations.notes.add_note', {
+          patient: fixture.patient_a, center: fixture.center_a, private: 1,
+          content: fixture.tag + ' DEVE ESSERE NEGATO' })
+        expect(denied.response.ok()).toBeFalsy()
+      } else {
+        const denied = await post(ctx, token, 'operations.packages.issue', {
+          template: fixture.template, patient: fixture.patient_a, centers: [fixture.center_a],
+          reason: 'Verifica permesso', request_key: fixture.tag + '-finance-denied' })
+        expect(denied.response.ok()).toBeFalsy()
+      }
+    } finally { await ctx.close() }
+  }
+})
+
 test('pacchetto dedicato: professionista privo di membership nel centro negato', async ({ browser }, info) => {
   test.skip(info.project.name !== 'desktop')
   const manager = await context(browser, 'manager')
@@ -281,5 +335,96 @@ test('pacchetto dedicato: professionista privo di membership nel centro negato',
     expect(issue.response.ok()).toBeFalsy()
     const restore = await post(manager, token, 'security.lifecycle.set_membership', { ...membership, active: 1 })
     expect(restore.response.ok()).toBeTruthy()
+  } finally { await manager.close() }
+})
+
+test('storico seduta reale: prenotazione, riserva, cancellazione e rilascio pacchetto', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  const manager = await context(browser, 'manager')
+  try {
+    const page = await manager.newPage()
+    await page.goto('/premium/#Pazienti')
+    const token = await csrf(page)
+    const schedule = await post(manager, token, 'scheduling.availability.set_schedule', {
+      practitioner: fixture.practitioner_a, center: fixture.center_a,
+      time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '12:00:00' }],
+      reason: 'Fascia UAT sintetica per storico' })
+    expect(schedule.response.ok()).toBeTruthy()
+    const key = fixture.tag + '-history-' + Date.now().toString(36)
+    const booked = await post(manager, token, 'scheduling.booking.book', {
+      patient: fixture.patient_a, practitioner: fixture.practitioner_a, center: fixture.center_a,
+      appointment_type: fixture.appointment_type, appointment_date: '2099-01-12',
+      appointment_time: '09:00:00', patient_package: fixture.package,
+      request_key: key, reason: 'Prenotazione UAT sintetica' })
+    expect(booked.response.ok()).toBeTruthy()
+    const name = booked.body.message.name as string
+    const reserved = await get(manager, 'operations.packages.balance', { package: fixture.package, center: fixture.center_a })
+    expect(reserved.body.message.reserved).toBe(1)
+    const history = await get(manager, 'operations.workspace.patient_history', { patient: fixture.patient_a, center: fixture.center_a })
+    expect(history.response.ok()).toBeTruthy()
+    expect(history.body.message.appointments.some((row: { name: string }) => row.name === name)).toBeTruthy()
+    const events = await get(manager, 'operations.workspace.appointment_events', { appointment: name })
+    expect(events.response.ok()).toBeTruthy()
+    expect(events.body.message.some((row: { event_type: string }) => row.event_type === 'APPOINTMENT_BOOKED')).toBeTruthy()
+    const canceled = await post(manager, token, 'operations.lifecycle.cancel', {
+      appointment: name, reason: 'Cancellazione UAT sintetica' })
+    expect(canceled.response.ok()).toBeTruthy()
+    expect(canceled.body.message.late).toBe(false)
+    const released = await get(manager, 'operations.packages.balance', { package: fixture.package, center: fixture.center_a })
+    expect(released.body.message.reserved).toBe(0)
+    expect(released.body.message.remaining).toBe(1)
+    const after = await get(manager, 'operations.workspace.appointment_events', { appointment: name })
+    expect(after.body.message.some((row: { event_type: string }) => row.event_type === 'SESSION_CANCELLED')).toBeTruthy()
+    await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await page.locator('tbody tr').first().click()
+    const drawer = page.getByRole('dialog')
+    await drawer.locator('button.patient-history-item').filter({ hasText: '12/01/2099' }).first().click()
+    await expect(drawer.getByText('Prenotazione creata').first()).toBeVisible()
+    await expect(drawer.getByText('Seduta cancellata').first()).toBeVisible()
+    await page.screenshot({ path: info.outputPath('patients-live-history.png'), fullPage: true })
+  } finally { await manager.close() }
+})
+
+test('cancellazione tardiva sintetica: unità pacchetto consumata una sola volta', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  const manager = await context(browser, 'manager')
+  try {
+    const page = await manager.newPage()
+    await page.goto('/premium/#Pazienti')
+    const token = await csrf(page)
+    const local = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+    const [year, month, day] = local.split('-').map(Number)
+    const target = new Date(Date.UTC(year, month - 1, day) + 86_400_000)
+    const date = target.toISOString().slice(0, 10)
+    const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(target)
+    const schedule = await post(manager, token, 'scheduling.availability.set_schedule', {
+      practitioner: fixture.practitioner_a, center: fixture.center_a,
+      time_slots: [{ day: weekday, from_time: '09:00:00', to_time: '12:00:00' }],
+      reason: 'Fascia UAT sintetica temporanea' })
+    expect(schedule.response.ok()).toBeTruthy()
+    const key = fixture.tag + '-late-' + Date.now().toString(36)
+    const issued = await post(manager, token, 'operations.packages.issue', {
+      template: fixture.template, patient: fixture.patient_a, centers: [fixture.center_a],
+      practitioner: fixture.practitioner_a, reason: 'Pacchetto tardivo sintetico', request_key: key })
+    expect(issued.response.ok()).toBeTruthy()
+    const packageName = issued.body.message.name as string
+    const booked = await post(manager, token, 'scheduling.booking.book', {
+      patient: fixture.patient_a, practitioner: fixture.practitioner_a, center: fixture.center_a,
+      appointment_type: fixture.appointment_type, appointment_date: date,
+      appointment_time: '09:00:00', patient_package: packageName,
+      request_key: key + '-book', reason: 'Prenotazione tardiva sintetica' })
+    expect(booked.response.ok()).toBeTruthy()
+    const appointment = booked.body.message.name as string
+    const canceled = await post(manager, token, 'operations.lifecycle.cancel', { appointment, reason: 'Cancellazione tardiva sintetica' })
+    expect(canceled.response.ok()).toBeTruthy()
+    expect(canceled.body.message.late).toBe(true)
+    const replay = await post(manager, token, 'operations.lifecycle.cancel', { appointment, reason: 'Retry sintetico' })
+    expect(replay.response.ok()).toBeTruthy()
+    expect(replay.body.message.replay).toBe(true)
+    const balance = await get(manager, 'operations.packages.balance', { package: packageName, center: fixture.center_a })
+    expect(balance.response.ok()).toBeTruthy()
+    expect(balance.body.message.remaining).toBe(0)
+    expect(balance.body.message.reserved).toBe(0)
   } finally { await manager.close() }
 })
