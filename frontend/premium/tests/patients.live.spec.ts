@@ -558,9 +558,8 @@ test('UX-04 live isolato: topbar senza ricerca globale e riassegnazione a campo 
   const manager = await context(browser, 'manager')
   try {
     const page = await manager.newPage()
-    await page.goto('/premium/#Agenda')
+    await page.goto('/premium/#Pazienti')
     await expect(page.getByRole('button', { name: 'Apri ricerca pazienti' })).toHaveCount(0)
-    await page.getByRole('button', { name: 'Pazienti', exact: true }).click()
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
     await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_a)
     await page.locator('tbody tr').first().click()
