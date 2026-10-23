@@ -1,4 +1,15 @@
 import { expect, test, type Page } from '@playwright/test'
+import { configureDemoLabels, demoPatient, demoText } from '../src/demo_labels'
+
+test('AUDIT-03: owned synthetic Agenda records show readable labels without changing canonical IDs', () => {
+  configureDemoLabels(null, null)
+  const tag = 'CC-HTTP-AbCd123456'
+  expect(demoPatient(`${tag} OWN`, `${tag} OWN`)).toBe('Paziente di prova A')
+  expect(demoPatient(`${tag} CROSS`, `${tag} CROSS`)).toBe('Paziente di prova B')
+  expect(demoText(`${tag} Session`)).toBe('Servizio di prova')
+  expect(demoText(`${tag} PACKAGE`)).toBe('Pacchetto di prova')
+  expect(demoText('Servizio reale')).toBe('Servizio reale')
+})
 
 const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 const todayItalian = `${today.slice(8, 10)}/${today.slice(5, 7)}/${today.slice(0, 4)}`
