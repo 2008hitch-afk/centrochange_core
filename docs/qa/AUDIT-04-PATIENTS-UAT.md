@@ -17,3 +17,13 @@ Le verifiche UI sintetiche sono `PASS_OFFLINE`; soltanto una sessione Frappe/Mar
 **Dipendenze:** DECISION-005/006/011/018/034/063; #74/#79/#134/#135/#136. Centro B storico resta inattivo sul DEV (#135); nel clone sono ammessi solo centri e utenti UAT identificati. La separazione `Patient` operativo / `Customer` fiscale è invariata. DECISION-059 rinvia la correzione retroattiva dell'orario.
 
 **Criteri di chiusura tecnica:** percorso UI completo desktop 1440×900 e mobile 390×844; API positive/negative con sessione e CSRF Frappe; persistenza, replay, rollback e segregazione; screenshot sintetici; fixture e risorse isolate rimosse per ID verificato; CI su SHA esatto; reviewer indipendente senza finding Critical/Important; matrice aggiornata. Senza tutte le prove: `PARTIAL`, non `READY_FOR_OWNER_UAT`.
+
+## Prosecuzione UX-04: criteri indipendenti
+
+| Difetto | Accettazione | Fonte / prova richiesta |
+|---|---|---|
+| UX-04-01 | Scheda Patient con un solo titolo nominativo, senza chip generico o ID tecnico in testata; campi e azioni autorizzate invariati | Browser Frappe desktop/mobile, `profiles.patient_detail`, accesso diretto negato fuori centro |
+| UX-04-02 | Topbar compatta con pulsante ricerca; campo e risultati compaiono solo su richiesta; focus, Escape, tastiera, viewport e filtro A/B funzionano | Browser desktop/mobile, `workspace.patient_search`, Guest e IDOR negati |
+| UX-04-03 | Un Patient con nome e cognome reali mostra la stessa identità in lista, ricerca, Agenda, report e scheda. Per `CC-HTTP`/`CC-MVP-POS` senza nome completo: etichetta esplicita con discriminatore stabile, mai un Customer fiscale spacciato per Patient. API e permessi usano sempre ID canonici | Proiezioni `bootstrap`, `patient_search`, `agenda`; test per Patient fuori bootstrap 500, cognome mancante, refresh e due centri |
+
+Questa prosecuzione non riapre gli audit funzionali di Agenda o Finanza e non autorizza mutazioni sul DEV. Prima dell'installazione occorre includere nel candidato il routing Premium primario già attivo sul DEV via PR #169.

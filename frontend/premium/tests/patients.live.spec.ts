@@ -41,6 +41,70 @@ async function post(ctx: BrowserContext, token: string, name: string, args: Reco
   return { response, body: await response.json().catch(() => ({})) }
 }
 
+test('UX-04 live isolato: nome Patient reale, fallback onesto, ricerca contestuale e centro A/B', async ({ browser }, info) => {
+  const ctx = await context(browser, 'manager')
+  try {
+    const detail = await get(ctx, 'operations.profiles.patient_detail', { center: fixture.center_a, name: fixture.patient_a })
+    expect(detail.response.ok()).toBeTruthy()
+    const displayName = `${detail.body.message.first_name} ${detail.body.message.last_name}`.trim()
+    expect(displayName).not.toMatch(/^CC-/i)
+    const firstName = String(detail.body.message.first_name)
+    const boot = await get(ctx, 'operations.workspace.bootstrap', { center: fixture.center_a })
+    expect(boot.response.ok()).toBeTruthy()
+    const own = (boot.body.message?.patients ?? []).find((row: { name: string }) => row.name === fixture.patient_a)
+    expect(own).toMatchObject({ first_name: detail.body.message.first_name, last_name: detail.body.message.last_name })
+    const searched = await get(ctx, 'operations.workspace.patient_search', { center: fixture.center_a, query: firstName })
+    expect(searched.response.ok()).toBeTruthy()
+    expect((searched.body.message?.patients ?? []).map((row: { name: string }) => row.name)).toContain(fixture.patient_a)
+    const foreign = await get(ctx, 'operations.workspace.patient_search', { center: fixture.center_b, query: firstName })
+    expect(foreign.response.ok()).toBeTruthy()
+    expect((foreign.body.message?.patients ?? []).map((row: { name: string }) => row.name)).not.toContain(fixture.patient_a)
+
+    const page = await ctx.newPage()
+    await page.goto('/premium/#Pazienti')
+    await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+    await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toHaveCount(0)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(firstName)
+    await expect(page.locator('tbody')).toContainText(displayName)
+    await expect(page.locator('tbody')).not.toContainText(fixture.patient_a)
+    await page.locator('tbody tr').first().click()
+    const drawer = page.getByRole('dialog', { name: displayName })
+    await expect(drawer.getByRole('heading', { name: displayName })).toHaveCount(1)
+    await expect(drawer.getByRole('heading', { name: 'Anagrafica' })).toBeVisible()
+    await expect(drawer).not.toContainText(fixture.patient_a)
+    await page.screenshot({ path: info.outputPath(`ux-04-live-patient-${info.project.name}.png`), fullPage: true })
+    await drawer.getByRole('button', { name: 'Chiudi' }).click()
+    await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_b)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.tag)
+    await expect(page.locator('tbody')).toContainText('Anagrafica da completare · scheda')
+    await expect(page.locator('tbody')).not.toContainText(fixture.patient_b)
+    await page.screenshot({ path: info.outputPath(`ux-04-live-fallback-${info.project.name}.png`), fullPage: true })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width)
+  } finally { await ctx.close() }
+})
+
+test('UX-04 live isolato: nuova proiezione Patient non allarga ruoli o accesso diretto', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  for (const role of roles) {
+    const ctx = await context(browser, role)
+    try {
+      const list = await get(ctx, 'operations.workspace.patient_search', { center: fixture.center_a, query: fixture.patient_a })
+      if (list.response.ok()) {
+        const rows = list.body.message?.patients ?? []
+        expect(rows.every((row: { name: string }) => row.name === fixture.patient_a)).toBeTruthy()
+      }
+      const idor = await get(ctx, 'operations.profiles.patient_detail', { center: fixture.center_b, name: fixture.patient_a })
+      expect(idor.response.ok(), `${role} must not access A Patient in B`).toBeFalsy()
+      expect(JSON.stringify(idor.body)).not.toContain(fixture.patient_a)
+    } finally { await ctx.close() }
+  }
+  const guest = await browser.newContext()
+  try {
+    const list = await get(guest, 'operations.workspace.patient_search', { center: fixture.center_a, query: fixture.patient_a })
+    expect(list.response.ok()).toBeFalsy()
+  } finally { await guest.close() }
+})
+
 test('scheda Pazienti reale: ricerca, profilo, note, pacchetto e responsive', async ({ browser }, info) => {
   const ctx = await context(browser, 'manager')
   try {

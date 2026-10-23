@@ -152,6 +152,47 @@ class NavigationScopeTests(unittest.TestCase):
                              {'first_name', 'last_name'})
             self.assertEqual(call.kwargs['filters']['name'][1], ['PAT-A'])
 
+    def test_agenda_projects_names_from_scoped_appointments_outside_bootstrap(self):
+        from unittest.mock import patch
+        import datetime
+        row = Record(name='APP-501', patient='PAT-501', patient_name='CC-MVP-POS-501',
+                     appointment_time='09:00:00', cc_center='CENTRO-A')
+        name = Record(name='PAT-501', first_name='Elena', last_name='Rossi')
+        original = self.get_list
+        def listed(doctype, filters=None, **kwargs):
+            if doctype == 'Patient Appointment':
+                return [row]
+            if doctype == 'Patient':
+                self.assertEqual(filters['name'][1], ['PAT-501'])
+                return [name]
+            return original(doctype, filters=filters, **kwargs)
+        with patch.object(self.frappe, 'get_list', side_effect=listed):
+            result = self.workspace.agenda('CENTRO-A', datetime.date(2026, 10, 19), datetime.date(2026, 10, 25))
+        self.assertEqual(result['appointments'][0].patient_first_name, 'Elena')
+        self.assertEqual(result['appointments'][0].patient_last_name, 'Rossi')
+
+    def test_agenda_non_manager_resolves_only_patients_from_visible_appointments(self):
+        import datetime
+        self.manager = False
+        row = Record(name='APP-A', patient='PAT-A', patient_name='CC-HTTP-AbCd123456 OWN',
+                     appointment_time='09:00:00', cc_center='CENTRO-A')
+        def permitted(doctype, filters=None, **kwargs):
+            if doctype == 'Patient Appointment':
+                self.assertEqual(filters['cc_center'], 'CENTRO-A')
+                return [row]
+            if doctype == 'Patient':
+                self.fail('Patient get_list must not be used for non-Manager')
+            return []
+        def scoped_all(doctype, filters=None, **kwargs):
+            self.assertEqual(doctype, 'Patient')
+            self.assertEqual(filters['name'][1], ['PAT-A'])
+            return [self.patients[0]]
+        with patch.object(self.frappe, 'get_list', side_effect=permitted), \
+             patch.object(self.frappe, 'get_all', side_effect=scoped_all):
+            result = self.workspace.agenda('CENTRO-A', datetime.date(2026, 10, 19), datetime.date(2026, 10, 25))
+        self.assertEqual(result['appointments'][0].patient_first_name, 'Giulia')
+        self.assertEqual(result['appointments'][0].patient_last_name, 'Neri')
+
     def test_empty_assignment_and_disabled_user_fail_closed(self):
         self.assignments['CENTRO-A'] = []
         self.assertEqual(self.workspace.bootstrap('CENTRO-A')['patients'], [])

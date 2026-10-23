@@ -1,5 +1,13 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## Addendum UX-04 — 23/10/2026 (candidato PR #168, non distribuito)
+
+La prosecuzione Owner di #167 corregge tre difetti di presentazione: UX-04-01 titolo unico nella scheda Patient, UX-04-02 ricerca globale pazienti richiamabile dall'icona della topbar anziché campo permanente, UX-04-03 nomi Marley reali dove disponibili e riferimento opaco stabile per le anagrafiche sintetiche incomplete. Il Patient e il Customer restano distinti; gli ID canonici sono usati dalle API e non sono rinominati. L'Agenda riceve nome e cognome dei Patient presenti negli appuntamenti già autorizzati, senza dipendere dal bootstrap limitato a 500. La ricerca resta filtrata dal server per centro e ruolo. Dettagli e prove nel [rapporto UX-04](AUDIT-04-UX-REMEDIATION.md).
+
+**Stato:** codice/test offline in PR DRAFT #168; prova Frappe isolata e CI finale da attestare nello stesso rapporto. Candidato **non installato nel DEV**. Sul DEV è attiva la decisione `SINGLE_CLIENT_UI_PREMIUM_ONLY` da PR #169; prima di qualunque nuova immagine DEV occorre riconciliare il relativo routing con #168 e superare il gate di backup/restore/rollback della Issue #167. Nessun merge o switch è implicito.
+
+La matrice CSV resta di 110 righe; le quattro righe toccate sono `CC-CAP-003`, `CC-CAP-019`, `CC-EXT-006` e `CC-EXT-019`. I conteggi di stato aggiornati sono **11 PASS, 59 PARTIAL, 29 NOT_TESTED, 11 BLOCKED**. `PASS` di una funzionalità Pazienti si riferisce soltanto al perimetro e alle prove indicate; Owner UAT resta `PENDING`.
+
 ## Addendum AUDIT-04 Pazienti — 23/10/2026
 
 Issue [#167](https://github.com/2008hitch-afk/centrochange_core/issues/167), branch `issue-167/patients-audit`, baseline `main` `fa4ea4033e95301c25271d88d7d8c008b035f5c0`. Il candidato applicativo `c07b2c72eed7901abb51b0aac48e043df4b06c1f` è stato provato in un clone Frappe/MariaDB isolato con due centri e soli record sintetici. **Nessun deploy sul DEV condiviso e nessuna accettazione Owner.** Dettaglio e limiti nel [rapporto AUDIT-04](AUDIT-04-PATIENTS-TECHNICAL-REVIEW.md).

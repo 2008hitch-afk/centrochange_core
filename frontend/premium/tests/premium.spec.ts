@@ -100,14 +100,24 @@ test('AUDIT-03: owned synthetic Agenda records show readable labels without chan
   expect(demoPatient(`${tag} CROSS`, `${tag} CROSS`)).not.toBe(demoPatient(`${tag} OWN`, `${tag} OWN`))
   expect(demoPatient('CC-MVP-POS-1', 'CC-MVP-POS-1', 'Giulia', 'Neri')).toBe('Giulia Neri')
   expect(demoPatient('CC-MVP-POS-1', 'CC-MVP-POS-1')).not.toContain('CC-MVP')
+  expect(demoPatient('CC-MVP-POS-1', 'CC-MVP-POS-1', 'Giulia', '')).toMatch(/^Anagrafica da completare · scheda/)
+  expect(demoPatient('CC-MVP-POS-2', 'CC-MVP-POS-2', 'Giulia', '')).not.toBe(demoPatient('CC-MVP-POS-1', 'CC-MVP-POS-1', 'Giulia', ''))
   expect(demoText(`${tag} Session`)).toBe('Servizio di prova')
   expect(demoText(`${tag} PACKAGE`)).toBe('Pacchetto di prova')
   expect(demoText('Servizio reale')).toBe('Servizio reale')
 })
 
+test('AUDIT-04 UX: Agenda usa il nome API anche oltre i 500 Patient del bootstrap', async ({ page }) => {
+  const row = { ...appointment, patient: 'CC-MVP-POS-501', patient_name: 'CC-MVP-POS-501', patient_first_name: 'Elena', patient_last_name: 'Rossi' }
+  await mockApi(page, [], true, {}, { patients: [] }, [row])
+  await page.goto('./#Agenda')
+  await expect(page.locator('.week-event').first()).toContainText('Elena Rossi')
+  await expect(page.locator('.week-event').first()).not.toContainText(row.patient)
+})
+
 test('AUDIT-04 UX: nome Marley reale in Agenda e Pazienti, drawer senza duplicati, ricerca contestuale', async ({ page }, info) => {
   const patient = { name: 'CC-MVP-POS-TEST-1', patient_name: 'CC-MVP-POS-TEST-1', first_name: 'Giulia', last_name: 'Neri' }
-  const row = { ...appointment, patient: patient.name, patient_name: patient.patient_name }
+  const row = { ...appointment, patient: patient.name, patient_name: patient.patient_name, patient_first_name: patient.first_name, patient_last_name: patient.last_name }
   await mockApi(page, [], true, {}, { patients: [patient] }, [row])
   await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', route =>
     route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { patients: [patient], truncated: false } }) }))
@@ -118,6 +128,14 @@ test('AUDIT-04 UX: nome Marley reale in Agenda e Pazienti, drawer senza duplicat
   await expect(page.getByRole('combobox', { name: 'Ricerca globale pazienti' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Apri ricerca pazienti' })).toBeVisible()
   await page.screenshot({ path: info.outputPath(`audit-04-ux-agenda-${info.project.name}.png`), fullPage: true })
+  await page.getByRole('button', { name: 'Apri ricerca pazienti' }).click()
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).fill('Giulia')
+  await expect(page.getByRole('listbox', { name: 'Risultati pazienti' })).toContainText('Giulia Neri')
+  const box = await page.getByRole('listbox', { name: 'Risultati pazienti' }).boundingBox()
+  expect(box).toBeTruthy()
+  expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1)
+  await page.screenshot({ path: info.outputPath(`audit-04-ux-search-open-${info.project.name}.png`), fullPage: true })
+  await page.getByRole('combobox', { name: 'Ricerca globale pazienti' }).press('Escape')
   await openSection(page, 'Pazienti')
   await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill('Giulia')
   await expect(page.locator('tbody')).toContainText('Giulia Neri')

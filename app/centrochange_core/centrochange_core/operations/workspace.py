@@ -47,8 +47,21 @@ def agenda(center,start,end):
         frappe.throw('Seleziona un intervallo Agenda di massimo 93 giorni.')
     rows=frappe.get_list('Patient Appointment',filters={'cc_center':center,'appointment_date':['between',[start,end]]},
         fields=APPOINTMENT_FIELDS,order_by='appointment_date,appointment_time,name',page_length=201)
+    # Use names from the scoped appointment rows, not the capped bootstrap list.
+    patient_ids=list({row.patient for row in rows if row.patient})
+    # Patient has native read permission for Manager only. Other operational
+    # roles may resolve identities solely for appointments already returned
+    # by their permitted Patient Appointment query (same narrow pattern as
+    # profiles.py), never from arbitrary caller-supplied Patient IDs.
+    patient_query=frappe.get_list if is_manager() else frappe.get_all
+    names={row.name:row for row in patient_query('Patient',
+        filters={'name':['in',patient_ids or ['']]},
+        fields=['name','first_name','last_name'],page_length=len(patient_ids) or 1)}
     for row in rows:
         row.appointment_time=str(get_time(row.appointment_time))
+        identity=names.get(row.patient)
+        row.patient_first_name=identity.first_name if identity else None
+        row.patient_last_name=identity.last_name if identity else None
     return {'appointments':rows[:200],'truncated':len(rows)>200}
 
 
