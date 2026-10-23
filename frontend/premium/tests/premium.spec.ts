@@ -8,6 +8,15 @@ test('AUDIT-03: historical state and owned synthetic audit actor stay readable',
   expect(auditActorName('maria.rossi@example.invalid')).toBe('maria.rossi@example.invalid')
 })
 
+test('AUDIT-03: vista giorno usa la stessa etichetta servizio della settimana', async ({ page }) => {
+  const service = 'CC-HTTP-AbCd123456 SESSION'
+  await mockApi(page, [], true, {}, {}, [{ ...appointment, cc_service_label: service }])
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Giorno', exact: true }).click()
+  await expect(page.locator('.rbc-event')).toContainText('Servizio di prova')
+  await expect(page.locator('.rbc-event')).not.toContainText(service)
+})
+
 test('AUDIT-03: owned synthetic Agenda records show readable labels without changing canonical IDs', () => {
   configureDemoLabels(null, null)
   const tag = 'CC-HTTP-AbCd123456'

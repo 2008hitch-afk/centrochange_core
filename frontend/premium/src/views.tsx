@@ -50,7 +50,7 @@ export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refr
     return () => { live = false }
   }, [center, iso(start), iso(end), reload])
   const resources = boot.practitioners.filter(p => practitioner === 'all' || p.name === practitioner).map(p => ({ id: p.name, title: practitionerName(p) }))
-  const events = rows.filter(r => practitioner === 'all' || r.practitioner === practitioner).map(r => ({ id: r.name, title: `${time(r.appointment_time)}  ${fullName(r)} · ${r.cc_service_label || 'Seduta'}`, start: wallDate(r.appointment_date, r.appointment_time), end: dayjs(wallDate(r.appointment_date, r.appointment_time)).add(Number(r.duration || 60), 'minute').toDate(), resourceId: r.practitioner, row: r }))
+  const events = rows.filter(r => practitioner === 'all' || r.practitioner === practitioner).map(r => ({ id: r.name, title: `${time(r.appointment_time)}  ${fullName(r)} · ${demoText(r.cc_service_label) || 'Seduta'}`, start: wallDate(r.appointment_date, r.appointment_time), end: dayjs(wallDate(r.appointment_date, r.appointment_time)).add(Number(r.duration || 60), 'minute').toDate(), resourceId: r.practitioner, row: r }))
   const days = Array.from({ length: 7 }, (_, index) => dayjs(start).add(index, 'day').toDate())
   const visitCount = rows.length
   const completed = rows.filter(r => !!r.cc_performed).length
