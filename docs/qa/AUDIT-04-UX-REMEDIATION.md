@@ -1,6 +1,6 @@
 # AUDIT-04 #167 — Prosecuzione UX-04, PR DRAFT #168
 
-**Stato del candidato:** `PENDING_CI` sullo SHA finale, dopo PASS tecnico locale e Frappe isolato; sviluppo in branch `issue-167/patients-audit`, DEV **non modificato**. La decisione `SINGLE_CLIENT_UI_PREMIUM_ONLY` è già attiva sul DEV tramite PR #169 e rimane vincolante. Questa PR non incorpora ancora #169: prima di un futuro gate DEV occorre costruire un candidato che contenga entrambi gli alberi e verificare routing, manifest e SHA risultanti.
+**Stato del candidato:** `READY_FOR_DEV_GATE` dopo PASS tecnico locale, Frappe isolato e GitHub Actions sulla HEAD `5e23be2eacbf7259aef4ff5934ef538c7942152e`; sviluppo in branch `issue-167/patients-audit`, DEV **non modificato**. La decisione `SINGLE_CLIENT_UI_PREMIUM_ONLY` è già attiva sul DEV tramite PR #169 e rimane vincolante. Questa PR non incorpora ancora #169: prima di un futuro gate DEV occorre costruire un candidato che contenga entrambi gli alberi e verificare routing, manifest e SHA risultanti.
 
 ## Correzioni
 
@@ -32,4 +32,4 @@ Il clone isolato del primo candidato ha mostrato che otto Patient posseduti dal 
 
 `READY_FOR_DEV_GATE`, subordinato ai check GitHub sullo SHA pubblicato, significa che il codice di presentazione e le API scoped sono pronti alla **richiesta del gate di installazione**, non che il DEV sia già aggiornato o che l'Owner abbia accettato Pazienti. La PR #168 resta DRAFT. Il gate deve: (1) riconciliare PR #169, ancora DRAFT, così che l'immagine target includa il routing Premium primario; (2) eseguire CI sull'ultimo SHA e verificare manifest/image/source parity; (3) checkpoint cifrato nuovo, restore reale isolato e rollback indipendente; (4) sostituire soltanto i sei servizi applicativi se tutti i controlli sono PASS; (5) verificare `/premium/#Pazienti`, accessi diretti, ruoli, centri e `cc_premium_primary=1` senza toccare schema, dati storici o produzione. La nuova autorizzazione `DEV_INSTALL_ALLOWED` della Issue #167 è obbligatoria.
 
-La suite GitHub Actions non usa DEV, segreti o dati reali. Il suo esito va letto dai checks della PR sulla HEAD pubblicata; i test locali non sono CI GitHub.
+GitHub Actions `Offline premerge` [run 40019553473](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40019553473) sul commit `5e23be2eacbf7259aef4ff5934ef538c7942152e`: `backend-offline` PASS e `frontend-synthetic` PASS. Il workflow non usa DEV, segreti o dati reali. Dopo questo aggiornamento documentale verificare nuovamente i checks sulla HEAD risultante; i test locali non sono CI GitHub.
