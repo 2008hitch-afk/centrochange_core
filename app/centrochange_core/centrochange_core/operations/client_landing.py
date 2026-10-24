@@ -20,7 +20,7 @@ def client_home(user=None):
     if user in ("Guest", "Administrator"):
         return None
     roles = set(frappe.get_roles(user))
-    if premium_primary() and roles & CLIENT_ROLES and "System Manager" not in roles:
+    if premium_primary() and roles & CLIENT_ROLES:
         return "/premium"
     if roles & OPERATING_ROLES:
         return "/app/cc-unified-desk?cc_view=agenda"
@@ -54,6 +54,8 @@ def configure_existing_users():
 
 def redirect_launcher(response, request):
     """Redirect only exact launcher URLs; preserve valid document deep links."""
+    if response is None or response.status_code >= 400:
+        return
     if request.method not in ("GET", "HEAD") or request.path not in ("/", "/app", "/desk"):
         return
     target = client_home()
@@ -65,11 +67,16 @@ def redirect_launcher(response, request):
     response.set_data(b"")
 
 
-def redirect_legacy_operational_routes():
-    """After acceptance, navigate client roles to React; ACL remains server-side."""
+def redirect_legacy_operational_routes(response, request):
+    """Redirect legacy web responses after Frappe has authenticated the request.
+
+    A before_request hook cannot raise frappe.Redirect: Frappe's app catches it
+    as an error page, which leaves deep Desk URLs visible to client roles.
+    """
     if not premium_primary():
         return
-    request = getattr(frappe.local, "request", None)
+    if response is None or response.status_code >= 400:
+        return
     if not request or request.method not in ("GET", "HEAD"):
         return
     path = request.path.rstrip("/") or "/"
@@ -78,10 +85,15 @@ def redirect_legacy_operational_routes():
     else:
         user = frappe.session.user
         roles = set(frappe.get_roles(user)) if user not in ("Guest", "Administrator") else set()
-        if not roles & CLIENT_ROLES or "System Manager" in roles:
+        if not roles & CLIENT_ROLES:
             return
-        if path not in LEGACY_WEB and not (path == "/app" or path.startswith("/app/")):
+        if path not in LEGACY_WEB and not any(
+            path == prefix or path.startswith(prefix + "/")
+            for prefix in ("/app", "/desk")
+        ):
             return
         target = "/premium"
-    frappe.local.flags.redirect_location = target
-    raise frappe.Redirect
+    response.status_code = 302
+    response.headers["Location"] = target
+    response.headers["Cache-Control"] = "private, no-store"
+    response.set_data(b"")

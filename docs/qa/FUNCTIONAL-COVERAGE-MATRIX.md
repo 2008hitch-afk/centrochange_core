@@ -1,5 +1,41 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## Addendum Owner UAT — AUDIT-04 Pazienti accettato funzionalmente (24/10/2026)
+
+**Decisione Owner verificata:** «Tutto confermato procediamo». Accettazione tracciata nella [Issue #167](https://github.com/2008hitch-afk/centrochange_core/issues/167#issuecomment-6380921234), dopo walkthrough sulla **versione installata nel DEV**: PR #168 commit **applicativo** `114301effda320f1f4991e672444761d91b76bef`, immagine `sha256:c00dd69af4a0865aa37b9a5db50d0bfa739d065a0a37cad0bd076ea2cfb86091`. La CI sull'applicativo è SUCCESS; test browser/API **23 PASS, 17 SKIP previsti, 0 FAIL** sul clone Frappe/MariaDB, e smoke read-only sul DEV; backup cifrato/restore isolato/rollback readiness PASS secondo [rapporto Codex](https://github.com/2008hitch-afk/centrochange_core/issues/167#issuecomment-6380878876). L'accettazione Owner non equivale ad aver eseguito personalmente test di mutazione, segregazione API o contabilità: le prove mutative sono **PASS_ISOLATED_REAL**, non **OWNER_LIVE_WRITE_PASS**.
+
+**Correzioni UX direttamente confermate dall'Owner:** UX-04-01 titolo paziente non duplicato, UX-04-04 plurali pacchetto, UX-04-06 azioni note, UX-04-08 storico singola seduta nello stesso drawer con ritorno/scroll, UX-04-09 un solo controllo ricercabile per professionista, UX-04-02 rimozione globale ricerca pazienti (ticket [#170](https://github.com/2008hitch-afk/centrochange_core/issues/170) chiuso). Apertura, consultazione e annullamento delle altre azioni Pazienti verificate visivamente; salvataggi complessi su clone isolato. Nessuna modifica autorizzata a pulsante blu o proposta UX-04-07 (rettifica identica).
+
+**Matrice CSV:** 110 righe invariate, stati tecnici **11 PASS, 59 PARTIAL, 29 NOT_TESTED, 11 BLOCKED**. Otto righe `PASS` specifiche dell'area Pazienti (`CC-CAP-004/016/017/019/020`, `CC-ACT-001/002/003`) hanno ora Owner `OWNER_ACCEPTED_FUNCTIONAL_LIMITED`; il resto rimane con stato precedente e `OWNER PENDING` dove pertinente. Non promuovere a PASS i requisiti trasversali o non completamente esercitati: `CC-CAP-006.c` (storico oltre 100), `CC-CAP-018` (report/export privacy trasversali), `CC-CAP-005/033/038/039` (permessi e API su tutte le aree), anagrafiche/azioni fuori perimetro e processi contabili restano `PARTIAL` o `NOT_TESTED` secondo CSV.
+
+**GitHub:** [PR #168](https://github.com/2008hitch-afk/centrochange_core/pull/168) ha integrato il codice routing della [PR #169](https://github.com/2008hitch-afk/centrochange_core/pull/169). Le due PR restano da disporre nel gate merge separato autorizzato dall'Owner, che richiede controllo dell'ultima HEAD e della CI; nessuna produzione né nuovo deploy DEV. Reviewer indipendente dichiarato PASS nel report Codex; nessuna review GitHub formale era presente al checkpoint di verifica. Tracker generale #156 non leggibile con l'identità attuale (GET 404): non dichiararlo aggiornato. Prossima area, dopo chiusura corretta AUDIT-04: **AUDIT-05 Professionisti e accessi per professionista**; non già iniziata.
+
+
+## Esito installazione AUDIT-04 — 23/10/2026
+
+La PR DRAFT #168 riconciliata con #169 è installata sul solo DEV come immagine `sha256:be800b7e2a72dc8e0d75b6d5fce205243cb0d8f2939b43d985dd7ef0247fe496` dal commit applicativo `373e6ccfa26ec86572c17c202b19c7ee2097fc02`. Gate cifrato, restore isolato, CI, UAT clone e smoke DEV: **PASS**. Owner UAT e merge: **PENDING**. La matrice CSV mantiene 110 righe e gli stati funzionali già circoscritti; le fotografie storiche sotto descrivono le fasi precedenti. [Rapporto finale](AUDIT-04-DEV-INSTALL-2026-10-23.md).
+
+## Addendum UX-04 — 23/10/2026 (fotografia precedente all'installazione)
+
+La prosecuzione Owner di #167 corregge tre difetti di presentazione: UX-04-01 titolo unico nella scheda Patient, UX-04-02 ricerca globale pazienti richiamabile dall'icona della topbar anziché campo permanente, UX-04-03 nomi Marley reali dove disponibili e riferimento opaco stabile per le anagrafiche sintetiche incomplete. Il Patient e il Customer restano distinti; gli ID canonici sono usati dalle API e non sono rinominati. L'Agenda riceve nome e cognome dei Patient presenti negli appuntamenti già autorizzati, senza dipendere dal bootstrap limitato a 500. La ricerca resta filtrata dal server per centro e ruolo. Dettagli e prove nel [rapporto UX-04](AUDIT-04-UX-REMEDIATION.md).
+
+**Stato:** codice/test offline e Frappe isolato PASS; GitHub Actions `Offline premerge` PASS sul commit `5e23be2eacbf7259aef4ff5934ef538c7942152e` ([run 40019553473](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40019553473)). La HEAD dopo l’aggiornamento documentale richiede comunque checks PASS esatti. Candidato **non installato nel DEV**. Sul DEV è attiva la decisione `SINGLE_CLIENT_UI_PREMIUM_ONLY` da PR #169; prima di qualunque nuova immagine DEV occorre riconciliare il relativo routing con #168 e superare il gate di backup/restore/rollback della Issue #167. Nessun merge o switch è implicito.
+
+La matrice CSV resta di 110 righe; le quattro righe toccate sono `CC-CAP-003`, `CC-CAP-019`, `CC-EXT-006` e `CC-EXT-019`. I conteggi di stato aggiornati sono **11 PASS, 59 PARTIAL, 29 NOT_TESTED, 11 BLOCKED**. `PASS` di una funzionalità Pazienti si riferisce soltanto al perimetro e alle prove indicate; Owner UAT resta `PENDING`.
+
+## Addendum AUDIT-04 Pazienti — 23/10/2026
+
+Issue [#167](https://github.com/2008hitch-afk/centrochange_core/issues/167), branch `issue-167/patients-audit`, baseline `main` `fa4ea4033e95301c25271d88d7d8c008b035f5c0`. Il candidato applicativo `c07b2c72eed7901abb51b0aac48e043df4b06c1f` è stato provato in un clone Frappe/MariaDB isolato con due centri e soli record sintetici. **Nessun deploy sul DEV condiviso e nessuna accettazione Owner.** Dettaglio e limiti nel [rapporto AUDIT-04](AUDIT-04-PATIENTS-TECHNICAL-REVIEW.md).
+
+| Prova | Esito | Confine |
+|---|---|---|
+| Python offline, manifest, React typecheck/build | 72 PASS; source/image parity PASS | Verifiche codice/build, non collaudo DEV |
+| Playwright sintetico | 132 PASS, 8 SKIP | Risposte simulate, non Frappe |
+| Playwright Frappe/MariaDB isolato | 17 PASS, 15 SKIP per casi API desktop-only | Browser desktop 1440×900 e mobile 390×844; sette ruoli più Guest; centro A/B |
+| Reviewer indipendente | Revisione statica `c07b2c7`; esito finale nel rapporto tecnico | CI GitHub e cleanup: vedere rapporto finale |
+
+La matrice CSV mantiene 110 righe: **10 PASS, 59 PARTIAL, 29 NOT_TESTED, 12 BLOCKED**. `PASS` delle righe Pazienti significa prova tecnica nel perimetro #167, con Owner `PENDING`; i requisiti trasversali restano `PARTIAL` dove altri moduli o export non sono stati esercitati. Oltre 100 sedute, la UI dichiara il limite; la paginazione completa resta un gap distinto. La consultazione dopo l'ultima revoca è Manager-only nel centro autorizzato; l'operatività resta bloccata fino a una nuova assegnazione. Il backend conserva ID, permessi e fonte dati canonici.
+
 ## Addendum operativo verificato — 23/10/2026 (AUDIT-03)
 
 Questo addendum **prevale per lo stato operativo** sui checkpoint storici AUDIT-00/01/02 del 22/10 sottostanti; non sostituisce i requisiti né trasforma evidenza parziale in PASS.

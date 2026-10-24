@@ -187,4 +187,4 @@ after_request = ["centrochange_core.security.response_cache.protect"]
 after_request.append("centrochange_core.operations.client_landing.redirect_launcher")
 doc_events["User"]["on_update"] = [doc_events["User"]["on_update"], "centrochange_core.operations.client_landing.configure_user"]
 before_request.append("centrochange_core.operations.website_brand.login_language")
-before_request.append("centrochange_core.operations.client_landing.redirect_legacy_operational_routes")
+after_request.append("centrochange_core.operations.client_landing.redirect_legacy_operational_routes")

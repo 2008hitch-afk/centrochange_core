@@ -42,11 +42,43 @@ export function Drawer({ title, children, onClose }: { title: string; children: 
   return <div className="drawer-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}><aside ref={ref} className="drawer" role="dialog" aria-modal="true" aria-label={title}><header className="drawer-head"><div><span className="eyebrow">DETTAGLIO</span><h2>{title}</h2></div><button className="icon-button" aria-label="Chiudi" onClick={onClose}><X /></button></header><div className="drawer-body">{children}</div></aside></div>
 }
 export function Field({ label, name, required, children }: { label: string; name?: string; required?: boolean; children: React.ReactNode }) { return <label className="field"><span>{label}{required && <b className="required"> *</b>}</span>{children}</label> }
-export function SearchableSelect({ label, options, value, onChange, required = false, threshold = 10, empty = 'Seleziona' }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (value: string) => void; required?: boolean; threshold?: number; empty?: string }) {
-  const [filter, setFilter] = useState('')
-  const search = filter.trim().toLocaleLowerCase('it-IT')
-  const visible = search ? options.filter(option => option.label.toLocaleLowerCase('it-IT').includes(search) || option.value === value) : options
-  return <div className="field"><span>{label}{required && <b className="required"> *</b>}</span>{options.length > threshold && <input type="search" value={filter} onChange={e => setFilter(e.target.value)} aria-label={`Filtra ${label.toLocaleLowerCase('it-IT')}`} placeholder="Cerca nell'elenco" autoComplete="off" />}<select aria-label={label} value={value} onChange={e => onChange(e.target.value)} required={required}><option value="">{empty}</option>{visible.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{search && !visible.length && <small>Nessun risultato. Modifica la ricerca.</small>}</div>
+export function SearchableSelect({ label, options, value, onChange, required = false, empty = 'Seleziona', disabled = false }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (value: string) => void; required?: boolean; empty?: string; disabled?: boolean }) {
+  const id = React.useId()
+  const root = React.useRef<HTMLDivElement>(null)
+  const input = React.useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [active, setActive] = useState(-1)
+  const [invalidQuery, setInvalidQuery] = useState(false)
+  const selected = options.find(option => option.value === value)
+  const search = query.trim().toLocaleLowerCase('it-IT')
+  const visible = search ? options.filter(option => option.label.toLocaleLowerCase('it-IT').includes(search)) : options
+  const choose = (next: string) => { onChange(next); input.current?.setCustomValidity(''); setInvalidQuery(false); setQuery(''); setOpen(false) }
+  const move = (delta: number) => {
+    setOpen(true)
+    setActive(current => Math.max(0, Math.min(visible.length - 1, current + delta)))
+  }
+  return <div className="field searchable-select" ref={root}>
+    <label htmlFor={id}>{label}{required && <b className="required"> *</b>}</label>
+    <div className="combobox-shell">
+      <input ref={input} id={id} role="combobox" type="text" aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open && visible[active] ? `${id}-option-${active}` : undefined} aria-invalid={invalidQuery} autoComplete="off" placeholder={empty} disabled={disabled} required={required} value={query || selected?.label || ''}
+        onFocus={event => { setOpen(true); setQuery(''); setActive(options.findIndex(option => option.value === value)); event.currentTarget.select() }}
+        onClick={() => { if (!open) { setQuery(''); setActive(options.findIndex(option => option.value === value)); setOpen(true) } }}
+        onChange={event => { event.currentTarget.setCustomValidity(event.target.value.trim() ? 'Seleziona una voce dall’elenco.' : ''); setInvalidQuery(false); setQuery(event.target.value); setActive(-1); setOpen(true); onChange('') }}
+        onBlur={event => { if (!root.current?.contains(event.relatedTarget as Node)) { if (query.trim() && !value) { setInvalidQuery(true); setQuery('') } setOpen(false) } }}
+        onKeyDown={event => {
+          if (event.key === 'ArrowDown') { event.preventDefault(); move(1) }
+          else if (event.key === 'ArrowUp') { event.preventDefault(); move(-1) }
+          else if (event.key === 'Enter' && open && visible[active]) { event.preventDefault(); choose(visible[active].value) }
+          else if (event.key === 'Escape' && open) { event.preventDefault(); event.stopPropagation(); setOpen(false); setQuery(''); setInvalidQuery(false); event.currentTarget.setCustomValidity('') }
+        }} />
+      {(value || invalidQuery) && !disabled && <button type="button" className="combobox-clear" aria-label={`Cancella ${label.toLocaleLowerCase('it-IT')}`} onMouseDown={event => event.preventDefault()} onClick={() => { choose(''); input.current?.focus() }}>×</button>}
+    </div>
+    {open && !disabled && <div id={`${id}-list`} role="listbox" aria-label={`Opzioni ${label.toLocaleLowerCase('it-IT')}`} className="combobox-options">
+      {visible.length ? visible.map((option, index) => <button type="button" role="option" id={`${id}-option-${index}`} data-value={option.value} aria-selected={option.value === value} className={index === active ? 'active' : ''} key={option.value} onMouseDown={event => event.preventDefault()} onClick={() => choose(option.value)}>{option.label}</button>) : <p>Nessun risultato. Modifica la ricerca.</p>}
+    </div>}
+    {invalidQuery && <small className="combobox-error" role="alert">Nessuna voce selezionata. Scegli dall’elenco o cancella il campo.</small>}
+  </div>
 }
 export function DateInput({ value, onChange, required = false }: { value: string; onChange: (iso: string) => void; required?: boolean }) {
   const [draft, setDraft] = useState(displayDate(value))

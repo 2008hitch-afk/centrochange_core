@@ -1,14 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bell, Menu, LogOut, ChevronDown, PanelLeftClose, X, Settings2, History, BookOpen, Archive } from 'lucide-react'
-import { type Boot, type FinanceBoot, type Patient, ops, finance, call } from './api'
+import { type Boot, type FinanceBoot, ops, finance, call } from './api'
 import { Agenda, Patients, Professionals, ServiceCatalog, Availability, Reports, FinanceView, Access, Notifications } from './views'
 import { AuditLog } from './audit_log'
 import { MasterArchive, syntheticArchive } from './master_archive'
 import { ScopedArchive } from './scoped_archive'
 import { configureDemoLabels } from './demo_labels'
 import { centerName } from './display_names'
-import { PatientQuickSearch } from './navigation_search'
 import './style.css'
 
 export type View = 'Agenda' | 'Pazienti' | 'Professionisti' | 'Servizi' | 'Disponibilità' | 'Report' | 'Finanza' | 'Archivi' | 'Gestione accessi' | 'Registro modifiche' | 'Notifiche'
@@ -33,8 +32,6 @@ function App() {
   const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia('(max-width: 760px)').matches)
   const [loading, setLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
-  const [query, setQuery] = useState('')
-  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const menuToggle = useRef<HTMLButtonElement>(null)
   const menuClose = useRef<HTMLButtonElement>(null)
@@ -100,13 +97,12 @@ function App() {
   const switchView = (next: View) => { location.hash = encodeURIComponent(next); setView(next); setMobileOpen(false); setUserMenuOpen(false); setError(''); setNotice(''); if (mobileOpen) requestAnimationFrame(() => document.getElementById('main')?.focus()) }
   const feedback = (message: string, fail = false) => { if (fail) setError(message); else { setNotice(message); setError('') } }
   const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(fresh) }
-  const changeCenter = (next: string) => { if (next === center) return; hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setSelectedPatient(null); setQuery(''); setCenter(next) }
+  const changeCenter = (next: string) => { if (next === center) return; hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setCenter(next) }
   const logout = async () => {
     setLoggingOut(true); setUserMenuOpen(false)
     try { await call('logout', {}, true); location.replace('/login?redirect-to=/premium') }
     catch { feedback('Uscita non riuscita. Riprova.', true); setLoggingOut(false) }
   }
-  const openPatient = (patient: Patient) => { setSelectedPatient(patient); setQuery(''); switchView('Pazienti') }
 
   return <div className="app-shell">
     <a href="#main" className="skip-link" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus() }}>Vai al contenuto</a>
@@ -119,13 +115,13 @@ function App() {
     </aside>
     {mobileOpen && <button className="scrim" aria-label="Chiudi menu" onClick={() => { setMobileOpen(false); requestAnimationFrame(() => menuToggle.current?.focus()) }} />}
     <div className="workspace" inert={mobileViewport && mobileOpen}>
-      <header className="topbar"><button ref={menuToggle} className="icon-button menu-toggle" aria-label="Apri menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu /></button><div className="breadcrumbs"><span>Area operativa</span><span className="breadcrumb-slash">/</span><strong>{currentView}</strong></div><div className="top-actions"><PatientQuickSearch key={center} boot={boot} center={center} onSelect={openPatient} onSearchAll={value => { setSelectedPatient(null); setQuery(value); switchView('Pazienti') }} />{centers.length > 0 && <label className="center-selector"><span className="sr-only">Centro</span><select value={center} onChange={e => changeCenter(e.target.value)}>{centers.map(c => <option key={c.name} value={c.name}>{centerName(c)}</option>)}</select><ChevronDown /></label>}<div className="user-menu"><button className="top-avatar" aria-label="Menu utente" aria-expanded={userMenuOpen} onClick={() => setUserMenuOpen(open => !open)}>CC</button>{userMenuOpen && <div className="user-menu-panel"><strong>Centro Change</strong><span>Area riservata</span><button disabled={loggingOut} onClick={() => void logout()}><LogOut /> Esci</button></div>}</div></div></header>
+      <header className="topbar"><button ref={menuToggle} className="icon-button menu-toggle" aria-label="Apri menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}><Menu /></button><div className="breadcrumbs"><span>Area operativa</span><span className="breadcrumb-slash">/</span><strong>{currentView}</strong></div><div className="top-actions">{centers.length > 0 && <label className="center-selector"><span className="sr-only">Centro</span><select value={center} onChange={e => changeCenter(e.target.value)}>{centers.map(c => <option key={c.name} value={c.name}>{centerName(c)}</option>)}</select><ChevronDown /></label>}<div className="user-menu"><button className="top-avatar" aria-label="Menu utente" aria-expanded={userMenuOpen} onClick={() => setUserMenuOpen(open => !open)}>CC</button>{userMenuOpen && <div className="user-menu-panel"><strong>Centro Change</strong><span>Area riservata</span><button disabled={loggingOut} onClick={() => void logout()}><LogOut /> Esci</button></div>}</div></div></header>
       <main id="main" className="content" tabIndex={-1}>
         {loading && <div className="loading-state" role="status"><div className="skeleton heading-skeleton" /><div className="skeleton wide-skeleton" /><div className="skeleton panel-skeleton" /></div>}
         {error && <div className="alert error" role="alert"><span>{error}</span><button onClick={() => setError('')} aria-label="Chiudi errore"><X /></button></div>}
         {notice && <div className="alert success" role="status"><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Chiudi avviso"><X /></button></div>}
         {!loading && currentView === 'Agenda' && boot && <Agenda boot={boot} center={center} feedback={feedback} refreshBoot={refreshBoot} />}
-        {!loading && currentView === 'Pazienti' && boot && <Patients boot={boot} center={center} query={query} selectedPatient={selectedPatient} feedback={feedback} refreshBoot={refreshBoot} />}
+        {!loading && currentView === 'Pazienti' && boot && <Patients boot={boot} center={center} feedback={feedback} refreshBoot={refreshBoot} />}
         {!loading && currentView === 'Professionisti' && boot && <Professionals boot={boot} center={center} />}
         {!loading && currentView === 'Servizi' && boot && <ServiceCatalog boot={boot} center={center} />}
         {!loading && currentView === 'Disponibilità' && boot && <Availability boot={boot} center={center} feedback={feedback} />}

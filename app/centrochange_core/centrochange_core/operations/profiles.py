@@ -4,12 +4,15 @@ from centrochange_core.scoped_api import bounded, deny_extra, manager, mutate, p
 from centrochange_core.security.guards import is_manager, patient_contexts, practitioner_for, require_center, roles
 
 
-def _patient(center, doc):
+def _patient(center, doc, allow_historical=False):
     require_center(center)
-    if not frappe.db.exists('CC Patient Assignment', {'patient': doc.name, 'center': center, 'active': 1}):
+    active=bool(frappe.db.exists('CC Patient Assignment', {'patient': doc.name, 'center': center, 'active': 1}))
+    if not active and not (allow_historical and is_manager() and
+            frappe.db.exists('CC Patient Assignment', {'patient': doc.name, 'center': center})):
         frappe.throw('Paziente non disponibile per questo centro', frappe.PermissionError)
     if not is_manager() and (doc.name, center) not in patient_contexts():
         frappe.throw('Paziente non disponibile per questo centro', frappe.PermissionError)
+    return active
 
 
 def _practitioner(center, doc):
@@ -24,7 +27,10 @@ def _practitioner(center, doc):
 def patients(center, limit=50, offset=0):
     limit, offset = page(limit, offset)
     require_center(center)
-    allowed = frappe.get_all('CC Patient Assignment', filters={'center': center, 'active': 1}, pluck='patient')
+    filters={'center':center}
+    if not is_manager():
+        filters['active']=1
+    allowed = frappe.get_all('CC Patient Assignment', filters=filters, pluck='patient')
     if not is_manager():
         allowed = list(set(allowed) & {p for p, c in patient_contexts() if c == center})
     # Secretariat/Professional have document-scoped hooks, not a broad native list grant.
@@ -32,15 +38,20 @@ def patients(center, limit=50, offset=0):
     rows = lookup('Patient', filters={'name': ['in', allowed or ['']]},
                            fields=['name', 'patient_name', 'first_name', 'last_name', 'email', 'modified'],
                            order_by='patient_name,name', start=offset, page_length=limit + 1)
-    return {'rows': rows[:limit], 'has_more': len(rows) > limit}
+    active=set(frappe.get_all('CC Patient Assignment',
+        filters={'center':center,'active':1,'patient':['in',[row.name for row in rows[:limit]] or ['']]},
+        pluck='patient'))
+    return {'rows':[{**row,'active_assignment':row.name in active} for row in rows[:limit]],
+            'has_more':len(rows)>limit}
 
 
 @frappe.whitelist(methods=['GET'])
 def patient_detail(center, name):
     doc = frappe.get_doc('Patient', bounded(name, 'Paziente'))
     doc.check_permission('read')
-    _patient(center, doc)
-    return {field: doc.get(field) for field in ('name', 'patient_name', 'first_name', 'last_name', 'email', 'modified')}
+    active=_patient(center, doc, allow_historical=True)
+    return {**{field: doc.get(field) for field in ('name', 'patient_name', 'first_name', 'last_name', 'email', 'modified')},
+            'active_assignment':active}
 
 
 @frappe.whitelist(methods=['POST'])

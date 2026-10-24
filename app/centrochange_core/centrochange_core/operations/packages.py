@@ -1,7 +1,7 @@
 """Patient-package balances are derived exclusively from append-only events."""
 import frappe
 from frappe.utils import getdate
-from centrochange_core.security.audit import append,atomic,internal_write
+from centrochange_core.security.audit import append,atomic,internal_write,retry_deadlock_once
 from centrochange_core.security.guards import is_manager,require_operations,current_rows
 from centrochange_core.security.lifecycle import lock
 from centrochange_core.operations.notes import require_context
@@ -39,6 +39,7 @@ def _append(package,kind,remaining,reserved,key,reason,appointment=None,center=N
 
 
 @frappe.whitelist(methods=['POST'])
+@retry_deadlock_once
 @atomic
 def issue(template,patient,centers,request_key,reason,valid_until=None,practitioner=None):
 	lock()
@@ -64,8 +65,11 @@ def issue(template,patient,centers,request_key,reason,valid_until=None,practitio
 		frappe.throw('Il modello pacchetto non è attivo.')
 	if valid_until and getdate(valid_until)<frappe.utils.getdate():
 		frappe.throw('La scadenza del pacchetto è nel passato.')
-	if practitioner and not frappe.db.exists('Healthcare Practitioner',practitioner):
-		frappe.throw('Il professionista del pacchetto non è valido.')
+	if practitioner:
+		from centrochange_core.security.guards import centers as practitioner_centers, enabled
+		identity=frappe.get_doc('Healthcare Practitioner',practitioner)
+		if identity.status!='Active' or not identity.user_id or not enabled(identity.user_id) or not set(centers).issubset(set(practitioner_centers(identity.user_id))):
+			frappe.throw('Il professionista del pacchetto deve essere attivo e assegnato alle sedi selezionate.')
 	with internal_write('cc_operation_write'):
 		doc=frappe.get_doc({'doctype':'CC Patient Package','template':template,'patient':patient,
 			'service_item':profile.service_item,'issue_key':key,'centers':[{'center':center} for center in centers],
@@ -126,6 +130,7 @@ def adjust(package,units,request_key,reason):
 	doc.check_permission('read')
 	for row in doc.centers:
 		require_operations(row.center)
+		require_context(doc.patient,row.center)
 	units=frappe.utils.cint(units)
 	if not units or abs(units)>9999 or not request_key or len(request_key)>140:
 		frappe.throw('La rettifica del pacchetto non è valida.')

@@ -11,6 +11,9 @@ def require_context(patient,center):
 	require_center(center)
 	require_patient(patient)
 	if is_manager():
+		if not current_rows('CC Patient Assignment',
+				filters={'patient':patient,'center':center,'active':1},pluck='name'):
+			frappe.throw('Il paziente non è assegnato in questo centro.',frappe.PermissionError)
 		return
 	filters={'patient':patient,'center':center,'active':1}
 	if 'CC Professional' in roles():
