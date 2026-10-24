@@ -588,7 +588,14 @@ class OperationalReportingTests(unittest.TestCase):
         self.assertEqual(res_negative['page_length'], 50)
 
     def test_fail_closed_docperm_and_match_conditions(self):
-        # 1. When has_permission('Patient Appointment', 'read') is False -> fails closed
+        # 1. When has_permission function is completely missing in runtime -> fails closed
+        self.frappe.has_permission = None
+        self.frappe.in_test = False
+        self.frappe.flags.pop('in_test', None)
+        with self.assertRaises(Denied):
+            self.reporting._build_sql_where('CENTRO-A', '2026-10-01', '2026-10-24')
+
+        # 2. When has_permission('Patient Appointment', 'read') is False -> fails closed
         self.frappe.has_permission = lambda doctype, ptype='read': False
         with self.assertRaises(Denied):
             self.reporting._build_sql_where('CENTRO-A', '2026-10-01', '2026-10-24')
@@ -596,15 +603,25 @@ class OperationalReportingTests(unittest.TestCase):
         # Restore permission
         self.frappe.has_permission = lambda doctype, ptype='read': True
 
-        # 2. When build_match_conditions raises unexpected error in runtime -> fails closed
+        # 3. When reportview import fails in runtime -> fails closed
+        import builtins
+        orig_import = builtins.__import__
+        def fail_desk_import(name, *args, **kwargs):
+            if 'reportview' in name:
+                raise ImportError("Simulated missing frappe.desk.reportview")
+            return orig_import(name, *args, **kwargs)
+
+        with patch('builtins.__import__', side_effect=fail_desk_import):
+            with self.assertRaises(Denied):
+                self.reporting._build_sql_where('CENTRO-A', '2026-10-01', '2026-10-24')
+
+        # 4. When build_match_conditions raises unexpected error in runtime -> fails closed
         desk_mock = types.SimpleNamespace(
             reportview=types.SimpleNamespace(
                 build_match_conditions=lambda dt: (_ for _ in ()).throw(RuntimeError("ACL engine failed"))
             )
         )
         self.frappe.desk = desk_mock
-        self.frappe.in_test = False
-        self.frappe.flags.pop('in_test', None)
         with self.assertRaises(Denied):
             self.reporting._build_sql_where('CENTRO-A', '2026-10-01', '2026-10-24')
 

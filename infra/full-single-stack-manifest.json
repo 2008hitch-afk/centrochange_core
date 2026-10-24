@@ -157,7 +157,7 @@
     "centrochange_core/operations/packages.py": "00f972240ebf4ea4340376dbb0455ce9caa1ba19c3b03300d9f0fdfc54b9971d",
     "centrochange_core/operations/permissions.py": "62131aa584265447a2d5389664df539d3992ef740dd574316a985fbbe2bb3304",
     "centrochange_core/operations/profiles.py": "1e485f57a0e9242f498afc7a13aaebd66f88515818436608e4cbcfd6f048aa76",
-    "centrochange_core/operations/reporting.py": "e6e08e5f6cbd4bcf9453aba00e3d5159914b24d3bfc382c3e5911436f99f226b",
+    "centrochange_core/operations/reporting.py": "b7aaf6fde84ec53ff612d30096dd879073b1f7dc15a5434dfb9b17b41e24fc62",
     "centrochange_core/operations/search_acceptance.py": "8d050fec56a8f7918ea60744733bb49c685f6f13ef703691782f67e9b08cddc2",
     "centrochange_core/operations/surfaces_acceptance.py": "e312319a869c732a6d967c64b09db307817e8e3cdbce8eb270d145b439c0e03e",
     "centrochange_core/operations/website_brand.py": "39fc4eed28e7d2a50215c4d517d35a13d8dad6969b09139341e4eec59fbceb38",

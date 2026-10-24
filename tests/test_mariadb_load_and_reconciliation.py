@@ -249,6 +249,35 @@ def _run_real_mariadb_test():
                 denied = True
             assert denied, f"Guest user was not denied: {fn}"
 
+        # Finance-only user negative checks (non-actor for operational workspace)
+        frappe.set_user('cc-http-uat0000001-f@example.invalid')
+        for fn in [
+            lambda: mod.summary(center, start_date, end_date),
+            lambda: mod.sessions(center, start_date, end_date),
+            lambda: mod.export_csv(center, start_date, end_date),
+        ]:
+            denied = False
+            try:
+                fn()
+            except frappe.PermissionError:
+                denied = True
+            assert denied, f"Finance-only user was not denied: {fn}"
+
+        # Secretariat user checks (authorized actor for center)
+        frappe.set_user('cc-http-uat0000001-s@example.invalid')
+        summary_sec = mod.summary(center, start_date, end_date)
+        assert summary_sec['total_appointments'] == 550, f"Secretariat total mismatch: {summary_sec['total_appointments']}"
+        denied = False
+        try:
+            mod.summary('UNAUTHORIZED-CENTER', start_date, end_date)
+        except frappe.PermissionError:
+            denied = True
+        assert denied, "Secretariat was not denied for unauthorized center!"
+
+        # Direct test of fail-closed _get_match_conditions on Frappe v16
+        match_res = mod._get_match_conditions('Patient Appointment')
+        assert isinstance(match_res, str), f"_get_match_conditions did not return string: {match_res}"
+
         # Reset user back to Administrator for test harness cleanup
         frappe.set_user('Administrator')
 

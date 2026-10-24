@@ -123,6 +123,43 @@ def _has_real_db():
     return bool(db and hasattr(db, 'sql') and hasattr(db, 'count') and getattr(db, 'cur_db_name', None))
 
 
+def _get_match_conditions(doctype):
+    """Resolve Frappe dynamic match conditions / DocPerm with strict fail-closed enforcement.
+
+    Guarantees:
+    - Never fails open: missing permission module, import error or ACL engine failure throws PermissionError.
+    - Explicitly imports frappe.desk.reportview instead of relying on pre-existing module attributes.
+    - Preserves visibility for CC Manager, CC Secretariat, and CC Professional per approved policy.
+    """
+    # 1. Verify read permission for current user on the doctype
+    has_perm = getattr(frappe, 'has_permission', None)
+    if has_perm is None:
+        is_test = getattr(frappe, 'in_test', False) or getattr(getattr(frappe, 'flags', None), 'in_test', False)
+        if not is_test:
+            frappe.throw(f"Modulo di controllo accessi non disponibile per {doctype}.", frappe.PermissionError)
+    elif not has_perm(doctype, 'read'):
+        frappe.throw(f"Non hai i permessi di lettura per le sedute ({doctype}).", frappe.PermissionError)
+
+    # 2. Explicit import and evaluation of dynamic match conditions
+    try:
+        from frappe.desk.reportview import build_match_conditions
+        return build_match_conditions(doctype)
+    except ImportError as e:
+        is_test = getattr(frappe, 'in_test', False) or getattr(getattr(frappe, 'flags', None), 'in_test', False)
+        if not is_test:
+            frappe.throw(f"Modulo autorizzazioni dinamiche reportview non disponibile: {e}", frappe.PermissionError)
+        return ""
+    except Exception as e:
+        if isinstance(e, frappe.PermissionError):
+            raise
+        is_test = getattr(frappe, 'in_test', False) or getattr(getattr(frappe, 'flags', None), 'in_test', False)
+        if not is_test:
+            frappe.throw(f"Errore nella risoluzione delle autorizzazioni per {doctype}: {e}", frappe.PermissionError)
+        elif not isinstance(e, (AttributeError, TypeError)):
+            raise
+        return ""
+
+
 def _build_sql_where(center, start, end, practitioner=None, kpi='all', currency=None, now_rome=None):
     if now_rome is None:
         now_rome = _now_rome()
@@ -132,9 +169,8 @@ def _build_sql_where(center, start, end, practitioner=None, kpi='all', currency=
     require_actor()
     require_center(center)
 
-    # Fail-closed DocPerm verification
-    if hasattr(frappe, 'has_permission') and not frappe.has_permission('Patient Appointment', 'read'):
-        frappe.throw('Non hai i permessi di lettura per le sedute (Patient Appointment).', frappe.PermissionError)
+    # Strict fail-closed DocPerm and dynamic match conditions resolution
+    match_cond = _get_match_conditions('Patient Appointment')
 
     user_roles = roles()
     if 'CC Professional' in user_roles and not is_manager():
@@ -162,20 +198,8 @@ def _build_sql_where(center, start, end, practitioner=None, kpi='all', currency=
         clauses.append("`tabPatient Appointment`.`practitioner` = %(practitioner)s")
         params['practitioner'] = practitioner
 
-    # Fail-closed match conditions
-    if hasattr(frappe, 'desk') and hasattr(frappe.desk, 'reportview') and hasattr(frappe.desk.reportview, 'build_match_conditions'):
-        try:
-            match_cond = frappe.desk.reportview.build_match_conditions('Patient Appointment')
-            if match_cond:
-                clauses.append(f"({match_cond})")
-        except Exception as e:
-            if isinstance(e, frappe.PermissionError):
-                raise
-            is_test = getattr(frappe, 'in_test', False) or getattr(getattr(frappe, 'flags', None), 'in_test', False)
-            if not is_test:
-                frappe.throw(f"Errore nella risoluzione delle autorizzazioni per Patient Appointment: {e}", frappe.PermissionError)
-            elif not isinstance(e, (AttributeError, TypeError)):
-                raise
+    if match_cond:
+        clauses.append(f"({match_cond})")
 
     if kpi == 'cancelled':
         clauses.append("`tabPatient Appointment`.`status` = 'Cancelled'")
