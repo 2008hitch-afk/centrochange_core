@@ -145,3 +145,38 @@ In risposta al riscontro Owner UAT (`UAT-05-REPORT-01 = FAIL / CORE_FUNCTIONAL_G
 
 Stato finale del candidato: **DEV_INSTALLED_READY_FOR_OWNER_UAT**. PR #172 in stato DRAFT senza merge.
 
+## Remediation Finale Checkpoint CI & Deployment Live DEV — Commit 2f305b4 (24/10/2026)
+
+Esecuzione completata in seguito alla revisione tecnica indipendente di ChatGPT ([commento 6386756729](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6386756729)) e autorizzazione checkpoint CI run [40113565235](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40113565235) (SUCCESS su exact SHA `2f305b476e1cbdd154380c76ccaf400de745c588`):
+
+### 1. Incoerenze risolte
+1. **Classificazione rigorosa «Svolte senza pagamento»**:
+   - `is_unpaid` richiede strettamente `is_performed == True` oltre a `not is_paid` e stato economico dovuto.
+   - Le sedute non ancora chiuse con orario terminato restano classificate esclusivamente come `to_close` («Sedute da chiudere») e non confluiscono mai in `operational_unpaid`.
+   - L'endpoint `sessions` applica i filtri per `cancelled`, `performed`, `operational_paid`, `operational_unpaid`, `due` e `currency` direttamente a livello query DB.
+2. **Metriche ribbon Agenda coerenti con filtro professionisti e stati temporali**:
+   - `AgendaView` calcola il totale sedute, `completed` (escludendo le annullate) e `toClose` (escludendo le future e le annullate) esclusivamente sulle righe filtrate dai professionisti selezionati (`displayedRows`).
+   - L'endpoint `operations/workspace.py:agenda` supporta il parametro `practitioner`, esegue il filtro DB e applica il clamp obbligatorio per il ruolo `CC Professional`, con page length esteso a 501.
+3. **Fail-closed sui Report**:
+   - Nel catch di `reporting.summary`, invocato `setData(null)` per fail-closed totale senza residui visivi.
+4. **Terminologia italiana e note esplicative**:
+   - Aggiornata la dicitura in `Valore tariffe previste: importo teorico calcolato sulle tariffe di catalogo delle sedute con economia dovuta; non costituisce estratto conto contabile né incasso.`
+5. **Type definitions**:
+   - Esteso `Appointment` con `cc_classified_future?: boolean; cc_classified_to_close?: boolean`.
+
+### 2. Immagine candidata e gate DEV
+- Immagine single-stack completa: `cc171-professionals:2f305b4` (`sha256:c532337a388e5609d954468707350b06e8d465c391e645fb9008e65498beb9a6`).
+- Parità single-stack verificata sia localmente sia dentro l'immagine con `verify_full_single_stack.py`: PASS.
+- Sostituzione dei 6 container applicativi del solo `centrochange-dev` (backend, frontend, websocket, queue-short, queue-long, scheduler).
+- MariaDB (`df86246955d5`) e i due Redis (`11a3124321c0`, `7264d05f5e94`) intatti, nessuna migrazione o alterazione dei dati.
+- Cache Redis invalidata con `bench --site centrochange.local clear-cache`.
+- DB fingerprint identico pre-switch e post-installazione: `0f806a37849b571b213e71dcd5a7e6b6535a5bdb9314ca5c49fc2a536ed5e2ad` (`mutations: NONE`).
+
+### 3. Collaudo live multi-ruolo post-installazione
+- `dev_uat05_smoke.cjs`: PASS (Manager report/drilldown/agenda popover/mobile; Professionista agenda personale/nessun admin/report personale/IDOR negato; Segreteria report operativo; Guest negato).
+- `dev_readonly_smoke.cjs`: 8/8 ruoli PASS con controlli negativi su centri inattivi e IDOR.
+- Evidenze screenshot in `docs/evidence/issue-171/` aggiornate dalla DEV reale in esecuzione.
+- DB fingerprint post-UAT identico: zero mutazioni sui dati di business.
+
+Esito finale: **DEV_INSTALLED_READY_FOR_OWNER_UAT**. PR #172 in stato DRAFT senza merge.
+
