@@ -790,7 +790,7 @@ test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo'
   await openSection(page, 'Report')
   await page.getByRole('button', { name: 'Report professionisti' }).click()
   await page.getByLabel('Professionista report').selectOption('PR-001')
-  await expect(page.getByText('Sedute svolte')).toBeVisible()
+  await expect(page.locator('.professional-report').getByText('Sedute svolte')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Compensi e fatture autorizzati' })).toHaveCount(0)
   await page.screenshot({ path: `../../docs/evidence/issue-148/uat-report-professionisti-${testInfo.project.name}.png`, fullPage: true })
 })
@@ -1636,4 +1636,188 @@ test('AUDIT-05 MUST-FIX 5: Seduta futura non viene marcata come Non pagata', asy
   await expect(row).toContainText('In programma')
   await expect(row).not.toContainText('Non pagata')
 })
+
+test('AUDIT-05 UAT: Riconciliazione matematica KPI=6 <-> Header (6) <-> 6 righe <-> Esclusione cancellate', async ({ page }) => {
+  await mockApi(page)
+  // Summary with 8 sessions: 6 performed unpaid, 2 cancelled
+  await page.route('**/api/method/centrochange_core.operations.reporting.summary*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          currencies: {
+            EUR: {
+              sessions: 8,
+              performed: 6,
+              future: 0,
+              to_close: 0,
+              operational_paid: 0,
+              operational_unpaid: 6,
+              cancelled: 2,
+              due: 6,
+              due_snapshot_amount: 600
+            }
+          },
+          total_appointments: 8,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  let requestedKpi = ''
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    const url = new URL(route.request().url())
+    requestedKpi = url.searchParams.get('kpi') || ''
+    if (requestedKpi === 'operational_unpaid') {
+      const unpaidRows = Array.from({ length: 6 }, (_, i) => ({
+        name: `APP-UNPAID-${i + 1}`,
+        appointment_date: '2026-09-10',
+        appointment_time: '10:00:00',
+        patient_name: `Paziente ${i + 1}`,
+        practitioner_name: 'Dott. A',
+        cc_service_label: 'Seduta psicologica',
+        status: 'Closed',
+        cc_performed: 1,
+        cc_paid: 0,
+        cc_economic_state: 'Due',
+        cc_classified_future: false,
+        cc_classified_to_close: false,
+        cc_classified_unpaid: true,
+        cc_classified_cancelled: false,
+        mode_of_payment: null,
+        cc_price_snapshot: 100,
+        cc_currency_snapshot: 'EUR'
+      }))
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: {
+            appointments: unpaidRows,
+            total: 6,
+            total_pages: 1,
+            page: 1,
+            page_length: 50,
+            truncated: false
+          }
+        })
+      })
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          appointments: [],
+          total: 0,
+          total_pages: 1,
+          page: 1,
+          page_length: 50,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  // Verify grouping titles
+  await expect(page.getByText('Sedute e appuntamenti (EUR)')).toBeVisible()
+  await expect(page.getByText('Stato pagamenti operativi')).toBeVisible()
+  await expect(page.getByText(/Totale previsto da saldare: importo teorico/)).toBeVisible()
+
+  // Click on "Svolte senza pagamento" (value 6)
+  const unpaidCard = page.locator('.metric-card').filter({ hasText: 'Svolte senza pagamento' })
+  await expect(unpaidCard).toContainText('6')
+  await unpaidCard.click()
+
+  // Drilldown header must show exact count 6 and Italian label
+  const header = page.locator('.report-drilldown-header h3')
+  await expect(header).toHaveText('Dettaglio sedute — Svolte senza pagamento (6)')
+
+  // Table must contain exactly 6 rows, all with 'Da incassare' and none with 'annullata'
+  const rows = page.locator('.report-drilldown tbody tr')
+  await expect(rows).toHaveCount(6)
+  await expect(rows.first()).toContainText('Da incassare')
+  await expect(rows.first()).not.toContainText('annullata')
+  await expect(rows.first()).not.toContainText('Non pagata')
+})
+
+test('AUDIT-05 UAT: Visualizzazione neutra per seduta annullata e registrato per pagata', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          appointments: [
+            {
+              name: 'APP-CANC',
+              appointment_date: '2026-09-15',
+              appointment_time: '11:00:00',
+              patient_name: 'Paziente Annullato',
+              practitioner_name: 'Dott. A',
+              cc_service_label: 'Seduta',
+              status: 'Cancelled',
+              cc_performed: 0,
+              cc_paid: 0,
+              cc_economic_state: 'Non Due',
+              cc_classified_future: false,
+              cc_classified_to_close: false,
+              cc_classified_unpaid: false,
+              cc_classified_cancelled: true,
+              mode_of_payment: null,
+              cc_price_snapshot: 100,
+              cc_currency_snapshot: 'EUR'
+            },
+            {
+              name: 'APP-PAID',
+              appointment_date: '2026-09-16',
+              appointment_time: '12:00:00',
+              patient_name: 'Paziente Pagato',
+              practitioner_name: 'Dott. A',
+              cc_service_label: 'Seduta',
+              status: 'Closed',
+              cc_performed: 1,
+              cc_paid: 1,
+              cc_economic_state: 'Due',
+              cc_classified_future: false,
+              cc_classified_to_close: false,
+              cc_classified_unpaid: false,
+              cc_classified_cancelled: false,
+              mode_of_payment: 'POS',
+              cc_price_snapshot: 100,
+              cc_currency_snapshot: 'EUR'
+            }
+          ],
+          total: 2,
+          total_pages: 1,
+          page: 1,
+          page_length: 50,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  const rows = page.locator('.report-drilldown tbody tr')
+  await expect(rows).toHaveCount(2)
+
+  // Cancelled session row
+  const cancRow = rows.first()
+  await expect(cancRow).toContainText('Annullata')
+  await expect(cancRow).toContainText('— (annullata)')
+  await expect(cancRow).not.toContainText('Non pagata')
+
+  // Paid session row
+  const paidRow = rows.nth(1)
+  await expect(paidRow).toContainText('Svolta')
+  await expect(paidRow).toContainText('Registrato')
+})
+
 

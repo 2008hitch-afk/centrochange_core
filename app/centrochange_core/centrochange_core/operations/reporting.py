@@ -67,10 +67,10 @@ def classify_session(row, now_rome=None):
         else:
             is_to_close = True
 
-    is_paid = bool(row.cc_paid)
+    is_paid = bool(row.cc_paid) and not is_cancelled
     is_unpaid = (not is_paid and not is_cancelled and not is_future
                  and getattr(row, 'cc_economic_state', '') not in ('Non Due', 'Waived', 'Package Covered'))
-    is_due = (getattr(row, 'cc_economic_state', '') == 'Due')
+    is_due = (getattr(row, 'cc_economic_state', '') == 'Due' and (not is_cancelled or bool(getattr(row, 'cc_late_cancellation', 0))))
 
     return {
         'cancelled': is_cancelled,
@@ -166,10 +166,12 @@ def summary(center, start, end, practitioner=None):
 
 
 @frappe.whitelist()
-def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_length=50, order_by='appointment_date asc, appointment_time asc, name asc'):
+def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_length=50, order_by='appointment_date asc, appointment_time asc, name asc', currency=None):
     filters, start, end, practitioner = _filter_scope(center, start, end, practitioner)
     rows = frappe.get_list('Patient Appointment', filters=filters, fields=APPOINTMENT_FIELDS,
                            order_by=order_by or 'appointment_date asc, appointment_time asc, name asc', page_length=0)
+    if currency and currency not in ('ALL', 'all'):
+        rows = [row for row in rows if (row.cc_currency_snapshot or 'UNSET') == currency]
     now_rome = _now_rome()
     filtered = [row for row in rows if _matches_kpi(row, kpi, now_rome)]
     total = len(filtered)
@@ -209,6 +211,8 @@ def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_leng
         row.cc_classified_future = c['future']
         row.cc_classified_to_close = c['to_close']
         row.cc_classified_unpaid = c['unpaid']
+        row.cc_classified_cancelled = c['cancelled']
+        row.cc_classified_paid = c['paid']
 
     return {
         'appointments': paged,
@@ -217,6 +221,7 @@ def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_leng
         'page_length': page_length,
         'total_pages': total_pages,
         'kpi': kpi or 'all',
+        'currency': currency or 'ALL',
         'practitioner': practitioner,
         'truncated': False
     }
@@ -234,30 +239,30 @@ def safe_cell(value):
 
 
 @frappe.whitelist()
-def export_csv(center, start, end, practitioner=None, kpi='all'):
-    data = sessions(center, start, end, practitioner, kpi, page=1, page_length=0)
+def export_csv(center, start, end, practitioner=None, kpi='all', currency=None):
+    data = sessions(center, start, end, practitioner, kpi, page=1, page_length=0, currency=currency)
     output = StringIO(newline='')
     writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_ALL)
     columns = ['Data', 'Ora', 'Paziente', 'Professionista', 'Servizio', 'Durata (minuti)',
-               'Stato seduta', 'Stato economico', 'Pagamento registrato', 'Metodo di pagamento',
-               'Prezzo snapshot', 'Valuta']
+               'Stato seduta', 'Economia seduta', 'Pagamento operativo', 'Metodo di pagamento',
+               'Tariffa prevista', 'Valuta']
     writer.writerow(columns)
-    economy = {'Due': 'Dovuta', 'Non Due': 'Non dovuta', 'Package Covered': 'Coperta da pacchetto', 'Waived': 'Rinuncia economica'}
+    economy = {'Due': 'Tariffa prevista', 'Non Due': 'Non dovuta', 'Package Covered': 'Coperta da pacchetto', 'Waived': 'Rinuncia economica'}
     now_rome = _now_rome()
     for row in data['appointments']:
         c = classify_session(row, now_rome)
         if c['paid']:
-            payment_status = 'Sì'
+            payment_status = 'Registrato'
         elif c['cancelled']:
-            payment_status = 'Non applicabile (annullata)'
+            payment_status = '— (annullata)'
         elif c['future']:
             payment_status = 'In programma'
         elif c['unpaid']:
-            payment_status = 'No (non pagata)'
+            payment_status = 'Da incassare'
         else:
             payment_status = 'Non dovuto'
 
-        status_label = 'Svolta' if c['performed'] else ('Annullata' if c['cancelled'] else ('In programma' if c['future'] else 'Da completare'))
+        status_label = 'Svolta' if c['performed'] else ('Annullata' if c['cancelled'] else ('In programma' if c['future'] else 'Da chiudere'))
         values = [
             frappe.utils.formatdate(row.get('appointment_date'), 'dd/MM/yyyy') if row.get('appointment_date') else '',
             str(row.get('appointment_time') or '')[:5],
