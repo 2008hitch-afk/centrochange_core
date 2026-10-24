@@ -108,6 +108,16 @@ def _matches_kpi(row, kpi, now_rome):
     return True
 
 
+MAX_PAGE_LENGTH = 1000
+MAX_CSV_RECORDS = 20000
+CSV_APPOINTMENT_FIELDS = [
+    'name', 'appointment_date', 'appointment_time', 'duration', 'status',
+    'patient', 'patient_name', 'practitioner', 'practitioner_name',
+    'cc_service_label', 'cc_economic_state', 'cc_performed', 'cc_paid',
+    'cc_late_cancellation', 'cc_price_snapshot', 'cc_currency_snapshot'
+]
+
+
 def _has_real_db():
     db = getattr(frappe, 'db', None)
     return bool(db and hasattr(db, 'sql') and hasattr(db, 'count') and getattr(db, 'cur_db_name', None))
@@ -117,6 +127,21 @@ def _build_sql_where(center, start, end, practitioner=None, kpi='all', currency=
     if now_rome is None:
         now_rome = _now_rome()
     now_str = now_rome.strftime('%Y-%m-%d %H:%M:%S')
+
+    # Rigorous server-side actor and center verification
+    require_actor()
+    require_center(center)
+
+    user_roles = roles()
+    if 'CC Professional' in user_roles and not is_manager():
+        my_practitioner = practitioner_for(frappe.session.user)
+        if not my_practitioner:
+            frappe.throw('Nessun profilo professionista collegato a questo account.', frappe.PermissionError)
+        if practitioner and practitioner != my_practitioner:
+            frappe.throw('Non hai accesso ai dati di altri professionisti.', frappe.PermissionError)
+        practitioner = my_practitioner
+    elif practitioner in ('', 'all', None):
+        practitioner = None
 
     clauses = [
         "`tabPatient Appointment`.`cc_center` = %(center)s",
@@ -364,22 +389,20 @@ def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_leng
     filters, start, end, practitioner = _filter_scope(center, start, end, practitioner)
     now_rome = _now_rome()
 
+    page = max(1, cint(page) or 1)
+    pl_raw = cint(page_length) if page_length is not None else 50
+    page_length = min(max(1, pl_raw if pl_raw > 0 else 50), MAX_PAGE_LENGTH)
+
     if _has_real_db():
         where_sql, params = _build_sql_where(center, start, end, practitioner, kpi, currency, now_rome)
         count_sql = f"SELECT COUNT(*) FROM `tabPatient Appointment` WHERE {where_sql}"
         total = cint(frappe.db.sql(count_sql, params)[0][0])
 
-        page = max(1, cint(page) or 1)
-        page_length = cint(page_length)
-        if page_length <= 0:
-            total_pages = 1
-            limit_sql = ""
-        else:
-            total_pages = max(1, math.ceil(total / page_length))
-            offset = (page - 1) * page_length
-            params['limit'] = page_length
-            params['offset'] = offset
-            limit_sql = "LIMIT %(limit)s OFFSET %(offset)s"
+        total_pages = max(1, math.ceil(total / page_length))
+        offset = (page - 1) * page_length
+        params['limit'] = page_length
+        params['offset'] = offset
+        limit_sql = "LIMIT %(limit)s OFFSET %(offset)s"
 
         order_by_sql = _sanitize_order_by(order_by)
         fields_sql = ", ".join(f"`tabPatient Appointment`.`{f}`" for f in APPOINTMENT_FIELDS)
@@ -432,15 +455,9 @@ def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_leng
     ]
     total = len(filtered)
 
-    page = max(1, cint(page) or 1)
-    page_length = cint(page_length)
-    if page_length <= 0:
-        paged = filtered
-        total_pages = 1
-    else:
-        total_pages = max(1, math.ceil(total / page_length))
-        offset = (page - 1) * page_length
-        paged = filtered[offset : offset + page_length]
+    total_pages = max(1, math.ceil(total / page_length))
+    offset = (page - 1) * page_length
+    paged = filtered[offset : offset + page_length]
 
     _enrich_session_rows(paged, now_rome)
 
@@ -484,8 +501,14 @@ def export_csv(center, start, end, practitioner=None, kpi='all', currency=None):
         where_sql, params = _build_sql_where(center, start, end, practitioner, kpi, currency, now_rome)
         count_sql = f"SELECT COUNT(*) FROM `tabPatient Appointment` WHERE {where_sql}"
         total = cint(frappe.db.sql(count_sql, params)[0][0])
+        if total > MAX_CSV_RECORDS:
+            frappe.throw(
+                f"L'esportazione richiesta ({total} righe) supera il limite massimo consentito di {MAX_CSV_RECORDS} righe. "
+                f"Riduci l'intervallo temporale o applica filtri più selettivi prima di esportare.",
+                frappe.ValidationError
+            )
         order_by_sql = _sanitize_order_by(None)
-        fields_sql = ", ".join(f"`tabPatient Appointment`.`{f}`" for f in APPOINTMENT_FIELDS)
+        fields_sql = ", ".join(f"`tabPatient Appointment`.`{f}`" for f in CSV_APPOINTMENT_FIELDS)
         BATCH_SIZE = 1000
         for offset in range(0, total, BATCH_SIZE):
             batch_params = dict(params)
@@ -524,8 +547,45 @@ def export_csv(center, start, end, practitioner=None, kpi='all', currency=None):
                 ]
                 writer.writerow([safe_cell(value) for value in values])
     else:
-        data = sessions(center, start, end, practitioner, kpi, page=1, page_length=0, currency=currency)
-        for row in data['appointments']:
+        # Fallback for synthetic / mock execution
+        db_filters = dict(filters)
+        if kpi == 'cancelled':
+            db_filters['status'] = 'Cancelled'
+        elif kpi == 'performed':
+            db_filters['cc_performed'] = 1
+            db_filters['status'] = ['!=', 'Cancelled']
+        elif kpi == 'operational_paid':
+            db_filters['cc_paid'] = 1
+            db_filters['status'] = ['!=', 'Cancelled']
+        elif kpi == 'operational_unpaid':
+            db_filters['cc_performed'] = 1
+            db_filters['cc_paid'] = 0
+            db_filters['status'] = ['!=', 'Cancelled']
+            db_filters['cc_economic_state'] = ['not in', ['Non Due', 'Waived', 'Package Covered']]
+        elif kpi == 'due':
+            db_filters['cc_economic_state'] = 'Due'
+
+        if currency and currency not in ('ALL', 'all'):
+            if currency == 'UNSET':
+                db_filters['cc_currency_snapshot'] = ['in', ['', None]]
+            else:
+                db_filters['cc_currency_snapshot'] = currency
+
+        rows = frappe.get_list('Patient Appointment', filters=db_filters, fields=CSV_APPOINTMENT_FIELDS,
+                               order_by='appointment_date asc, appointment_time asc, name asc', page_length=0)
+        filtered = [
+            row for row in rows
+            if _matches_kpi(row, kpi, now_rome)
+            and (not currency or currency in ('ALL', 'all') or (getattr(row, 'cc_currency_snapshot', None) or 'UNSET') == currency)
+        ]
+        if len(filtered) > MAX_CSV_RECORDS:
+            frappe.throw(
+                f"L'esportazione richiesta ({len(filtered)} righe) supera il limite massimo consentito di {MAX_CSV_RECORDS} righe. "
+                f"Riduci l'intervallo temporale o applica filtri più selettivi prima di esportare.",
+                frappe.ValidationError
+            )
+        _enrich_session_rows(filtered, now_rome)
+        for row in filtered:
             c = classify_session(row, now_rome)
             if c['paid']:
                 payment_status = 'Registrato'

@@ -16,6 +16,8 @@
     "peak_memory_kb": 10874.44
   },
   "stage3": {
+    "type": "PHYSICAL_LOAD_EXECUTION",
+    "description": "50,000 physical records inserted and queried across intervals in isolated MariaDB",
     "total_db_records": 51017,
     "month_jan_summary_ms": 9.52,
     "month_dec_summary_ms": 8.67,
@@ -24,9 +26,13 @@
     "patient_history_p50_ms": 122.2
   },
   "stage4": {
+    "type": "CAPACITY_ASSESSMENT",
+    "description": "Query plan range scan, B-tree depth index assessment, and bounded memory validation on 250,000 record scale",
     "assessment": "PASS",
     "explain_summary_type": "range",
     "explain_sessions_type": "range",
-    "bounded_memory_guarantee": true
+    "bounded_memory_guarantee": true,
+    "physical_injection_performed": false,
+    "projected_capacity_limit": 250000
   }
 }

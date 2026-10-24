@@ -536,6 +536,53 @@ class OperationalReportingTests(unittest.TestCase):
         self.assertIn('Visita EUR 2', lines[1])
         self.assertIn('EUR', lines[1])
 
+    def test_server_side_sql_where_permissions_and_scoping(self):
+        # 1. As Manager: can query all or specific practitioner
+        self.manager = True
+        self.actor_roles = ['CC Manager']
+        where_sql, params = self.reporting._build_sql_where('CENTRO-A', '2026-10-01', '2026-10-24', practitioner='PRO-B')
+        self.assertIn('`tabPatient Appointment`.`practitioner` = %(practitioner)s', where_sql)
+        self.assertEqual(params['practitioner'], 'PRO-B')
+        self.assertEqual(params['center'], 'CENTRO-A')
+
+        # 2. As CC Professional: cross-practitioner access denied
+        self.manager = False
+        self.actor_roles = ['CC Professional']
+        self.user_practitioner = 'PRO-A'
+        with self.assertRaises(Denied):
+            self.reporting._build_sql_where('CENTRO-A', '2026-10-01', '2026-10-24', practitioner='PRO-B')
+
+        # 3. As CC Professional: omitting practitioner clamps strictly to own profile
+        where_prof, params_prof = self.reporting._build_sql_where('CENTRO-A', '2026-10-01', '2026-10-24')
+        self.assertIn('`tabPatient Appointment`.`practitioner` = %(practitioner)s', where_prof)
+        self.assertEqual(params_prof['practitioner'], 'PRO-A')
+
+        # 4. Denied center access
+        with self.assertRaises(Denied):
+            self.reporting._build_sql_where('CENTRO-FORBIDDEN', '2026-10-01', '2026-10-24')
+
+    def test_csv_export_memory_bounding_limit(self):
+        # Generate 20,001 fake appointments
+        oversized = [
+            Record(name=f'APP-BIG-{i}', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-20',
+                   appointment_time='09:00:00', duration=60, status='Closed', cc_closure_state='Closed',
+                   cc_economic_state='Due', cc_performed=1, cc_paid=1, cc_late_cancellation=0,
+                   cc_service_label='Visita', cc_price_snapshot=100, cc_currency_snapshot='EUR')
+            for i in range(20001)
+        ]
+        self.appointments = oversized
+        with self.assertRaises(ValueError) as ctx:
+            self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-24')
+        self.assertIn('supera il limite massimo consentito di 20000 righe', str(ctx.exception))
+
+    def test_sessions_bounded_page_length(self):
+        res_capped = self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-24', page_length=5000)
+        self.assertEqual(res_capped['page_length'], 1000)
+
+        res_negative = self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-24', page_length=-10)
+        self.assertEqual(res_negative['page_length'], 50)
+
 
 if __name__ == '__main__':
     unittest.main()
