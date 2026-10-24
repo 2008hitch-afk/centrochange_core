@@ -1727,7 +1727,7 @@ test('AUDIT-05 UAT: Riconciliazione matematica KPI=6 <-> Header (6) <-> 6 righe 
   // Verify grouping titles
   await expect(page.getByText('Sedute e appuntamenti (EUR)')).toBeVisible()
   await expect(page.getByText('Stato pagamenti operativi')).toBeVisible()
-  await expect(page.getByText(/Totale previsto da saldare: importo teorico/)).toBeVisible()
+  await expect(page.getByText(/Valore tariffe previste: importo teorico/)).toBeVisible()
 
   // Click on "Svolte senza pagamento" (value 6)
   const unpaidCard = page.locator('.metric-card').filter({ hasText: 'Svolte senza pagamento' })
@@ -1820,4 +1820,54 @@ test('AUDIT-05 UAT: Visualizzazione neutra per seduta annullata e registrato per
   await expect(paidRow).toContainText('Registrato')
 })
 
+test('AUDIT-05 UAT: Metriche ribbon Agenda coerenti con filtro professionisti e stati temporali', async ({ page }) => {
+  const p1 = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }
+  const p2 = { name: 'PR-002', practitioner_name: 'Dott. Bianchi' }
+  const today = '2026-10-24'
+  const appointments = [
+    // 2 appointments for PR-001: 1 performed, 1 cancelled
+    { name: 'APP-1', practitioner: 'PR-001', appointment_date: today, appointment_time: '09:00:00', duration: 60, cc_performed: 1, status: 'Closed' },
+    { name: 'APP-2', practitioner: 'PR-001', appointment_date: today, appointment_time: '10:00:00', duration: 60, cc_performed: 0, status: 'Cancelled' },
+    // 2 appointments for PR-002: 1 future (scheduled tomorrow), 1 past to_close (08:00 today)
+    { name: 'APP-3', practitioner: 'PR-002', appointment_date: '2026-10-25', appointment_time: '15:00:00', duration: 60, cc_performed: 0, status: 'Scheduled' },
+    { name: 'APP-4', practitioner: 'PR-002', appointment_date: today, appointment_time: '08:00:00', duration: 60, cc_performed: 0, status: 'Scheduled' },
+  ]
+  await mockApi(page, [], false, {}, { practitioners: [p1, p2] })
+  await page.route('**/api/method/centrochange_core.operations.workspace.agenda*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: { appointments, truncated: false } })
+    })
+  })
+
+  await page.goto('./#Agenda')
+  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible()
+
+  // Initially "Tutti i professionisti" is active (both P1 and P2):
+  // Total displayed = 4
+  // Svolte = 1 (APP-1)
+  // Sedute da chiudere = 1 (APP-4 only! APP-2 is cancelled, APP-3 is future tomorrow!)
+  // Professionisti = 2
+  const metricsRibbon = page.locator('.metrics-grid').first()
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute nel periodo' })).toContainText('4')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute svolte' })).toContainText('1')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute da chiudere' })).toContainText('1')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Professionisti' })).toContainText('2')
+
+  // Now select only Dott.ssa Rossi (PR-001)
+  await page.getByRole('button', { name: 'Filtro professionisti' }).click()
+  await page.locator('.multi-popover-item', { hasText: 'Dott.ssa Rossi' }).locator('input[type="checkbox"]').click()
+  await page.keyboard.press('Escape')
+
+  // Ribbon should now update to PR-001 ONLY:
+  // Total displayed = 2 (APP-1 and APP-2)
+  // Svolte = 1
+  // Sedute da chiudere = 0 (APP-1 is performed, APP-2 is cancelled)
+  // Professionisti = 1
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute nel periodo' })).toContainText('2')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute svolte' })).toContainText('1')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute da chiudere' })).toContainText('0')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Professionisti' })).toContainText('1')
+})
 

@@ -394,17 +394,19 @@ class OperationalReportingTests(unittest.TestCase):
         self.assertEqual(eur['performed'], 0)
         self.assertEqual(eur['to_close'], 2)
         self.assertEqual(eur['cancelled'], 1)
-        self.assertEqual(eur['operational_unpaid'], 2)
+        # In a scenario with 0 performed sessions, 'Svolte senza pagamento' is strictly 0!
+        # Unclosed sessions awaiting confirmation are classified as 'to_close', NOT as performed unpaid.
+        self.assertEqual(eur['operational_unpaid'], 0)
 
         # Opening to_close (2) shows exactly 2 rows
         res_toclose = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='to_close')
         self.assertEqual(res_toclose['total'], 2)
         self.assertEqual(len(res_toclose['appointments']), 2)
 
-        # Opening operational_unpaid (2) shows exactly 2 rows
+        # Opening operational_unpaid (0) shows exactly 0 rows
         res_unpaid = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='operational_unpaid')
-        self.assertEqual(res_unpaid['total'], 2)
-        self.assertEqual(len(res_unpaid['appointments']), 2)
+        self.assertEqual(res_unpaid['total'], 0)
+        self.assertEqual(len(res_unpaid['appointments']), 0)
 
         # Opening cancelled (1) shows exactly 1 row
         res_cancelled = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='cancelled')

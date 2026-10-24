@@ -68,7 +68,7 @@ def classify_session(row, now_rome=None):
             is_to_close = True
 
     is_paid = bool(row.cc_paid) and not is_cancelled
-    is_unpaid = (not is_paid and not is_cancelled and not is_future
+    is_unpaid = (is_performed and not is_paid
                  and getattr(row, 'cc_economic_state', '') not in ('Non Due', 'Waived', 'Package Covered'))
     is_due = (getattr(row, 'cc_economic_state', '') == 'Due' and (not is_cancelled or bool(getattr(row, 'cc_late_cancellation', 0))))
 
@@ -168,10 +168,29 @@ def summary(center, start, end, practitioner=None):
 @frappe.whitelist()
 def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_length=50, order_by='appointment_date asc, appointment_time asc, name asc', currency=None):
     filters, start, end, practitioner = _filter_scope(center, start, end, practitioner)
-    rows = frappe.get_list('Patient Appointment', filters=filters, fields=APPOINTMENT_FIELDS,
-                           order_by=order_by or 'appointment_date asc, appointment_time asc, name asc', page_length=0)
+    db_filters = dict(filters)
+    if kpi == 'cancelled':
+        db_filters['status'] = 'Cancelled'
+    elif kpi == 'performed':
+        db_filters['cc_performed'] = 1
+        db_filters['status'] = ['!=', 'Cancelled']
+    elif kpi == 'operational_paid':
+        db_filters['cc_paid'] = 1
+        db_filters['status'] = ['!=', 'Cancelled']
+    elif kpi == 'operational_unpaid':
+        db_filters['cc_performed'] = 1
+        db_filters['cc_paid'] = 0
+        db_filters['status'] = ['!=', 'Cancelled']
+        db_filters['cc_economic_state'] = ['not in', ['Non Due', 'Waived', 'Package Covered']]
+    elif kpi == 'due':
+        db_filters['cc_economic_state'] = 'Due'
+        db_filters['status'] = ['!=', 'Cancelled']
+
     if currency and currency not in ('ALL', 'all'):
-        rows = [row for row in rows if (row.cc_currency_snapshot or 'UNSET') == currency]
+        db_filters['cc_currency_snapshot'] = currency
+
+    rows = frappe.get_list('Patient Appointment', filters=db_filters, fields=APPOINTMENT_FIELDS,
+                           order_by=order_by or 'appointment_date asc, appointment_time asc, name asc', page_length=0)
     now_rome = _now_rome()
     filtered = [row for row in rows if _matches_kpi(row, kpi, now_rome)]
     total = len(filtered)
