@@ -6,7 +6,8 @@ import { resolve } from 'node:path'
 type Role = 'manager' | 'secretariat' | 'professional_a' | 'professional_b' | 'professional_c' | 'finance' | 'accountant'
 type Fixture = { synthetic_only: true; tag: string; center_a: string; center_b: string;
   practitioner_a: string; practitioner_b: string; patient_a: string; roles: Record<Role, string>;
-  daily_appointments: [string, string]; daily_date: string; future_appointment: string; reminder_log: string }
+  daily_appointments: [string, string]; daily_date: string; future_appointment: string; reminder_log: string;
+  availability_patient: string; appointment_type: string }
 const fixturePath = process.env.CC_PROFESSIONALS_ISOLATED_FIXTURE
 if (!fixturePath || process.env.CC_PROFESSIONALS_ISOLATED !== 'YES') throw new Error('Private AUDIT-05 clone fixture required')
 const repo = resolve(process.cwd(), '../..')
@@ -21,7 +22,8 @@ const roles: Role[] = ['manager', 'secretariat', 'professional_a', 'professional
 if (fixture.synthetic_only !== true || !/^CC-HTTP-[A-Za-z0-9]{10}$/.test(fixture.tag) ||
     !fixture.center_a || !fixture.center_b || fixture.center_a === fixture.center_b ||
     !fixture.practitioner_a || !fixture.practitioner_b || !fixture.patient_a || roles.some(role => !fixture.roles[role]) ||
-    !fixture.daily_date || fixture.daily_appointments?.length !== 2 || !fixture.future_appointment || !fixture.reminder_log)
+    !fixture.daily_date || fixture.daily_appointments?.length !== 2 || !fixture.future_appointment || !fixture.reminder_log ||
+    !fixture.availability_patient || !fixture.appointment_type)
   throw new Error('AUDIT-05 fixture inventory incomplete')
 for (const role of roles) privateFile(fixture.roles[role])
 const method = (name: string) => '/api/method/centrochange_core.' + name
@@ -58,6 +60,16 @@ test('Account professionista: agenda propria, chiusura pagata/non pagata, replay
     expect(unauthorized.response.ok()).toBeFalsy()
     const future = await post(ctx, 'operations.lifecycle.close', { appointment: fixture.future_appointment, paid: 0, reason: 'Seduta futura' }, csrf!)
     expect(future.response.ok()).toBeFalsy()
+    const cancelledBooking = await post(ctx, 'scheduling.booking.book', { patient: fixture.availability_patient,
+      practitioner: fixture.practitioner_a, center: fixture.center_a, appointment_type: fixture.appointment_type,
+      appointment_date: '2099-03-02', appointment_time: '10:00:00',
+      request_key: `${fixture.tag}-cancelled-closure`, reason: 'Seduta sintetica da cancellare' }, csrf!)
+    expect(cancelledBooking.response.ok()).toBeTruthy()
+    const cancelledName = cancelledBooking.body.message.name
+    const cancelled = await post(ctx, 'operations.lifecycle.cancel', { appointment: cancelledName, reason: 'Verifica chiusura negata' }, csrf!)
+    expect(cancelled.response.ok()).toBeTruthy()
+    const cancelledClose = await post(ctx, 'operations.lifecycle.close', { appointment: cancelledName, paid: 0, reason: 'Seduta annullata' }, csrf!)
+    expect(cancelledClose.response.ok()).toBeFalsy()
 
     let paymentMethod = ''
     if (!agenda.body.message.appointments.find((row: { name: string }) => row.name === fixture.daily_appointments[0])?.cc_performed) {
@@ -77,11 +89,11 @@ test('Account professionista: agenda propria, chiusura pagata/non pagata, replay
     const paidRow = closedPaid.body.message.appointments.find((row: { name: string }) => row.name === fixture.daily_appointments[0])
     expect(Number(paidRow.cc_performed)).toBe(1)
     expect(Number(paidRow.cc_paid)).toBe(1)
-    if (!paymentMethod) {
-      const history = await api(ctx, 'operations.workspace.patient_history', { patient: fixture.patient_a, center: fixture.center_a })
-      paymentMethod = String(history.body.message.settlements.find((row: { appointment: string }) => row.appointment === fixture.daily_appointments[0])?.mode_of_payment ?? '')
-    }
+    const history = await api(ctx, 'operations.workspace.patient_history', { patient: fixture.patient_a, center: fixture.center_a })
+    const persistedMethod = String(history.body.message.settlements.find((row: { appointment: string }) => row.appointment === fixture.daily_appointments[0])?.mode_of_payment ?? '')
+    if (!paymentMethod) paymentMethod = persistedMethod
     expect(paymentMethod).toBeTruthy()
+    expect(persistedMethod).toBe(paymentMethod)
     const replay = await post(ctx, 'operations.lifecycle.close', { appointment: fixture.daily_appointments[0], paid: 1,
       mode_of_payment: paymentMethod, reason: 'Seduta sintetica svolta e pagata' }, csrf!)
     expect(replay.response.ok()).toBeTruthy()
@@ -111,6 +123,14 @@ test('Account professionista: agenda propria, chiusura pagata/non pagata, replay
     await expect(page.locator('.professional-report')).toContainText('Sedute svolte')
     await expect(page.locator('.professional-report')).toContainText('2')
     await expect(page.locator('.professional-report')).not.toContainText(fixture.practitioner_b)
+    const exported = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Esporta CSV' }).click()
+    const download = await exported
+    expect(download.suggestedFilename()).toBe('centrochange-report-professionista.csv')
+    const csv = readFileSync(await download.path(), 'utf8')
+    expect(csv).toContain('"Data";"Ora";"Paziente";"Servizio";"Stato"')
+    expect(csv).not.toContain(fixture.practitioner_b)
+    expect(csv).not.toContain('Compenso')
     await page.screenshot({ path: info.outputPath('professional-report-desktop.png') })
   } finally { await ctx.close(); await other.close() }
 })
@@ -118,6 +138,7 @@ test('Account professionista: agenda propria, chiusura pagata/non pagata, replay
 test('Account professionista: disponibilità propria, assenza e rifiuto del collega', async ({ browser }, info) => {
   test.skip(info.project.name !== 'desktop')
   const ctx = await ctxFor(browser, 'professional_a')
+  const manager = await ctxFor(browser, 'manager')
   try {
     const page = await ctx.newPage()
     await page.goto('/premium/#Disponibilit%C3%A0')
@@ -125,16 +146,48 @@ test('Account professionista: disponibilità propria, assenza e rifiuto del coll
     await expect(page.getByRole('heading', { name: 'Disponibilità' })).toBeVisible()
     const csrf = await page.locator('meta[name="csrf-token"]').getAttribute('content')
     expect(csrf).toBeTruthy()
+    let initial = await api(ctx, 'operations.workspace.schedules', { center: fixture.center_a })
+    let initialRow = initial.body.message.find((row: { practitioner: string }) => row.practitioner === fixture.practitioner_a)
+    if (!/^12:00/.test(String(initialRow?.time_slots.find((slot: { day: string }) => slot.day === 'Monday')?.to_time))) {
+      const reset = await post(ctx, 'scheduling.availability.set_schedule', { practitioner: fixture.practitioner_a,
+        center: fixture.center_a, time_slots: [...initialRow.time_slots.filter((slot: { day: string }) => slot.day !== 'Monday'),
+          { day: 'Monday', from_time: '09:00:00', to_time: '12:00:00' }], reason: 'Ripristino orario sintetico di prova',
+        expected_modified: initialRow.modified }, csrf!)
+      expect(reset.response.ok(), 'restore owned schedule fixture').toBeTruthy()
+      initial = await api(ctx, 'operations.workspace.schedules', { center: fixture.center_a })
+      initialRow = initial.body.message.find((row: { practitioner: string }) => row.practitioner === fixture.practitioner_a)
+      await page.getByRole('button', { name: 'Aggiorna', exact: true }).click()
+      await expect(page.locator('.schedule-grid')).toContainText('09:00 – 12:00')
+    }
+    expect(initialRow?.time_slots.find((slot: { day: string }) => slot.day === 'Monday')?.to_time).toMatch(/^12:00/)
+    const early = await post(ctx, 'scheduling.booking.book', { patient: fixture.availability_patient,
+      practitioner: fixture.practitioner_a, center: fixture.center_a, appointment_type: fixture.appointment_type,
+      appointment_date: '2099-02-02', appointment_time: '11:00:00',
+      request_key: `${fixture.tag}-availability-before`, reason: 'Verifica disponibilità prima della modifica' }, csrf!)
+    expect(early.response.ok(), 'booking before schedule change').toBeTruthy()
     await page.getByRole('button', { name: 'Modifica orario' }).click()
     const dialog = page.getByRole('dialog', { name: 'Modifica disponibilità' })
     await expect(dialog.getByRole('combobox', { name: 'Professionista' })).toHaveCount(1)
     await expect(dialog.getByRole('combobox', { name: 'Professionista' }).locator('option')).toHaveCount(1)
+    await dialog.locator('input[type="time"]').nth(1).fill('11:00')
     await dialog.getByRole('textbox', { name: 'Motivo' }).fill('Aggiornamento orario sintetico proprio')
     await dialog.getByRole('button', { name: 'Conferma' }).click()
     await expect(page.getByText('Orario aggiornato.')).toBeVisible()
     const own = await api(ctx, 'operations.workspace.schedules', { center: fixture.center_a })
     expect(own.response.ok()).toBeTruthy()
     expect((own.body.message ?? []).every((row: { practitioner: string }) => row.practitioner === fixture.practitioner_a)).toBe(true)
+    expect(own.body.message.find((row: { practitioner: string }) => row.practitioner === fixture.practitioner_a)
+      ?.time_slots.find((slot: { day: string }) => slot.day === 'Monday')?.to_time).toMatch(/^11:00/)
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+    const audit = await api(manager, 'security.audit_view.events', { start: today, end: today, event_type: 'SCHEDULE_CHANGED',
+      reference: String(initialRow.name) })
+    expect(audit.response.ok()).toBeTruthy()
+    expect(audit.body.message.events.some((event: { reason: string }) => event.reason === 'Aggiornamento orario sintetico proprio')).toBe(true)
+    const late = await post(ctx, 'scheduling.booking.book', { patient: fixture.availability_patient,
+      practitioner: fixture.practitioner_a, center: fixture.center_a, appointment_type: fixture.appointment_type,
+      appointment_date: '2099-02-09', appointment_time: '11:00:00',
+      request_key: `${fixture.tag}-availability-after`, reason: 'Verifica disponibilità dopo la modifica' }, csrf!)
+    expect(late.response.ok(), 'booking rejected after schedule change').toBeFalsy()
     const forbidden = await post(ctx, 'scheduling.availability.set_schedule', {
       practitioner: fixture.practitioner_b, center: fixture.center_a,
       time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '11:00:00' }], reason: 'Tentativo altrui'
@@ -152,7 +205,7 @@ test('Account professionista: disponibilità propria, assenza e rifiuto del coll
     await page.getByRole('dialog', { name: 'Annulla assenza' }).getByRole('textbox', { name: 'Motivo' }).fill('Fine assenza sintetica')
     await page.getByRole('dialog', { name: 'Annulla assenza' }).getByRole('button', { name: 'Conferma' }).click()
     await expect(page.getByText('Assenza annullata.')).toBeVisible()
-  } finally { await ctx.close() }
+  } finally { await ctx.close(); await manager.close() }
 })
 
 test('Account professionista: nota privata append-only e notifica personale senza leak', async ({ browser }, info) => {
@@ -165,6 +218,8 @@ test('Account professionista: nota privata append-only e notifica personale senz
     await page.goto('/premium/#Pazienti')
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
     await expect(page.locator('tbody tr')).not.toHaveCount(0)
+    await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill(fixture.patient_a)
+    await expect(page.locator('tbody tr')).toHaveCount(1)
     await page.locator('tbody tr').first().click()
     const drawer = page.getByRole('dialog')
     await expect(drawer.getByText('Note professionali riservate')).toBeVisible()
@@ -173,27 +228,30 @@ test('Account professionista: nota privata append-only e notifica personale senz
     await drawer.getByRole('checkbox', { name: 'Nota professionale riservata' }).check()
     await drawer.getByRole('button', { name: 'Aggiungi nota' }).click()
     await expect(drawer.getByText(text)).toBeVisible()
-    const history = await api(professional, 'operations.workspace.patient_history', { patient: fixture.patient_a, center: fixture.center_a })
-    expect(history.response.ok()).toBeTruthy()
-    const note = history.body.message.private_notes.find((row: { content: string }) => row.content === text)
-    expect(note?.name).toBeTruthy()
+    let note: { name: string } | undefined
+    await expect.poll(async () => { const history = await api(professional, 'operations.workspace.patient_history', { patient: fixture.patient_a, center: fixture.center_a })
+      expect(history.response.ok()).toBeTruthy()
+      note = history.body.message.private_notes.find((row: { content: string }) => row.content === text)
+      return !!note?.name }).toBe(true)
     const csrf = await page.locator('meta[name="csrf-token"]').getAttribute('content')
     const revision = await post(professional, 'operations.notes.add_note', { patient: fixture.patient_a, center: fixture.center_a,
-      content: text + ' rettificata', private: 1, corrects: note.name }, csrf!)
+      content: text + ' rettificata', private: 1, corrects: note!.name }, csrf!)
     expect(revision.response.ok()).toBeTruthy()
     const after = await api(professional, 'operations.workspace.patient_history', { patient: fixture.patient_a, center: fixture.center_a })
-    expect(after.body.message.private_notes.some((row: { name: string; corrects: string }) => row.name === revision.body.message.name && row.corrects === note.name)).toBe(true)
+    expect(after.body.message.private_notes.some((row: { name: string; corrects: string }) => row.name === revision.body.message.name && row.corrects === note!.name)).toBe(true)
     for (const ctx of [manager, other]) {
-      const denied = await api(ctx, 'frappe.client.get', { doctype: 'CC Private Note', name: note.name })
+      const denied = await api(ctx, 'frappe.client.get', { doctype: 'CC Private Note', name: note!.name })
       expect(denied.response.ok()).toBeFalsy()
     }
     await page.goto('/premium/#Notifiche')
-    await expect(page.getByRole('heading', { name: 'Notifiche' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Notifiche', exact: true })).toBeVisible()
     await expect(page.locator('tbody')).toContainText('Hai sedute da chiudere oggi.')
     const personal = await api(professional, 'frappe.client.get_list', { doctype: 'Notification Log', fields: '["name","subject"]' })
     expect(personal.body.message.map((row: { name: string }) => row.name)).toContain(fixture.reminder_log)
     const foreign = await api(other, 'frappe.client.get_list', { doctype: 'Notification Log', fields: '["name","subject"]' })
     expect(foreign.body.message.map((row: { name: string }) => row.name)).not.toContain(fixture.reminder_log)
+    const direct = await api(other, 'frappe.client.get', { doctype: 'Notification Log', name: fixture.reminder_log })
+    expect(direct.response.ok()).toBeFalsy()
     await page.screenshot({ path: info.outputPath('professional-private-notification-desktop.png') })
   } finally { await professional.close(); await manager.close(); await other.close() }
 })
@@ -211,7 +269,7 @@ test('Account professionista mobile: Agenda, disponibilità, note, report e noti
       await page.goto('/premium/#' + encodeURIComponent(route))
       await expect(page.getByRole('heading', { name: heading, exact: true }).first()).toBeVisible()
       expect(await page.evaluate(() => document.documentElement.scrollWidth), route).toBeLessThanOrEqual(390)
-      if (route === 'Notifiche') await expect(page.getByText('Hai sedute da chiudere oggi.', { exact: true })).toBeVisible()
+      if (route === 'Notifiche') await expect(page.locator('tbody')).toContainText('Hai sedute da chiudere oggi.')
       await page.screenshot({ path: info.outputPath(`professional-${shot}-mobile.png`) })
     }
   } finally { await ctx.close() }
