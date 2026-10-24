@@ -27,6 +27,17 @@
 @media(prefers-reduced-motion:reduce){.sidebar{transition:none}}
 .notification-error{padding:28px;display:flex;align-items:center;justify-content:space-between;gap:16px;color:#a6444a}.notification-error p{margin:0}.notification-error .button{flex:none}@media(max-width:760px){.notification-error{flex-direction:column;align-items:stretch}}
 .personal-notifications .table-scroll table{white-space:normal}.personal-notifications .table-scroll td:first-child{min-width:220px;overflow-wrap:anywhere}
+@media(max-width:760px){
+  .personal-notifications .table-scroll{overflow-x:hidden}
+  .personal-notifications .table-scroll table,.personal-notifications .table-scroll tbody{display:block;width:100%}
+  .personal-notifications .table-scroll thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .personal-notifications .table-scroll tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding:14px 18px;border-bottom:1px solid #eef1f5}
+  .personal-notifications .table-scroll tr:last-child{border-bottom:0}
+  .personal-notifications .table-scroll td{display:block;min-width:0;padding:0;border:0;overflow-wrap:anywhere}
+  .personal-notifications .table-scroll td:first-child{grid-column:1/-1;min-width:0}
+  .personal-notifications .table-scroll td:nth-child(2)::before{content:'Lettura: ';font-weight:700}
+  .personal-notifications .table-scroll td:nth-child(3)::before{content:'Data: ';font-weight:700}
+}
 .document-preview{width:100%;min-height:60vh;border:1px solid var(--border,#d8e2dd);border-radius:12px;background:#fff}
 .archive-dates{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-top:12px}.archive-dates .field{min-width:140px}.archive-more{padding:16px 20px;text-align:center}
 /* One shared track template keeps weekday headers and professional rows aligned. */

@@ -269,7 +269,12 @@ test('Account professionista mobile: Agenda, disponibilità, note, report e noti
       await page.goto('/premium/#' + encodeURIComponent(route))
       await expect(page.getByRole('heading', { name: heading, exact: true }).first()).toBeVisible()
       expect(await page.evaluate(() => document.documentElement.scrollWidth), route).toBeLessThanOrEqual(390)
-      if (route === 'Notifiche') await expect(page.locator('tbody')).toContainText('Hai sedute da chiudere oggi.')
+      if (route === 'Notifiche') {
+        await expect(page.locator('tbody')).toContainText('Hai sedute da chiudere oggi.')
+        const date = await page.locator('.personal-notifications tbody td:nth-child(3)').first().boundingBox()
+        expect(date, 'La data della notifica deve essere visibile sullo schermo').not.toBeNull()
+        expect(date!.x + date!.width, 'Colonna data tagliata su mobile').toBeLessThanOrEqual(390)
+      }
       await page.screenshot({ path: info.outputPath(`professional-${shot}-mobile.png`) })
     }
   } finally { await ctx.close() }
@@ -288,6 +293,8 @@ test('Professionisti: ricerca reale, scheda, refresh e resa responsive', async (
     await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill(String(detail.body.message.first_name))
     await expect(page.locator('tbody')).toContainText('Professionista di prova A')
     await expect(page.locator('tbody')).not.toContainText(canonicalName)
+    await page.getByRole('searchbox', { name: 'Cerca professionisti' }).clear()
+    await expect(page.locator('tbody')).toContainText('Professionista di prova A')
     await page.screenshot({ path: info.outputPath(`professionisti-live-list-${info.project.name}.png`) })
     const row = page.locator('tbody tr').filter({ hasText: 'Professionista di prova A' }).first()
     await row.click()
