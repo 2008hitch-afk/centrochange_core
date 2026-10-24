@@ -38,6 +38,7 @@ PREMIUM_ADDED = {
     'centrochange_core/public/js/login_v1.js',
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
+                           'centrochange_core/security/permissions.py',
                            'centrochange_core/security/audit.py',
                            'centrochange_core/security/lifecycle.py',
                            'centrochange_core/operations/notes.py',

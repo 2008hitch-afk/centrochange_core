@@ -3,5 +3,7 @@
 **/*.pyc
 **/.pytest_cache
 **/.venv
+**/node_modules
+**/test-results
 **/.env
 *.env

@@ -75,6 +75,7 @@ class ScopedApiTest(unittest.TestCase):
     def setUp(self):
         self.db = FakeDB()
         self.role_allowed = True
+        self.operational_center = True
         self.locked = 0
         self.frappe = types.ModuleType('frappe')
         self.frappe.PermissionError = Denied
@@ -95,6 +96,7 @@ class ScopedApiTest(unittest.TestCase):
         self.guards = types.ModuleType('centrochange_core.security.guards')
         self.guards.require_manager = lambda: None if self.role_allowed else self.frappe.throw('ruolo negato', Denied)
         self.guards.require_center = lambda center: None if center == 'A' else self.frappe.throw('centro negato', Denied)
+        self.guards.require_operational_center = lambda center: None if center == 'A' and self.operational_center else self.frappe.throw('centro inattivo', Denied)
         self.guards.is_manager = lambda: self.role_allowed
         self.guards.patient_contexts = lambda: {('PAT-A', 'A')}
         self.guards.practitioner_for = lambda: 'PRO-A'
@@ -306,6 +308,33 @@ class ScopedApiTest(unittest.TestCase):
         with self.assertRaises(Denied):
             profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-PRO', 'motivo')
         self.assertEqual(self.db.doc.writes, 0)
+
+    def test_practitioner_search_is_server_scoped_and_bounded(self):
+        spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
+        profiles = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(profiles)
+        observed = {}
+        def listing(doctype, **kwargs):
+            observed.update(kwargs)
+            return [types.SimpleNamespace(name='PRO-A')]
+        self.frappe.get_list = listing
+        self.frappe.get_all = lambda doctype, **kwargs: ['pro@example.invalid']
+        result = profiles.practitioners('A', 20, 0, 'Rossi')
+        self.assertEqual(result['rows'][0].name, 'PRO-A')
+        self.assertEqual(observed['filters']['user_id'], ['in', ['pro@example.invalid']])
+        self.assertEqual(observed['page_length'], 21)
+        self.assertEqual(observed['or_filters']['first_name'], ['like', '%Rossi%'])
+        with self.assertRaises(Invalid):
+            profiles.practitioners('A', 20, 0, 'x' * 101)
+
+    def test_practitioner_detail_rejects_inactive_center(self):
+        spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
+        profiles = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(profiles)
+        self.db.doc = FakeDoc('Healthcare Practitioner', 'PRO-A', user_id='pro@example.invalid', status='Active')
+        self.operational_center = False
+        with self.assertRaises(Denied):
+            profiles.practitioner_detail('A', 'PRO-A')
 
 
 if __name__ == '__main__':

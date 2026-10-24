@@ -434,6 +434,10 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     if (method.endsWith('operations.workspace.bootstrap')) { if (opsAllowed) message = { ...boot, ...bootState }; else status = 403 }
     else if (method.endsWith('finance.reporting.bootstrap')) { if (financeAllowed) message = { ...financeBoot, ...financeState }; else status = 403 }
     else if (method.endsWith('operations.workspace.agenda')) message = { appointments: agendaRows ?? [{ ...appointment, ...appointmentState }], truncated: false }
+    else if (method.endsWith('operations.profiles.practitioners')) {
+      const search = (new URL(req.url()).searchParams.get('search') ?? '').toLocaleLowerCase('it-IT')
+      message = { rows: (bootState.practitioners ?? boot.practitioners).filter(row => row.practitioner_name.toLocaleLowerCase('it-IT').includes(search)), has_more: false }
+    }
     else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
     else if (method.endsWith('operations.profiles.patient_detail')) message = { name: 'PAT-001', patient_name: 'Paziente Sintetico', first_name: 'Paziente', last_name: 'Sintetico', email: 'paziente@example.invalid', modified: '2026-10-23 12:00:00' }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
@@ -686,6 +690,65 @@ test('UAT Professionisti: navigazione, ricerca e scheda autorizzata', async ({ p
   await page.locator('tbody tr').click()
   await expect(page.getByRole('dialog')).toContainText('Dott. Bianchi')
   await page.screenshot({ path: `../../docs/evidence/issue-148/uat-professionisti-${testInfo.project.name}.png`, fullPage: true })
+})
+
+test('AUDIT-05: ricerca server trova un professionista oltre il bootstrap e mostra stato e pagina vuota', async ({ page }, info) => {
+  await mockApi(page, [], true, {}, { practitioners: [boot.practitioners[0]] })
+  const searches: string[] = []
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', async route => {
+    const query = new URL(route.request().url()).searchParams.get('search') ?? ''
+    searches.push(query)
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: {
+      rows: query.toLowerCase().includes('bianchi') ? [{ name: 'PR-101', practitioner_name: 'Dott. Bianchi', first_name: 'Luca', last_name: 'Bianchi', status: 'Inactive' }] : [],
+      has_more: false,
+    } }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: {
+    name: 'PR-101', practitioner_name: 'Dott. Bianchi', first_name: 'Luca', last_name: 'Bianchi', status: 'Inactive'
+  } }) }))
+  await page.goto('./#Professionisti')
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('Bianchi')
+  await expect(page.locator('tbody tr')).toHaveCount(1)
+  await expect(page.locator('tbody tr')).toContainText('Dott. Bianchi')
+  await expect(page.locator('tbody tr')).toContainText('Non attivo')
+  await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-list-${info.project.name}.png` })
+  await page.locator('tbody tr').click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer).toContainText('Dott. Bianchi')
+  await expect(drawer).toContainText('Luca')
+  await expect(drawer).toContainText('Non attivo')
+  await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-${info.project.name}.png` })
+  await page.getByRole('dialog').getByRole('button', { name: 'Chiudi' }).click()
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('NessunNome')
+  await expect(page.getByText('Nessun professionista trovato nel centro.')).toBeVisible()
+  expect(searches).toContain('Bianchi')
+})
+
+test('AUDIT-05: pagina vecchia non mescola risultati dopo cambio ricerca', async ({ page }) => {
+  await mockApi(page, [], true, {}, { practitioners: [boot.practitioners[0]] })
+  let releasePage: (() => void) | undefined
+  let oldPageCompleted = false
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', async route => {
+    const params = new URL(route.request().url()).searchParams
+    const search = params.get('search') ?? ''
+    const offset = Number(params.get('offset') ?? 0)
+    if (offset) await new Promise<void>(resolve => { releasePage = resolve })
+    const rows = search === 'Bianchi' ? [{ name: 'PR-B', practitioner_name: 'Dott. Bianchi', status: 'Active' }]
+      : offset ? [{ name: 'PR-A2', practitioner_name: 'Dott. Arancio', status: 'Active' }]
+      : [{ name: 'PR-A1', practitioner_name: 'Dott. Alberti', status: 'Active' }]
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows, has_more: !search && !offset } }) })
+    if (offset) oldPageCompleted = true
+  })
+  await page.goto('./#Professionisti')
+  await expect(page.getByRole('button', { name: 'Carica altri' })).toBeVisible()
+  await page.getByRole('button', { name: 'Carica altri' }).click()
+  await expect.poll(() => Boolean(releasePage)).toBe(true)
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('Bianchi')
+  await expect(page.locator('tbody tr')).toContainText('Dott. Bianchi')
+  releasePage?.()
+  await expect.poll(() => oldPageCompleted).toBe(true)
+  await expect(page.locator('tbody tr')).toHaveCount(1)
+  await expect(page.locator('tbody tr')).not.toContainText('Dott. Arancio')
 })
 
 test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo', async ({ page }, testInfo) => {

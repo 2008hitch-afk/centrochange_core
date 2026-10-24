@@ -26,13 +26,24 @@ def patient_permission(doc, user=None, ptype=None):
 def practitioner_query(user=None):
 	if is_manager(user):
 		return ""
-	return names_condition("Healthcare Practitioner", [practitioner_for(user)] if practitioner_for(user) else [])
+	name = _active_practitioner(user)
+	return names_condition("Healthcare Practitioner", [name] if name else [])
+
+
+def _active_practitioner(user=None):
+	user = user or frappe.session.user
+	if not enabled(user) or "CC Professional" not in frappe.get_roles(user):
+		return None
+	name = practitioner_for(user)
+	if not name:
+		return None
+	return name if any(frappe.db.get_value("Branch", center, "cc_operational") for center in centers(user)) else None
 
 
 def practitioner_permission(doc, user=None, ptype=None):
 	if is_manager(user):
 		return True
-	if doc.name != practitioner_for(user) or ptype not in ("read", "select"):
+	if doc.name != _active_practitioner(user) or ptype not in ("read", "select"):
 		return False
 	return True
 

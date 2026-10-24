@@ -3,7 +3,7 @@ import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar'
 import dayjs from 'dayjs'
 import 'dayjs/locale/it'
 import { Plus, ChevronLeft, ChevronRight, RefreshCw, Filter, Download, CalendarDays, Check, Search, ArrowRight, UserRound, Clock3 } from 'lucide-react'
-import { type Appointment, type Boot, type FinanceBoot, type Patient, type ReschedulePaymentBlock, type Row, ops, finance, schedule, call, requestKey, romeToday, displayDate, money, time } from './api'
+import { type Appointment, type Boot, type FinanceBoot, type Patient, type Practitioner, type ReschedulePaymentBlock, type Row, ops, finance, schedule, call, requestKey, romeToday, displayDate, money, time } from './api'
 import { type Feedback, Button, Chip, DataTable, DateInput, Drawer, Empty, Field, FormError, Heading, Metric, Modal, SearchableSelect, dateColumn, moneyColumn, useAction } from './ui'
 import { FinanceActions } from './finance_actions'
 import { FinanceCreate } from './finance_create'
@@ -208,22 +208,54 @@ export function Patients({ boot, center, feedback, refreshBoot }: Context & { re
 
 export function Professionals({ boot, center }: { boot: Boot; center: string }) {
   const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<(typeof boot.practitioners)[number] | null>(null)
+  const [rows, setRows] = useState<Practitioner[]>([])
+  const [hasMore, setHasMore] = useState(false)
+  const [selected, setSelected] = useState<Practitioner | null>(null)
   const [detail, setDetail] = useState<Row | null>(null)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const searchGeneration = useRef(0)
   const canReadProfile = boot.roles.includes('CC Manager') || boot.roles.includes('CC Professional')
+  const term = query.trim()
+  useEffect(() => {
+    searchGeneration.current += 1
+    setSelected(null); setDetail(null); setRows([]); setHasMore(false); setError('')
+    if (!canReadProfile) {
+      const needle = term.toLocaleLowerCase('it-IT')
+      setRows(boot.practitioners.filter(row => practitionerName(row).toLocaleLowerCase('it-IT').includes(needle)))
+      setLoading(false)
+      return
+    }
+    let live = true
+    setLoading(true)
+    const timer = window.setTimeout(() => {
+      ops<{ rows: Practitioner[]; has_more: boolean }>('profiles.practitioners', { center, limit: 50, offset: 0, search: term })
+        .then(result => { if (live) { setRows(result.rows); setHasMore(result.has_more) } })
+        .catch(cause => { if (live) setError(getError(cause)) })
+        .finally(() => { if (live) setLoading(false) })
+    }, term ? 180 : 0)
+    return () => { live = false; clearTimeout(timer) }
+  }, [center, term, boot, canReadProfile])
+  const more = async () => {
+    const generation = searchGeneration.current
+    setLoading(true); setError('')
+    try {
+      const result = await ops<{ rows: Practitioner[]; has_more: boolean }>('profiles.practitioners', { center, limit: 50, offset: rows.length, search: term })
+      if (generation === searchGeneration.current) { setRows(current => [...current, ...result.rows]); setHasMore(result.has_more) }
+    } catch (cause) { if (generation === searchGeneration.current) setError(getError(cause)) }
+    finally { if (generation === searchGeneration.current) setLoading(false) }
+  }
   useEffect(() => {
     if (!selected || !canReadProfile) return
-    let live = true; setLoading(true); setError(''); setDetail(null)
-    ops<Row>('profiles.practitioner_detail', { center, name: selected.name }).then(value => { if (live) setDetail(value) }).catch(cause => { if (live) setError(getError(cause)) }).finally(() => { if (live) setLoading(false) })
+    let live = true; setDetailLoading(true); setError(''); setDetail(null)
+    ops<Row>('profiles.practitioner_detail', { center, name: selected.name }).then(value => { if (live) setDetail(value) }).catch(cause => { if (live) setError(getError(cause)) }).finally(() => { if (live) setDetailLoading(false) })
     return () => { live = false }
   }, [selected, center, canReadProfile])
-  const term = query.trim().toLocaleLowerCase('it-IT')
-  const rows = boot.practitioners.filter(row => `${practitionerName(row)} ${row.practitioner_name} ${row.name}`.toLocaleLowerCase('it-IT').includes(term))
-  return <><Heading eyebrow="OPERATIVITÀ" title="Professionisti" subtitle="Professionisti attivi e autorizzati per il centro selezionato." />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco professionisti</h2><p>{rows.length} {rows.length === 1 ? 'professionista' : 'professionisti'} nel centro</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={event => setQuery(event.target.value)} aria-label="Cerca professionisti" placeholder="Cerca professionista" /></label></div><DataTable rows={rows as unknown as Row[]} columns={[{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => <strong>{practitionerName(row as unknown as typeof boot.practitioners[number])}</strong> }, { key: 'name', label: 'Scheda', render: () => <ArrowRight size={17} /> }]} onRow={row => { setSelected(row as typeof selected); setDetail(null); setError('') }} /></section>
-    {selected && <Drawer title={practitionerName(selected)} onClose={() => { setSelected(null); setDetail(null) }}><div className="detail-summary"><Chip tone="good">Attivo nel centro</Chip><h3>{practitionerName(selected)}</h3><p>Centro: {centerNameFor(center, boot.centers)}</p></div>{loading && <p className="detail-section" role="status">Caricamento scheda…</p>}{error && <p className="detail-section inline-error" role="alert">{error}</p>}{detail && <div className="detail-section"><h3>Scheda professionista</h3><dl className="property-list"><div><dt>Nome</dt><dd>{practitionerName({ name: selected.name, practitioner_name: String(detail.practitioner_name ?? selected.practitioner_name) })}</dd></div><div><dt>Stato</dt><dd>{detail.status === 'Active' ? 'Attivo' : String(detail.status ?? '—')}</dd></div></dl><p className="scope-note">Scheda consultabile secondo i permessi del server. Le modifiche autorizzate restano nell'archivio dedicato.</p></div>}{!canReadProfile && <div className="detail-section"><p>È disponibile la sola identità operativa autorizzata per questo centro.</p></div>}</Drawer>}
+  const selectedStatus = String(detail?.status ?? selected?.status ?? 'Active')
+  return <><Heading eyebrow="OPERATIVITÀ" title="Professionisti" subtitle="Professionisti autorizzati per il centro selezionato." />
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco professionisti</h2><p>{rows.length} {rows.length === 1 ? 'professionista' : 'professionisti'} nel centro{hasMore ? ' · altri disponibili' : ''}</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={event => setQuery(event.target.value)} aria-label="Cerca professionisti" placeholder="Cerca professionista" /></label></div>{loading && <p className="panel-loading" role="status">Caricamento professionisti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => <strong>{practitionerName(row as Practitioner)}</strong> }, { key: 'status', label: 'Stato', render: (value) => value && value !== 'Active' ? 'Non attivo' : 'Attivo' }, { key: 'name', label: 'Scheda', render: () => <ArrowRight size={17} /> }]} onRow={row => { setSelected(row as Practitioner); setDetail(null); setError('') }} /> : <Empty title="Nessun professionista trovato nel centro." />)}{hasMore && <Button variant="secondary" disabled={loading} onClick={() => void more()}>Carica altri</Button>}</section>
+    {selected && <Drawer title={practitionerName(selected)} onClose={() => { setSelected(null); setDetail(null) }}><div className="detail-summary"><Chip tone={selectedStatus !== 'Active' ? 'warn' : 'good'}>{selectedStatus !== 'Active' ? 'Non attivo' : 'Attivo nel centro'}</Chip><p>Centro: {centerNameFor(center, boot.centers)}</p></div>{detailLoading && <p className="detail-section" role="status">Caricamento scheda…</p>}{error && <p className="detail-section inline-error" role="alert">{error}</p>}{detail && <div className="detail-section"><h3>Scheda professionista</h3><dl className="property-list"><div><dt>Nome</dt><dd>{String(detail.first_name ?? '—')}</dd></div><div><dt>Cognome</dt><dd>{String(detail.last_name ?? '—')}</dd></div></dl><p className="scope-note">Scheda consultabile secondo i permessi del server. Le modifiche autorizzate restano nell'archivio dedicato.</p></div>}{!canReadProfile && <div className="detail-section"><p>È disponibile la sola identità operativa autorizzata per questo centro.</p></div>}</Drawer>}
   </>
 }
 

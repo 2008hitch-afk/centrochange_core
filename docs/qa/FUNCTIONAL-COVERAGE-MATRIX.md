@@ -112,7 +112,7 @@ Questo addendum **prevale per lo stato operativo** sui checkpoint storici AUDIT-
 | 02 | Shell, navigazione, centro attivo e ricerca | `main.tsx`; shell/sidebar/header e fallback per ruolo | [#161](https://github.com/2008hitch-afk/centrochange_core/issues/161) | `QUEUED / NON AVVIATO` |
 | 03 | Agenda e prenotazioni | `views.tsx`; `operations.workspace.*`, `scheduling.booking.*` | Da creare | `QUEUED` |
 | 04 | Pazienti, storico, assegnazioni, note e pacchetti | `views.tsx`, `patient_assignments.tsx`, `patient_packages.tsx`, `note_history.tsx` | Da creare | `QUEUED` |
-| 05 | Professionisti e accessi per professionista | `views.tsx`, `professional_workflow.tsx` | Da creare | `QUEUED` |
+| 05 | Professionisti e accessi per professionista | `views.tsx`, `profiles.py`, `permissions.py`, `scoped_archive.tsx` | [#171](https://github.com/2008hitch-afk/centrochange_core/issues/171) | `ACTIVE`: offline verificato; Frappe isolato e DEV pendenti |
 | 06 | Servizi/catalogo, prezzi e disponibilità | `views.tsx`, `scoped_archive.tsx` | Da creare | `QUEUED` |
 | 07 | Chiusure seduta, cancellazioni 48h, eccezioni, notifiche | Agenda, lifecycle, Notifiche; verificare i processi anche se distribuiti in più schermate | Da creare | `QUEUED` |
 | 08 | Finanza, fatture, incassi e banca | `finance_actions.tsx`, `finance_create.tsx`, `views.tsx` | Da creare | `QUEUED` |
