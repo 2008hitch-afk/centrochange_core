@@ -22,7 +22,7 @@ I due addendum Owner del 24/10/2026 nella #171 integrano l'oracle dell'**account
 | Riapertura/correzione limitata (CC-CAP-026, DECISION-059) | `lifecycle.reopen` / `record_settlement`, audit | P negato dopo lock/chiusura; Segreteria autorizzata con motivo; nessuna correzione retroattiva dell'orario | Backend clone PASS con rollback; DEV non mutativo |
 | Pazienti e note private (CC-CAP-004/018) | `#Pazienti` → `notes.add_note`; CC Private Note append-only | Crea/rettifica, revoca, Manager/Segreteria/B negati anche via API diretta | Backend/browser clone `b7aad55` PASS; DEV mutazione NOT_TESTED |
 | Disponibilità self-service (CC-CAP-007, issue #9) | `#Disponibilità` → `availability.set_schedule/create_absence/cancel_absence`; Marley | Lunedì 09–12 → 09–11: salvataggio persistito, audit, prenotazione alle 11 consentita prima e negata dopo; assenza/annullo e B negato | Clone `b7aad55` browser/API PASS; DEV responsive read-only PASS |
-| Report personali ed export (CC-CAP-028) | `#Report` → `workspace.agenda`, `reporting.summary/export_csv` | Conteggi propri e non altrui; dati economici limitati dal ruolo | Clone `b7aad55` browser/API/export PASS; DEV read-only limitato |
+| Report personali ed export (CC-CAP-028) | `#Report` → `workspace.agenda`, `reporting.summary/sessions/export_csv` | Conteggi propri e non altrui; dati economici limitati dal ruolo; drilldown e export coerenti | Clone `b7aad55` e DEV `fa360a4` PASS (P0 Remediation); Owner PENDING |
 | Robustezza Premium (CC-EXT-020/026/027) | Hash diretto, desktop/mobile, messaggi italiani, date Roma | Desktop 1440×900, mobile 390×844, refresh, focus/overflow | CI, clone e DEV mirato PASS; screen reader NOT_TESTED |
 
 La fixture dell'account crea prenotazioni tramite `booking.book` sul clone e riposiziona **solo i due record test-owned** nel giorno corrente per poter provare la chiusura browser senza cambiare l'orologio del server. Il test quotidiano richiede che le sedute sintetiche delle 07:00/08:00 siano già terminate nel fuso Europe/Rome; in una nuova esecuzione mattutina la fixture va preparata con orari conclusi, altrimenti il rifiuto server è corretto. La prova disponibilità usa un terzo paziente sintetico test-owned, senza debiti, per isolare l'effetto della fascia oraria dal blocco economico. I controlli 21:00/07:00 usano `frappe.flags.cc_test_clock` e transazione con rollback, non l'orologio host. Il reminder usa il `Notification Log` nativo, già isolato da Frappe per `for_user`; la UI Professionista lo legge senza una nuova API o permessi. Il test verifica lista e accesso diretto negato a B. Non è stata autorizzata una nuova consegna esterna/email.
@@ -48,3 +48,62 @@ Le catture originali in `docs/evidence/issue-171/` con nomi senza `live-clone` o
 - Evidenze grafiche rappresentative: `docs/evidence/issue-171/professionals-list-live-clone-desktop.png`, `professional-notification-live-clone-mobile.png`, `professional-availability-live-clone-mobile.png`, `dev-professionals-desktop.png`, `dev-professionals-mobile.png`, `dev-professional-availability-mobile.png`.
 
 **Limiti:** test con screen reader specifico NOT_TESTED; scheduler 21:00/07:00 sul DEV non forzato, perché mutativo, mentre clock controllato e retry sono PASS sul clone. L'accettazione Owner è PENDING. La PR resta DRAFT e non è autorizzato alcun merge automatico.
+
+## Remediation P0 Report / P0 Agenda / P1 Navigazione — Commit fa360a4 (24/10/2026)
+
+In risposta al riscontro Owner UAT (`UAT-05-REPORT-01 = FAIL / CORE_FUNCTIONAL_GAP` e osservazioni su Agenda e navigazione Professionista), è stato eseguito il ciclo completo di remediation e collaudo:
+
+### 1. P0 — Report operativi completi
+- **Superamento limite 200 record**: rimossa la query su `workspace.agenda` (vincolata a `page_length=200/201`). I report ora interrogano direttamente `Patient Appointment` lato server con `page_length=0` e filtri nativi SQL/Frappe.
+- **Endpoint canonico drilldown**: implementato `centrochange_core.operations.reporting.sessions(center, start, end, practitioner, kpi)`. Per utenti con ruolo `CC Professional`, il parametro `practitioner` è vincolato tassativamente al professionista associato alla membership (`_resolve_scoped_practitioner`), prevenendo IDOR anche via API diretta.
+- **Metriche KPI interattive**: le card (Totali, Svolte, In programma, Da completare, Pagate operativamente, Non pagate operativamente, Annullate, Economia dovuta) sono bottoni interattivi (`aria-pressed`). Il click ricalcola istantaneamente la lista delle sedute nel drilldown sottostante.
+- **Dettaglio seduta e drawer**: ogni riga del drilldown include Data, Ora, Paziente, Professionista, Servizio, Stato/Esito, Pagamento, Metodo e Importo. Il click apre il drawer nativo `AppointmentDetail`.
+- **Filtri rapidi di periodo**: selettori rapidi *Oggi*, *Questa settimana*, *Questo mese*, *Mese scorso* e intervallo *Personalizzato* con popolamento automatico date e sincronizzazione report.
+- **Export CSV non troncato**: esportazione CSV allineata in tempo reale ai filtri attivi (periodo, professionista, centro) senza vincoli di paginazione, con intestazioni e formattazione italiana.
+- **Segregazione per ruolo**:
+  - *Direzione*: panoramica centro e toggle «Report professionisti» con dropdown per analisi individuale.
+  - *Segreteria*: panoramica operativa centro e stato pagamenti.
+  - *Professionista*: esclusivamente proprie sedute, propri pazienti, nessun dato economico contabile non autorizzato.
+
+### 2. P0 — Agenda operativa
+- **Navigazione calendario rapida**: popover data «Scegli data» (`aria-label="Apri calendario"`) per navigazione istantanea a giorno o settimana.
+- **Filtro contestuale professionisti**: per Direzione e Segreteria è disponibile il selettore per uno o tutti i professionisti; per il Professionista l'agenda è strettamente circoscritta alle proprie sedute, eliminando il filtro fuorviante «Tutti i professionisti».
+- **Griglia settimanale uniforme**: colonne a larghezza identica (`1fr`), badge oggi, distinzione grafica tra orari lavorativi, slot non lavorativi (`.week-cell-off`) e blocchi di assenza (`.week-absence-block`).
+- **Integrazione drawer**: click su appuntamento apre il drawer operativo preesistente per consultazione e azioni.
+
+### 3. P1 — Account Professionista e Pulizia Navigazione
+- **Rimozione intestazione AMMINISTRAZIONE**: per utenti con solo ruolo `CC Professional`, la voce `Archivi` è collocata sotto `AREA OPERATIVA` e il blocco `AMMINISTRAZIONE` è interamente omesso dalla sidebar.
+- **Archivi snelli per clinici**: rimosse le sezioni vuote «Catalogo» e «Finanza» negli Archivi scoped per il ruolo clinico.
+- **Localizzazione**: date GG/MM/AAAA, orari HH:mm in fuso Europe/Rome, testi e messaggi di errore in lingua italiana.
+
+### 4. Verifica tecnica e CI
+- Unit test Python: 88/88 PASS (`tests/test_operational_reporting.py` 5/5 PASS: center summary, practitioner filtering, professional clamping, KPI drilldown, CSV export equivalence).
+- Playwright synthetic suite: 160 PASS, 8 SKIP, 0 FAIL.
+- Playwright scoped suite: 32 PASS, 0 FAIL.
+- Parità single-stack: `python3 infra/verify_full_single_stack.py --source` PASS.
+- GitHub Actions run [40098087446](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40098087446) su commit `fa360a4`: `backend-offline` SUCCESS, `frontend-synthetic` SUCCESS.
+
+### 5. Installazione su DEV (`DEV_INSTALL_ALLOWED_CONDITIONAL`)
+- Checkpoint di sicurezza: backup cifrato GPG `29aef53b7cc438f8958a22554fea439d1860b496960b924afb2d85b527fe349b` in `/tmp/centrochange-dev-backups/cc-dev-backup-_tmm3j1n/`. Procedura di restore isolato verificata su 929 tabelle.
+- Immagine candidata single-stack: `cc171-professionals:fa360a4` (`sha256:f4d727d2ff875fef1b6e6400e02bb4bd708499d0048501dee3af0c525db17c27`).
+- Aggiornamento dei 6 container applicativi eseguito in 21.6 secondi senza alterare MariaDB, Redis, volumi o schemi.
+- Fingerprint DB identico prima e dopo il deployment (`0f806a37849b571b213e71dcd5a7e6b6535a5bdb9314ca5c49fc2a536ed5e2ad`).
+- Asset HTTP verificati con status 200 e byte identici (`style-C9UljDGB.js`, `app.js`, `app.css`, `public.js`).
+
+### 6. Prove live su DEV e riconciliazione
+- Collaudo browser multi-ruolo (`dev_uat05_smoke.cjs`): Manager, Professionista A, Segreteria, Guest: PASS su tutti i percorsi e controlli.
+- Suite readonly su 8 ruoli (`dev_readonly_smoke.cjs`): 8/8 PASS.
+- Riconciliazione matematica: somma sedute drilldown = valore metriche KPI = righe export CSV (100% coerenza).
+- Evidenze grafiche registrate in `docs/evidence/issue-171/`:
+  - `dev-report-manager-desktop.png`: vista Report Direzione con KPI interattivi e tabella drilldown.
+  - `dev-report-manager-mobile.png`: responsive mobile vista Report Direzione.
+  - `dev-report-drilldown-desktop.png`: interattività KPI con filtro attivo e drawer seduta aperto.
+  - `dev-report-professionisti-desktop.png`: pannello Report Professionisti per la Direzione.
+  - `dev-report-secretariat-desktop.png`: vista Report Segreteria.
+  - `dev-report-professional-desktop.png`: vista Report Professionista A (dati strettamente personali, no leakage).
+  - `dev-report-professional-mobile.png`: vista Report Professionista A su mobile (390x844).
+  - `dev-agenda-manager-calendar-desktop.png`: Agenda Direzione con popover calendario e griglia settimanale.
+  - `dev-agenda-professional-desktop.png`: Agenda Professionista A con segregazione e assenza del selettore globale.
+
+Stato finale del candidato: **DEV_INSTALLED_READY_FOR_OWNER_UAT**. PR #172 in stato DRAFT senza merge.
+
