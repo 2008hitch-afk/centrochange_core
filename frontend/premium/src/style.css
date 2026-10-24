@@ -55,3 +55,43 @@
 /* Patient lookup is a contextual action, never a permanent topbar field. */
 .topbar{position:relative}.quick-search .mobile-search-toggle{display:grid}.quick-search .search-shell{display:none}.quick-search.quick-search-mobile-open .search-shell{display:flex;position:absolute;top:calc(100% + 4px);right:160px;left:auto;width:min(360px,calc(100vw - 24px));height:48px;background:#fff;box-shadow:0 12px 24px #1d3a5724;z-index:31}.quick-search.quick-search-mobile-open .quick-search-close{display:grid;flex:0 0 34px}.quick-search.quick-search-mobile-open .search-shell input{width:100%;font-size:14px}
 @media(max-width:760px){.quick-search.quick-search-mobile-open .search-shell{top:60px;left:10px;right:10px;width:auto}}
+
+/* AUDIT-05: interactive KPI metrics, quick period presets and drilldown */
+.metric-card.clickable{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;user-select:none}
+.metric-card.clickable:hover{border-color:#3899eb;transform:translateY(-1px);box-shadow:0 4px 10px rgba(39,95,145,.08)}
+.metric-card.clickable.active{border-color:#2787ca;box-shadow:0 0 0 2px #2787ca33;background:#f0f7fe}
+.metric.clickable{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;user-select:none}
+.metric.clickable:hover{border-color:#3899eb;transform:translateY(-1px);box-shadow:0 4px 10px rgba(39,95,145,.08)}
+.metric.clickable.active{border-color:#2787ca;box-shadow:0 0 0 2px #2787ca33;background:#f0f7fe}
+.period-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.period-presets button{border:1px solid #dfe7ef;background:#fff;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:#344b65}
+.period-presets button:hover{background:#f8fbfe;border-color:#b9d5ec}
+.period-presets button.selected{background:#2787ca;color:#fff;border-color:#2787ca;font-weight:600}
+.report-drilldown{margin-top:24px;padding-top:16px;border-top:1px solid #e8edf3}
+.report-drilldown-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.report-drilldown-header h3{margin:0;font-size:14px;color:#284462}
+.clickable-row{cursor:pointer}
+.clickable-row:hover td{background:#f4f9fd}
+.agenda-practitioner-label{font-size:12px;color:#48637e;display:flex;align-items:center;gap:6px;background:#f0f7fe;padding:6px 12px;border-radius:8px;border:1px solid #d4e7f7}
+.agenda-practitioner-label strong{color:#284462}
+
+/* Availability and day styles in WeekGrid */
+.week-day.week-day-today{background:#edf5fc!important;border-bottom:2px solid #2787ca!important}
+.week-day.week-day-today strong{color:#1e6fa8!important}
+.today-badge{display:inline-block;font-size:9px;font-weight:700;background:#2787ca;color:#fff;padding:1px 6px;border-radius:4px;margin-top:2px}
+.week-cell-off{background:repeating-linear-gradient(45deg,#fafbfc,#fafbfc 12px,#f3f6f9 12px,#f3f6f9 24px)!important}
+.week-off-indicator{font-size:10px;color:#9aabb9;text-align:center;margin-top:10px;font-style:italic}
+.week-absence-block{margin-top:8px;padding:4px 8px;border-radius:6px;background:#fef2f2;border:1px dashed #e57373;color:#b71c1c;font-size:10px;font-weight:600;text-align:center}
+
+/* Popup calendar popover in Agenda */
+.calendar-popover-wrap{position:relative}
+.calendar-popover{position:absolute;z-index:50;top:calc(100% + 6px);left:0;background:#fff;border:1px solid #dce4ec;border-radius:12px;box-shadow:0 12px 30px rgba(24,40,63,.15);padding:14px;width:280px}
+.calendar-popover-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.calendar-popover-header strong{font-size:13px;color:#284462}
+.calendar-popover-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
+.calendar-popover-weekday{font-size:10px;font-weight:700;color:#8a9aac;padding:4px 0}
+.calendar-popover-day{padding:6px 0;border:1px solid transparent;border-radius:6px;font-size:12px;background:transparent;cursor:pointer;color:#344b65}
+.calendar-popover-day:hover{background:#edf4fa}
+.calendar-popover-day.selected{background:#2787ca;color:#fff;font-weight:700}
+.calendar-popover-day.today{border-color:#2787ca;color:#2787ca;font-weight:700}
+.calendar-popover-day.other-month{color:#b0bec5}
