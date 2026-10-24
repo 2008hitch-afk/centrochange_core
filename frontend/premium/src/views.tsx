@@ -241,8 +241,8 @@ export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refr
     if (!center) return
     let live = true; setLoading(true); setError('')
     const pracParam = isProfessional ? (boot.practitioners[0]?.name || undefined) : (selectedPractitioners.length ? selectedPractitioners.join(',') : undefined)
-    ops<{ appointments: Appointment[]; truncated: boolean }>('workspace.agenda', { center, start: iso(start), end: iso(end), practitioner: pracParam }).then(data => {
-      if (!live) return; setRows(data.appointments); if (data.truncated) setError('Più di 500 sedute: restringi il periodo o filtra per professionista.'); setLoading(false)
+    ops<{ appointments: Appointment[]; truncated: boolean; total?: number }>('workspace.agenda', { center, start: iso(start), end: iso(end), practitioner: pracParam }).then(data => {
+      if (!live) return; setRows(data.appointments); if (data.truncated) setError(`Visualizzate le prime ${data.appointments.length} sedute. Restringi il periodo o filtra per professionista.`); setLoading(false)
     }).catch(e => { if (live) { setError(getError(e)); setLoading(false) } })
     return () => { live = false }
   }, [center, iso(start), iso(end), selectedPractitioners, reload])

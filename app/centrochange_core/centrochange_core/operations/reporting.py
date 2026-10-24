@@ -30,11 +30,11 @@ def _now_rome():
 
 def _appointment_datetimes(row):
     """Returns (start_rome, end_rome) localized to Europe/Rome with robust fold/DST handling."""
-    app_date = getdate(row.appointment_date)
-    app_time = get_time(row.appointment_time)
+    app_date = getdate(getattr(row, 'appointment_date', None) or (row.get('appointment_date') if isinstance(row, dict) else None))
+    app_time = get_time(getattr(row, 'appointment_time', None) or (row.get('appointment_time') if isinstance(row, dict) else None))
     start_naive = datetime.combine(app_date, app_time)
     start_rome = start_naive.replace(tzinfo=ROME)
-    duration_min = cint(getattr(row, 'duration', 0) or 60)
+    duration_min = cint(getattr(row, 'duration', 0) or (row.get('duration') if isinstance(row, dict) else 0) or 60)
     end_rome = start_rome + timedelta(minutes=duration_min)
     return start_rome, end_rome
 
@@ -48,14 +48,14 @@ def classify_session(row, now_rome=None):
     - to_close: not cancelled, not performed, end_rome <= now_rome
     - paid: cc_paid == 1
     - unpaid: not paid, not cancelled, not future, economic_state not in ('Non Due', 'Waived', 'Package Covered')
-    - due: cc_economic_state == 'Due'
+    - due: cc_economic_state == 'Due' (including late cancellations with due tariff)
     """
     if now_rome is None:
         now_rome = _now_rome()
 
-    status = row.status
+    status = getattr(row, 'status', None) or (row.get('status') if isinstance(row, dict) else None)
     is_cancelled = (status == 'Cancelled')
-    is_performed = bool(row.cc_performed) and not is_cancelled
+    is_performed = bool(getattr(row, 'cc_performed', 0) or (row.get('cc_performed') if isinstance(row, dict) else 0)) and not is_cancelled
 
     start_rome, end_rome = _appointment_datetimes(row)
     is_future = False
@@ -67,10 +67,12 @@ def classify_session(row, now_rome=None):
         else:
             is_to_close = True
 
-    is_paid = bool(row.cc_paid) and not is_cancelled
+    is_paid = bool(getattr(row, 'cc_paid', 0) or (row.get('cc_paid') if isinstance(row, dict) else 0)) and not is_cancelled
+    econ_state = getattr(row, 'cc_economic_state', '') or (row.get('cc_economic_state', '') if isinstance(row, dict) else '')
     is_unpaid = (is_performed and not is_paid
-                 and getattr(row, 'cc_economic_state', '') not in ('Non Due', 'Waived', 'Package Covered'))
-    is_due = (getattr(row, 'cc_economic_state', '') == 'Due' and (not is_cancelled or bool(getattr(row, 'cc_late_cancellation', 0))))
+                 and econ_state not in ('Non Due', 'Waived', 'Package Covered'))
+    late_canc = bool(getattr(row, 'cc_late_cancellation', 0) or (row.get('cc_late_cancellation') if isinstance(row, dict) else 0))
+    is_due = (econ_state == 'Due' and (not is_cancelled or late_canc))
 
     return {
         'cancelled': is_cancelled,
@@ -106,6 +108,154 @@ def _matches_kpi(row, kpi, now_rome):
     return True
 
 
+def _has_real_db():
+    db = getattr(frappe, 'db', None)
+    return bool(db and hasattr(db, 'sql') and hasattr(db, 'count') and getattr(db, 'cur_db_name', None))
+
+
+def _build_sql_where(center, start, end, practitioner=None, kpi='all', currency=None, now_rome=None):
+    if now_rome is None:
+        now_rome = _now_rome()
+    now_str = now_rome.strftime('%Y-%m-%d %H:%M:%S')
+
+    clauses = [
+        "`tabPatient Appointment`.`cc_center` = %(center)s",
+        "`tabPatient Appointment`.`appointment_date` BETWEEN %(start)s AND %(end)s"
+    ]
+    params = {
+        'center': center,
+        'start': str(start),
+        'end': str(end),
+        'now_ts': now_str
+    }
+
+    if practitioner:
+        clauses.append("`tabPatient Appointment`.`practitioner` = %(practitioner)s")
+        params['practitioner'] = practitioner
+
+    try:
+        if hasattr(frappe, 'desk') and hasattr(frappe.desk, 'reportview'):
+            match_cond = frappe.desk.reportview.build_match_conditions('Patient Appointment')
+            if match_cond:
+                clauses.append(f"({match_cond})")
+    except Exception:
+        pass
+
+    if kpi == 'cancelled':
+        clauses.append("`tabPatient Appointment`.`status` = 'Cancelled'")
+    elif kpi == 'performed':
+        clauses.append("`tabPatient Appointment`.`cc_performed` = 1 AND `tabPatient Appointment`.`status` != 'Cancelled'")
+    elif kpi == 'future':
+        clauses.append(
+            "`tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 "
+            "AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE > %(now_ts)s)"
+        )
+    elif kpi == 'to_close':
+        clauses.append(
+            "`tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 "
+            "AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE <= %(now_ts)s)"
+        )
+    elif kpi == 'operational_paid':
+        clauses.append("`tabPatient Appointment`.`cc_paid` = 1 AND `tabPatient Appointment`.`status` != 'Cancelled'")
+    elif kpi == 'operational_unpaid':
+        clauses.append(
+            "`tabPatient Appointment`.`cc_performed` = 1 AND `tabPatient Appointment`.`status` != 'Cancelled' "
+            "AND `tabPatient Appointment`.`cc_paid` = 0 "
+            "AND `tabPatient Appointment`.`cc_economic_state` NOT IN ('Non Due', 'Waived', 'Package Covered')"
+        )
+    elif kpi == 'due':
+        clauses.append(
+            "`tabPatient Appointment`.`cc_economic_state` = 'Due' "
+            "AND (`tabPatient Appointment`.`status` != 'Cancelled' OR `tabPatient Appointment`.`cc_late_cancellation` = 1)"
+        )
+
+    if currency and currency not in ('ALL', 'all'):
+        if currency == 'UNSET':
+            clauses.append("(`tabPatient Appointment`.`cc_currency_snapshot` IS NULL OR `tabPatient Appointment`.`cc_currency_snapshot` = '')")
+        else:
+            clauses.append("`tabPatient Appointment`.`cc_currency_snapshot` = %(currency)s")
+            params['currency'] = currency
+
+    return " AND ".join(clauses), params
+
+
+def _sanitize_order_by(order_by):
+    if not order_by:
+        return "`tabPatient Appointment`.`appointment_date` ASC, `tabPatient Appointment`.`appointment_time` ASC, `tabPatient Appointment`.`name` ASC"
+    allowed_cols = {
+        'appointment_date', 'appointment_time', 'name', 'status', 'practitioner', 'patient',
+        'cc_performed', 'cc_paid', 'cc_economic_state', 'cc_price_snapshot'
+    }
+    parts = []
+    for chunk in order_by.split(','):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        tokens = chunk.split()
+        col = tokens[0].replace('`', '').strip()
+        direction = tokens[1].upper() if len(tokens) > 1 and tokens[1].upper() in ('ASC', 'DESC') else 'ASC'
+        if col in allowed_cols:
+            parts.append(f"`tabPatient Appointment`.`{col}` {direction}")
+    return ", ".join(parts) or "`tabPatient Appointment`.`appointment_date` ASC, `tabPatient Appointment`.`appointment_time` ASC, `tabPatient Appointment`.`name` ASC"
+
+
+def _enrich_session_rows(paged, now_rome):
+    if not paged:
+        return
+
+    patient_ids = list({(getattr(row, 'patient', None) or (row.get('patient') if isinstance(row, dict) else None)) for row in paged if (getattr(row, 'patient', None) or (row.get('patient') if isinstance(row, dict) else None))})
+    patient_query = frappe.get_list if is_manager() else frappe.get_all
+    names = {}
+    if patient_ids:
+        for i in range(0, len(patient_ids), 200):
+            chunk = patient_ids[i:i + 200]
+            p_rows = patient_query('Patient',
+                filters={'name': ['in', chunk]},
+                fields=['name', 'first_name', 'last_name'], page_length=len(chunk))
+            for p in p_rows:
+                p_name = getattr(p, 'name', None) or (p.get('name') if isinstance(p, dict) else None)
+                names[p_name] = p
+
+    app_ids = [(getattr(row, 'name', None) or (row.get('name') if isinstance(row, dict) else None)) for row in paged]
+    app_ids = [a for a in app_ids if a]
+    settlements = current_rows('CC Settlement', {'appointment': ['in', app_ids or ['']]},
+                               fields=['appointment', 'mode_of_payment', 'sequence']) if app_ids else []
+    settlements.sort(key=lambda s: cint(s.get('sequence', 0) if isinstance(s, dict) else getattr(s, 'sequence', 0)), reverse=True)
+    modes = {}
+    for s in settlements:
+        app_name = s.get('appointment') if isinstance(s, dict) else getattr(s, 'appointment', None)
+        mode = s.get('mode_of_payment') if isinstance(s, dict) else getattr(s, 'mode_of_payment', None)
+        if app_name and app_name not in modes:
+            modes[app_name] = mode
+
+    for row in paged:
+        if isinstance(row, dict):
+            row['appointment_time'] = str(get_time(row.get('appointment_time')))
+            pat_id = row.get('patient')
+            identity = names.get(pat_id)
+            row['patient_first_name'] = (getattr(identity, 'first_name', None) or identity.get('first_name')) if identity else None
+            row['patient_last_name'] = (getattr(identity, 'last_name', None) or identity.get('last_name')) if identity else None
+            row['mode_of_payment'] = modes.get(row.get('name')) or ''
+            c = classify_session(row, now_rome)
+            row['cc_classified_future'] = c['future']
+            row['cc_classified_to_close'] = c['to_close']
+            row['cc_classified_unpaid'] = c['unpaid']
+            row['cc_classified_cancelled'] = c['cancelled']
+            row['cc_classified_paid'] = c['paid']
+        else:
+            row.appointment_time = str(get_time(row.appointment_time))
+            identity = names.get(row.patient)
+            row.patient_first_name = (getattr(identity, 'first_name', None) or identity.get('first_name')) if identity else None
+            row.patient_last_name = (getattr(identity, 'last_name', None) or identity.get('last_name')) if identity else None
+            row.mode_of_payment = modes.get(row.name) or ''
+            c = classify_session(row, now_rome)
+            row.cc_classified_future = c['future']
+            row.cc_classified_to_close = c['to_close']
+            row.cc_classified_unpaid = c['unpaid']
+            row.cc_classified_cancelled = c['cancelled']
+            row.cc_classified_paid = c['paid']
+
+
 def _filter_scope(center, start, end, practitioner=None):
     require_actor()
     require_center(center)
@@ -131,15 +281,59 @@ def _filter_scope(center, start, end, practitioner=None):
 @frappe.whitelist()
 def summary(center, start, end, practitioner=None):
     filters, start, end, practitioner = _filter_scope(center, start, end, practitioner)
+    now_rome = _now_rome()
+    if _has_real_db():
+        where_sql, params = _build_sql_where(center, start, end, practitioner, kpi='all', currency=None, now_rome=now_rome)
+        sql = f"""
+            SELECT
+                COALESCE(NULLIF(`tabPatient Appointment`.`cc_currency_snapshot`, ''), 'UNSET') as currency,
+                COUNT(*) as sessions,
+                SUM(CASE WHEN `tabPatient Appointment`.`cc_performed` = 1 AND `tabPatient Appointment`.`status` != 'Cancelled' THEN 1 ELSE 0 END) as performed,
+                SUM(CASE WHEN `tabPatient Appointment`.`status` = 'Cancelled' THEN 1 ELSE 0 END) as cancelled,
+                SUM(CASE WHEN `tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE > %(now_ts)s) THEN 1 ELSE 0 END) as future,
+                SUM(CASE WHEN `tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE <= %(now_ts)s) THEN 1 ELSE 0 END) as to_close,
+                SUM(CASE WHEN `tabPatient Appointment`.`cc_paid` = 1 AND `tabPatient Appointment`.`status` != 'Cancelled' THEN 1 ELSE 0 END) as operational_paid,
+                SUM(CASE WHEN `tabPatient Appointment`.`cc_performed` = 1 AND `tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_paid` = 0 AND `tabPatient Appointment`.`cc_economic_state` NOT IN ('Non Due', 'Waived', 'Package Covered') THEN 1 ELSE 0 END) as operational_unpaid,
+                SUM(CASE WHEN `tabPatient Appointment`.`cc_economic_state` = 'Due' AND (`tabPatient Appointment`.`status` != 'Cancelled' OR `tabPatient Appointment`.`cc_late_cancellation` = 1) THEN 1 ELSE 0 END) as due,
+                SUM(CASE WHEN `tabPatient Appointment`.`cc_economic_state` = 'Due' AND (`tabPatient Appointment`.`status` != 'Cancelled' OR `tabPatient Appointment`.`cc_late_cancellation` = 1) THEN COALESCE(`tabPatient Appointment`.`cc_price_snapshot`, 0) ELSE 0 END) as due_snapshot_amount
+            FROM `tabPatient Appointment`
+            WHERE {where_sql}
+            GROUP BY COALESCE(NULLIF(`tabPatient Appointment`.`cc_currency_snapshot`, ''), 'UNSET')
+        """
+        rows = frappe.db.sql(sql, params, as_dict=True)
+        totals = {}
+        total_appointments = 0
+        for r in rows:
+            curr = r.get('currency') or 'UNSET'
+            sess = cint(r.get('sessions') or 0)
+            total_appointments += sess
+            totals[curr] = {
+                'sessions': sess,
+                'performed': cint(r.get('performed') or 0),
+                'cancelled': cint(r.get('cancelled') or 0),
+                'future': cint(r.get('future') or 0),
+                'to_close': cint(r.get('to_close') or 0),
+                'operational_paid': cint(r.get('operational_paid') or 0),
+                'operational_unpaid': cint(r.get('operational_unpaid') or 0),
+                'due': cint(r.get('due') or 0),
+                'due_snapshot_amount': float(r.get('due_snapshot_amount') or 0.0),
+            }
+        return {
+            'currencies': totals,
+            'practitioner': practitioner,
+            'total_appointments': total_appointments,
+            'truncated': False
+        }
+
+    # Fallback for synthetic / mock execution
     rows = frappe.get_list('Patient Appointment', filters=filters, fields=APPOINTMENT_FIELDS,
                            order_by='appointment_date,appointment_time,name', page_length=0)
     totals = defaultdict(lambda: {
         'sessions': 0, 'performed': 0, 'cancelled': 0, 'future': 0, 'to_close': 0,
         'operational_paid': 0, 'operational_unpaid': 0, 'due': 0, 'due_snapshot_amount': 0
     })
-    now_rome = _now_rome()
     for row in rows:
-        bucket = totals[row.cc_currency_snapshot or 'UNSET']
+        bucket = totals[getattr(row, 'cc_currency_snapshot', None) or (row.get('cc_currency_snapshot') if isinstance(row, dict) else None) or 'UNSET']
         bucket['sessions'] += 1
         c = classify_session(row, now_rome)
         if c['performed']:
@@ -156,7 +350,7 @@ def summary(center, start, end, practitioner=None):
             bucket['operational_unpaid'] += 1
         if c['due']:
             bucket['due'] += 1
-            bucket['due_snapshot_amount'] += (row.cc_price_snapshot or 0)
+            bucket['due_snapshot_amount'] += (getattr(row, 'cc_price_snapshot', 0) or (row.get('cc_price_snapshot') if isinstance(row, dict) else 0) or 0)
     return {
         'currencies': dict(totals),
         'practitioner': practitioner,
@@ -168,6 +362,44 @@ def summary(center, start, end, practitioner=None):
 @frappe.whitelist()
 def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_length=50, order_by='appointment_date asc, appointment_time asc, name asc', currency=None):
     filters, start, end, practitioner = _filter_scope(center, start, end, practitioner)
+    now_rome = _now_rome()
+
+    if _has_real_db():
+        where_sql, params = _build_sql_where(center, start, end, practitioner, kpi, currency, now_rome)
+        count_sql = f"SELECT COUNT(*) FROM `tabPatient Appointment` WHERE {where_sql}"
+        total = cint(frappe.db.sql(count_sql, params)[0][0])
+
+        page = max(1, cint(page) or 1)
+        page_length = cint(page_length)
+        if page_length <= 0:
+            total_pages = 1
+            limit_sql = ""
+        else:
+            total_pages = max(1, math.ceil(total / page_length))
+            offset = (page - 1) * page_length
+            params['limit'] = page_length
+            params['offset'] = offset
+            limit_sql = "LIMIT %(limit)s OFFSET %(offset)s"
+
+        order_by_sql = _sanitize_order_by(order_by)
+        fields_sql = ", ".join(f"`tabPatient Appointment`.`{f}`" for f in APPOINTMENT_FIELDS)
+        query_sql = f"SELECT {fields_sql} FROM `tabPatient Appointment` WHERE {where_sql} ORDER BY {order_by_sql} {limit_sql}"
+        paged = frappe.db.sql(query_sql, params, as_dict=True)
+        _enrich_session_rows(paged, now_rome)
+
+        return {
+            'appointments': paged,
+            'total': total,
+            'page': page,
+            'page_length': page_length,
+            'total_pages': total_pages,
+            'kpi': kpi or 'all',
+            'currency': currency or 'ALL',
+            'practitioner': practitioner,
+            'truncated': False
+        }
+
+    # Fallback for synthetic / mock execution
     db_filters = dict(filters)
     if kpi == 'cancelled':
         db_filters['status'] = 'Cancelled'
@@ -193,7 +425,6 @@ def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_leng
 
     rows = frappe.get_list('Patient Appointment', filters=db_filters, fields=APPOINTMENT_FIELDS,
                            order_by=order_by or 'appointment_date asc, appointment_time asc, name asc', page_length=0)
-    now_rome = _now_rome()
     filtered = [
         row for row in rows
         if _matches_kpi(row, kpi, now_rome)
@@ -211,35 +442,7 @@ def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_leng
         offset = (page - 1) * page_length
         paged = filtered[offset : offset + page_length]
 
-    patient_ids = list({row.patient for row in paged if row.patient})
-    patient_query = frappe.get_list if is_manager() else frappe.get_all
-    names = {row.name: row for row in patient_query('Patient',
-        filters={'name': ['in', patient_ids or ['']]},
-        fields=['name', 'first_name', 'last_name'], page_length=len(patient_ids) or 1)}
-
-    app_ids = [row.name for row in paged]
-    settlements = current_rows('CC Settlement', {'appointment': ['in', app_ids or ['']]},
-                               fields=['appointment', 'mode_of_payment', 'sequence']) if app_ids else []
-    settlements.sort(key=lambda s: cint(s.get('sequence', 0) if isinstance(s, dict) else getattr(s, 'sequence', 0)), reverse=True)
-    modes = {}
-    for s in settlements:
-        app_name = s.get('appointment') if isinstance(s, dict) else getattr(s, 'appointment', None)
-        mode = s.get('mode_of_payment') if isinstance(s, dict) else getattr(s, 'mode_of_payment', None)
-        if app_name and app_name not in modes:
-            modes[app_name] = mode
-
-    for row in paged:
-        row.appointment_time = str(get_time(row.appointment_time))
-        identity = names.get(row.patient)
-        row.patient_first_name = identity.first_name if identity else None
-        row.patient_last_name = identity.last_name if identity else None
-        row.mode_of_payment = modes.get(row.name) or ''
-        c = classify_session(row, now_rome)
-        row.cc_classified_future = c['future']
-        row.cc_classified_to_close = c['to_close']
-        row.cc_classified_unpaid = c['unpaid']
-        row.cc_classified_cancelled = c['cancelled']
-        row.cc_classified_paid = c['paid']
+    _enrich_session_rows(paged, now_rome)
 
     return {
         'appointments': paged,
@@ -267,46 +470,92 @@ def safe_cell(value):
 
 @frappe.whitelist()
 def export_csv(center, start, end, practitioner=None, kpi='all', currency=None):
-    data = sessions(center, start, end, practitioner, kpi, page=1, page_length=0, currency=currency)
-    output = StringIO(newline='')
-    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_ALL)
+    filters, start, end, practitioner = _filter_scope(center, start, end, practitioner)
+    now_rome = _now_rome()
     columns = ['Data', 'Ora', 'Paziente', 'Professionista', 'Servizio', 'Durata (minuti)',
                'Stato seduta', 'Economia seduta', 'Pagamento operativo', 'Metodo di pagamento',
                'Tariffa prevista', 'Valuta']
-    writer.writerow(columns)
     economy = {'Due': 'Tariffa prevista', 'Non Due': 'Non dovuta', 'Package Covered': 'Coperta da pacchetto', 'Waived': 'Rinuncia economica'}
-    now_rome = _now_rome()
-    for row in data['appointments']:
-        c = classify_session(row, now_rome)
-        if c['paid']:
-            payment_status = 'Registrato'
-        elif c['cancelled']:
-            payment_status = '— (annullata)'
-        elif c['future']:
-            payment_status = 'In programma'
-        elif c['unpaid']:
-            payment_status = 'Da incassare'
-        else:
-            payment_status = 'Non dovuto'
+    output = StringIO(newline='')
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_ALL)
+    writer.writerow(columns)
 
-        status_label = 'Svolta' if c['performed'] else ('Annullata' if c['cancelled'] else ('In programma' if c['future'] else 'Da chiudere'))
-        values = [
-            frappe.utils.formatdate(row.get('appointment_date'), 'dd/MM/yyyy') if row.get('appointment_date') else '',
-            str(row.get('appointment_time') or '')[:5],
-            row.get('patient_name') or '',
-            row.get('practitioner_name') or '',
-            row.get('cc_service_label') or '',
-            row.get('duration') or '',
-            status_label,
-            economy.get(row.get('cc_economic_state'), row.get('cc_economic_state') or ''),
-            payment_status,
-            row.get('mode_of_payment') or '',
-            row.get('cc_price_snapshot') if row.get('cc_price_snapshot') is not None else '',
-            row.get('cc_currency_snapshot') or 'EUR'
-        ]
-        writer.writerow([safe_cell(value) for value in values])
-    active_practitioner = practitioner or data.get('practitioner')
-    filename = 'centrochange-report-professionista.csv' if active_practitioner else 'centrochange-report-centro.csv'
+    if _has_real_db():
+        where_sql, params = _build_sql_where(center, start, end, practitioner, kpi, currency, now_rome)
+        count_sql = f"SELECT COUNT(*) FROM `tabPatient Appointment` WHERE {where_sql}"
+        total = cint(frappe.db.sql(count_sql, params)[0][0])
+        order_by_sql = _sanitize_order_by(None)
+        fields_sql = ", ".join(f"`tabPatient Appointment`.`{f}`" for f in APPOINTMENT_FIELDS)
+        BATCH_SIZE = 1000
+        for offset in range(0, total, BATCH_SIZE):
+            batch_params = dict(params)
+            batch_params['limit'] = BATCH_SIZE
+            batch_params['offset'] = offset
+            batch_sql = f"SELECT {fields_sql} FROM `tabPatient Appointment` WHERE {where_sql} ORDER BY {order_by_sql} LIMIT %(limit)s OFFSET %(offset)s"
+            batch_rows = frappe.db.sql(batch_sql, batch_params, as_dict=True)
+            _enrich_session_rows(batch_rows, now_rome)
+            for row in batch_rows:
+                c = classify_session(row, now_rome)
+                if c['paid']:
+                    payment_status = 'Registrato'
+                elif c['cancelled']:
+                    payment_status = '— (annullata)'
+                elif c['future']:
+                    payment_status = 'In programma'
+                elif c['unpaid']:
+                    payment_status = 'Da incassare'
+                else:
+                    payment_status = 'Non dovuto'
+
+                status_label = 'Svolta' if c['performed'] else ('Annullata' if c['cancelled'] else ('In programma' if c['future'] else 'Da chiudere'))
+                values = [
+                    frappe.utils.formatdate(row.get('appointment_date'), 'dd/MM/yyyy') if row.get('appointment_date') else '',
+                    str(row.get('appointment_time') or '')[:5],
+                    row.get('patient_name') or '',
+                    row.get('practitioner_name') or '',
+                    row.get('cc_service_label') or '',
+                    row.get('duration') or '',
+                    status_label,
+                    economy.get(row.get('cc_economic_state'), row.get('cc_economic_state') or ''),
+                    payment_status,
+                    row.get('mode_of_payment') or '',
+                    row.get('cc_price_snapshot') if row.get('cc_price_snapshot') is not None else '',
+                    row.get('cc_currency_snapshot') or 'EUR'
+                ]
+                writer.writerow([safe_cell(value) for value in values])
+    else:
+        data = sessions(center, start, end, practitioner, kpi, page=1, page_length=0, currency=currency)
+        for row in data['appointments']:
+            c = classify_session(row, now_rome)
+            if c['paid']:
+                payment_status = 'Registrato'
+            elif c['cancelled']:
+                payment_status = '— (annullata)'
+            elif c['future']:
+                payment_status = 'In programma'
+            elif c['unpaid']:
+                payment_status = 'Da incassare'
+            else:
+                payment_status = 'Non dovuto'
+
+            status_label = 'Svolta' if c['performed'] else ('Annullata' if c['cancelled'] else ('In programma' if c['future'] else 'Da chiudere'))
+            values = [
+                frappe.utils.formatdate(row.get('appointment_date'), 'dd/MM/yyyy') if row.get('appointment_date') else '',
+                str(row.get('appointment_time') or '')[:5],
+                row.get('patient_name') or '',
+                row.get('practitioner_name') or '',
+                row.get('cc_service_label') or '',
+                row.get('duration') or '',
+                status_label,
+                economy.get(row.get('cc_economic_state'), row.get('cc_economic_state') or ''),
+                payment_status,
+                row.get('mode_of_payment') or '',
+                row.get('cc_price_snapshot') if row.get('cc_price_snapshot') is not None else '',
+                row.get('cc_currency_snapshot') or 'EUR'
+            ]
+            writer.writerow([safe_cell(value) for value in values])
+
+    filename = 'centrochange-report-professionista.csv' if practitioner else 'centrochange-report-centro.csv'
     frappe.response.update({
         'type': 'download',
         'filename': filename,

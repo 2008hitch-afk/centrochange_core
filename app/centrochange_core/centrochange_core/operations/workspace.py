@@ -59,68 +59,139 @@ def agenda(center, start, end, practitioner=None):
         elif practitioner not in ('all', '', None):
             filters['practitioner'] = practitioner
 
+    # Query full period (up to bounded MAX_AGENDA_LIMIT = 5000) without premature 500 truncation
+    MAX_AGENDA_LIMIT = 5000
     rows = frappe.get_list('Patient Appointment', filters=filters,
-        fields=APPOINTMENT_FIELDS, order_by='appointment_date,appointment_time,name', page_length=501)
-    # Use names from the scoped appointment rows, not the capped bootstrap list.
-    patient_ids = list({row.patient for row in rows if row.patient})
+        fields=APPOINTMENT_FIELDS, order_by='appointment_date,appointment_time,name', page_length=MAX_AGENDA_LIMIT + 1)
+    truncated = len(rows) > MAX_AGENDA_LIMIT
+    if truncated:
+        rows = rows[:MAX_AGENDA_LIMIT]
+
+    # Resolve patient identities in bounded batches of 200
+    patient_ids = list({row.patient for row in rows if getattr(row, 'patient', None)})
     patient_query = frappe.get_list if is_manager() else frappe.get_all
-    names = {row.name: row for row in patient_query('Patient',
-        filters={'name': ['in', patient_ids or ['']]},
-        fields=['name', 'first_name', 'last_name'], page_length=len(patient_ids) or 1)}
+    names = {}
+    CHUNK_SIZE = 200
+    if patient_ids:
+        for i in range(0, len(patient_ids), CHUNK_SIZE):
+            chunk = patient_ids[i:i + CHUNK_SIZE]
+            p_rows = patient_query('Patient',
+                filters={'name': ['in', chunk]},
+                fields=['name', 'first_name', 'last_name'], page_length=len(chunk))
+            for p in p_rows:
+                p_name = getattr(p, 'name', None) or (p.get('name') if isinstance(p, dict) else None)
+                names[p_name] = p
+
     for row in rows:
         row.appointment_time = str(get_time(row.appointment_time))
         identity = names.get(row.patient)
-        row.patient_first_name = identity.first_name if identity else None
-        row.patient_last_name = identity.last_name if identity else None
-    return {'appointments': rows[:500], 'truncated': len(rows) > 500}
+        if identity:
+            row.patient_first_name = getattr(identity, 'first_name', None) or (identity.get('first_name') if isinstance(identity, dict) else None)
+            row.patient_last_name = getattr(identity, 'last_name', None) or (identity.get('last_name') if isinstance(identity, dict) else None)
+        else:
+            row.patient_first_name = None
+            row.patient_last_name = None
+
+    return {'appointments': rows, 'total': len(rows), 'truncated': truncated}
 
 
 @frappe.whitelist()
-def patient_history(patient,center):
+def patient_history(patient, center, page=None, page_length=50):
     require_actor()
-    active_context=require_history_context(patient,center)
-    appointments=frappe.get_list('Patient Appointment',filters={'patient':patient,'cc_center':center},
-        fields=APPOINTMENT_FIELDS,order_by='appointment_date desc,appointment_time desc,name',page_length=101)
+    active_context = require_history_context(patient, center)
+
+    total_appointments = 0
+    if hasattr(frappe, 'db') and hasattr(frappe.db, 'count'):
+        try:
+            total_appointments = frappe.db.count('Patient Appointment', filters={'patient': patient, 'cc_center': center})
+        except Exception:
+            total_appointments = 0
+
+    def _cint(v, default=0):
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return default
+
+    p = _cint(page) if page is not None else None
+    pl = _cint(page_length, 50) if page_length else 50
+    if pl <= 0:
+        pl = 50
+
+    if p is not None:
+        p = max(1, p)
+        offset = (p - 1) * pl
+        appointments = frappe.get_list('Patient Appointment', filters={'patient': patient, 'cc_center': center},
+            fields=APPOINTMENT_FIELDS, order_by='appointment_date desc,appointment_time desc,name',
+            limit_start=offset, page_length=pl)
+        truncated = False
+        if not total_appointments:
+            total_appointments = len(appointments)
+        total_pages = max(1, (total_appointments + pl - 1) // pl)
+    else:
+        appointments = frappe.get_list('Patient Appointment', filters={'patient': patient, 'cc_center': center},
+            fields=APPOINTMENT_FIELDS, order_by='appointment_date desc,appointment_time desc,name', page_length=101)
+        truncated = len(appointments) > 100
+        appointments = appointments[:100]
+        if not total_appointments:
+            total_appointments = len(appointments)
+        total_pages = 1
+        p = 1
+
     for row in appointments:
-        row.appointment_time=str(get_time(row.appointment_time))
-    identifiers=[row.name for row in appointments[:100]]
-    settlements=frappe.get_list('CC Settlement',filters={'appointment':['in',identifiers or ['']]},
-        fields=['name','appointment','paid','mode_of_payment','sequence','actor','event_time','reason'],
-        order_by='creation desc',page_length=200)
-    organizational=frappe.get_list('CC Organizational Note',filters={'patient':patient,'center':center},
-        fields=['name','practitioner','content','authored_by','creation','corrects'],order_by='creation desc',page_length=100)
+        row.appointment_time = str(get_time(row.appointment_time))
+    identifiers = [row.name for row in appointments]
+    settlements = frappe.get_list('CC Settlement', filters={'appointment': ['in', identifiers or ['']]},
+        fields=['name', 'appointment', 'paid', 'mode_of_payment', 'sequence', 'actor', 'event_time', 'reason'],
+        order_by='creation desc', page_length=max(200, len(identifiers) * 2))
+    organizational = frappe.get_list('CC Organizational Note', filters={'patient': patient, 'center': center},
+        fields=['name', 'practitioner', 'content', 'authored_by', 'creation', 'corrects'], order_by='creation desc', page_length=100)
     # A non-clinical principal never asks native list APIs for a private table.
-    private=[]
+    private = []
     if 'CC Professional' in roles():
-        private=frappe.get_list('CC Private Note',filters={'patient':patient,'center':center},
-            fields=['name','content','authored_by','creation','corrects'],order_by='creation desc',page_length=100)
+        private = frappe.get_list('CC Private Note', filters={'patient': patient, 'center': center},
+            fields=['name', 'content', 'authored_by', 'creation', 'corrects'], order_by='creation desc', page_length=100)
     from centrochange_core.operations.packages import balance, _balance
-    packages=[]
-    for row in frappe.get_list('CC Patient Package',filters={'patient':patient},fields=['name','template'],page_length=100):
-        doc=frappe.get_doc('CC Patient Package',row.name)
+    packages = []
+    for row in frappe.get_list('CC Patient Package', filters={'patient': patient}, fields=['name', 'template'], page_length=100):
+        doc = frappe.get_doc('CC Patient Package', row.name)
         if center in [eligible.center for eligible in doc.centers]:
-            packages.append({'name':row.name,'label':frappe.db.get_value('CC Package Template',row.template,'title'),
-                'valid_until':str(doc.valid_until) if doc.valid_until else None,
-                'practitioner':doc.practitioner,**(balance(row.name,center) if active_context else _balance(row.name))})
-    assignment_rows=current_rows('CC Patient Assignment',{'patient':patient,'center':center},
-        fields=['name','practitioner'])
-    names=[row.name for row in assignment_rows]
-    practitioners={row.name:row.practitioner for row in assignment_rows}
-    assignment_events=[]
+            packages.append({'name': row.name, 'label': frappe.db.get_value('CC Package Template', row.template, 'title'),
+                'valid_until': str(doc.valid_until) if doc.valid_until else None,
+                'practitioner': doc.practitioner, **(balance(row.name, center) if active_context else _balance(row.name))})
+    assignment_rows = current_rows('CC Patient Assignment', {'patient': patient, 'center': center},
+        fields=['name', 'practitioner'])
+    names = [(row.name if hasattr(row, 'name') else (row.get('name') if isinstance(row, dict) else row)) for row in assignment_rows]
+    practitioners = {
+        (row.name if hasattr(row, 'name') else (row.get('name') if isinstance(row, dict) else row)):
+        (row.practitioner if hasattr(row, 'practitioner') else (row.get('practitioner') if isinstance(row, dict) else None))
+        for row in assignment_rows
+    }
+    assignment_events = []
     if names:
-        events=current_rows('CC Audit Event',{'reference_doctype':'CC Patient Assignment',
-            'reference_name':['in',names],'event_type':'PATIENT_ASSIGNMENT'},
-            fields=['reference_name','actor','event_time','reason','after_state'])
-        if len(events)>200:
+        events = current_rows('CC Audit Event', {'reference_doctype': 'CC Patient Assignment',
+            'reference_name': ['in', names], 'event_type': 'PATIENT_ASSIGNMENT'},
+            fields=['reference_name', 'actor', 'event_time', 'reason', 'after_state'])
+        if len(events) > 200:
             frappe.throw('Storico assegnazioni troppo esteso: contatta la Direzione.')
-        for event in sorted(events,key=lambda item:item.event_time,reverse=True):
-            after=json.loads(event.after_state or '{}')
-            assignment_events.append({'practitioner':practitioners[event.reference_name],
-                'active':int(after.get('active',0)),'actor':event.actor,
-                'event_time':event.event_time,'reason':event.reason})
-    return {'appointments':appointments[:100],'truncated':len(appointments)>100,
-        'settlements':settlements,'organizational_notes':organizational,'private_notes':private,
-        'packages':packages,'assignment_events':assignment_events}
+        for event in sorted(events, key=lambda item: item.event_time, reverse=True):
+            after = json.loads(event.after_state or '{}')
+            assignment_events.append({'practitioner': practitioners[event.reference_name],
+                'active': int(after.get('active', 0)), 'actor': event.actor,
+                'event_time': event.event_time, 'reason': event.reason})
+    return {
+        'appointments': appointments,
+        'total_appointments': total_appointments,
+        'page': p,
+        'page_length': pl,
+        'total_pages': total_pages,
+        'truncated': truncated,
+        'settlements': settlements,
+        'organizational_notes': organizational,
+        'private_notes': private,
+        'packages': packages,
+        'assignment_events': assignment_events
+    }
 
 
 @frappe.whitelist(methods=['GET'])

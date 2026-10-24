@@ -265,11 +265,18 @@ class TestMariaDBLoadAndReconciliation(unittest.TestCase):
             self.assertEqual(res['reconciled_eur_due_csv'], 425)
             return
 
-        # Check if docker container is accessible
+        target_backend = os.environ.get('CC_VOLUME_TEST_BACKEND')
+        if not target_backend:
+            raise unittest.SkipTest("Skipping real MariaDB load test: CC_VOLUME_TEST_BACKEND not set and not running in Frappe")
+
+        # Refuse to run against shared DEV or production containers
+        if 'centrochange-dev' in target_backend or 'prod' in target_backend:
+            raise RuntimeError(f"Safety violation: CC_VOLUME_TEST_BACKEND must not target shared DEV or PROD container ({target_backend})")
+
         import subprocess
         try:
             check = subprocess.run(
-                ['docker', 'inspect', '-f', '{{.State.Running}}', 'centrochange-dev-backend-1'],
+                ['docker', 'inspect', '-f', '{{.State.Running}}', target_backend],
                 capture_output=True, text=True, timeout=3
             )
             is_running = (check.returncode == 0 and 'true' in check.stdout.lower())
@@ -277,9 +284,9 @@ class TestMariaDBLoadAndReconciliation(unittest.TestCase):
             is_running = False
 
         if not is_running:
-            raise unittest.SkipTest("Isolated Frappe/MariaDB container not available in offline environment")
+            raise unittest.SkipTest(f"Isolated Frappe/MariaDB container {target_backend} is not running")
 
-        # Run inside container with worktree code injected
+        # Run inside isolated container with worktree code injected
         root_dir = Path(__file__).resolve().parents[1]
         reporting_file = root_dir / 'app/centrochange_core/centrochange_core/operations/reporting.py'
         reporting_code = reporting_file.read_text(encoding='utf-8')
@@ -301,7 +308,7 @@ res = test_mod._run_real_mariadb_test()
 print('RESULT_JSON:' + json.dumps(res))
 """
         proc = subprocess.run(
-            ['docker', 'exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1', '-w', '/home/frappe/frappe-bench', 'centrochange-dev-backend-1', 'env/bin/python'],
+            ['docker', 'exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1', '-w', '/home/frappe/frappe-bench', target_backend, 'env/bin/python'],
             input=harness_script,
             text=True,
             capture_output=True,

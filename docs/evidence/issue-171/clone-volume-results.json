@@ -1,0 +1,32 @@
+{
+  "stage1": {
+    "total_week_appointments": 1000,
+    "agenda_all_ms": 97.71,
+    "agenda_single_ms": 3.84,
+    "agenda_pair_ms": 3.5,
+    "truncated": false
+  },
+  "stage2": {
+    "quarter_appointments": 15000,
+    "eur_due_reconciled": 12007,
+    "summary_time_ms": 28.53,
+    "sessions_p1_ms": 56.66,
+    "sessions_p100_ms": 34.08,
+    "csv_time_ms": 1536.06,
+    "peak_memory_kb": 10874.44
+  },
+  "stage3": {
+    "total_db_records": 51017,
+    "month_jan_summary_ms": 9.52,
+    "month_dec_summary_ms": 8.67,
+    "patient_history_total": 51004,
+    "patient_history_p1_ms": 185.56,
+    "patient_history_p50_ms": 122.2
+  },
+  "stage4": {
+    "assessment": "PASS",
+    "explain_summary_type": "range",
+    "explain_sessions_type": "range",
+    "bounded_memory_guarantee": true
+  }
+}

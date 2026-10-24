@@ -282,6 +282,46 @@ class NavigationScopeTests(unittest.TestCase):
                 self.workspace.patient_history('PAT-B', 'CENTRO-A')
         self.assertEqual(rows.call_count, 1)
 
+    def test_agenda_untruncated_over_500_and_patient_history_pagination(self):
+        import datetime
+        from unittest.mock import patch
+
+        rows = [
+            Record(name=f'APP-{i}', patient='PAT-A', patient_name='Paziente A',
+                   appointment_time='09:00:00', cc_center='CENTRO-A', duration=60, status='Closed')
+            for i in range(600)
+        ]
+        def listed(doctype, filters=None, **kwargs):
+            if doctype == 'Patient Appointment':
+                pl = kwargs.get('page_length', 0)
+                start = kwargs.get('limit_start', 0)
+                if pl and pl > 0:
+                    return rows[start:start + pl]
+                return rows
+            if doctype == 'Patient':
+                return [self.patients[0]]
+            return []
+
+        with patch.object(self.frappe, 'get_list', side_effect=listed):
+            # Agenda loads 600 without 500 truncation limit
+            agenda_res = self.workspace.agenda('CENTRO-A', datetime.date(2026, 10, 19), datetime.date(2026, 10, 25))
+            self.assertFalse(agenda_res['truncated'])
+            self.assertEqual(len(agenda_res['appointments']), 600)
+            self.assertEqual(agenda_res['total'], 600)
+
+            # Patient history with pagination
+            hist_p1 = self.workspace.patient_history('PAT-A', 'CENTRO-A', page=1, page_length=50)
+            self.assertEqual(len(hist_p1['appointments']), 50)
+            self.assertEqual(hist_p1['page'], 1)
+            self.assertEqual(hist_p1['page_length'], 50)
+            self.assertFalse(hist_p1['truncated'])
+
+            # Patient history page 2
+            hist_p2 = self.workspace.patient_history('PAT-A', 'CENTRO-A', page=2, page_length=50)
+            self.assertEqual(len(hist_p2['appointments']), 50)
+            self.assertEqual(hist_p2['appointments'][0]['name'], 'APP-50')
+            self.assertEqual(hist_p2['page'], 2)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -10,7 +10,7 @@ import { saveArchive } from './scoped_api'
 import { Button, Chip, Drawer, Empty, Field, FormError, Modal, type Feedback } from './ui'
 
 type Profile = Row & { name: string; modified: string; first_name: string; last_name: string; email: string; active_assignment: boolean }
-type History = { appointments: Row[]; truncated: boolean; settlements: Row[]; organizational_notes: Row[]; private_notes: Row[]; packages: Row[]; assignment_events?: Row[] }
+type History = { appointments: Row[]; truncated: boolean; settlements: Row[]; organizational_notes: Row[]; private_notes: Row[]; packages: Row[]; assignment_events?: Row[]; total_appointments?: number; page?: number; total_pages?: number }
 const errorText = (cause: unknown) => cause instanceof Error ? cause.message : 'Operazione non riuscita.'
 
 export function PatientDetail({ boot, patient, center, feedback, onClose, onSuccess }: {
@@ -18,6 +18,7 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
 }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [history, setHistory] = useState<History | null>(null)
+  const [historyPage, setHistoryPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reload, setReload] = useState(0)
@@ -43,15 +44,15 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
 
   useEffect(() => {
     let live = true
-    setLoading(true); setError(''); setHistory(null); setProfile(null); setAppointment(null)
+    setLoading(true); setError(''); setAppointment(null)
     Promise.all([
       ops<Profile>('profiles.patient_detail', { center, name: patient.name }),
-      ops<History>('workspace.patient_history', { center, patient: patient.name })
+      ops<History>('workspace.patient_history', { center, patient: patient.name, page: historyPage, page_length: 50 })
     ]).then(([record, activity]) => { if (live) { setProfile(record); setHistory(activity) } })
       .catch(cause => { if (live) setError(errorText(cause)) })
       .finally(() => { if (live) setLoading(false) })
     return () => { live = false }
-  }, [center, patient.name, reload])
+  }, [center, patient.name, reload, historyPage])
 
   useEffect(() => {
     if (!appointment) return
@@ -124,7 +125,16 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
     {loading && <p role="status">Caricamento scheda paziente…</p>}
     {error && <p className="inline-error" role="alert">{error}</p>}
     {profile && <section className="detail-section"><h3>Anagrafica</h3>{historical && <p className="scope-note" role="status">Nessuna assegnazione attiva in questo centro. La scheda è consultabile come storico; per riprendere le operazioni, registra una nuova assegnazione autorizzata.</p>}<dl className="property-list"><div><dt>Nome</dt><dd>{profile.first_name || '—'}</dd></div><div><dt>Cognome</dt><dd>{profile.last_name || '—'}</dd></div><div><dt>Email</dt><dd>{profile.email || '—'}</dd></div></dl>{manager && !historical && <Button variant="secondary" onClick={() => { saveKey.current = requestKey(); setDraft({ ...profile }); setReason(''); setError('') }}>Modifica scheda</Button>}</section>}
-    {history && <><section className="detail-section"><h3>Sedute</h3>{history.truncated && <p className="scope-note">Mostrate le ultime 100 sedute.</p>}{history.appointments.length ? history.appointments.map(row => <button className="patient-history-item" type="button" data-appointment={String(row.name)} key={String(row.name)} onClick={event => openAppointment(row, event.currentTarget)}><strong>{displayDate(row.appointment_date)} · {time(row.appointment_time)} · {demoText(row.cc_service_label) || 'Seduta'}</strong><small>{closureName(row.cc_closure_state)} · {practitionerNameFor(String(row.practitioner ?? ''), boot.practitioners, String(row.practitioner_name ?? ''))}</small><span>Apri eventi</span></button>) : <p className="scope-note">Nessuna seduta nel centro.</p>}</section>
+    {history && <><section className="detail-section"><h3>Sedute {history.total_appointments ? `(${history.total_appointments})` : ''}</h3>
+      {history.total_pages && history.total_pages > 1 ? (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
+          <Button variant="secondary" disabled={historyPage <= 1} onClick={() => setHistoryPage(p => Math.max(1, p - 1))}>Precedente</Button>
+          <span style={{ fontSize: '13px', color: '#64748b' }}>Pagina {historyPage} di {history.total_pages}</span>
+          <Button variant="secondary" disabled={historyPage >= history.total_pages} onClick={() => setHistoryPage(p => p + 1)}>Successiva</Button>
+        </div>
+      ) : null}
+      {history.truncated && !history.total_pages && <p className="scope-note">Mostrate le prime 100 sedute.</p>}
+      {history.appointments.length ? history.appointments.map(row => <button className="patient-history-item" type="button" data-appointment={String(row.name)} key={String(row.name)} onClick={event => openAppointment(row, event.currentTarget)}><strong>{displayDate(row.appointment_date)} · {time(row.appointment_time)} · {demoText(row.cc_service_label) || 'Seduta'}</strong><small>{closureName(row.cc_closure_state)} · {practitionerNameFor(String(row.practitioner ?? ''), boot.practitioners, String(row.practitioner_name ?? ''))}</small><span>Apri eventi</span></button>) : <p className="scope-note">Nessuna seduta nel centro.</p>}</section>
       <section className="detail-section"><h3>Assegnazioni: storico</h3>{history.assignment_events?.length ? <div className="timeline">{history.assignment_events.map((row, index) => <article key={index} className="note"><strong>{row.active ? 'Assegnazione attivata' : 'Assegnazione revocata'} · {practitionerNameFor(String(row.practitioner ?? ''), boot.practitioners)}</strong><small>{displayDate(row.event_time)} · {auditActorName(row.actor)}</small><p>Motivo: {String(row.reason ?? '—')}</p></article>)}</div> : <p className="scope-note">Nessun evento di assegnazione disponibile.</p>}</section>
       <section className="detail-section"><h3>Note organizzative</h3><NoteHistory rows={history.organizational_notes} onCorrect={historical ? undefined : row => correct(row, false)} />{professional && <><h3>Note professionali riservate</h3><NoteHistory rows={history.private_notes} privateNotes onCorrect={row => correct(row, true)} /></>}{!historical && <form onSubmit={event => { event.preventDefault(); void addNote() }}><Field label={corrects ? 'Rettifica nota' : 'Nuova nota organizzativa'} required><textarea value={note} onChange={event => setNote(event.target.value)} required maxLength={100000} /></Field>{professional && <label className="checkbox-row"><input type="checkbox" checked={notePrivate} onChange={event => { setNotePrivate(event.target.checked); setCorrects(null) }} /> Nota professionale riservata</label>}<FormError error={error} /><Button type="submit" disabled={noteBusy || !note.trim()}>{noteBusy ? 'Salvataggio…' : corrects ? 'Registra rettifica' : 'Aggiungi nota'}</Button></form>}</section>
       <PatientPackages boot={boot} patient={patient.name} center={center} packages={history.packages} feedback={feedback} onSuccess={refresh} readOnly={historical} />
