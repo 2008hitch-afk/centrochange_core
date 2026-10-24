@@ -1473,3 +1473,167 @@ test('sweep grafico delle sezioni operative e amministrative', async ({ page }, 
   }
   expect(consoleErrors).toEqual([])
 })
+
+test('AUDIT-05 MUST-FIX 1: Agenda con filtro professionisti multiplo e ricercabile', async ({ page }) => {
+  const practitioners = [
+    { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' },
+    { name: 'PR-002', practitioner_name: 'Dott. Bianchi' },
+    { name: 'PR-003', practitioner_name: 'Dott. Verdi' }
+  ]
+  await mockApi(page, [], true, {}, { practitioners })
+  await page.goto('./#Agenda')
+  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible()
+
+  const trigger = page.getByRole('button', { name: 'Filtro professionisti' })
+  await expect(trigger).toBeVisible()
+  await expect(trigger).toContainText('Tutti i professionisti (3)')
+
+  await trigger.click()
+  const popover = page.locator('.practitioner-multi-popover')
+  await expect(popover).toBeVisible()
+
+  const searchInput = popover.getByRole('textbox', { name: 'Cerca professionista' })
+  await searchInput.fill('Bianchi')
+  await expect(popover.getByRole('checkbox', { name: 'Dott. Bianchi' })).toBeVisible()
+  await expect(popover.getByRole('checkbox', { name: 'Dott. Verdi' })).toHaveCount(0)
+
+  await searchInput.clear()
+  await popover.locator('.multi-popover-item', { hasText: 'Dott.ssa Rossi' }).click()
+  await expect(popover.locator('.multi-popover-chips')).toContainText('Dott.ssa Rossi')
+
+  await popover.getByRole('button', { name: 'Tutti' }).click({ force: true })
+  await expect(popover.locator('.multi-popover-chips')).toHaveCount(0)
+})
+
+test('AUDIT-05 MUST-FIX 1b: Account Professionista non vede filtro Tutti i professionisti', async ({ page }) => {
+  const practitioner = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }
+  await mockApi(page, [], false, {}, { roles: ['CC Professional'], practitioners: [practitioner] })
+  await page.goto('./#Agenda')
+  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible()
+
+  await expect(page.getByRole('button', { name: 'Filtro professionisti' })).toHaveCount(0)
+  await expect(page.locator('.agenda-practitioner-label')).toContainText('Dott.ssa Rossi')
+})
+
+test('AUDIT-05 MUST-FIX 2: Report fail-closed senza fallback silenzioso a workspace.agenda', async ({ page }) => {
+  let agendaCalled = false
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.workspace.agenda*', route => {
+    agendaCalled = true
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: [{ name: 'LEAK-APP' }], truncated: false } }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ exc: 'InternalServerError' }) })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  await expect(page.locator('.inline-error').last()).toContainText("Operazione non riuscita")
+  expect(agendaCalled).toBe(false)
+  await expect(page.locator('.report-drilldown .button.secondary')).toHaveClass(/disabled/)
+})
+
+test('AUDIT-05 MUST-FIX 3 & 4: Report paginazione server-side e query isolata Professionisti', async ({ page }) => {
+  const sessionCalls: string[] = []
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    const url = new URL(route.request().url())
+    sessionCalls.push(url.search)
+    const pageNum = Number(url.searchParams.get('page') || '1')
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          appointments: [
+            {
+              name: `APP-PAGE-${pageNum}`,
+              appointment_date: today,
+              appointment_time: '10:00:00',
+              patient_name: `Paziente Pagina ${pageNum}`,
+              practitioner_name: 'Dott.ssa Rossi',
+              cc_service_label: 'Visita',
+              status: 'Closed',
+              cc_performed: 1,
+              cc_paid: 1,
+              cc_economic_state: 'Paid',
+              mode_of_payment: 'POS',
+              cc_price_snapshot: 80,
+              cc_currency_snapshot: 'EUR'
+            }
+          ],
+          total: 120,
+          total_pages: 3,
+          page: pageNum,
+          page_length: 50,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  const paginationBar = page.locator('.pagination-bar')
+  await expect(paginationBar).toBeVisible()
+  await expect(paginationBar).toContainText('Pagina 1 di 3 (120 sedute totali)')
+
+  await paginationBar.getByRole('button', { name: 'Successiva' }).click()
+  await expect(paginationBar).toContainText('Pagina 2 di 3 (120 sedute totali)')
+  expect(sessionCalls.some(call => call.includes('page=2'))).toBe(true)
+
+  await page.getByRole('button', { name: 'Report professionisti' }).click()
+  await page.getByRole('combobox', { name: 'Professionista report' }).selectOption('PR-001')
+
+  await expect.poll(() => sessionCalls.some(call => call.includes('practitioner=PR-001') && call.includes('kpi=all'))).toBe(true)
+  await expect(page.locator('.professional-report')).toBeVisible()
+})
+
+test('AUDIT-05 MUST-FIX 5: Seduta futura non viene marcata come Non pagata', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          appointments: [
+            {
+              name: 'APP-FUTURE',
+              appointment_date: '2099-01-01',
+              appointment_time: '15:00:00',
+              patient_name: 'Paziente Futuro',
+              practitioner_name: 'Dott.ssa Rossi',
+              cc_service_label: 'Visita futura',
+              status: 'Open',
+              cc_performed: 0,
+              cc_paid: 0,
+              cc_economic_state: 'Due',
+              cc_classified_future: true,
+              cc_classified_to_close: false,
+              cc_classified_unpaid: false,
+              mode_of_payment: null,
+              cc_price_snapshot: 80,
+              cc_currency_snapshot: 'EUR'
+            }
+          ],
+          total: 1,
+          total_pages: 1,
+          page: 1,
+          page_length: 50,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  const row = page.locator('.report-drilldown tbody tr').first()
+  await expect(row).toContainText('In programma')
+  await expect(row).not.toContainText('Non pagata')
+})
+

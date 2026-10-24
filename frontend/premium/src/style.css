@@ -95,3 +95,28 @@
 .calendar-popover-day.selected{background:#2787ca;color:#fff;font-weight:700}
 .calendar-popover-day.today{border-color:#2787ca;color:#2787ca;font-weight:700}
 .calendar-popover-day.other-month{color:#b0bec5}
+
+/* AUDIT-05 Remediation: Multi-Practitioner Filter & Pagination */
+.practitioner-multi-wrap{position:relative;display:inline-block}
+.practitioner-filter-trigger{display:inline-flex;align-items:center;gap:6px;font-size:12px;height:34px;padding:0 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#344b65}
+.practitioner-filter-trigger:hover{border-color:#2787ca;color:#1e6fa8}
+.filter-label-text{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.practitioner-multi-popover{position:absolute;z-index:60;top:calc(100% + 6px);right:0;background:#fff;border:1px solid #dce4ec;border-radius:12px;box-shadow:0 12px 30px rgba(24,40,63,.16);padding:12px;width:300px;max-width:calc(100vw - 32px)}
+.multi-popover-search{display:flex;align-items:center;gap:8px;background:#f7f9fc;border:1px solid #e1e7ee;border-radius:7px;padding:0 10px;height:32px;margin-bottom:8px}
+.multi-popover-search input{border:0;background:transparent;outline:0;font-size:12px;width:100%;color:#2b3e54}
+.multi-popover-actions{display:flex;justify-content:space-between;margin-bottom:8px;padding:0 2px}
+.multi-popover-actions .text-button{background:transparent;border:0;color:#2787ca;font-size:11px;font-weight:650;padding:2px 6px;cursor:pointer;border-radius:4px}
+.multi-popover-actions .text-button:hover{background:#edf5fc}
+.multi-popover-list{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.multi-popover-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:#344b65}
+.multi-popover-item:hover{background:#f4f8fc}
+.multi-popover-item input[type="checkbox"]{cursor:pointer;margin:0}
+.multi-popover-item .p-avatar{width:22px;height:22px;border-radius:6px;background:#e3f0fa;color:#2787ca;font-size:10px;font-weight:700;display:grid;place-items:center;flex-shrink:0}
+.multi-popover-item .p-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.multi-popover-empty{font-size:12px;color:#8a9aac;text-align:center;padding:16px 0}
+.multi-popover-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid #edf2f7;max-height:80px;overflow-y:auto}
+.chip-badge{display:inline-flex;align-items:center;gap:4px;background:#edf5fc;color:#1e6fa8;border:1px solid #cce3f5;border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600}
+.chip-badge button{border:0;background:transparent;color:#1e6fa8;font-size:12px;line-height:1;cursor:pointer;padding:0 2px}
+.pagination-bar{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #eef2f6;font-size:12px;color:#677b92;flex-wrap:wrap;gap:8px}
+.pagination-bar strong{color:#284462}
+@media(max-width:760px){.practitioner-multi-popover{position:fixed;top:auto;bottom:20px;left:16px;right:16px;width:auto;max-width:calc(100vw - 32px);z-index:100}}

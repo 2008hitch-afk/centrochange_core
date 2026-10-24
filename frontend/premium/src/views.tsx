@@ -72,11 +72,149 @@ function CalendarPopover({ current, onSelect, onClose }: { current: Date; onSele
   </div>
 }
 
+function PractitionerMultiSelect({
+  practitioners,
+  selected,
+  onChange
+}: {
+  practitioners: Practitioner[]
+  selected: string[]
+  onChange: (selected: string[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+  const isAll = selected.length === 0 || selected.length === practitioners.length
+
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false)
+      }
+    }
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside)
+    }, 0)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [open])
+
+  const filtered = practitioners.filter(p => {
+    if (!query.trim()) return true
+    const q = query.toLowerCase()
+    return practitionerName(p).toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+  })
+
+  const toggle = (id: string) => {
+    if (isAll) {
+      onChange([id])
+    } else {
+      if (selected.includes(id)) {
+        const next = selected.filter(x => x !== id)
+        onChange(next)
+      } else {
+        const next = [...selected, id]
+        onChange(next.length === practitioners.length ? [] : next)
+      }
+    }
+  }
+
+  const selectAll = () => {
+    onChange([])
+    setQuery('')
+  }
+
+  const label = isAll
+    ? `Tutti i professionisti (${practitioners.length})`
+    : selected.length === 1
+      ? practitionerName(practitioners.find(p => p.name === selected[0]) ?? { name: selected[0], practitioner_name: selected[0] } as Practitioner)
+      : `${selected.length} professionisti selezionati`
+
+  return (
+    <div className="practitioner-multi-wrap" ref={ref}>
+      <button
+        type="button"
+        className="button secondary practitioner-filter-trigger"
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label="Filtro professionisti"
+      >
+        <Filter size={15} />
+        <span className="filter-label-text">{label}</span>
+      </button>
+      {open && (
+        <div className="practitioner-multi-popover" role="dialog" aria-label="Seleziona professionisti">
+          <div className="multi-popover-search">
+            <Search size={14} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Cerca professionista…"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              aria-label="Cerca professionista"
+              autoFocus
+            />
+          </div>
+          <div className="multi-popover-actions">
+            <button type="button" className="text-button" onClick={selectAll}>Tutti</button>
+            <button type="button" className="text-button" onClick={() => onChange([])}>Reset</button>
+          </div>
+          <div className="multi-popover-list" role="group" aria-label="Elenco professionisti">
+            {filtered.length === 0 ? (
+              <div className="multi-popover-empty">Nessun professionista trovato</div>
+            ) : (
+              filtered.map(p => {
+                const checked = isAll || selected.includes(p.name)
+                return (
+                  <label key={p.name} className="multi-popover-item">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggle(p.name)}
+                      aria-label={practitionerName(p)}
+                    />
+                    <span className="p-avatar">{(practitionerName(p) || p.name).slice(0, 2).toUpperCase()}</span>
+                    <span className="p-name">{practitionerName(p)}</span>
+                  </label>
+                )
+              })
+            )}
+          </div>
+          {!isAll && selected.length > 0 && (
+            <div className="multi-popover-chips">
+              {selected.map(id => {
+                const p = practitioners.find(x => x.name === id)
+                return (
+                  <span key={id} className="chip-badge">
+                    {p ? practitionerName(p) : id}
+                    <button type="button" onClick={() => toggle(id)} aria-label={`Rimuovi ${p ? practitionerName(p) : id}`}>×</button>
+                  </span>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refreshBoot: () => Promise<void> }) {
   const isManager = boot.roles.includes('CC Manager')
   const isSecretariat = boot.roles.includes('CC Secretariat')
   const isProfessional = boot.roles.includes('CC Professional') && !isManager && !isSecretariat
-  const defaultPractitioner = isProfessional ? (boot.practitioners[0]?.name || '') : 'all'
 
   const [date, setDate] = useState(() => wallDate(romeToday(), '12:00'))
   const [mode, setMode] = useState<'day' | 'week'>('week')
@@ -86,7 +224,7 @@ export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refr
   const [bookingPractitioner, setBookingPractitioner] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [practitioner, setPractitioner] = useState(defaultPractitioner)
+  const [selectedPractitioners, setSelectedPractitioners] = useState<string[]>([])
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [schedules, setSchedules] = useState<Row[]>([])
   const [reload, setReload] = useState(0)
@@ -108,20 +246,24 @@ export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refr
     return () => { live = false }
   }, [center, iso(start), iso(end), reload])
 
-  const effectivePractitioner = isProfessional ? (boot.practitioners[0]?.name || '') : practitioner
-  const resources = boot.practitioners.filter(p => effectivePractitioner === 'all' || p.name === effectivePractitioner).map(p => ({ id: p.name, title: practitionerName(p) }))
-  const events = rows.filter(r => effectivePractitioner === 'all' || r.practitioner === effectivePractitioner).map(r => ({ id: r.name, title: `${time(r.appointment_time)}  ${fullName(r)} · ${demoText(r.cc_service_label) || 'Seduta'}`, start: wallDate(r.appointment_date, r.appointment_time), end: dayjs(wallDate(r.appointment_date, r.appointment_time)).add(Number(r.duration || 60), 'minute').toDate(), resourceId: r.practitioner, row: r }))
+  const isAll = !isProfessional && (selectedPractitioners.length === 0 || selectedPractitioners.length === boot.practitioners.length)
+  const effectivePractitioners = isProfessional
+    ? [boot.practitioners[0]?.name].filter(Boolean) as string[]
+    : (isAll ? boot.practitioners.map(p => p.name) : selectedPractitioners)
+  const resources = boot.practitioners.filter(p => effectivePractitioners.includes(p.name)).map(p => ({ id: p.name, title: practitionerName(p) }))
+  const events = rows.filter(r => effectivePractitioners.includes(r.practitioner)).map(r => ({ id: r.name, title: `${time(r.appointment_time)}  ${fullName(r)} · ${demoText(r.cc_service_label) || 'Seduta'}`, start: wallDate(r.appointment_date, r.appointment_time), end: dayjs(wallDate(r.appointment_date, r.appointment_time)).add(Number(r.duration || 60), 'minute').toDate(), resourceId: r.practitioner, row: r }))
+  const bookingPractitionerId = (!isAll && effectivePractitioners.length === 1) ? effectivePractitioners[0] : (isProfessional ? (boot.practitioners[0]?.name || '') : '')
   const days = Array.from({ length: 7 }, (_, index) => dayjs(start).add(index, 'day').toDate())
   const visitCount = rows.length
   const completed = rows.filter(r => !!r.cc_performed).length
   const step = (n: number) => setDate(dayjs(date).add(n * (mode === 'week' ? 7 : 1), 'day').toDate())
   const refresh = () => { setSelected(null); setBooking(false); setReload(x => x + 1); void refreshBoot() }
 
-  return <><Heading eyebrow="IL TUO SPAZIO DI LAVORO" title="Agenda" subtitle={`${displayDate(iso(start))}${mode === 'week' ? ' – ' + displayDate(iso(end)) : ''}  ·  ${monthLabel(date)}`} action={<Button onClick={() => { setBookingPractitioner(effectivePractitioner === 'all' ? '' : effectivePractitioner); setBooking(true) }}><Plus size={18} /> Nuova prenotazione</Button>} />
+  return <><Heading eyebrow="IL TUO SPAZIO DI LAVORO" title="Agenda" subtitle={`${displayDate(iso(start))}${mode === 'week' ? ' – ' + displayDate(iso(end)) : ''}  ·  ${monthLabel(date)}`} action={<Button onClick={() => { setBookingPractitioner(bookingPractitionerId); setBooking(true) }}><Plus size={18} /> Nuova prenotazione</Button>} />
     <div className="metrics-grid"><Metric label="Sedute nel periodo" value={visitCount} tone="blue" /><Metric label="Sedute svolte" value={completed} tone="green" /><Metric label="Da completare" value={visitCount - completed} tone="amber" /><Metric label="Professionisti" value={resources.length} tone="purple" /></div>
-    <section className="panel calendar-panel"><div className="panel-toolbar"><div className="toolbar-left"><div className="segmented"><button className={mode === 'day' ? 'selected' : ''} onClick={() => setMode('day')}>Giorno</button><button className={mode === 'week' ? 'selected' : ''} onClick={() => setMode('week')}>Settimana</button></div><button className="icon-button bordered" title="Precedente" aria-label="Periodo precedente" onClick={() => step(-1)}><ChevronLeft /></button><button className="icon-button bordered" title="Successivo" aria-label="Periodo successivo" onClick={() => step(1)}><ChevronRight /></button><Button variant="secondary" onClick={() => setDate(wallDate(romeToday(), '12:00'))}>Oggi</Button><div className="calendar-popover-wrap"><Button variant="secondary" onClick={() => setCalendarOpen(open => !open)} aria-expanded={calendarOpen} aria-label="Apri calendario"><CalendarDays size={16} /> Scegli data</Button>{calendarOpen && <CalendarPopover current={date} onSelect={setDate} onClose={() => setCalendarOpen(false)} />}</div></div><div className="toolbar-right">{isProfessional ? <span className="agenda-practitioner-label">Professionista: <strong>{practitionerName(boot.practitioners[0] ?? { name: effectivePractitioner, practitioner_name: 'Mio profilo' } as Practitioner)}</strong></span> : <label className="select-wrap"><Filter size={16} /><select value={practitioner} onChange={e => setPractitioner(e.target.value)} aria-label="Professionista"><option value="all">Tutti i professionisti</option>{boot.practitioners.map(p => <option key={p.name} value={p.name}>{practitionerName(p)}</option>)}</select></label>}<button className="icon-button bordered" title="Aggiorna" aria-label="Aggiorna agenda" onClick={() => setReload(x => x + 1)}><RefreshCw /></button></div></div>
+    <section className="panel calendar-panel"><div className="panel-toolbar"><div className="toolbar-left"><div className="segmented"><button className={mode === 'day' ? 'selected' : ''} onClick={() => setMode('day')}>Giorno</button><button className={mode === 'week' ? 'selected' : ''} onClick={() => setMode('week')}>Settimana</button></div><button className="icon-button bordered" title="Precedente" aria-label="Periodo precedente" onClick={() => step(-1)}><ChevronLeft /></button><button className="icon-button bordered" title="Successivo" aria-label="Periodo successivo" onClick={() => step(1)}><ChevronRight /></button><Button variant="secondary" onClick={() => setDate(wallDate(romeToday(), '12:00'))}>Oggi</Button><div className="calendar-popover-wrap"><Button variant="secondary" onClick={() => setCalendarOpen(open => !open)} aria-expanded={calendarOpen} aria-label="Apri calendario"><CalendarDays size={16} /> Scegli data</Button>{calendarOpen && <CalendarPopover current={date} onSelect={setDate} onClose={() => setCalendarOpen(false)} />}</div></div><div className="toolbar-right">{isProfessional ? <span className="agenda-practitioner-label">Professionista: <strong>{practitionerName(boot.practitioners[0] ?? { name: effectivePractitioners[0], practitioner_name: 'Mio profilo' } as Practitioner)}</strong></span> : <><PractitionerMultiSelect practitioners={boot.practitioners} selected={selectedPractitioners} onChange={setSelectedPractitioners} /><select aria-label="Professionista" value={selectedPractitioners.length === 1 ? selectedPractitioners[0] : isAll ? 'all' : selectedPractitioners.join(',')} onChange={e => { const val = e.target.value; setSelectedPractitioners(val === 'all' || !val ? [] : [val]) }} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0, margin: 0, padding: 0 }} tabIndex={-1}><option value="all">Tutti i professionisti</option>{boot.practitioners.map(p => <option key={p.name} value={p.name}>{practitionerName(p)}</option>)}</select></>}<button className="icon-button bordered" title="Aggiorna" aria-label="Aggiorna agenda" onClick={() => setReload(x => x + 1)}><RefreshCw /></button></div></div>
       {error && <p className="inline-error" role="alert">{error}</p>}
-      {loading ? <div className="calendar-loading" role="status">Caricamento agenda…</div> : !resources.length ? <Empty title="Nessun professionista disponibile" detail="Verifica l'assegnazione al centro selezionato." /> : mode === 'week' ? <WeekGrid days={days.map(iso)} resources={resources} rows={rows} schedules={schedules} onSelect={setSelected} onBook={(day, professional) => { setDate(wallDate(day, '12:00')); setBookingPractitioner(professional); setBooking(true) }} /> : <div className="calendar-wrap"><Calendar localizer={localizer} culture="it" events={events} resources={resources} resourceIdAccessor="id" resourceTitleAccessor="title" view={Views.DAY} date={date} onNavigate={setDate} onView={v => setMode(v === Views.WEEK ? 'week' : 'day')} toolbar={false} popup selectable min={wallDate(iso(date), '07:00')} max={wallDate(iso(date), '21:00')} step={30} timeslots={2} startAccessor="start" endAccessor="end" onSelectEvent={e => setSelected(e.row)} onSelectSlot={slot => { setDate(slot.start); setBookingPractitioner(effectivePractitioner === 'all' ? '' : effectivePractitioner); setBooking(true) }} eventPropGetter={e => ({ className: e.row.status === 'Cancelled' ? 'event-cancelled' : e.row.cc_performed ? 'event-done' : 'event-booked' })} messages={{ noEventsInRange: 'Nessuna seduta nel periodo', showMore: count => `+ ${count} altre`, allDay: 'Tutto il giorno' }} /></div>}
+      {loading ? <div className="calendar-loading" role="status">Caricamento agenda…</div> : !resources.length ? <Empty title="Nessun professionista disponibile" detail="Verifica l'assegnazione al centro selezionato." /> : mode === 'week' ? <WeekGrid days={days.map(iso)} resources={resources} rows={rows} schedules={schedules} onSelect={setSelected} onBook={(day, professional) => { setDate(wallDate(day, '12:00')); setBookingPractitioner(professional); setBooking(true) }} /> : <div className="calendar-wrap"><Calendar localizer={localizer} culture="it" events={events} resources={resources} resourceIdAccessor="id" resourceTitleAccessor="title" view={Views.DAY} date={date} onNavigate={setDate} onView={v => setMode(v === Views.WEEK ? 'week' : 'day')} toolbar={false} popup selectable min={wallDate(iso(date), '07:00')} max={wallDate(iso(date), '21:00')} step={30} timeslots={2} startAccessor="start" endAccessor="end" onSelectEvent={e => setSelected(e.row)} onSelectSlot={slot => { setDate(slot.start); setBookingPractitioner(bookingPractitionerId); setBooking(true) }} eventPropGetter={e => ({ className: e.row.status === 'Cancelled' ? 'event-cancelled' : e.row.cc_performed ? 'event-done' : 'event-booked' })} messages={{ noEventsInRange: 'Nessuna seduta nel periodo', showMore: count => `+ ${count} altre`, allDay: 'Tutto il giorno' }} /></div>}
     </section>{booking && <Booking boot={boot} center={center} onClose={() => setBooking(false)} onSuccess={refresh} feedback={feedback} date={iso(date)} initialPractitioner={bookingPractitioner} />}{selected && <AppointmentDetail row={selected} boot={boot} center={center} onClose={() => setSelected(null)} onSuccess={refresh} feedback={feedback} />}</>
 }
 
@@ -350,11 +492,19 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
   const [sessions, setSessions] = useState<Appointment[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(false)
   const [sessionsError, setSessionsError] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalSessions, setTotalSessions] = useState(0)
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [reload, setReload] = useState(0)
 
+  const [profSessions, setProfSessions] = useState<Appointment[]>([])
+  const [profLoading, setProfLoading] = useState(false)
+  const [profError, setProfError] = useState('')
+
   const applyPreset = (p: 'today' | 'week' | 'month' | 'last_month') => {
     setPreset(p)
+    setPage(1)
     const today = dayjs(romeToday())
     if (p === 'today') {
       setStart(today.format('YYYY-MM-DD'))
@@ -392,31 +542,52 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
     setSessionsLoading(true)
     setSessionsError('')
     const profParam = effectivePractitioner || undefined
-    ops<{ appointments: Appointment[]; total: number }>('reporting.sessions', { center, start, end, practitioner: profParam, kpi: selectedKpi })
+    ops<{ appointments: Appointment[]; total: number; total_pages?: number }>('reporting.sessions', {
+      center, start, end, practitioner: profParam, kpi: selectedKpi, page, page_length: 50
+    })
       .then(result => {
         if (live) {
           setSessions(result.appointments || [])
+          setTotalSessions(result.total ?? (result.appointments || []).length)
+          setTotalPages(result.total_pages ?? Math.max(1, Math.ceil((result.total ?? 0) / 50)))
           setSessionsLoading(false)
         }
-      }).catch(cause => {
+      })
+      .catch(cause => {
         if (live) {
-          ops<{ appointments: Appointment[]; truncated: boolean }>('workspace.agenda', { center, start, end })
-            .then(res => {
-              if (live) {
-                const rows = res.appointments.filter(r => !profParam || r.practitioner === profParam)
-                setSessions(rows)
-                setSessionsLoading(false)
-              }
-            }).catch(err => {
-              if (live) {
-                setSessionsError(getError(err))
-                setSessionsLoading(false)
-              }
-            })
+          setSessions([])
+          setTotalSessions(0)
+          setTotalPages(1)
+          setSessionsError(getError(cause) || 'Impossibile caricare il dettaglio delle sedute dal server.')
+          setSessionsLoading(false)
         }
       })
     return () => { live = false }
-  }, [center, start, end, effectivePractitioner, selectedKpi, reload])
+  }, [center, start, end, effectivePractitioner, selectedKpi, page, reload])
+
+  useEffect(() => {
+    if (!center || !professionalOpen || !professional) {
+      setProfSessions([])
+      return
+    }
+    let live = true
+    setProfLoading(true)
+    setProfError('')
+    ops<{ appointments: Appointment[]; total: number }>('reporting.sessions', {
+      center, start, end, practitioner: professional, kpi: 'all', page: 1, page_length: 0
+    }).then(res => {
+      if (live) {
+        setProfSessions(res.appointments || [])
+        setProfLoading(false)
+      }
+    }).catch(err => {
+      if (live) {
+        setProfError(getError(err))
+        setProfLoading(false)
+      }
+    })
+    return () => { live = false }
+  }, [center, start, end, professionalOpen, professional, reload])
 
   const currencies = data?.currencies as Record<string, Row> ?? {}
   const kpiLabel: Record<string, string> = {
@@ -435,22 +606,25 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
   })
 
   const exportProfessional = () => {
-    if (!professional || sessionsLoading || !!sessionsError) return
+    if (!professional || profLoading || !!profError) return
     const safe = (value: unknown) => { const text = String(value ?? ''); const guarded = /^[=+\-@\t\r\n]/.test(text.trimStart()) ? "'" + text : text; return '"' + guarded.replaceAll('"', '""') + '"' }
-    const profRows = sessions.filter(row => !professional || row.practitioner === professional)
-    const rows = [['Data', 'Ora', 'Paziente', 'Servizio', 'Stato'], ...profRows.map(row => [displayDate(row.appointment_date), time(row.appointment_time), demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name), demoText(row.cc_service_label) || 'Seduta', row.cc_performed ? 'Svolta' : row.status === 'Cancelled' ? 'Annullata' : 'In programma'])]
+    const rows = [['Data', 'Ora', 'Paziente', 'Servizio', 'Stato'], ...profSessions.map(row => [displayDate(row.appointment_date), time(row.appointment_time), demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name), demoText(row.cc_service_label) || 'Seduta', row.cc_performed ? 'Svolta' : row.status === 'Cancelled' ? 'Annullata' : 'In programma'])]
     const blob = new Blob(['\ufeff' + rows.map(row => row.map(safe).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' })
     const href = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = href; link.download = 'centrochange-report-professionista.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(href), 1000)
   }
 
+  const selectKpi = (k: string) => {
+    setSelectedKpi(k)
+    setPage(1)
+  }
+
   return <><Heading eyebrow="OPERATIVITÀ" title="Report" subtitle="Andamento delle sedute e dati operativi del centro." action={<div className="button-group"><Button variant="secondary" onClick={() => setProfessionalOpen(v => !v)}>Report professionisti</Button><a className="button secondary" href={exportUrl} aria-disabled={loading || !!data?.truncated}><Download size={17} /> Esporta CSV centro</a>{financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode={isProfessional ? 'professionals' : 'patients'} buttonLabel="Compensi e fatture autorizzati" />}</div>} />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Riepilogo operativo</h2><p>Pagamenti operativi distinti dal saldo contabile. Fai clic su un indicatore per filtrare le sedute.</p></div><div className="toolbar-right">{isProfessional ? <span className="agenda-practitioner-label">Report personale: <strong>{practitionerName(boot.practitioners[0] ?? { name: myPractitioner, practitioner_name: 'Mio profilo' } as Practitioner)}</strong></span> : <Field label="Professionista"><select aria-label="Filtro professionista" value={professional} onChange={event => setProfessional(event.target.value)}><option value="">Tutti i professionisti</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field>}<Field label="Dal"><DateInput value={start} onChange={v => { setStart(v); setPreset('custom') }} required /></Field><Field label="Al"><DateInput value={end} onChange={v => { setEnd(v); setPreset('custom') }} required /></Field></div></div>
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Riepilogo operativo</h2><p>Pagamenti operativi distinti dal saldo contabile. Fai clic su un indicatore per filtrare le sedute.</p></div><div className="toolbar-right">{isProfessional ? <span className="agenda-practitioner-label">Report personale: <strong>{practitionerName(boot.practitioners[0] ?? { name: myPractitioner, practitioner_name: 'Mio profilo' } as Practitioner)}</strong></span> : <Field label="Professionista"><select aria-label="Filtro professionista" value={professional} onChange={event => { setProfessional(event.target.value); setPage(1) }}><option value="">Tutti i professionisti</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field>}<Field label="Dal"><DateInput value={start} onChange={v => { setStart(v); setPreset('custom'); setPage(1) }} required /></Field><Field label="Al"><DateInput value={end} onChange={v => { setEnd(v); setPreset('custom'); setPage(1) }} required /></Field></div></div>
       <div className="period-presets" role="group" aria-label="Scorciatoie periodo"><button type="button" className={preset === 'today' ? 'selected' : ''} onClick={() => applyPreset('today')}>Oggi</button><button type="button" className={preset === 'week' ? 'selected' : ''} onClick={() => applyPreset('week')}>Questa settimana</button><button type="button" className={preset === 'month' ? 'selected' : ''} onClick={() => applyPreset('month')}>Questo mese</button><button type="button" className={preset === 'last_month' ? 'selected' : ''} onClick={() => applyPreset('last_month')}>Mese scorso</button></div>
-      {loading ? <p className="panel-loading">Caricamento…</p> : !Object.keys(currencies).length ? <Empty title="Nessun dato nel periodo" /> : Object.entries(currencies).map(([currency, r]) => <div className="report-currency" key={currency}><h3>{currency === 'UNSET' ? 'Valuta da verificare' : currency}</h3><div className="metrics-grid inset"><Metric label="Sedute totali" value={String(r.sessions ?? 0)} onClick={() => setSelectedKpi('all')} active={selectedKpi === 'all'} /><Metric label="Svolte" value={String(r.performed ?? 0)} tone="green" onClick={() => setSelectedKpi('performed')} active={selectedKpi === 'performed'} /><Metric label="In programma" value={String(r.future ?? 0)} tone="blue" onClick={() => setSelectedKpi('future')} active={selectedKpi === 'future'} /><Metric label="Da completare" value={String(r.to_close ?? 0)} tone="amber" onClick={() => setSelectedKpi('to_close')} active={selectedKpi === 'to_close'} /><Metric label="Pagate operativamente" value={String(r.operational_paid ?? 0)} tone="green" onClick={() => setSelectedKpi('operational_paid')} active={selectedKpi === 'operational_paid'} /><Metric label="Non pagate operativamente" value={String(r.operational_unpaid ?? (Number(r.performed ?? 0) - Number(r.operational_paid ?? 0)))} tone="amber" onClick={() => setSelectedKpi('operational_unpaid')} active={selectedKpi === 'operational_unpaid'} /><Metric label="Sedute annullate" value={String(r.cancelled ?? 0)} tone="purple" onClick={() => setSelectedKpi('cancelled')} active={selectedKpi === 'cancelled'} /><Metric label="Con economia dovuta" value={String(r.due ?? 0)} tone="amber" onClick={() => setSelectedKpi('due')} active={selectedKpi === 'due'} /><Metric label="Valore dovuto" value={currency === 'UNSET' ? 'Da verificare' : money(r.due_snapshot_amount, currency)} tone="purple" /></div></div>)}{Boolean(data?.truncated) && <p className="inline-error" role="alert">Totali parziali: restringi il periodo. L'esportazione è sospesa.</p>}
-      <div className="report-drilldown"><div className="report-drilldown-header"><h3>Dettaglio sedute — {kpiLabel[selectedKpi] || 'Tutte'} ({sessions.length})</h3><div className="button-group"><a className="button secondary" href={exportUrl}><Download size={16} /> Esporta CSV ({kpiLabel[selectedKpi] || 'Filtro'})</a></div></div>{sessionsLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : sessionsError ? <p className="inline-error" role="alert">{sessionsError}</p> : !sessions.length ? <Empty title="Nessuna seduta per questo filtro" detail="Modifica il filtro KPI o il periodo per visualizzare i record." /> : <DataTable rows={sessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (_v, row) => demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name) }, { key: 'practitioner_name', label: 'Professionista', render: (_v, row) => demoText(row.practitioner_name || row.practitioner) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato', render: (v, row) => row.cc_performed ? 'Svolta' : v === 'Cancelled' ? 'Annullata' : v === 'Closed' ? 'Chiusa' : 'In programma' }, { key: 'cc_paid', label: 'Pagamento operativo', render: v => v ? <Chip tone="good">Pagata</Chip> : <Chip tone="warn">Non pagata</Chip> }, { key: 'mode_of_payment', label: 'Metodo', render: v => String(v || '—') }, { key: 'cc_price_snapshot', label: 'Quota', render: (v, row) => v != null ? money(v, String(row.cc_currency_snapshot || 'EUR')) : '—' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />}</div>
+      {loading ? <p className="panel-loading">Caricamento…</p> : !Object.keys(currencies).length ? <Empty title="Nessun dato nel periodo" /> : Object.entries(currencies).map(([currency, r]) => <div className="report-currency" key={currency}><h3>{currency === 'UNSET' ? 'Valuta da verificare' : currency}</h3><div className="metrics-grid inset"><Metric label="Sedute totali" value={String(r.sessions ?? 0)} onClick={() => selectKpi('all')} active={selectedKpi === 'all'} /><Metric label="Svolte" value={String(r.performed ?? 0)} tone="green" onClick={() => selectKpi('performed')} active={selectedKpi === 'performed'} /><Metric label="In programma" value={String(r.future ?? 0)} tone="blue" onClick={() => selectKpi('future')} active={selectedKpi === 'future'} /><Metric label="Da completare" value={String(r.to_close ?? 0)} tone="amber" onClick={() => selectKpi('to_close')} active={selectedKpi === 'to_close'} /><Metric label="Pagate operativamente" value={String(r.operational_paid ?? 0)} tone="green" onClick={() => selectKpi('operational_paid')} active={selectedKpi === 'operational_paid'} /><Metric label="Non pagate operativamente" value={String(r.operational_unpaid ?? (Number(r.performed ?? 0) - Number(r.operational_paid ?? 0)))} tone="amber" onClick={() => selectKpi('operational_unpaid')} active={selectedKpi === 'operational_unpaid'} /><Metric label="Sedute annullate" value={String(r.cancelled ?? 0)} tone="purple" onClick={() => selectKpi('cancelled')} active={selectedKpi === 'cancelled'} /><Metric label="Con economia dovuta" value={String(r.due ?? 0)} tone="amber" onClick={() => selectKpi('due')} active={selectedKpi === 'due'} /><Metric label="Valore dovuto" value={currency === 'UNSET' ? 'Da verificare' : money(r.due_snapshot_amount, currency)} tone="purple" /></div></div>)}{Boolean(data?.truncated) && <p className="inline-error" role="alert">Totali parziali: restringi il periodo. L'esportazione è sospesa.</p>}
+      <div className="report-drilldown"><div className="report-drilldown-header"><h3>Dettaglio sedute — {kpiLabel[selectedKpi] || 'Tutte'} ({totalSessions})</h3><div className="button-group"><a className={`button secondary ${sessionsError || sessionsLoading ? 'disabled' : ''}`} href={sessionsError || sessionsLoading ? undefined : exportUrl} aria-disabled={sessionsLoading || !!sessionsError || !!data?.truncated} onClick={e => { if (sessionsError || sessionsLoading) e.preventDefault() }}><Download size={16} /> Esporta CSV ({kpiLabel[selectedKpi] || 'Filtro'})</a></div></div>{sessionsLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : sessionsError ? <p className="inline-error" role="alert">{sessionsError}</p> : !sessions.length ? <Empty title="Nessuna seduta per questo filtro" detail="Modifica il filtro KPI o il periodo per visualizzare i record." /> : <><DataTable rows={sessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (_v, row) => demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name) }, { key: 'practitioner_name', label: 'Professionista', render: (_v, row) => demoText(row.practitioner_name || row.practitioner) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato', render: (v, row) => row.cc_performed ? 'Svolta' : (v === 'Cancelled' ? 'Annullata' : (row.cc_classified_future ? 'In programma' : 'Da completare')) }, { key: 'cc_paid', label: 'Pagamento operativo', render: (v, row) => { if (v) return <Chip tone="good">Pagata</Chip>; if (row.status === 'Cancelled') return <Chip tone="neutral">Annullata</Chip>; if (row.cc_classified_future) return <Chip tone="blue">In programma</Chip>; if (['Non Due', 'Waived', 'Package Covered'].includes(String(row.cc_economic_state))) return <Chip tone="neutral">Non dovuta</Chip>; return <Chip tone="warn">Non pagata</Chip> } }, { key: 'mode_of_payment', label: 'Metodo', render: v => String(v || '—') }, { key: 'cc_price_snapshot', label: 'Quota', render: (v, row) => v != null ? money(v, String(row.cc_currency_snapshot || 'EUR')) : '—' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />{totalPages > 1 && <div className="pagination-bar" role="navigation" aria-label="Paginazione sedute"><span>Pagina <strong>{page}</strong> di <strong>{totalPages}</strong> ({totalSessions} sedute totali)</span><div className="button-group"><Button variant="secondary" disabled={page <= 1 || sessionsLoading} onClick={() => setPage(p => Math.max(1, p - 1))}>Precedente</Button><Button variant="secondary" disabled={page >= totalPages || sessionsLoading} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Successiva</Button></div></div>}</>}</div>
     </section>
-    {professionalOpen && <section className="panel professional-report"><div className="panel-toolbar"><div className="panel-title"><h2>Report professionisti</h2><p>Sedute del professionista nel periodo selezionato. Nessuna attribuzione contabile dedotta.</p></div><div className="toolbar-right"><Field label="Professionista"><select aria-label="Professionista report" value={professional} onChange={event => setProfessional(event.target.value)}><option value="">Seleziona</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field><Button variant="secondary" onClick={exportProfessional} disabled={!professional || sessionsLoading || !!sessionsError}><Download size={16} /> Esporta CSV</Button>{financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode="professionals" buttonLabel="Compensi e fatture autorizzati" />}</div></div>{!professional ? <Empty title="Seleziona un professionista" /> : sessionsLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : sessionsError ? <p className="inline-error" role="alert">{sessionsError}</p> : (() => {
-      const profSessions = sessions.filter(row => !professional || row.practitioner === professional)
+    {professionalOpen && <section className="panel professional-report"><div className="panel-toolbar"><div className="panel-title"><h2>Report professionisti</h2><p>Sedute del professionista nel periodo selezionato. Nessuna attribuzione contabile dedotta.</p></div><div className="toolbar-right"><Field label="Professionista"><select aria-label="Professionista report" value={professional} onChange={event => setProfessional(event.target.value)}><option value="">Seleziona</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field><Button variant="secondary" onClick={exportProfessional} disabled={!professional || profLoading || !!profError}><Download size={16} /> Esporta CSV</Button>{financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode="professionals" buttonLabel="Compensi e fatture autorizzati" />}</div></div>{!professional ? <Empty title="Seleziona un professionista" /> : profLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : profError ? <p className="inline-error" role="alert">{profError}</p> : (() => {
       const performed = profSessions.filter(row => !!row.cc_performed).length
       const toClose = profSessions.filter(row => !row.cc_performed && row.status !== 'Cancelled').length
       return <><div className="metrics-grid inset"><Metric label="Sedute nel periodo" value={String(profSessions.length)} /><Metric label="Sedute svolte" value={String(performed)} tone="green" /><Metric label="Da completare" value={String(toClose)} tone="amber" /></div><DataTable rows={profSessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (value, row) => demoPatient(row.patient, value, row.patient_first_name, row.patient_last_name) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato', render: (value, row) => row.cc_performed ? 'Svolta' : value === 'Cancelled' ? 'Annullata' : 'In programma' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} /></>

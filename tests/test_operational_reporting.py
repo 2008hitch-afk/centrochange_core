@@ -1,13 +1,16 @@
-"""Unit and regression tests for operational reporting, role scoping and KPI drilldown."""
+"""Unit and regression tests for operational reporting, role scoping, temporal edge-cases and volumetric scalability (>500 sessions)."""
 import importlib.util
 from pathlib import Path
 import sys
 import types
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+from datetime import datetime, date, time
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / 'app/centrochange_core/centrochange_core/operations/reporting.py'
+ROME = ZoneInfo('Europe/Rome')
 
 
 class Denied(Exception):
@@ -26,6 +29,8 @@ class OperationalReportingTests(unittest.TestCase):
         self.manager = True
         self.actor_roles = ['CC Manager']
         self.user_practitioner = 'PRO-A'
+        self.test_clock = datetime(2026, 10, 24, 12, 0, 0, tzinfo=ROME)
+
         self.appointments = [
             Record(name='APP-1', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
                    practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-20',
@@ -53,6 +58,9 @@ class OperationalReportingTests(unittest.TestCase):
                    cc_package=None, cc_package_state=None),
         ]
         self.frappe = types.ModuleType('frappe')
+        self.frappe.in_test = True
+        self.frappe.conf = types.SimpleNamespace(cc_synthetic_dev=1)
+        self.frappe.flags = {'cc_test_clock': self.test_clock}
         self.frappe.PermissionError = Denied
         self.frappe.ValidationError = ValueError
         self.frappe.throw = lambda message, exc=ValueError: (_ for _ in ()).throw(exc(message))
@@ -64,9 +72,9 @@ class OperationalReportingTests(unittest.TestCase):
             if doctype == 'Patient Appointment':
                 result = []
                 for a in self.appointments:
-                    if filters.get('cc_center') and a.cc_center != filters['cc_center']:
+                    if filters and filters.get('cc_center') and a.cc_center != filters['cc_center']:
                         continue
-                    if filters.get('practitioner') and a.practitioner != filters['practitioner']:
+                    if filters and filters.get('practitioner') and a.practitioner != filters['practitioner']:
                         continue
                     result.append(Record(a))
                 return result
@@ -78,10 +86,9 @@ class OperationalReportingTests(unittest.TestCase):
 
         self.frappe.get_list = fake_get_list
         self.frappe.get_all = fake_get_list
-        from datetime import date
         self.frappe.utils = types.SimpleNamespace(
             getdate=lambda d: date.fromisoformat(str(d)) if isinstance(d, str) else d,
-            get_time=lambda t: t,
+            get_time=lambda t: time.fromisoformat(str(t)[:8]) if isinstance(t, str) else t,
             cint=int,
             today=lambda: '2026-10-24',
             formatdate=lambda d, fmt: str(d)
@@ -129,7 +136,7 @@ class OperationalReportingTests(unittest.TestCase):
         self.assertEqual(eur['performed'], 2)
         self.assertEqual(eur['cancelled'], 1)
         self.assertEqual(eur['operational_paid'], 1)
-        self.assertEqual(eur['operational_unpaid'], 1)  # Only APP-2 (APP-3 is cancelled non-due, APP-4 is pending)
+        self.assertEqual(eur['operational_unpaid'], 1)  # Only APP-2 (APP-3 is cancelled, APP-4 is future)
         self.assertEqual(eur['due'], 2)
         self.assertEqual(eur['due_snapshot_amount'], 180)
 
@@ -146,8 +153,7 @@ class OperationalReportingTests(unittest.TestCase):
         res = self.reporting.summary('CENTRO-A', '2026-10-01', '2026-10-24')
         self.assertEqual(res['practitioner'], 'PRO-A')
         eur = res['currencies']['EUR']
-        self.assertEqual(eur['sessions'], 3)  # Only PRO-A's 3 appointments, PRO-B excluded
-        # Foreign practitioner explicitly rejected
+        self.assertEqual(eur['sessions'], 3)
         with self.assertRaises(Denied):
             self.reporting.summary('CENTRO-A', '2026-10-01', '2026-10-24', practitioner='PRO-B')
 
@@ -170,8 +176,102 @@ class OperationalReportingTests(unittest.TestCase):
         self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-24', kpi='operational_unpaid')
         self.assertIn('filecontent', self.frappe.response)
         content = self.frappe.response['filecontent']
+        self.assertTrue(content.startswith('\ufeff'))
         self.assertIn('Paziente 2', content)
         self.assertNotIn('Paziente 1', content)
+        self.assertIn('centrochange-report-centro.csv', self.frappe.response['filename'])
+
+    def test_temporal_transition_no_overlap(self):
+        """A session scheduled today at 15:00 is future at 12:00, but to_close at 16:30."""
+        # 1. At 12:00 (before session): APP-4 is future
+        self.frappe.flags['cc_test_clock'] = datetime(2026, 10, 24, 12, 0, 0, tzinfo=ROME)
+        res_future = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', kpi='future')
+        res_toclose = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', kpi='to_close')
+        self.assertIn('APP-4', [a['name'] for a in res_future['appointments']])
+        self.assertNotIn('APP-4', [a['name'] for a in res_toclose['appointments']])
+
+        # 2. At 16:30 (after session duration 60 min): APP-4 is to_close, NOT future
+        self.frappe.flags['cc_test_clock'] = datetime(2026, 10, 24, 16, 30, 0, tzinfo=ROME)
+        res_future_later = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', kpi='future')
+        res_toclose_later = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', kpi='to_close')
+        self.assertNotIn('APP-4', [a['name'] for a in res_future_later['appointments']])
+        self.assertIn('APP-4', [a['name'] for a in res_toclose_later['appointments']])
+
+    def test_volumetric_pagination_over_500_sessions(self):
+        """Simulate 550 appointments: 300 PRO-A, 250 PRO-B. Test server-side pagination, order stability, role clamp."""
+        big_dataset = []
+        for i in range(1, 551):
+            prac = 'PRO-A' if i <= 300 else 'PRO-B'
+            status = 'Closed' if i % 3 == 0 else ('Cancelled' if i % 10 == 0 else 'Scheduled')
+            performed = 1 if status == 'Closed' else 0
+            paid = 1 if (performed and i % 2 == 0) else 0
+            econ = 'Non Due' if status == 'Cancelled' else 'Due'
+            big_dataset.append(Record(
+                name=f'APP-VOL-{i:04d}',
+                patient=f'PAT-{(i % 20) + 1}',
+                patient_name=f'Paziente {(i % 20) + 1}',
+                practitioner=prac,
+                practitioner_name=f'Dott. {prac}',
+                cc_center='CENTRO-A',
+                appointment_date='2026-10-15',
+                appointment_time=f'{(9 + (i % 8)):02d}:00:00',
+                duration=45,
+                status=status,
+                cc_closure_state=status,
+                cc_economic_state=econ,
+                cc_performed=performed,
+                cc_paid=paid,
+                cc_late_cancellation=0,
+                cc_service_label='Visita Volumetrica',
+                cc_price_snapshot=100.0,
+                cc_currency_snapshot='EUR'
+            ))
+
+        self.appointments = big_dataset
+
+        # 1. Full summary count
+        summary = self.reporting.summary('CENTRO-A', '2026-10-01', '2026-10-31')
+        self.assertEqual(summary['total_appointments'], 550)
+        self.assertFalse(summary['truncated'])
+
+        # 2. Server-side pagination: page 1 (50 items)
+        page1 = self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-31', kpi='all', page=1, page_length=50)
+        self.assertEqual(page1['total'], 550)
+        self.assertEqual(len(page1['appointments']), 50)
+        self.assertEqual(page1['page'], 1)
+        self.assertEqual(page1['total_pages'], 11)
+
+        # 3. Server-side pagination: page 2 (50 items)
+        page2 = self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-31', kpi='all', page=2, page_length=50)
+        self.assertEqual(page2['total'], 550)
+        self.assertEqual(len(page2['appointments']), 50)
+        self.assertEqual(page2['page'], 2)
+        # Ensure no overlap between page 1 and page 2
+        p1_names = {a['name'] for a in page1['appointments']}
+        p2_names = {a['name'] for a in page2['appointments']}
+        self.assertEqual(len(p1_names.intersection(p2_names)), 0)
+
+        # 4. Server-side pagination: last page 11 (50 items)
+        page11 = self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-31', kpi='all', page=11, page_length=50)
+        self.assertEqual(len(page11['appointments']), 50)
+
+        # 5. Role scoping on >500 sessions: Professional A receives exactly 300 sessions
+        self.manager = False
+        self.actor_roles = ['CC Professional']
+        prof_summary = self.reporting.summary('CENTRO-A', '2026-10-01', '2026-10-31')
+        self.assertEqual(prof_summary['total_appointments'], 300)
+        prof_page1 = self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-31', kpi='all', page=1, page_length=50)
+        self.assertEqual(prof_page1['total'], 300)
+        self.assertEqual(prof_page1['total_pages'], 6)
+        self.assertTrue(all(a['practitioner'] == 'PRO-A' for a in prof_page1['appointments']))
+
+        # 6. Export CSV exports all 300 sessions for Professional A
+        self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-31', kpi='all')
+        csv_content = self.frappe.response['filecontent']
+        lines = csv_content.strip().split('\r\n') if '\r\n' in csv_content else csv_content.strip().split('\n')
+        # 1 header line + 300 data lines = 301 lines
+        self.assertEqual(len(lines), 301)
+        self.assertIn('centrochange-report-professionista.csv', self.frappe.response['filename'])
 
 
 if __name__ == '__main__':

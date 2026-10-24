@@ -49,6 +49,44 @@ Le catture originali in `docs/evidence/issue-171/` con nomi senza `live-clone` o
 
 **Limiti:** test con screen reader specifico NOT_TESTED; scheduler 21:00/07:00 sul DEV non forzato, perché mutativo, mentre clock controllato e retry sono PASS sul clone. L'accettazione Owner è PENDING. La PR resta DRAFT e non è autorizzato alcun merge automatico.
 
+## Remediation Finale Mandato Owner #171 (24/10/2026)
+
+Esecuzione autonoma del mandato vincolante Owner [commento 6385894801](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6385894801) e revisione indipendente [commento 6385867757](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6385867757).
+
+### 1. Cinque criteri MUST-FIX implementati e verificati
+
+1. **Agenda Direzione/Segreteria — Filtro professionisti multiplo e ricercabile**:
+   - Sostituita la `<select>` semplice con il componente `PractitionerMultiSelect`: controllo contestuale ricercabile per 1, più o tutti i professionisti autorizzati nel centro.
+   - Supporta selezione singola, multiselezione con chip rimovibili, pulsanti «Tutti» e «Reset», chiusura con `Escape` o click esterno, e layout responsive mobile (scheda fissa sul fondo).
+   - Per l'account `CC Professional` (`CC Clinician`), il filtro è rimosso e sostituito con l'indicatore read-only del proprio profilo, senza opzioni ingannevoli.
+   - Mantenuto `<select aria-label="Professionista">` sincronizzato per compatibilità di test e accessibilità.
+2. **Report Fail-Closed (Nessun fallback silenzioso)**:
+   - Rimosso integralmente il fallback a `workspace.agenda` (200 righe non filtrate) in caso di errore di `operations.reporting.sessions`.
+   - In caso di errore o assenza di permessi, la UI presenta il messaggio di errore localizzato, svuota la tabella e disabilita il pulsante di esportazione CSV, prevenendo qualsiasi presentazione di totali parziali o scorretti.
+3. **Report Professionisti — Query autorevole isolata**:
+   - Eliminato il ricalcolo client-side dei KPI secondari sul sottoinsieme `sessions` del pannello principale.
+   - Il pannello secondario esegue la propria query autorevole `reporting.sessions` con `kpi: 'all'` e `practitioner: professional`, garantendo metriche matematicamente corrette anche con filtri KPI attivi nella tabella principale.
+4. **Scalabilità e Paginazione Server-Side (>500 sedute)**:
+   - Esteso `reporting.sessions` con parametri `page` (default 1), `page_length` (default 50; <= 0 per dataset completo), `order_by`, `total`, `total_pages`.
+   - L'arricchimento dei dettagli avviene solo sulle righe della pagina corrente; il conteggio totale e le pagine riflettono l'intero dataset.
+   - Verificato su MariaDB/Frappe con test sintetico volumetrico di 550 sedute (300 PRO-A, 250 PRO-B) senza troncamento né dispersioni.
+   - `export_csv` esporta l'intero dataset corrispondente ai filtri (`page_length=0`), con formattazione CSV standard (`;`, UTF-8 BOM).
+5. **Classificazione Temporale senza contraddizioni**:
+   - Implementato oracolo di timezone `ZoneInfo("Europe/Rome")` con calcolo dell'orario di fine seduta (`appointment_date` + `appointment_time` + `duration`).
+   - Le categorie operative sono mutuamente esclusive e prive di ambiguità:
+     - `cancelled`: `status == 'Cancelled'`
+     - `performed`: `cc_performed == 1` e non annullata
+     - `future`: non annullata, non svolta, `end_rome > now_rome`
+     - `to_close`: non annullata, non svolta, `end_rome <= now_rome` (transizione esatta all'orario di fine seduta)
+     - `unpaid`: non pagata, non annullata, non futura, ed economia non coperta da pacchetto/non dovuta. Le sedute future non vengono etichettate come "Non pagata".
+
+### 2. Risultati della Suite di Test
+
+- **Python Unit & Volumetric Test**: 90/90 PASS in 1.88s (`test_operational_reporting.py` include 550 record sintetici con verifica paginazione e transizioni temporali).
+- **Playwright Synthetic Suite**: 170+ test PASS su desktop (1440x900) e mobile (390x844), inclusi 10 test dedicati ai 5 criteri MUST-FIX.
+- **Single-Stack Parity**: `python3 infra/verify_full_single_stack.py --source` PASS con manifest aggiornato.
+
+
 ## Remediation P0 Report / P0 Agenda / P1 Navigazione — Commit fa360a4 (24/10/2026)
 
 In risposta al riscontro Owner UAT (`UAT-05-REPORT-01 = FAIL / CORE_FUNCTIONAL_GAP` e osservazioni su Agenda e navigazione Professionista), è stato eseguito il ciclo completo di remediation e collaudo:
