@@ -751,6 +751,32 @@ test('AUDIT-05: pagina vecchia non mescola risultati dopo cambio ricerca', async
   await expect(page.locator('tbody tr')).not.toContainText('Dott. Arancio')
 })
 
+test('AUDIT-05: scheda sintetica non espone il codice tecnico come nome', async ({ page }) => {
+  await mockApi(page, [], true)
+  const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', last_name: '', status: 'Active' }
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [row], has_more: false } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: row }) }))
+  await page.goto('./#Professionisti')
+  await expect(page.locator('tbody tr')).toContainText('Professionista di prova A')
+  await page.locator('tbody tr').click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer.getByRole('heading', { name: 'Scheda professionista' })).toBeVisible()
+  await expect(drawer).toContainText('Professionista di prova A')
+  await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
+})
+
+test('AUDIT-05: selettore Report professionisti usa la stessa identità leggibile', async ({ page }) => {
+  const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', status: 'Active' }
+  await mockApi(page, [], true, {}, { practitioners: [row] })
+  await page.goto('./#Report')
+  await page.getByRole('button', { name: 'Report professionisti' }).click()
+  const select = page.getByRole('combobox', { name: 'Professionista report' })
+  await expect(select).toContainText('Professionista di prova A')
+  await expect(select).not.toContainText('CC-HTTP-AbCd123456 a')
+})
+
 test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo', async ({ page }, testInfo) => {
   await mockApi(page, [], false, { cc_performed: 1 }, { roles: ['CC Secretariat'] })
   await page.goto('./')

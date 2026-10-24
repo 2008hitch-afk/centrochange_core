@@ -10,3 +10,10 @@ Issue [#171](https://github.com/2008hitch-afk/centrochange_core/issues/171). Bas
 | Regressioni mirate CC-CAP-004/007 | Pazienti assegnati, Agenda, Disponibilità | Assegnazioni/Marley esistenti | ID canonici coerenti tra sezioni | Nessun edit esteso o permesso aggiuntivo | NOT_TESTED live |
 
 Le catture in `docs/evidence/issue-171/` usano **API sintetiche mock** e dimostrano solo resa desktop/mobile. Il gate DEV richiede CI sullo SHA esatto, revisione indipendente senza Critical/Important, immagine/manifest coerenti, nuovo checkpoint cifrato, restore isolato PASS, test Frappe/MariaDB sul clone, fingerprint e rollback. `cc_premium_primary=1` resta invariato. Nessuna migration, modifica di ruoli/schema o scrittura UAT sul DEV.
+
+## Difetti confermati e correzioni nel candidato
+
+- La ricerca iniziale filtrava solo lo snapshot `bootstrap`: ora interroga la lista Frappe paginata con ricerca server-side, loading, errore, stato e pagina vuota. Le risposte tardive di una pagina precedente non contaminano la ricerca corrente.
+- Il permesso diretto del professionista restava valido con membership revocata o centro non operativo: query e controllo record ora richiedono identità attiva e almeno un'appartenenza a sede operativa. Le API scoped richiedono inoltre il centro operativo specifico.
+- La scheda e l'Archivio mostravano il nome tecnico di una fixture HTTP, e il selettore Report usava una proiezione diversa: la lettura usa la stessa identità sintetica leggibile, mentre form e API mantengono i valori canonici. L'Archivio non ripete il titolo nel drawer.
+- Nessun editor duplicato in `#Professionisti`: la modifica resta in `#Archivi → Professionisti`, con i soli campi già approvati `first_name` e `last_name`.

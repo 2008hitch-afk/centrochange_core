@@ -34,18 +34,21 @@ test('Professionisti: ricerca reale, scheda, refresh e resa responsive', async (
   try {
     const detail = await api(ctx, 'operations.profiles.practitioner_detail', { center: fixture.center_a, name: fixture.practitioner_a })
     expect(detail.response.ok()).toBeTruthy()
-    const name = String(detail.body.message?.practitioner_name ?? '')
-    expect(name).toBeTruthy()
+    const canonicalName = String(detail.body.message?.practitioner_name ?? '')
+    expect(canonicalName).toBeTruthy()
     const page = await ctx.newPage()
     await page.goto('/premium/#Professionisti')
     await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
     await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill(String(detail.body.message.first_name))
-    await expect(page.locator('tbody')).toContainText(name)
+    await expect(page.locator('tbody')).toContainText('Professionista di prova A')
+    await expect(page.locator('tbody')).not.toContainText(canonicalName)
     await page.screenshot({ path: info.outputPath(`professionisti-live-list-${info.project.name}.png`) })
-    const row = page.locator('tbody tr').filter({ hasText: name }).first()
+    const row = page.locator('tbody tr').filter({ hasText: 'Professionista di prova A' }).first()
     await row.click()
     const drawer = page.getByRole('dialog')
-    await expect(drawer).toContainText(String(detail.body.message.first_name))
+    await expect(drawer).toContainText('Professionista di prova A')
+    await expect(drawer.getByRole('heading', { name: 'Scheda professionista' })).toBeVisible()
+    await expect(drawer).not.toContainText(String(detail.body.message.first_name))
     await expect(drawer).toContainText('Centro:')
     await page.screenshot({ path: info.outputPath(`professionisti-live-detail-${info.project.name}.png`) })
     await page.reload()
@@ -81,6 +84,51 @@ test('Sette ruoli più Guest: ricerca, dettaglio proprio, IDOR, centro A/B', asy
   } finally { await guest.close() }
 })
 
+test('Browser multiruolo: directory propria e nessun accesso ai ruoli finanziari', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  for (const role of roles) {
+    const ctx = await ctxFor(browser, role)
+    try {
+      const page = await ctx.newPage()
+      await page.goto('/premium/#Professionisti')
+      if (role === 'finance' || role === 'accountant') {
+        await expect(page.getByRole('heading', { name: 'Professionisti', exact: true })).toHaveCount(0)
+        continue
+      }
+      await expect(page.getByRole('heading', { name: 'Professionisti', exact: true })).toBeVisible()
+      await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+      if (role === 'professional_c') {
+        await expect(page.getByText('Nessun professionista trovato nel centro.')).toBeVisible()
+        continue
+      }
+      const expected = role === 'professional_b' ? 'Professionista di prova B' : 'Professionista di prova A'
+      await expect(page.locator('tbody')).toContainText(expected)
+      if (role === 'professional_a' || role === 'professional_b')
+        await expect(page.locator('tbody')).not.toContainText(role === 'professional_a' ? 'Professionista di prova B' : 'Professionista di prova A')
+    } finally { await ctx.close() }
+  }
+})
+
+test('Archivio professionisti: elenco, dettaglio ed editor manager senza codici in lettura', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop')
+  const ctx = await ctxFor(browser, 'manager')
+  try {
+    const page = await ctx.newPage()
+    await page.goto('/premium/#Archivi')
+    await page.getByRole('combobox', { name: 'Centro' }).selectOption(fixture.center_a)
+    await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Professionisti', exact: true }).click()
+    await expect(page.locator('tbody')).toContainText('Professionista di prova A')
+    await expect(page.locator('tbody')).not.toContainText(fixture.tag)
+    await page.locator('tbody tr').filter({ hasText: 'Professionista di prova A' }).first().click()
+    const drawer = page.getByRole('dialog')
+    await expect(drawer.getByRole('heading', { name: 'Dettaglio' })).toBeVisible()
+    await expect(drawer).not.toContainText(fixture.tag)
+    await drawer.getByRole('button', { name: 'Modifica scheda' }).click()
+    await expect(page.getByRole('dialog', { name: 'Modifica · Professionisti' })).toBeVisible()
+    await expect(page.getByRole('textbox', { name: 'Motivo' })).toBeVisible()
+  } finally { await ctx.close() }
+})
+
 test('Manager: archivio edit con motivo, versione, replay/stale e CSRF; altri negati', async ({ browser }, info) => {
   test.skip(info.project.name !== 'desktop')
   const manager = await ctxFor(browser, 'manager')
@@ -92,7 +140,7 @@ test('Manager: archivio edit con motivo, versione, replay/stale e CSRF; altri ne
     const before = await api(manager, 'operations.profiles.practitioner_detail', { center: fixture.center_a, name: fixture.practitioner_a })
     expect(before.response.ok()).toBeTruthy()
     const source = before.body.message
-    const payload = { center: fixture.center_a, name: fixture.practitioner_a, first_name: fixture.tag.slice(0, 20),
+    const payload = { center: fixture.center_a, name: fixture.practitioner_a, first_name: source.first_name,
       last_name: 'Professionista', expected_version: source.modified, request_key: fixture.tag + '-edit-1', reason: 'AUDIT-05 fixture isolata' }
     const post = async (data: Record<string, unknown>, token = csrf!) => {
       const response = await manager.request.post(method('operations.profiles.practitioner_save'), { data, headers: token ? { 'X-Frappe-CSRF-Token': token } : {} })
@@ -106,17 +154,27 @@ test('Manager: archivio edit con motivo, versione, replay/stale e CSRF; altri ne
     const repeated = await post(payload)
     expect(repeated.response.ok()).toBeTruthy()
     expect(repeated.body.message.replay).toBe(true)
+    const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+    const audit = await api(manager, 'security.audit_view.events', { start: day, end: day, event_type: 'PREMIUM_MASTER_UPDATED', reference: fixture.practitioner_a })
+    expect(audit.response.ok()).toBeTruthy()
+    const edits = (audit.body.message?.events ?? []).filter((event: { reason: string }) => event.reason === 'AUDIT-05 fixture isolata')
+    expect(edits).toHaveLength(1)
+    expect(edits[0].actor).toBeTruthy()
     const stale = await post({ ...payload, request_key: fixture.tag + '-edit-stale' })
     expect(stale.response.ok()).toBeFalsy()
     const after = await api(manager, 'operations.profiles.practitioner_detail', { center: fixture.center_a, name: fixture.practitioner_a })
-    expect(after.body.message.first_name).toBe(payload.first_name)
+    expect(after.body.message.last_name).toBe(payload.last_name)
     expect(after.body.message.user_id).toBe(source.user_id)
     const forbidden = await post({ ...payload, request_key: fixture.tag + '-extra', supplier: 'NO' })
     expect(forbidden.response.ok()).toBeFalsy()
     for (const role of ['secretariat', 'professional_a', 'finance', 'accountant'] as Role[]) {
       const ctx = await ctxFor(browser, role)
       try {
-        const attempt = await ctx.request.post(method('operations.profiles.practitioner_save'), { data: { ...payload, request_key: fixture.tag + '-' + role }, headers: { 'X-Frappe-CSRF-Token': csrf! } })
+        const rolePage = await ctx.newPage()
+        await rolePage.goto('/premium/')
+        const roleCsrf = await rolePage.locator('meta[name="csrf-token"]').getAttribute('content')
+        expect(roleCsrf).toBeTruthy()
+        const attempt = await ctx.request.post(method('operations.profiles.practitioner_save'), { data: { ...payload, request_key: fixture.tag + '-' + role }, headers: { 'X-Frappe-CSRF-Token': roleCsrf! } })
         expect(attempt.ok(), `${role} write denied`).toBeFalsy()
       } finally { await ctx.close() }
     }
