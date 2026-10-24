@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { configureDemoLabels, demoPatient, demoText } from '../src/demo_labels'
+import { configureDemoLabels, demoPatient, demoText, syntheticCode } from '../src/demo_labels'
 import { auditActorName, economyName, practitionerNameFor } from '../src/display_names'
 import { availableUnitLabel, sessionCountLabel } from '../src/patient_packages'
 
@@ -19,6 +19,12 @@ test('AUDIT-04 UX: pacchetto mostra il nome professionista senza codice fixture'
   const id = 'CC-HTTP-AbCd123456 a'
   expect(practitionerNameFor(id, [{ name: id, practitioner_name: id }])).toBe('Professionista di prova A')
   expect(practitionerNameFor('PR-001', [{ name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }])).toBe('Dott.ssa Rossi')
+})
+
+test('AUDIT-05: identità sintetica resta leggibile dopo modifica autorizzata del cognome', () => {
+  const id = 'CC-HTTP-a5f3ce4696 a Professionista'
+  expect(syntheticCode(id)).toBe(true)
+  expect(practitionerNameFor('PR-TEST', [{ name: 'PR-TEST', practitioner_name: id }])).toBe('Professionista di prova A')
 })
 
 test('AUDIT-03: historical state and owned synthetic audit actor stay readable', () => {
@@ -869,6 +875,22 @@ test('notifiche: caricamento, errore e riprova con stato vuoto corretto', async 
   await page.getByRole('button', { name: 'Riprova' }).click()
   await expect(page.getByText('Nessuna notifica recente')).toBeVisible()
   await expect(page.getByText('Le comunicazioni del centro appariranno qui.')).toBeVisible()
+})
+
+test('AUDIT-05: account professionista apre notifiche personali native senza coda manager', async ({ page }) => {
+  await mockApi(page, [], false, {}, { roles: ['CC Professional'] })
+  const requested: string[] = []
+  page.on('request', request => {
+    if (request.url().includes('/api/method/frappe.client.get_list'))
+      requested.push(new URL(request.url()).searchParams.get('doctype') ?? '')
+  })
+  await page.goto('./')
+  await openSection(page, 'Notifiche')
+  await expect(page.getByRole('heading', { name: 'Notifiche', exact: true })).toBeVisible()
+  await expect(page.getByText('Nessuna notifica recente')).toBeVisible()
+  expect(requested).toContain('Notification Log')
+  expect(requested).not.toContain('CC Notification')
+  await expect(page.getByRole('button', { name: 'Gestione accessi' })).toHaveCount(0)
 })
 
 test('agenda desktop: shell, calendario, dettaglio e prenotazione con CSRF', async ({ page }, testInfo) => {

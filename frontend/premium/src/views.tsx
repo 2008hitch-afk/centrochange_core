@@ -393,11 +393,16 @@ export function Access({ center, feedback }: Context) {
     </form></Modal>}</>
 }
 
-export function Notifications({ center }: { center: string; feedback: Feedback }) {
+export function Notifications({ boot, center }: Context) {
+  const personal = boot.roles.includes('CC Professional') && !boot.roles.includes('CC Manager')
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reload, setReload] = useState(0)
-  useEffect(() => { let live = true; setLoading(true); setRows([]); setError(''); call<Row[]>('frappe.client.get_list', { doctype: 'CC Notification', fields: ['name', 'message', 'state', 'creation'], limit_page_length: 100, order_by: 'creation desc' }).then(r => { if (live) { setRows(r); setLoading(false) } }).catch(e => { if (live) { setError(getError(e)); setLoading(false) } }); return () => { live = false } }, [center, reload])
-  return <><Heading eyebrow="CENTRO CHANGE" title="Notifiche" subtitle="Esiti e comunicazioni operative." /><section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Notifiche recenti</h2></div></div>{loading ? <p className="panel-loading" role="status">Caricamento notifiche…</p> : error ? <div className="notification-error" role="alert"><p>{error}</p><Button variant="secondary" onClick={() => setReload(n => n + 1)}>Riprova</Button></div> : rows.length ? <DataTable rows={rows} columns={[{ key: 'message', label: 'Messaggio' }, { key: 'state', label: 'Stato' }, dateColumn('creation', 'Data')]} /> : <Empty title="Nessuna notifica recente" detail="Le comunicazioni del centro appariranno qui." />}</section></>
+  useEffect(() => { let live = true; setLoading(true); setRows([]); setError(''); call<Row[]>('frappe.client.get_list', {
+    doctype: personal ? 'Notification Log' : 'CC Notification',
+    fields: personal ? ['name', 'subject', 'creation', 'read'] : ['name', 'message', 'state', 'creation'],
+    limit_page_length: 100, order_by: 'creation desc'
+  }).then(r => { if (live) { setRows(r); setLoading(false) } }).catch(e => { if (live) { setError(getError(e)); setLoading(false) } }); return () => { live = false } }, [center, personal, reload])
+  return <><Heading eyebrow="CENTRO CHANGE" title="Notifiche" subtitle={personal ? 'Promemoria e comunicazioni personali.' : 'Esiti e comunicazioni operative.'} /><section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Notifiche recenti</h2></div></div>{loading ? <p className="panel-loading" role="status">Caricamento notifiche…</p> : error ? <div className="notification-error" role="alert"><p>{error}</p><Button variant="secondary" onClick={() => setReload(n => n + 1)}>Riprova</Button></div> : rows.length ? <DataTable rows={rows} columns={personal ? [{ key: 'subject', label: 'Messaggio' }, { key: 'read', label: 'Lettura', render: value => value ? 'Letta' : 'Da leggere' }, dateColumn('creation', 'Data')] : [{ key: 'message', label: 'Messaggio' }, { key: 'state', label: 'Stato' }, dateColumn('creation', 'Data')]} /> : <Empty title="Nessuna notifica recente" detail="Le comunicazioni del centro appariranno qui." />}</section></>
 }

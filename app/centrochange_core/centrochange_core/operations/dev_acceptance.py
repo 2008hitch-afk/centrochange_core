@@ -147,6 +147,9 @@ def checks(fixture):
 	frappe.flags.cc_test_clock=datetime.combine(date,datetime.min.time()).replace(hour=21,tzinfo=lifecycle.ROME).astimezone(timezone.utc)
 	assert automation.catch_up()['reminders']>=1
 	assert automation.catch_up()['reminders']==0
+	reminder=frappe.db.get_value('CC Notification',{'event_key':f'closure-reminder:{date}:{prac1}'},
+		['recipient','message'],as_dict=True)
+	assert reminder and reminder.recipient==pro1 and reminder.message.startswith('Hai sedute da chiudere oggi.')
 	result.append('21:00 reminder and catch-up retries idempotent')
 	frappe.flags.cc_test_clock=datetime.combine(date+timedelta(days=1),datetime.min.time()).replace(hour=7,tzinfo=lifecycle.ROME).astimezone(timezone.utc)
 	assert automation.catch_up()['locked']>=1
