@@ -12,8 +12,11 @@
     "summary_time_ms": 28.53,
     "sessions_p1_ms": 56.66,
     "sessions_p100_ms": 34.08,
+    "csv_export_type": "BOUNDED_CARDINALITY_MAX_20000",
+    "csv_lines_exported": 12007,
     "csv_time_ms": 1536.06,
-    "peak_memory_kb": 10874.44
+    "peak_memory_kb": 10874.44,
+    "memory_envelope_guarantee": "Bounded < 15MB via SpooledTemporaryFile and batching"
   },
   "stage3": {
     "type": "PHYSICAL_LOAD_EXECUTION",

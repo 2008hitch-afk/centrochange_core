@@ -15,8 +15,9 @@ Nel commit `96bffaf` del branch `issue-171/professionals-audit` (PR #172), nell'
 ### 1.2 Perimetro di Rischio e Valutazione d'Impatto
 - **Ambiente coinvolto:** Esclusivamente ambiente di sviluppo locale/DEV Docker (`127.0.0.1:8082`), con flag esplicito `cc_synthetic_dev=1`.
 - **Dati reali / Produzione:** **NESSUN IMPATTO**. Il repository e l'ambiente DEV contengono solo fixture sintetiche. Nessun dato reale, clinico, anagrafico o di produzione è presente né è mai stato esposto.
-- **Rimedio immediato nel codice:** Tutte le credenziali hardcoded sono state rimosse dal repository, dai test e dagli script di supporto. `infra/clone_volume_test.py` acquisisce le credenziali DEV dinamicamente dal container a runtime e impiega password effimere (`secrets.token_hex(16)`) per i container isolati di test.
-- **Azione richiesta:** Rotazione della password dell'utente DB `_4f614b4543aa5230` sull'ambiente DEV attivo, previa approvazione Owner.
+- **Rimedio nel codice sorgente e harness:** Tutte le credenziali hardcoded sono state rimosse dal repository e dai test. Lo script `infra/clone_volume_test.py` acquisisce le credenziali DEV dinamicamente a runtime, usa file di opzioni effimeri a permessi 0600 per non esporre password nella process list (`ps aux`) o argomenti CLI, e impiega token casuali ad alta entropia (`secrets.token_hex(16)`) per MariaDB clonata.
+- **Tracciabilità Git History:** Si prende atto che il commit storico `96bffaf` conserva traccia della stringa precedente nel reflog/history. La rotazione sul DB DEV renderà la stringa storicizzata totalmente invalida e inerte.
+- **Azione richiesta:** Rotazione della password dell'utente DB `_4f614b4543aa5230` sull'ambiente DEV attivo, **esclusivamente previa autorizzazione formale dell'Owner**.
 
 ---
 
@@ -97,16 +98,36 @@ Qualora l'Owner autorizzi formalmente l'esecuzione, il runtime engineer eseguir�
 
 ---
 
-## 4. Procedura di Rollback
+## 4. Procedura di Ripristino e Rollback Sicuro (Roll-Forward Only)
 
-Nel caso in cui si verifichino errori imprevisti durante il riavvio o la connessione applicativa:
-1. Ripristinare l'utente MariaDB con la password precedente temporanea:
+> [!CAUTION]
+> **REGOLA FONDAMENTALE DI SICUREZZA: LA VECCHIA CREDENZIALE ESPOSTA NON DEVE MAI ESSERE RIATTIVATA.**
+> In caso di anomalie o fallimento della rotazione su DEV, è categoricamente vietato tentare il ripristino della password precedentemente compromessa. Il rollback si attua esclusivamente mediante una procedura di **Roll-Forward** con un segreto di emergenza alternativo fresco oppure mediante restore da backup a freddo pre-rotazione a cui viene immediatamente assegnata una credenziale nuova non esposta.
+
+### Procedura di Roll-Forward di Emergenza
+Qualora i servizi applicativi non si riconnettano correttamente con la prima credenziale ruotata (`NEW_DB_PASS`):
+1. **Generazione di una nuova credenziale alternativa (Roll-Forward Rescue):**
+   ```bash
+   RESCUE_DB_PASS=$(openssl rand -hex 16)
+   ```
+2. **Aggiornamento immediato in MariaDB con il segreto di rescue:**
    ```bash
    docker exec -i centrochange-dev-db-1 mariadb -u root -p"$MYSQL_ROOT_PASSWORD" -e "
-     ALTER USER '_4f614b4543aa5230'@'%' IDENTIFIED BY '<PREVIOUS_PASSWORD>';
+     ALTER USER '_4f614b4543aa5230'@'%' IDENTIFIED BY '${RESCUE_DB_PASS}';
      FLUSH PRIVILEGES;
    "
    ```
-2. Ripristinare `db_password` in `site_config.json`.
-3. Riavviare i servizi `backend`, `queue-short`, `queue-long`, `scheduler`.
-4. Documentare il blocco e consultare l'Owner.
+3. **Allineamento configurazione Frappe e Compose:**
+   - Aggiornare `db_password` in `sites/centrochange.local/site_config.json` con `${RESCUE_DB_PASS}`.
+   - Aggiornare `DB_PASSWORD` nel file `.env` privato di Compose con `${RESCUE_DB_PASS}`.
+4. **Riavvio ordinato dei container applicativi:**
+   ```bash
+   docker compose -p centrochange-dev restart backend queue-short queue-long scheduler
+   ```
+5. **Verifica connessione e isolamento:**
+   - Verificare che `SELECT 1` risponda con `${RESCUE_DB_PASS}`.
+   - Verificare che il tentativo di connessione con la vecchia credenziale esposta venga rifiutato con `Access denied`.
+6. **In caso di blocco persistente:**
+   - Arrestare i servizi (`docker compose -p centrochange-dev stop backend queue-short queue-long scheduler`).
+   - Mantenere il database nello stato congelato senza mai esporre segreti nei log.
+   - Segnalare l'anomalia all'Owner con log privi di credenziali.

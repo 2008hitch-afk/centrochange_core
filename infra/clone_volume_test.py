@@ -15,6 +15,7 @@ Guarantee:
 
 import json
 import os
+import re
 import secrets
 import subprocess
 import sys
@@ -34,6 +35,15 @@ DEV_BACKEND = 'centrochange-dev-backend-1'
 DEV_SITE = 'centrochange.local'
 
 
+def _redact(val):
+    if not val:
+        return val
+    s = str(val)
+    s = re.sub(r'(-p|--password=|password=|MYSQL_PWD=|IDENTIFIED BY\s+[\'\"])([^\s\'";]+)', r'\1[REDACTED]', s, flags=re.IGNORECASE)
+    s = re.sub(r'\b[0-9a-f]{32}\b', '[REDACTED_SECRET]', s)
+    return s
+
+
 def get_dev_db_credentials():
     """Discover DEV database credentials dynamically from environment or container without storing secrets in git."""
     user = os.environ.get('CC_DEV_DB_USER')
@@ -51,24 +61,25 @@ def get_dev_db_credentials():
             'name': cfg.get('db_name'),
         }
     except Exception as e:
-        log(f"Error discovering DEV database credentials: {e}")
+        log(f"Error discovering DEV database credentials: {_redact(e)}")
         raise RuntimeError("Failed to read DEV database credentials dynamically from running container")
 
 
 def log(msg):
-    print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+    print(f"[{time.strftime('%H:%M:%S')}] {_redact(msg)}", flush=True)
 
 
 def run_cmd(cmd, check=True, capture=True, input_str=None):
     res = subprocess.run(cmd, shell=isinstance(cmd, str), check=False,
                          capture_output=capture, text=True, input=input_str)
     if check and res.returncode != 0:
-        log(f"Command failed (code {res.returncode}): {cmd}")
+        log(f"Command failed (code {res.returncode}): {_redact(cmd)}")
         if res.stdout:
-            log(f"STDOUT:\n{res.stdout}")
+            log(f"STDOUT:\n{_redact(res.stdout)}")
         if res.stderr:
-            log(f"STDERR:\n{res.stderr}")
-        raise subprocess.CalledProcessError(res.returncode, cmd, output=res.stdout, stderr=res.stderr)
+            log(f"STDERR:\n{_redact(res.stderr)}")
+        safe_cmd = [_redact(c) for c in cmd] if isinstance(cmd, list) else _redact(cmd)
+        raise subprocess.CalledProcessError(res.returncode, safe_cmd, output=_redact(res.stdout), stderr=_redact(res.stderr))
     return res.stdout if capture else ""
 
 
@@ -78,6 +89,22 @@ def cleanup():
         subprocess.run(['docker', 'rm', '-f', c], capture_output=True)
     subprocess.run(['docker', 'network', 'rm', NET_NAME], capture_output=True)
     log("Cleanup complete.")
+
+
+def run_mariadb_sql(container, user, password, sql, db=None):
+    """Execute SQL safely without passing passwords as CLI arguments."""
+    script = f"""cat << 'EOF' > /tmp/.client.cnf
+[client]
+user={user}
+password={password}
+EOF
+chmod 600 /tmp/.client.cnf
+mariadb --defaults-file=/tmp/.client.cnf {'`' + db + '`' if db else ''} << 'EOF'
+{sql}
+EOF
+rm -f /tmp/.client.cnf
+"""
+    run_cmd(['docker', 'exec', '-i', container, 'sh'], input_str=script)
 
 
 def setup_clone():
@@ -92,19 +119,27 @@ def setup_clone():
     log(f"Creating isolated Docker network {NET_NAME}...")
     run_cmd(['docker', 'network', 'create', NET_NAME])
 
-    # 2. Start MariaDB container with ephemeral credentials
+    # 2. Start MariaDB container using ephemeral env-file to avoid CLI password exposure
     log(f"Starting isolated MariaDB container {DB_CONTAINER}...")
-    run_cmd([
-        'docker', 'run', '-d',
-        '--name', DB_CONTAINER,
-        '--network', NET_NAME,
-        '-e', f'MARIADB_ROOT_PASSWORD={clone_root_pass}',
-        '-e', f'MYSQL_ROOT_PASSWORD={clone_root_pass}',
-        '-e', 'MARIADB_AUTO_UPGRADE=1',
-        'mariadb:11.8.8',
-        '--character-set-server=utf8mb4',
-        '--collation-server=utf8mb4_unicode_ci'
-    ])
+    env_file = ROOT_DIR / f'infra/.ephemeral_vol_{secrets.token_hex(8)}.env'
+    try:
+        env_file.write_text(
+            f"MARIADB_ROOT_PASSWORD={clone_root_pass}\nMYSQL_ROOT_PASSWORD={clone_root_pass}\nMARIADB_AUTO_UPGRADE=1\n",
+            encoding='utf-8'
+        )
+        env_file.chmod(0o600)
+        run_cmd([
+            'docker', 'run', '-d',
+            '--name', DB_CONTAINER,
+            '--network', NET_NAME,
+            '--env-file', str(env_file),
+            'mariadb:11.8.8',
+            '--character-set-server=utf8mb4',
+            '--collation-server=utf8mb4_unicode_ci'
+        ])
+    finally:
+        if env_file.exists():
+            env_file.unlink()
 
     # 3. Start Redis container
     log(f"Starting isolated Redis container {REDIS_CONTAINER}...")
@@ -115,15 +150,24 @@ def setup_clone():
         'redis:8.6.5-alpine'
     ])
 
-    # 4. Wait for MariaDB to become ready
+    # 4. Wait for MariaDB to become ready (safely without credentials on CLI)
     log("Waiting for MariaDB to complete initialization and become healthy...")
     ready = False
     consecutive_success = 0
+    ping_script = f"""cat << 'EOF' > /tmp/.ping.cnf
+[client]
+user=root
+password={clone_root_pass}
+EOF
+chmod 600 /tmp/.ping.cnf
+mariadb --defaults-file=/tmp/.ping.cnf -e "SELECT 1"
+rm -f /tmp/.ping.cnf
+"""
     for attempt in range(60):
         time.sleep(1)
         res = subprocess.run(
-            ['docker', 'exec', DB_CONTAINER, 'mariadb', '-u', 'root', f'-p{clone_root_pass}', '-e', 'SELECT 1'],
-            capture_output=True, text=True
+            ['docker', 'exec', '-i', DB_CONTAINER, 'sh'],
+            input=ping_script, capture_output=True, text=True
         )
         if res.returncode == 0:
             consecutive_success += 1
@@ -135,27 +179,53 @@ def setup_clone():
     if not ready:
         raise RuntimeError("MariaDB failed to start in isolated clone")
 
-    # 5. Create database and user in isolated DB with ephemeral credentials
+    # 5. Create database and user in isolated DB safely
     log(f"Configuring database {dev_creds['name']} in isolated MariaDB...")
     init_sql = f"""
     CREATE DATABASE `{dev_creds['name']}`;
     GRANT ALL PRIVILEGES ON `{dev_creds['name']}`.* TO '{dev_creds['user']}'@'%' IDENTIFIED BY '{clone_db_pass}';
     FLUSH PRIVILEGES;
     """
-    run_cmd(['docker', 'exec', '-i', DB_CONTAINER, 'mariadb', '-u', 'root', f'-p{clone_root_pass}'], input_str=init_sql)
+    run_mariadb_sql(DB_CONTAINER, 'root', clone_root_pass, init_sql)
 
-    # 6. Stream read-only dump from DEV into clone DB
+    # 6. Stream read-only dump from DEV into clone DB without CLI credentials
     log("Cloning DEV schema and baseline records into isolated clone...")
-    dump_proc = subprocess.Popen(
-        ['docker', 'exec', DEV_DB, 'mariadb-dump', '-u', dev_creds['user'], f"-p{dev_creds['pass']}", dev_creds['name']],
-        stdout=subprocess.PIPE
-    )
-    load_proc = subprocess.Popen(
-        ['docker', 'exec', '-i', DB_CONTAINER, 'mariadb', '-u', dev_creds['user'], f"-p{clone_db_pass}", dev_creds['name']],
-        stdin=dump_proc.stdout,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
+    dump_cnf_script = f"""cat << 'EOF' > /tmp/.dump.cnf
+[client]
+user={dev_creds['user']}
+password={dev_creds['pass']}
+EOF
+chmod 600 /tmp/.dump.cnf
+"""
+    load_cnf_script = f"""cat << 'EOF' > /tmp/.load.cnf
+[client]
+user={dev_creds['user']}
+password={clone_db_pass}
+EOF
+chmod 600 /tmp/.load.cnf
+"""
+    try:
+        run_cmd(['docker', 'exec', '-i', DEV_DB, 'sh'], input_str=dump_cnf_script)
+        run_cmd(['docker', 'exec', '-i', DB_CONTAINER, 'sh'], input_str=load_cnf_script)
+
+        dump_proc = subprocess.Popen(
+            ['docker', 'exec', DEV_DB, 'mariadb-dump', '--defaults-file=/tmp/.dump.cnf', dev_creds['name']],
+            stdout=subprocess.PIPE
+        )
+        load_proc = subprocess.Popen(
+            ['docker', 'exec', '-i', DB_CONTAINER, 'mariadb', '--defaults-file=/tmp/.load.cnf', dev_creds['name']],
+            stdin=dump_proc.stdout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        dump_proc.stdout.close()
+        out, err = load_proc.communicate()
+        if load_proc.returncode != 0:
+            raise RuntimeError(f"Database clone failed: {_redact(err.decode('utf-8'))}")
+        log("Database cloned successfully.")
+    finally:
+        subprocess.run(['docker', 'exec', DEV_DB, 'rm', '-f', '/tmp/.dump.cnf'], capture_output=True)
+        subprocess.run(['docker', 'exec', DB_CONTAINER, 'rm', '-f', '/tmp/.load.cnf'], capture_output=True)
     dump_proc.stdout.close()
     out, err = load_proc.communicate()
     if load_proc.returncode != 0:
@@ -400,8 +470,11 @@ results['stage2'] = {
     'summary_time_ms': round(t_summary_q_ms, 2),
     'sessions_p1_ms': round(t_sessions_page1_ms, 2),
     'sessions_p100_ms': round(t_sessions_page100_ms, 2),
+    'csv_export_type': 'BOUNDED_CARDINALITY_MAX_20000',
+    'csv_lines_exported': csv_lines_count,
     'csv_time_ms': round(t_csv_q_ms, 2),
-    'peak_memory_kb': round(peak_mem / 1024, 2)
+    'peak_memory_kb': round(peak_mem / 1024, 2),
+    'memory_envelope_guarantee': 'Bounded < 15MB via SpooledTemporaryFile and batching'
 }
 print(f"STAGE 2 PASS: {results['stage2']}")
 

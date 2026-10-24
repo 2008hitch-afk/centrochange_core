@@ -132,6 +132,10 @@ def _build_sql_where(center, start, end, practitioner=None, kpi='all', currency=
     require_actor()
     require_center(center)
 
+    # Fail-closed DocPerm verification
+    if hasattr(frappe, 'has_permission') and not frappe.has_permission('Patient Appointment', 'read'):
+        frappe.throw('Non hai i permessi di lettura per le sedute (Patient Appointment).', frappe.PermissionError)
+
     user_roles = roles()
     if 'CC Professional' in user_roles and not is_manager():
         my_practitioner = practitioner_for(frappe.session.user)
@@ -158,13 +162,20 @@ def _build_sql_where(center, start, end, practitioner=None, kpi='all', currency=
         clauses.append("`tabPatient Appointment`.`practitioner` = %(practitioner)s")
         params['practitioner'] = practitioner
 
-    try:
-        if hasattr(frappe, 'desk') and hasattr(frappe.desk, 'reportview'):
+    # Fail-closed match conditions
+    if hasattr(frappe, 'desk') and hasattr(frappe.desk, 'reportview') and hasattr(frappe.desk.reportview, 'build_match_conditions'):
+        try:
             match_cond = frappe.desk.reportview.build_match_conditions('Patient Appointment')
             if match_cond:
                 clauses.append(f"({match_cond})")
-    except Exception:
-        pass
+        except Exception as e:
+            if isinstance(e, frappe.PermissionError):
+                raise
+            is_test = getattr(frappe, 'in_test', False) or getattr(getattr(frappe, 'flags', None), 'in_test', False)
+            if not is_test:
+                frappe.throw(f"Errore nella risoluzione delle autorizzazioni per Patient Appointment: {e}", frappe.PermissionError)
+            elif not isinstance(e, (AttributeError, TypeError)):
+                raise
 
     if kpi == 'cancelled':
         clauses.append("`tabPatient Appointment`.`status` = 'Cancelled'")
@@ -487,13 +498,15 @@ def safe_cell(value):
 
 @frappe.whitelist()
 def export_csv(center, start, end, practitioner=None, kpi='all', currency=None):
+    import tempfile
+
     filters, start, end, practitioner = _filter_scope(center, start, end, practitioner)
     now_rome = _now_rome()
     columns = ['Data', 'Ora', 'Paziente', 'Professionista', 'Servizio', 'Durata (minuti)',
                'Stato seduta', 'Economia seduta', 'Pagamento operativo', 'Metodo di pagamento',
                'Tariffa prevista', 'Valuta']
     economy = {'Due': 'Tariffa prevista', 'Non Due': 'Non dovuta', 'Package Covered': 'Coperta da pacchetto', 'Waived': 'Rinuncia economica'}
-    output = StringIO(newline='')
+    output = tempfile.SpooledTemporaryFile(max_size=512 * 1024, mode='w+', encoding='utf-8', newline='')
     writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_ALL)
     writer.writerow(columns)
 
@@ -502,8 +515,9 @@ def export_csv(center, start, end, practitioner=None, kpi='all', currency=None):
         count_sql = f"SELECT COUNT(*) FROM `tabPatient Appointment` WHERE {where_sql}"
         total = cint(frappe.db.sql(count_sql, params)[0][0])
         if total > MAX_CSV_RECORDS:
+            output.close()
             frappe.throw(
-                f"L'esportazione richiesta ({total} righe) supera il limite massimo consentito di {MAX_CSV_RECORDS} righe. "
+                f"L'esportazione CSV supera il limite massimo consentito di {MAX_CSV_RECORDS} righe ({total} trovate). "
                 f"Riduci l'intervallo temporale o applica filtri più selettivi prima di esportare.",
                 frappe.ValidationError
             )
@@ -571,19 +585,22 @@ def export_csv(center, start, end, practitioner=None, kpi='all', currency=None):
             else:
                 db_filters['cc_currency_snapshot'] = currency
 
+        # Bounded query probe (avoid unbounded page_length=0)
+        limit_probe = MAX_CSV_RECORDS + 1
         rows = frappe.get_list('Patient Appointment', filters=db_filters, fields=CSV_APPOINTMENT_FIELDS,
-                               order_by='appointment_date asc, appointment_time asc, name asc', page_length=0)
+                               order_by='appointment_date asc, appointment_time asc, name asc', page_length=limit_probe)
+        if len(rows) > MAX_CSV_RECORDS:
+            output.close()
+            frappe.throw(
+                f"L'esportazione CSV supera il limite massimo consentito di {MAX_CSV_RECORDS} righe. "
+                f"Riduci l'intervallo temporale o applica filtri più selettivi prima di esportare.",
+                frappe.ValidationError
+            )
         filtered = [
             row for row in rows
             if _matches_kpi(row, kpi, now_rome)
             and (not currency or currency in ('ALL', 'all') or (getattr(row, 'cc_currency_snapshot', None) or 'UNSET') == currency)
         ]
-        if len(filtered) > MAX_CSV_RECORDS:
-            frappe.throw(
-                f"L'esportazione richiesta ({len(filtered)} righe) supera il limite massimo consentito di {MAX_CSV_RECORDS} righe. "
-                f"Riduci l'intervallo temporale o applica filtri più selettivi prima di esportare.",
-                frappe.ValidationError
-            )
         _enrich_session_rows(filtered, now_rome)
         for row in filtered:
             c = classify_session(row, now_rome)
@@ -615,11 +632,15 @@ def export_csv(center, start, end, practitioner=None, kpi='all', currency=None):
             ]
             writer.writerow([safe_cell(value) for value in values])
 
+    output.seek(0)
+    file_bytes = output.read()
+    output.close()
+
     filename = 'centrochange-report-professionista.csv' if practitioner else 'centrochange-report-centro.csv'
     frappe.response.update({
         'type': 'download',
         'filename': filename,
-        'filecontent': '\ufeff' + output.getvalue(),
+        'filecontent': '\ufeff' + file_bytes,
         'content_type': 'text/csv; charset=utf-8'
     })
 

@@ -127,8 +127,12 @@ class OperationalReportingTests(unittest.TestCase):
         ] if doctype == 'CC Settlement' else []
 
         workspace = types.ModuleType('centrochange_core.operations.workspace')
-        workspace.require_actor = lambda: None
+        def check_actor():
+            if not (self.manager or {'CC Professional', 'CC Secretariat'} & set(self.actor_roles)):
+                self.frappe.throw('Non hai accesso alla schermata operativa.', Denied)
+        workspace.require_actor = check_actor
         workspace.APPOINTMENT_FIELDS = list(self.appointments[0].keys())
+        self.frappe.has_permission = lambda doctype, ptype='read': True
 
         modules = {
             'frappe': self.frappe,
@@ -582,6 +586,75 @@ class OperationalReportingTests(unittest.TestCase):
 
         res_negative = self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-24', page_length=-10)
         self.assertEqual(res_negative['page_length'], 50)
+
+    def test_fail_closed_docperm_and_match_conditions(self):
+        # 1. When has_permission('Patient Appointment', 'read') is False -> fails closed
+        self.frappe.has_permission = lambda doctype, ptype='read': False
+        with self.assertRaises(Denied):
+            self.reporting._build_sql_where('CENTRO-A', '2026-10-01', '2026-10-24')
+
+        # Restore permission
+        self.frappe.has_permission = lambda doctype, ptype='read': True
+
+        # 2. When build_match_conditions raises unexpected error in runtime -> fails closed
+        desk_mock = types.SimpleNamespace(
+            reportview=types.SimpleNamespace(
+                build_match_conditions=lambda dt: (_ for _ in ()).throw(RuntimeError("ACL engine failed"))
+            )
+        )
+        self.frappe.desk = desk_mock
+        self.frappe.in_test = False
+        self.frappe.flags.pop('in_test', None)
+        with self.assertRaises(Denied):
+            self.reporting._build_sql_where('CENTRO-A', '2026-10-01', '2026-10-24')
+
+    def test_negative_multirole_direct_api_access(self):
+        # 1. Guest user denied across all endpoints
+        self.manager = False
+        self.actor_roles = ['Guest']
+        with self.assertRaises(Denied):
+            self.reporting.summary('CENTRO-A', '2026-10-01', '2026-10-24')
+        with self.assertRaises(Denied):
+            self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-24')
+        with self.assertRaises(Denied):
+            self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-24')
+
+        # 2. Non-actor role (e.g. Patient) denied across all endpoints
+        self.actor_roles = ['Patient']
+        with self.assertRaises(Denied):
+            self.reporting.summary('CENTRO-A', '2026-10-01', '2026-10-24')
+        with self.assertRaises(Denied):
+            self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-24')
+        with self.assertRaises(Denied):
+            self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-24')
+
+        # 3. CC Professional attempting cross-practitioner access denied across all endpoints
+        self.actor_roles = ['CC Professional']
+        self.user_practitioner = 'PRO-A'
+        with self.assertRaises(Denied):
+            self.reporting.summary('CENTRO-A', '2026-10-01', '2026-10-24', practitioner='PRO-B')
+        with self.assertRaises(Denied):
+            self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-24', practitioner='PRO-B')
+        with self.assertRaises(Denied):
+            self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-24', practitioner='PRO-B')
+
+        # 4. CC Professional without linked profile denied
+        self.user_practitioner = None
+        with self.assertRaises(Denied):
+            self.reporting.summary('CENTRO-A', '2026-10-01', '2026-10-24')
+        with self.assertRaises(Denied):
+            self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-24')
+        with self.assertRaises(Denied):
+            self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-24')
+
+        # 5. Unauthorized center access denied for all endpoints
+        self.user_practitioner = 'PRO-A'
+        with self.assertRaises(Denied):
+            self.reporting.summary('CENTRO-FORBIDDEN', '2026-10-01', '2026-10-24')
+        with self.assertRaises(Denied):
+            self.reporting.sessions('CENTRO-FORBIDDEN', '2026-10-01', '2026-10-24')
+        with self.assertRaises(Denied):
+            self.reporting.export_csv('CENTRO-FORBIDDEN', '2026-10-01', '2026-10-24')
 
 
 if __name__ == '__main__':

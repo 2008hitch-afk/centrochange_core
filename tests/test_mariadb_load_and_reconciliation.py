@@ -208,7 +208,7 @@ def _run_real_mariadb_test():
             assert 'USD' in l, f"Non-USD row in USD CSV: {l}"
 
         # ---------------------------------------------------------
-        # 5. Role CC Professional Isolation
+        # 5. Role CC Professional Isolation & Fail-Closed Negative Tests
         # ---------------------------------------------------------
         frappe.set_user('cc-http-uat0000001-a@example.invalid')
         summary_prof = mod.summary(center, start_date, end_date)
@@ -219,12 +219,38 @@ def _run_real_mariadb_test():
         assert prof_usd['sessions'] == 30, f"Prof A USD sessions mismatch: {prof_usd['sessions']}"
         assert prof_eur['sessions'] + prof_usd['sessions'] == 300, "Practitioner A sees more than 300 appointments!"
 
-        perm_denied = False
-        try:
-            mod.summary(center, start_date, end_date, practitioner=prac_b)
-        except frappe.PermissionError:
-            perm_denied = True
-        assert perm_denied, "Practitioner A successfully accessed Practitioner B data without permission!"
+        # Direct cross-practitioner & unauthorized center negative checks
+        for fn in [
+            lambda: mod.summary(center, start_date, end_date, practitioner=prac_b),
+            lambda: mod.sessions(center, start_date, end_date, practitioner=prac_b),
+            lambda: mod.export_csv(center, start_date, end_date, practitioner=prac_b),
+            lambda: mod.summary('UNAUTHORIZED-CENTER', start_date, end_date),
+            lambda: mod.sessions('UNAUTHORIZED-CENTER', start_date, end_date),
+            lambda: mod.export_csv('UNAUTHORIZED-CENTER', start_date, end_date),
+        ]:
+            denied = False
+            try:
+                fn()
+            except frappe.PermissionError:
+                denied = True
+            assert denied, f"Direct unauthorized call did not raise PermissionError: {fn}"
+
+        # Guest user negative checks
+        frappe.set_user('Guest')
+        for fn in [
+            lambda: mod.summary(center, start_date, end_date),
+            lambda: mod.sessions(center, start_date, end_date),
+            lambda: mod.export_csv(center, start_date, end_date),
+        ]:
+            denied = False
+            try:
+                fn()
+            except frappe.PermissionError:
+                denied = True
+            assert denied, f"Guest user was not denied: {fn}"
+
+        # Reset user back to Administrator for test harness cleanup
+        frappe.set_user('Administrator')
 
         # Stop memory tracing
         current_mem, peak_mem = tracemalloc.get_traced_memory()
