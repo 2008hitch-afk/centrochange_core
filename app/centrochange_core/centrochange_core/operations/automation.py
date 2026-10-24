@@ -45,7 +45,7 @@ def catch_up():
 					key=f'closure-reminder:{date}:{doc.practitioner}'
 					existed=frappe.db.get_value('CC Notification',{'event_key':key},for_update=True)
 					enqueue_notice(key,user,'CLOSURE_REMINDER','Healthcare Practitioner',doc.practitioner,
-						'Pending sessions require daily closure; open the authorized session workspace.')
+						'Hai sedute da chiudere oggi. Apri la tua Agenda per completarle.')
 					reminded+=int(not bool(existed))
 		return {'locked':locked,'reminders':reminded}
 	finally:

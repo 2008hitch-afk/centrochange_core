@@ -70,7 +70,9 @@ function App() {
     return () => { live = false }
   }, [center])
   const roles = boot?.roles ?? []
-  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : !!boot || !!financeBoot : ['Gestione accessi', 'Registro modifiche', 'Notifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
+  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : !!boot || !!financeBoot : v === 'Notifiche' ? roles.includes('CC Manager') || roles.includes('CC Professional') : ['Gestione accessi', 'Registro modifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
+  const isPureProfessional = roles.includes('CC Professional') && !roles.includes('CC Manager') && !roles.includes('CC Secretariat') && !financeBoot?.can_write
+  const adminViews = isPureProfessional ? ['Finanza', 'Gestione accessi', 'Registro modifiche'] : ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche']
   const currentView = available.includes(view) ? view : available[0]
   useEffect(() => {
     if (loading || !currentView) return
@@ -109,8 +111,8 @@ function App() {
     <aside ref={sidebar} className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`} aria-label="Navigazione principale" inert={mobileViewport && !mobileOpen} aria-hidden={mobileViewport && !mobileOpen}>
       <div className="brand"><img src={import.meta.env.BASE_URL + 'logo.webp'} alt="Centro Change" width="36" height="35" /><div><strong>centro<span>change</span></strong><small>AREA OPERATIVA</small></div><button ref={menuClose} className="icon-button sidebar-close" aria-label="Chiudi menu" onClick={() => { setMobileOpen(false); requestAnimationFrame(() => menuToggle.current?.focus()) }}><PanelLeftClose /></button></div>
       <div className="sidebar-label">AREA OPERATIVA</div>
-      <nav>{available.filter(v => !['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span>{v === 'Agenda' && <span className="nav-dot" />}</button>)}</nav>
-      {available.some(v => ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche'].includes(v)) && <><div className="sidebar-label section-gap">AMMINISTRAZIONE</div><nav>{available.filter(v => ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche'].includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span></button>)}</nav></>}
+      <nav>{available.filter(v => !adminViews.includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span>{v === 'Agenda' && <span className="nav-dot" />}</button>)}</nav>
+      {available.some(v => adminViews.includes(v)) && <><div className="sidebar-label section-gap">AMMINISTRAZIONE</div><nav>{available.filter(v => adminViews.includes(v)).map(v => <button key={v} className={`nav-item ${currentView === v ? 'active' : ''}`} aria-current={currentView === v ? 'page' : undefined} onClick={() => switchView(v)}>{icons[v]}<span>{v}</span></button>)}</nav></>}
       <div className="sidebar-foot"><span className="sidebar-avatar">CC</span><div><strong>Centro Change</strong><small>Area riservata</small></div><button className="icon-button" title="Esci" aria-label="Esci" disabled={loggingOut} onClick={() => void logout()}><LogOut /></button></div>
     </aside>
     {mobileOpen && <button className="scrim" aria-label="Chiudi menu" onClick={() => { setMobileOpen(false); requestAnimationFrame(() => menuToggle.current?.focus()) }} />}
@@ -130,7 +132,7 @@ function App() {
         {!loading && currentView === 'Archivi' && (boot || financeBoot) && (syntheticArchive ? boot && <MasterArchive boot={boot} financeBoot={financeBoot} center={center} /> : <ScopedArchive boot={boot} financeBoot={financeBoot} center={center} />)}
         {!loading && currentView === 'Gestione accessi' && boot && <Access boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Registro modifiche' && boot && <AuditLog feedback={feedback} />}
-        {!loading && currentView === 'Notifiche' && boot && <Notifications center={center} feedback={feedback} />}
+        {!loading && currentView === 'Notifiche' && boot && <Notifications boot={boot} center={center} feedback={feedback} />}
       </main>
       <footer className="app-footer">Centro Change · Area riservata</footer>
     </div>

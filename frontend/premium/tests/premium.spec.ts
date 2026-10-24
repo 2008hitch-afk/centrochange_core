@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { configureDemoLabels, demoPatient, demoText } from '../src/demo_labels'
+import { configureDemoLabels, demoPatient, demoText, syntheticCode } from '../src/demo_labels'
 import { auditActorName, economyName, practitionerNameFor } from '../src/display_names'
 import { availableUnitLabel, sessionCountLabel } from '../src/patient_packages'
 
@@ -19,6 +19,12 @@ test('AUDIT-04 UX: pacchetto mostra il nome professionista senza codice fixture'
   const id = 'CC-HTTP-AbCd123456 a'
   expect(practitionerNameFor(id, [{ name: id, practitioner_name: id }])).toBe('Professionista di prova A')
   expect(practitionerNameFor('PR-001', [{ name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }])).toBe('Dott.ssa Rossi')
+})
+
+test('AUDIT-05: identità sintetica resta leggibile dopo modifica autorizzata del cognome', () => {
+  const id = 'CC-HTTP-a5f3ce4696 a Professionista'
+  expect(syntheticCode(id)).toBe(true)
+  expect(practitionerNameFor('PR-TEST', [{ name: 'PR-TEST', practitioner_name: id }])).toBe('Professionista di prova A')
 })
 
 test('AUDIT-03: historical state and owned synthetic audit actor stay readable', () => {
@@ -434,6 +440,10 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     if (method.endsWith('operations.workspace.bootstrap')) { if (opsAllowed) message = { ...boot, ...bootState }; else status = 403 }
     else if (method.endsWith('finance.reporting.bootstrap')) { if (financeAllowed) message = { ...financeBoot, ...financeState }; else status = 403 }
     else if (method.endsWith('operations.workspace.agenda')) message = { appointments: agendaRows ?? [{ ...appointment, ...appointmentState }], truncated: false }
+    else if (method.endsWith('operations.profiles.practitioners')) {
+      const search = (new URL(req.url()).searchParams.get('search') ?? '').toLocaleLowerCase('it-IT')
+      message = { rows: (bootState.practitioners ?? boot.practitioners).filter(row => row.practitioner_name.toLocaleLowerCase('it-IT').includes(search)), has_more: false }
+    }
     else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
     else if (method.endsWith('operations.profiles.patient_detail')) message = { name: 'PAT-001', patient_name: 'Paziente Sintetico', first_name: 'Paziente', last_name: 'Sintetico', email: 'paziente@example.invalid', modified: '2026-10-23 12:00:00' }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
@@ -445,6 +455,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     ]
     else if (method.endsWith('operations.workspace.schedules')) message = [{ name: 'SCHED-001', practitioner: 'PR-001', time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '18:00:00' }], absences: [] }]
     else if (method.endsWith('operations.reporting.summary')) message = { currencies: { EUR: { sessions: 1, performed: 0, due: 1, due_snapshot_amount: 80 } }, truncated: false }
+    else if (method.endsWith('operations.reporting.sessions')) message = { appointments: [{ ...appointment, ...appointmentState, patient_first_name: 'Paziente', patient_last_name: 'Sintetico', practitioner_name: 'Dott.ssa Rossi', cc_service_label: 'Prima visita', mode_of_payment: 'POS' }], total: 1, truncated: false }
     else if (method.endsWith('finance.reporting.summary')) message = { totals: { revenue_net: 600, collected: 400, receivable_outstanding: 200, purchase_net: 250, payable_outstanding: 80, expected_compensation: 120, unresolved_expectations: 0, sessions: 4 }, sales_invoices: [], purchase_invoices: [], scope_note: 'Dati sintetici.' }
     else if (method.endsWith('finance.patient_reporting.patient_view')) message = new URL(req.url()).searchParams.has('key')
       ? { key: 'CUS-001', customer_label: 'Soggetto sintetico', state: 'Scaduto', counts: { sessions: 1, performed: 1 }, totals: { invoiced: 80, collected: 60, outstanding: 20, overdue: 20, open_invoices: 1 }, next_due_date: today, blocked: false, deferred: true, sessions: [{ name: 'APP-001', appointment_date: today, patient_label: 'Paziente Sintetico', cc_service_label: 'Prima visita', category: 'performed' }], invoices: [{ name: 'INV-001', posting_date: today, grand_total: 80 }], payments: [{ name: 'PAY-001', posting_date: today, collected_amount: 60 }], open_invoices: [{ name: 'INV-001', outstanding_amount: 20, original_due_date: today, effective_due_date: today, overdue: true }], scope_note: 'Dati sintetici.' }
@@ -688,6 +699,91 @@ test('UAT Professionisti: navigazione, ricerca e scheda autorizzata', async ({ p
   await page.screenshot({ path: `../../docs/evidence/issue-148/uat-professionisti-${testInfo.project.name}.png`, fullPage: true })
 })
 
+test('AUDIT-05: ricerca server trova un professionista oltre il bootstrap e mostra stato e pagina vuota', async ({ page }, info) => {
+  await mockApi(page, [], true, {}, { practitioners: [boot.practitioners[0]] })
+  const searches: string[] = []
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', async route => {
+    const query = new URL(route.request().url()).searchParams.get('search') ?? ''
+    searches.push(query)
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: {
+      rows: query.toLowerCase().includes('bianchi') ? [{ name: 'PR-101', practitioner_name: 'Dott. Bianchi', first_name: 'Luca', last_name: 'Bianchi', status: 'Inactive' }] : [],
+      has_more: false,
+    } }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: {
+    name: 'PR-101', practitioner_name: 'Dott. Bianchi', first_name: 'Luca', last_name: 'Bianchi', status: 'Inactive'
+  } }) }))
+  await page.goto('./#Professionisti')
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('Bianchi')
+  await expect(page.locator('tbody tr')).toHaveCount(1)
+  await expect(page.locator('tbody tr')).toContainText('Dott. Bianchi')
+  await expect(page.locator('tbody tr')).toContainText('Non attivo')
+  await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-list-${info.project.name}.png` })
+  await page.locator('tbody tr').click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer).toContainText('Dott. Bianchi')
+  await expect(drawer).toContainText('Luca')
+  await expect(drawer).toContainText('Non attivo')
+  await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-${info.project.name}.png` })
+  await page.getByRole('dialog').getByRole('button', { name: 'Chiudi' }).click()
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('NessunNome')
+  await expect(page.getByText('Nessun professionista trovato nel centro.')).toBeVisible()
+  expect(searches).toContain('Bianchi')
+})
+
+test('AUDIT-05: pagina vecchia non mescola risultati dopo cambio ricerca', async ({ page }) => {
+  await mockApi(page, [], true, {}, { practitioners: [boot.practitioners[0]] })
+  let releasePage: (() => void) | undefined
+  let oldPageCompleted = false
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', async route => {
+    const params = new URL(route.request().url()).searchParams
+    const search = params.get('search') ?? ''
+    const offset = Number(params.get('offset') ?? 0)
+    if (offset) await new Promise<void>(resolve => { releasePage = resolve })
+    const rows = search === 'Bianchi' ? [{ name: 'PR-B', practitioner_name: 'Dott. Bianchi', status: 'Active' }]
+      : offset ? [{ name: 'PR-A2', practitioner_name: 'Dott. Arancio', status: 'Active' }]
+      : [{ name: 'PR-A1', practitioner_name: 'Dott. Alberti', status: 'Active' }]
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows, has_more: !search && !offset } }) })
+    if (offset) oldPageCompleted = true
+  })
+  await page.goto('./#Professionisti')
+  await expect(page.getByRole('button', { name: 'Carica altri' })).toBeVisible()
+  await page.getByRole('button', { name: 'Carica altri' }).click()
+  await expect.poll(() => Boolean(releasePage)).toBe(true)
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('Bianchi')
+  await expect(page.locator('tbody tr')).toContainText('Dott. Bianchi')
+  releasePage?.()
+  await expect.poll(() => oldPageCompleted).toBe(true)
+  await expect(page.locator('tbody tr')).toHaveCount(1)
+  await expect(page.locator('tbody tr')).not.toContainText('Dott. Arancio')
+})
+
+test('AUDIT-05: scheda sintetica non espone il codice tecnico come nome', async ({ page }) => {
+  await mockApi(page, [], true)
+  const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', last_name: '', status: 'Active' }
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [row], has_more: false } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: row }) }))
+  await page.goto('./#Professionisti')
+  await expect(page.locator('tbody tr')).toContainText('Professionista di prova A')
+  await page.locator('tbody tr').click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer.getByRole('heading', { name: 'Scheda professionista' })).toBeVisible()
+  await expect(drawer).toContainText('Professionista di prova A')
+  await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
+})
+
+test('AUDIT-05: selettore Report professionisti usa la stessa identità leggibile', async ({ page }) => {
+  const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', status: 'Active' }
+  await mockApi(page, [], true, {}, { practitioners: [row] })
+  await page.goto('./#Report')
+  await page.getByRole('button', { name: 'Report professionisti' }).click()
+  const select = page.getByRole('combobox', { name: 'Professionista report' })
+  await expect(select).toContainText('Professionista di prova A')
+  await expect(select).not.toContainText('CC-HTTP-AbCd123456 a')
+})
+
 test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo', async ({ page }, testInfo) => {
   await mockApi(page, [], false, { cc_performed: 1 }, { roles: ['CC Secretariat'] })
   await page.goto('./')
@@ -780,6 +876,22 @@ test('notifiche: caricamento, errore e riprova con stato vuoto corretto', async 
   await page.getByRole('button', { name: 'Riprova' }).click()
   await expect(page.getByText('Nessuna notifica recente')).toBeVisible()
   await expect(page.getByText('Le comunicazioni del centro appariranno qui.')).toBeVisible()
+})
+
+test('AUDIT-05: account professionista apre notifiche personali native senza coda manager', async ({ page }) => {
+  await mockApi(page, [], false, {}, { roles: ['CC Professional'] })
+  const requested: string[] = []
+  page.on('request', request => {
+    if (request.url().includes('/api/method/frappe.client.get_list'))
+      requested.push(new URL(request.url()).searchParams.get('doctype') ?? '')
+  })
+  await page.goto('./')
+  await openSection(page, 'Notifiche')
+  await expect(page.getByRole('heading', { name: 'Notifiche', exact: true })).toBeVisible()
+  await expect(page.getByText('Nessuna notifica recente')).toBeVisible()
+  expect(requested).toContain('Notification Log')
+  expect(requested).not.toContain('CC Notification')
+  await expect(page.getByRole('button', { name: 'Gestione accessi' })).toHaveCount(0)
 })
 
 test('agenda desktop: shell, calendario, dettaglio e prenotazione con CSRF', async ({ page }, testInfo) => {

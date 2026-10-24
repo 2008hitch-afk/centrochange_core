@@ -33,6 +33,7 @@ venv/
 
 # Node
 node_modules/
+node_modules
 .npm/
 .yarn/
 

@@ -10,13 +10,13 @@ let patientNames: Record<string, string> = {}
 // An unlabelled HTTP fixture is a test record, not a person's display name.
 // Keep its canonical ID in API values while making missing presentation data explicit.
 export function syntheticCode(value: unknown): boolean {
-  return /^CC-HTTP-[A-Za-z0-9]{10}(?:\s+\S+)?$/.test(String(value ?? '').trim())
+  return /^CC-HTTP-[A-Za-z0-9]{10}(?:\s+.*)?$/.test(String(value ?? '').trim())
 }
 
 // The final single letter is an explicit test-fixture discriminator, not a
 // fabricated personal name. Never infer a label from non-fixture identifiers.
 export function syntheticLetter(value: unknown): string | null {
-  const match = /^CC-HTTP-[A-Za-z0-9]{10}\s+([A-Za-z])$/.exec(String(value ?? '').trim())
+  const match = /^CC-HTTP-[A-Za-z0-9]{10}\s+([A-Za-z])(?:\s+.*)?$/.exec(String(value ?? '').trim())
   return match ? match[1].toLocaleUpperCase('it-IT') : null
 }
 
