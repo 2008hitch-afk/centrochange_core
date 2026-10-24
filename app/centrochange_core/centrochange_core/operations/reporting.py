@@ -184,15 +184,21 @@ def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_leng
         db_filters['cc_economic_state'] = ['not in', ['Non Due', 'Waived', 'Package Covered']]
     elif kpi == 'due':
         db_filters['cc_economic_state'] = 'Due'
-        db_filters['status'] = ['!=', 'Cancelled']
 
     if currency and currency not in ('ALL', 'all'):
-        db_filters['cc_currency_snapshot'] = currency
+        if currency == 'UNSET':
+            db_filters['cc_currency_snapshot'] = ['in', ['', None]]
+        else:
+            db_filters['cc_currency_snapshot'] = currency
 
     rows = frappe.get_list('Patient Appointment', filters=db_filters, fields=APPOINTMENT_FIELDS,
                            order_by=order_by or 'appointment_date asc, appointment_time asc, name asc', page_length=0)
     now_rome = _now_rome()
-    filtered = [row for row in rows if _matches_kpi(row, kpi, now_rome)]
+    filtered = [
+        row for row in rows
+        if _matches_kpi(row, kpi, now_rome)
+        and (not currency or currency in ('ALL', 'all') or (getattr(row, 'cc_currency_snapshot', None) or 'UNSET') == currency)
+    ]
     total = len(filtered)
 
     page = max(1, cint(page) or 1)
@@ -213,12 +219,14 @@ def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_leng
 
     app_ids = [row.name for row in paged]
     settlements = current_rows('CC Settlement', {'appointment': ['in', app_ids or ['']]},
-                               fields=['appointment', 'mode_of_payment', 'sequence'],
-                               order_by='sequence desc') if app_ids else []
+                               fields=['appointment', 'mode_of_payment', 'sequence']) if app_ids else []
+    settlements.sort(key=lambda s: cint(s.get('sequence', 0) if isinstance(s, dict) else getattr(s, 'sequence', 0)), reverse=True)
     modes = {}
     for s in settlements:
-        if s.appointment not in modes:
-            modes[s.appointment] = s.mode_of_payment
+        app_name = s.get('appointment') if isinstance(s, dict) else getattr(s, 'appointment', None)
+        mode = s.get('mode_of_payment') if isinstance(s, dict) else getattr(s, 'mode_of_payment', None)
+        if app_name and app_name not in modes:
+            modes[app_name] = mode
 
     for row in paged:
         row.appointment_time = str(get_time(row.appointment_time))

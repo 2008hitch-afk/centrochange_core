@@ -497,6 +497,7 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
   const [professionalOpen, setProfessionalOpen] = useState(false)
   const [professional, setProfessional] = useState(isProfessional ? myPractitioner : '')
   const [selectedKpi, setSelectedKpi] = useState<string>('all')
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('all')
   const [sessions, setSessions] = useState<Appointment[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(false)
   const [sessionsError, setSessionsError] = useState('')
@@ -550,8 +551,9 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
     setSessionsLoading(true)
     setSessionsError('')
     const profParam = effectivePractitioner || undefined
+    const currParam = selectedCurrency !== 'all' ? selectedCurrency : undefined
     ops<{ appointments: Appointment[]; total: number; total_pages?: number }>('reporting.sessions', {
-      center, start, end, practitioner: profParam, kpi: selectedKpi, page, page_length: 50
+      center, start, end, practitioner: profParam, kpi: selectedKpi, currency: currParam, page, page_length: 50
     })
       .then(result => {
         if (live) {
@@ -571,7 +573,7 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
         }
       })
     return () => { live = false }
-  }, [center, start, end, effectivePractitioner, selectedKpi, page, reload])
+  }, [center, start, end, effectivePractitioner, selectedKpi, selectedCurrency, page, reload])
 
   useEffect(() => {
     if (!center || !professionalOpen || !professional) {
@@ -610,7 +612,7 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
   }
 
   const exportUrl = csvUrl('operations.reporting.export_csv', {
-    center, start, end, practitioner: effectivePractitioner || '', kpi: selectedKpi || 'all'
+    center, start, end, practitioner: effectivePractitioner || '', kpi: selectedKpi || 'all', currency: selectedCurrency !== 'all' ? selectedCurrency : ''
   })
 
   const exportProfessional = () => {
@@ -621,8 +623,9 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
     const href = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = href; link.download = 'centrochange-report-professionista.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(href), 1000)
   }
 
-  const selectKpi = (k: string) => {
+  const selectKpi = (k: string, curr: string = 'all') => {
     setSelectedKpi(k)
+    setSelectedCurrency(curr)
     setPage(1)
   }
 
@@ -633,25 +636,25 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
         <div className="report-group">
           <h3 className="report-group-title">Sedute e appuntamenti ({currency === 'UNSET' ? 'Valuta da verificare' : currency})</h3>
           <div className="metrics-grid inset">
-            <Metric label="Sedute totali" value={String(r.sessions ?? 0)} onClick={() => selectKpi('all')} active={selectedKpi === 'all'} />
-            <Metric label="Sedute svolte" value={String(r.performed ?? 0)} tone="green" onClick={() => selectKpi('performed')} active={selectedKpi === 'performed'} />
-            <Metric label="Appuntamenti futuri" value={String(r.future ?? 0)} tone="blue" onClick={() => selectKpi('future')} active={selectedKpi === 'future'} />
-            <Metric label="Sedute da chiudere" value={String(r.to_close ?? 0)} tone="amber" onClick={() => selectKpi('to_close')} active={selectedKpi === 'to_close'} />
-            <Metric label="Sedute annullate" value={String(r.cancelled ?? 0)} tone="purple" onClick={() => selectKpi('cancelled')} active={selectedKpi === 'cancelled'} />
+            <Metric label="Sedute totali" value={String(r.sessions ?? 0)} onClick={() => selectKpi('all', currency)} active={selectedKpi === 'all' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Sedute svolte" value={String(r.performed ?? 0)} tone="green" onClick={() => selectKpi('performed', currency)} active={selectedKpi === 'performed' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Appuntamenti futuri" value={String(r.future ?? 0)} tone="blue" onClick={() => selectKpi('future', currency)} active={selectedKpi === 'future' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Sedute da chiudere" value={String(r.to_close ?? 0)} tone="amber" onClick={() => selectKpi('to_close', currency)} active={selectedKpi === 'to_close' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Sedute annullate" value={String(r.cancelled ?? 0)} tone="purple" onClick={() => selectKpi('cancelled', currency)} active={selectedKpi === 'cancelled' && (selectedCurrency === currency || selectedCurrency === 'all')} />
           </div>
         </div>
         <div className="report-group">
           <h3 className="report-group-title">Stato pagamenti operativi</h3>
           <div className="metrics-grid inset">
-            <Metric label="Con pagamento registrato" value={String(r.operational_paid ?? 0)} tone="green" onClick={() => selectKpi('operational_paid')} active={selectedKpi === 'operational_paid'} />
-            <Metric label="Svolte senza pagamento" value={String(r.operational_unpaid ?? 0)} tone="amber" onClick={() => selectKpi('operational_unpaid')} active={selectedKpi === 'operational_unpaid'} />
-            <Metric label="Con tariffa prevista" value={String(r.due ?? 0)} tone="purple" onClick={() => selectKpi('due')} active={selectedKpi === 'due'} />
+            <Metric label="Con pagamento registrato" value={String(r.operational_paid ?? 0)} tone="green" onClick={() => selectKpi('operational_paid', currency)} active={selectedKpi === 'operational_paid' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Svolte senza pagamento" value={String(r.operational_unpaid ?? 0)} tone="amber" onClick={() => selectKpi('operational_unpaid', currency)} active={selectedKpi === 'operational_unpaid' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Con tariffa prevista" value={String(r.due ?? 0)} tone="purple" onClick={() => selectKpi('due', currency)} active={selectedKpi === 'due' && (selectedCurrency === currency || selectedCurrency === 'all')} />
             <Metric label="Valore tariffe previste" value={currency === 'UNSET' ? 'Da verificare' : money(r.due_snapshot_amount, currency)} tone="purple" />
           </div>
           <p className="scope-note">Valore tariffe previste: importo teorico calcolato sulle tariffe di catalogo delle sedute con economia dovuta; non costituisce estratto conto contabile né incasso.</p>
         </div>
       </div>)}{Boolean(data?.truncated) && <p className="inline-error" role="alert">Totali parziali: restringi il periodo. L'esportazione è sospesa.</p>}
-      <div className="report-drilldown"><div className="report-drilldown-header"><h3>Dettaglio sedute — {kpiLabel[selectedKpi] || 'Tutte'} ({totalSessions})</h3><div className="button-group"><a className={`button secondary ${sessionsError || sessionsLoading ? 'disabled' : ''}`} href={sessionsError || sessionsLoading ? undefined : exportUrl} aria-disabled={sessionsLoading || !!sessionsError || !!data?.truncated} onClick={e => { if (sessionsError || sessionsLoading) e.preventDefault() }}><Download size={16} /> Esporta CSV ({kpiLabel[selectedKpi] || 'Filtro'})</a></div></div>{sessionsLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : sessionsError ? <p className="inline-error" role="alert">{sessionsError}</p> : !sessions.length ? <Empty title="Nessuna seduta per questo filtro" detail="Modifica il filtro KPI o il periodo per visualizzare i record." /> : <><DataTable rows={sessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (_v, row) => demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name) }, { key: 'practitioner_name', label: 'Professionista', render: (_v, row) => demoText(row.practitioner_name || row.practitioner) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato seduta', render: (v, row) => row.cc_performed ? 'Svolta' : (v === 'Cancelled' ? 'Annullata' : (row.cc_classified_future ? 'In programma' : 'Da chiudere')) }, { key: 'cc_paid', label: 'Pagamento operativo', render: (v, row) => { if (v) return <Chip tone="good">Registrato</Chip>; if (row.status === 'Cancelled') return <Chip tone="neutral">— (annullata)</Chip>; if (row.cc_classified_future) return <Chip tone="blue">In programma</Chip>; if (['Non Due', 'Waived', 'Package Covered'].includes(String(row.cc_economic_state))) return <Chip tone="neutral">Non dovuto</Chip>; return <Chip tone="warn">Da incassare</Chip> } }, { key: 'mode_of_payment', label: 'Metodo', render: v => String(v || '—') }, { key: 'cc_price_snapshot', label: 'Tariffa prevista', render: (v, row) => v != null ? money(v, String(row.cc_currency_snapshot || 'EUR')) : '—' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />{totalPages > 1 && <div className="pagination-bar" role="navigation" aria-label="Paginazione sedute"><span>Pagina <strong>{page}</strong> di <strong>{totalPages}</strong> ({totalSessions} sedute totali)</span><div className="button-group"><Button variant="secondary" disabled={page <= 1 || sessionsLoading} onClick={() => setPage(p => Math.max(1, p - 1))}>Precedente</Button><Button variant="secondary" disabled={page >= totalPages || sessionsLoading} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Successiva</Button></div></div>}</>}</div>
+      <div className="report-drilldown"><div className="report-drilldown-header"><h3>Dettaglio sedute — {kpiLabel[selectedKpi] || 'Tutte'}{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 ? ` (${selectedCurrency})` : ''} ({totalSessions})</h3><div className="button-group">{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 && <Button variant="secondary" onClick={() => { setSelectedCurrency('all'); setPage(1) }}>Tutte le valute</Button>}<a className={`button secondary ${sessionsError || sessionsLoading ? 'disabled' : ''}`} href={sessionsError || sessionsLoading ? undefined : exportUrl} aria-disabled={sessionsLoading || !!sessionsError || !!data?.truncated} onClick={e => { if (sessionsError || sessionsLoading) e.preventDefault() }}><Download size={16} /> Esporta CSV ({kpiLabel[selectedKpi] || 'Filtro'}{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 ? ` ${selectedCurrency}` : ''})</a></div></div>{sessionsLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : sessionsError ? <p className="inline-error" role="alert">{sessionsError}</p> : !sessions.length ? <Empty title="Nessuna seduta per questo filtro" detail="Modifica il filtro KPI o il periodo per visualizzare i record." /> : <><DataTable rows={sessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (_v, row) => demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name) }, { key: 'practitioner_name', label: 'Professionista', render: (_v, row) => demoText(row.practitioner_name || row.practitioner) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato seduta', render: (v, row) => row.cc_performed ? 'Svolta' : (v === 'Cancelled' ? 'Annullata' : (row.cc_classified_future ? 'In programma' : 'Da chiudere')) }, { key: 'cc_paid', label: 'Pagamento operativo', render: (v, row) => { if (v) return <Chip tone="good">Registrato</Chip>; if (row.status === 'Cancelled') return <Chip tone="neutral">— (annullata)</Chip>; if (row.cc_classified_future) return <Chip tone="blue">In programma</Chip>; if (['Non Due', 'Waived', 'Package Covered'].includes(String(row.cc_economic_state))) return <Chip tone="neutral">Non dovuto</Chip>; return <Chip tone="warn">Da incassare</Chip> } }, { key: 'mode_of_payment', label: 'Metodo', render: v => String(v || '—') }, { key: 'cc_price_snapshot', label: 'Tariffa prevista', render: (v, row) => v != null ? money(v, String(row.cc_currency_snapshot || 'EUR')) : '—' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />{totalPages > 1 && <div className="pagination-bar" role="navigation" aria-label="Paginazione sedute"><span>Pagina <strong>{page}</strong> di <strong>{totalPages}</strong> ({totalSessions} sedute totali)</span><div className="button-group"><Button variant="secondary" disabled={page <= 1 || sessionsLoading} onClick={() => setPage(p => Math.max(1, p - 1))}>Precedente</Button><Button variant="secondary" disabled={page >= totalPages || sessionsLoading} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Successiva</Button></div></div>}</>}</div>
     </section>
     {professionalOpen && <section className="panel professional-report"><div className="panel-toolbar"><div className="panel-title"><h2>Report professionisti</h2><p>Sedute del professionista nel periodo selezionato. Nessuna attribuzione contabile dedotta.</p></div><div className="toolbar-right"><Field label="Professionista"><select aria-label="Professionista report" value={professional} onChange={event => setProfessional(event.target.value)}><option value="">Seleziona</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field><Button variant="secondary" onClick={exportProfessional} disabled={!professional || profLoading || !!profError}><Download size={16} /> Esporta CSV</Button>{financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode="professionals" buttonLabel="Compensi e fatture autorizzati" />}</div></div>{!professional ? <Empty title="Seleziona un professionista" /> : profLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : profError ? <p className="inline-error" role="alert">{profError}</p> : (() => {
       const performed = profSessions.filter(row => !!row.cc_performed && row.status !== 'Cancelled').length

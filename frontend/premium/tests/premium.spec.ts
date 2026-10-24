@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import type { Appointment } from '../src/api'
 import { configureDemoLabels, demoPatient, demoText, syntheticCode } from '../src/demo_labels'
 import { auditActorName, economyName, practitionerNameFor } from '../src/display_names'
 import { availableUnitLabel, sessionCountLabel } from '../src/patient_packages'
@@ -1870,4 +1871,132 @@ test('AUDIT-05 UAT: Metriche ribbon Agenda coerenti con filtro professionisti e 
   await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute da chiudere' })).toContainText('0')
   await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Professionisti' })).toContainText('1')
 })
+
+test('AUDIT-05 UAT: Cancellazione tardiva dovuta riconciliata in KPI, drilldown ed export', async ({ page }) => {
+  await mockApi(page)
+  const today = '2026-10-24'
+  const summary = {
+    currencies: {
+      EUR: { sessions: 1, performed: 0, cancelled: 1, future: 0, to_close: 0, operational_paid: 0, operational_unpaid: 0, due: 1, due_snapshot_amount: 80.0 }
+    },
+    practitioner: null,
+    total_appointments: 1,
+    truncated: false
+  }
+  const lateCancelledApp: Appointment = {
+    name: 'APP-LATE-1',
+    patient: 'PAT-1',
+    patient_name: 'Paziente Late',
+    practitioner: 'PRO-1',
+    practitioner_name: 'Dott.ssa Rossi',
+    cc_center: 'CENTRO-A',
+    appointment_date: today,
+    appointment_time: '10:00:00',
+    duration: 60,
+    status: 'Cancelled',
+    cc_closure_state: 'Closed',
+    cc_economic_state: 'Due',
+    cc_performed: 0,
+    cc_paid: 0,
+    cc_service_label: 'Consulenza Specialistica',
+    cc_price_snapshot: 80.0,
+    cc_currency_snapshot: 'EUR'
+  }
+
+  await page.route('**/api/method/centrochange_core.operations.reporting.summary*', route => {
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: summary }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    const url = new URL(route.request().url())
+    const kpi = url.searchParams.get('kpi')
+    if (kpi === 'due' || kpi === 'all') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: { appointments: [lateCancelledApp], total: 1, total_pages: 1 } })
+      })
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: [], total: 0, total_pages: 1 } }) })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  // Verify KPI card "Con tariffa prevista" shows 1
+  const dueCard = page.locator('.metric-card').filter({ hasText: 'Con tariffa prevista' })
+  await expect(dueCard).toContainText('1')
+  await dueCard.click()
+
+  // Drilldown header must show 1 session for "Con tariffa prevista"
+  await expect(page.locator('.report-drilldown-header h3')).toContainText('Dettaglio sedute — Con tariffa prevista')
+  await expect(page.locator('.report-drilldown-header h3')).toContainText('(1)')
+
+  // Table row must display the late cancelled session with neutral badge '— (annullata)' and tariff 80,00 €
+  const row = page.locator('.report-drilldown tbody tr').first()
+  await expect(row).toBeVisible()
+  await expect(row).toContainText('Annullata')
+  await expect(row).toContainText('— (annullata)')
+  await expect(row).toContainText('80,00 €')
+})
+
+test('AUDIT-05 UAT: Report multi-valuta con filtro e drilldown separato per valuta', async ({ page }) => {
+  await mockApi(page)
+  const today = '2026-10-24'
+  const summary = {
+    currencies: {
+      EUR: { sessions: 2, performed: 1, cancelled: 0, future: 0, to_close: 1, operational_paid: 1, operational_unpaid: 0, due: 1, due_snapshot_amount: 50.0 },
+      USD: { sessions: 3, performed: 2, cancelled: 0, future: 0, to_close: 1, operational_paid: 1, operational_unpaid: 1, due: 2, due_snapshot_amount: 140.0 }
+    },
+    practitioner: null,
+    total_appointments: 5,
+    truncated: false
+  }
+
+  const eurApps: Appointment[] = [
+    { name: 'APP-EUR-1', patient: 'PAT-1', patient_name: 'Paziente EUR', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Closed', cc_performed: 1, cc_paid: 1, cc_price_snapshot: 50.0, cc_currency_snapshot: 'EUR' },
+    { name: 'APP-EUR-2', patient: 'PAT-2', patient_name: 'Paziente EUR 2', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '10:00:00', duration: 60, status: 'Scheduled', cc_performed: 0, cc_paid: 0, cc_price_snapshot: 50.0, cc_currency_snapshot: 'EUR' }
+  ]
+  const usdApps: Appointment[] = [
+    { name: 'APP-USD-1', patient: 'PAT-3', patient_name: 'Paziente USD 1', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '11:00:00', duration: 60, status: 'Closed', cc_performed: 1, cc_paid: 1, cc_price_snapshot: 70.0, cc_currency_snapshot: 'USD' },
+    { name: 'APP-USD-2', patient: 'PAT-4', patient_name: 'Paziente USD 2', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '12:00:00', duration: 60, status: 'Closed', cc_performed: 1, cc_paid: 0, cc_price_snapshot: 70.0, cc_currency_snapshot: 'USD' },
+    { name: 'APP-USD-3', patient: 'PAT-5', patient_name: 'Paziente USD 3', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '13:00:00', duration: 60, status: 'Scheduled', cc_performed: 0, cc_paid: 0, cc_price_snapshot: 0.0, cc_currency_snapshot: 'USD' }
+  ]
+
+  await page.route('**/api/method/centrochange_core.operations.reporting.summary*', route => {
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: summary }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    const url = new URL(route.request().url())
+    const curr = url.searchParams.get('currency')
+    if (curr === 'USD') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: usdApps, total: 3, total_pages: 1 } }) })
+    }
+    if (curr === 'EUR') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: eurApps, total: 2, total_pages: 1 } }) })
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: [...eurApps, ...usdApps], total: 5, total_pages: 1 } }) })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  // Two currency sections should be visible
+  await expect(page.getByText('Sedute e appuntamenti (EUR)')).toBeVisible()
+  await expect(page.getByText('Sedute e appuntamenti (USD)')).toBeVisible()
+
+  // Click on "Sedute totali" in USD section (card value 3)
+  const usdSection = page.locator('.report-currency').filter({ hasText: 'Sedute e appuntamenti (USD)' })
+  await usdSection.locator('.metric-card').filter({ hasText: 'Sedute totali' }).click()
+
+  // Drilldown header should reflect USD and (3)
+  await expect(page.locator('.report-drilldown-header h3')).toContainText('Dettaglio sedute — Tutte le sedute (USD) (3)')
+
+  // Table should show exactly 3 rows
+  await expect(page.locator('.report-drilldown tbody tr')).toHaveCount(3)
+
+  // Export link should include currency=USD
+  const exportBtn = page.locator('.report-drilldown-header a.button').filter({ hasText: 'Esporta CSV' })
+  await expect(exportBtn).toHaveAttribute('href', /currency=USD/)
+})
+
 

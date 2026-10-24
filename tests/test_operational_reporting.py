@@ -76,6 +76,28 @@ class OperationalReportingTests(unittest.TestCase):
                         continue
                     if filters and filters.get('practitioner') and a.practitioner != filters['practitioner']:
                         continue
+                    if filters and filters.get('status'):
+                        cond = filters['status']
+                        if isinstance(cond, list) and cond[0] == '!=' and a.status == cond[1]:
+                            continue
+                        elif isinstance(cond, str) and a.status != cond:
+                            continue
+                    if filters and filters.get('cc_economic_state'):
+                        cond = filters['cc_economic_state']
+                        if isinstance(cond, list) and cond[0] == 'not in' and a.cc_economic_state in cond[1]:
+                            continue
+                        elif isinstance(cond, str) and a.cc_economic_state != cond:
+                            continue
+                    if filters and filters.get('cc_performed') is not None and a.cc_performed != filters['cc_performed']:
+                        continue
+                    if filters and filters.get('cc_paid') is not None and a.cc_paid != filters['cc_paid']:
+                        continue
+                    if filters and filters.get('cc_currency_snapshot'):
+                        cond = filters['cc_currency_snapshot']
+                        if isinstance(cond, list) and cond[0] == 'in' and getattr(a, 'cc_currency_snapshot', None) not in cond[1]:
+                            continue
+                        elif isinstance(cond, str) and getattr(a, 'cc_currency_snapshot', None) != cond:
+                            continue
                     result.append(Record(a))
                 return result
             if doctype == 'Patient':
@@ -412,6 +434,107 @@ class OperationalReportingTests(unittest.TestCase):
         res_cancelled = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='cancelled')
         self.assertEqual(res_cancelled['total'], 1)
         self.assertEqual(len(res_cancelled['appointments']), 1)
+
+    def test_late_cancellation_with_due_tariff_reconciliation(self):
+        """Late cancellation without package has status='Cancelled', cc_economic_state='Due', cc_late_cancellation=1.
+        Summary KPI 'due' must count it AND sessions drilldown/export must include it without discrepancy."""
+        fixtures = [
+            Record(name='APP-LATE-1', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-24',
+                   appointment_time='09:00:00', duration=60, status='Cancelled', cc_closure_state='Closed',
+                   cc_economic_state='Due', cc_performed=0, cc_paid=0, cc_late_cancellation=1,
+                   cc_service_label='Visita Late Cancel', cc_price_snapshot=80.0, cc_currency_snapshot='EUR'),
+            Record(name='APP-TIMELY-1', patient='PAT-2', patient_name='Paziente 2', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-24',
+                   appointment_time='10:00:00', duration=60, status='Cancelled', cc_closure_state='Closed',
+                   cc_economic_state='Non Due', cc_performed=0, cc_paid=0, cc_late_cancellation=0,
+                   cc_service_label='Visita Timely Cancel', cc_price_snapshot=80.0, cc_currency_snapshot='EUR'),
+            Record(name='APP-PKG-LATE-1', patient='PAT-3', patient_name='Paziente 3', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-24',
+                   appointment_time='11:00:00', duration=60, status='Cancelled', cc_closure_state='Closed',
+                   cc_economic_state='Package Covered', cc_performed=0, cc_paid=0, cc_late_cancellation=1,
+                   cc_service_label='Visita Pkg Late Cancel', cc_price_snapshot=80.0, cc_currency_snapshot='EUR'),
+            Record(name='APP-ACTIVE-DUE', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-24',
+                   appointment_time='12:00:00', duration=60, status='Scheduled', cc_closure_state='Pending',
+                   cc_economic_state='Due', cc_performed=0, cc_paid=0, cc_late_cancellation=0,
+                   cc_service_label='Visita Active Due', cc_price_snapshot=100.0, cc_currency_snapshot='EUR'),
+        ]
+        self.appointments = fixtures
+
+        summary = self.reporting.summary('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A')
+        eur = summary['currencies']['EUR']
+        # Due should count APP-LATE-1 (80 EUR) + APP-ACTIVE-DUE (100 EUR) = 2 sessions, 180 EUR
+        self.assertEqual(eur['due'], 2)
+        self.assertEqual(eur['due_snapshot_amount'], 180.0)
+
+        # Sessions drilldown for kpi='due' must return exactly 2 rows (APP-LATE-1 and APP-ACTIVE-DUE)
+        res_due = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='due')
+        self.assertEqual(res_due['total'], 2)
+        self.assertEqual(len(res_due['appointments']), 2)
+        names = {row['name'] for row in res_due['appointments']}
+        self.assertEqual(names, {'APP-LATE-1', 'APP-ACTIVE-DUE'})
+
+        # Export CSV for kpi='due' must return exactly 2 rows (+ header = 3 lines)
+        self.reporting.export_csv('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='due')
+        csv_content = self.frappe.response['filecontent'].lstrip('\ufeff')
+        lines = [line for line in csv_content.splitlines() if line.strip()]
+        self.assertEqual(len(lines), 3)
+
+    def test_multi_currency_filtering_and_export_reconciliation(self):
+        """When multiple currencies exist in center, filtering by currency in sessions and export
+        must return strictly the appointments belonging to that currency."""
+        fixtures = [
+            Record(name='APP-EUR-1', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-24',
+                   appointment_time='09:00:00', duration=60, status='Closed', cc_closure_state='Closed',
+                   cc_economic_state='Due', cc_performed=1, cc_paid=1, cc_late_cancellation=0,
+                   cc_service_label='Visita EUR 1', cc_price_snapshot=50.0, cc_currency_snapshot='EUR'),
+            Record(name='APP-EUR-2', patient='PAT-2', patient_name='Paziente 2', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-24',
+                   appointment_time='10:00:00', duration=60, status='Closed', cc_closure_state='Closed',
+                   cc_economic_state='Due', cc_performed=1, cc_paid=0, cc_late_cancellation=0,
+                   cc_service_label='Visita EUR 2', cc_price_snapshot=80.0, cc_currency_snapshot='EUR'),
+            Record(name='APP-USD-1', patient='PAT-3', patient_name='Paziente 3', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-24',
+                   appointment_time='11:00:00', duration=60, status='Closed', cc_closure_state='Closed',
+                   cc_economic_state='Due', cc_performed=1, cc_paid=1, cc_late_cancellation=0,
+                   cc_service_label='Visita USD 1', cc_price_snapshot=60.0, cc_currency_snapshot='USD'),
+            Record(name='APP-USD-2', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-24',
+                   appointment_time='12:00:00', duration=60, status='Closed', cc_closure_state='Closed',
+                   cc_economic_state='Due', cc_performed=1, cc_paid=0, cc_late_cancellation=0,
+                   cc_service_label='Visita USD 2', cc_price_snapshot=90.0, cc_currency_snapshot='USD'),
+        ]
+        self.appointments = fixtures
+
+        summary = self.reporting.summary('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A')
+        self.assertEqual(summary['currencies']['EUR']['sessions'], 2)
+        self.assertEqual(summary['currencies']['USD']['sessions'], 2)
+        self.assertEqual(summary['currencies']['EUR']['operational_unpaid'], 1)
+        self.assertEqual(summary['currencies']['USD']['operational_unpaid'], 1)
+
+        # Drilldown by EUR: total 2
+        res_eur = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='all', currency='EUR')
+        self.assertEqual(res_eur['total'], 2)
+        self.assertEqual({r['name'] for r in res_eur['appointments']}, {'APP-EUR-1', 'APP-EUR-2'})
+
+        # Drilldown by USD: total 2
+        res_usd = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='all', currency='USD')
+        self.assertEqual(res_usd['total'], 2)
+        self.assertEqual({r['name'] for r in res_usd['appointments']}, {'APP-USD-1', 'APP-USD-2'})
+
+        # Drilldown by EUR operational_unpaid: total 1
+        res_eur_unpaid = self.reporting.sessions('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='operational_unpaid', currency='EUR')
+        self.assertEqual(res_eur_unpaid['total'], 1)
+        self.assertEqual(res_eur_unpaid['appointments'][0]['name'], 'APP-EUR-2')
+
+        # Export CSV for EUR operational_unpaid: 1 row (+ header = 2 lines)
+        self.reporting.export_csv('CENTRO-A', '2026-10-24', '2026-10-24', practitioner='PRO-A', kpi='operational_unpaid', currency='EUR')
+        lines = [l for l in self.frappe.response['filecontent'].lstrip('\ufeff').splitlines() if l.strip()]
+        self.assertEqual(len(lines), 2)
+        self.assertIn('Visita EUR 2', lines[1])
+        self.assertIn('EUR', lines[1])
 
 
 if __name__ == '__main__':
