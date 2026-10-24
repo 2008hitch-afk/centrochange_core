@@ -1,9 +1,13 @@
 # Piano di Rotazione Credenziali DEV Compromesse
 
-> [!CAUTION]
-> **STATO PIANO: IN ATTESA DI AUTORIZZAZIONE ESPLICITA OWNER.**
-> In osservanza delle policy di sicurezza e della SOP v1.1, questo piano è documentato a scopo di audit e remediation, ma **NON DEVE ESSERE ESEGUITO** prima della formale autorizzazione dell'Owner.
-> Nessun deploy o rotazione live è in corso durante la sessione corrente.
+> [!NOTE]
+> **STATO PIANO: ESEGUITO CON SUCCESSO SU FORMALE AUTORIZZAZIONE OWNER (25/10/2026).**
+> In seguito all'autorizzazione esplicita Owner (commento GitHub [#6390491080](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6390491080)), la procedura di rotazione è stata eseguita con esito **PASS_ROTATION_SUCCESS**.
+> - Backup cifrato GPG e prova di restore isolata superata (`PASS_RESTORE_VERIFIED`).
+> - Vecchia credenziale esposta storicamente revocata e definitivamente respinta da MariaDB con `ERROR 1045 (28000): Access denied`.
+> - Nuova credenziale forte (128-bit di entropia) allineata su MariaDB e `site_config.json`.
+> - Servizi applicativi riavviati e verificati con `bench doctor` (2 worker online, 0 job bloccati).
+> - Zero esposizione di credenziali in log, CLI o Git.
 
 ---
 

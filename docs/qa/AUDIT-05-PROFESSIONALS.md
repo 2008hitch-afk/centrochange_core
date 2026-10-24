@@ -178,5 +178,84 @@ Esecuzione completata in seguito alla revisione tecnica indipendente di ChatGPT 
 - Evidenze screenshot in `docs/evidence/issue-171/` aggiornate dalla DEV reale in esecuzione.
 - DB fingerprint post-UAT identico: zero mutazioni sui dati di business.
 
-Esito finale: **DEV_INSTALLED_READY_FOR_OWNER_UAT**. PR #172 in stato DRAFT senza merge.
+Esito intermedio: **DEV_INSTALLED_READY_FOR_OWNER_UAT**. PR #172 in stato DRAFT senza merge.
+
+---
+
+## Rotazione Credenziale MariaDB DEV & Deploy Candidato Finale — Mandato Owner (25/10/2026)
+
+In ottemperanza al mandato formale Owner rilasciato su GitHub ([commento #6390491080](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6390491080)) e alla SOP v1.1, è stato completato il ciclo integrale di:
+1. Checkpoint backup cifrato e prova di restore isolata
+2. Rotazione controllata credenziale MariaDB DEV
+3. Installazione condizionata immagine candidata finale `cc171-professionals:c2a1e8d`
+4. Collaudo tecnico UAT multi-ruolo live e verifiche browser reali desktop/mobile.
+
+### 1. Preflight, Checkpoint e Restore Isolato
+- **HEAD e CI**: commit `c2a1e8d802b74ed3cbb9ca34df2925cdd3030cb7`, GitHub Actions [run 40139300167](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40139300167) SUCCESS (`backend-offline` e `frontend-synthetic` entrambi verdi). Review checkpoint statico approvato (`SECURITY_CODE_REVIEW_PASS_STATIC`).
+- **Backup cifrato pre-rotazione**: `backup.tar.gpg` (sha256 `9b321d92df379dda34092bf237c6cd33b94f1116cb916f75f00b27553644c156`, AES-256 GPG fuori Git con chiave separata 0600).
+- **Verifica parità offline**: `premium_site_checkpoint.py verify-encrypted` PASS (`status: PASS_OFFLINE_SITE_PARITY`, 6 componenti, 55 voci Site, 40 file).
+- **Prova di restore su clone separato (`infra/verify_isolated_restore.py`)**:
+  - Eseguita in rete bridge isolata `cc171-restore-net` con container dedicati `cc171-restore-db`, `cc171-restore-redis`, `cc171-restore-runner` e volume temporaneo `cc171-restore-sites`.
+  - Zero esposizione porte host, zero interferenze con il database o i container DEV.
+  - Caricamento dump SQL compresso, estrazione file pubblici/privati e configurazione site con credenziale casuale usa-e-getta.
+  - Verifiche di integrità: `bench doctor` PASS; `dev_bootstrap` setup PASS (`synthetic_dev: True`); conteggi esatti ripristinati (17 appuntamenti, 12 pazienti, 2 professionisti); utenti canonici verificati.
+  - Pulizia e teardown automatico completo di container, volumi e rete: **PASS_RESTORE_VERIFIED**.
+
+### 2. Rotazione Controllata Credenziali MariaDB DEV (`infra/rotate_dev_credentials.py`)
+- **Perimetro**: solo utente applicativo DEV `_4f614b4543aa5230` (host `%`, `172.18.0.2`, `172.18.0.5`), database `_4f614b4543aa5230` e `sites/centrochange.local/site_config.json`.
+- **Generazione segreto**: nuovo token forte ad alta entropia (128-bit / 32 esadecimali) via `secrets.token_hex(16)`.
+- **Esecuzione sicura**: applicata `ALTER USER` e `FLUSH PRIVILEGES` via opzioni socket temporanee 0600 (zero password su CLI, ps aux, history o log); allineato `site_config.json` via stream stdin; riavviati i 4 container applicativi (`backend`, `queue-short`, `queue-long`, `scheduler`).
+- **Verifica invalidazione vecchio segreto**: tentativo di connessione con la password esposta storicamente nel commit `96bffaf` definitivamente respinto da MariaDB con:
+  `ERROR 1045 (28000): Access denied for user '_4f614b4543aa5230'@'172.18.0.7' (using password: YES)`.
+- **Verifica nuova credenziale**: connessione applicativa e `SELECT 1` riuscite; `bench doctor` con 2 worker online e 0 job in errore; bootstrap sintetico confermato.
+- **Protocollo Rollback**: predisposto meccanismo Roll-Forward Only (nessun ripristino della password revocata).
+- **Esito rotazione**: **PASS_ROTATION_SUCCESS**.
+
+### 3. Build Immagine e Installazione Condizionata DEV (`infra/deploy_candidate_dev.py`)
+- **Build immagine**: `cc171-professionals:c2a1e8d` (`sha256:37ca58d0545f4494505f1c640b6f06da4c1ea8a1d7da1ddce449c12517b47192`).
+- **Parità manifest**: `verify_full_single_stack.py --source` e build time check PASS.
+- **Installazione su DEV**: aggiornati esclusivamente i 6 container applicativi del project `centrochange-dev` (`backend`, `frontend`, `websocket`, `queue-short`, `queue-long`, `scheduler`) con flag `--no-deps`. MariaDB e i due Redis sono rimasti intatti e mai ricreati.
+- **Cache**: svuotata con `bench --site centrochange.local clear-cache`.
+- **Endpoint**: HTTP GET `/centrochange` risponde con 301/200; loopback attivo su `127.0.0.1:8082`.
+- **Esito installazione**: **PASS_DEV_INSTALLED**.
+
+### 4. Collaudo Tecnico UAT Multi-Ruolo Live (`infra/run_dev_technical_uat.py`)
+Eseguiti 21/21 controlli automatizzati su API live `127.0.0.1:8082`:
+1. **Direzione (`cc-http-uat0000001-m`)**:
+   - `workspace.agenda`: 9 appuntamenti settimanali completi (non troncati). Filtro singolo professionista restituisce esattamente 8 record.
+   - `reporting.summary`: 9 totali, EUR 700.0 tariffe previste dovute, 7 svolte, 2 annullate, 6 da incassare.
+   - `reporting.sessions`: drilldown 9 record; filtro `kpi=cancelled` restituisce esattamente 2 sedute annullate.
+   - `reporting.export_csv`: intestazioni italiane con BOM (`Data;Ora;Paziente;Professionista;Servizio;Durata (minuti);Stato seduta;Economia seduta;Pagamento operativo;Metodo di pagamento;Tariffa prevista;Valuta`), 9 righe dati coerenti, streaming a memoria limitata.
+2. **Segreteria (`cc-http-uat0000001-s`)**:
+   - Visualizzazione agenda e report complessivi della sede operativa conformi.
+3. **Professionista A (`cc-http-uat0000001-a`)**:
+   - `workspace.agenda`: auto-clamping rigoroso ai soli 8 appuntamenti propri (zero leakage di PRAC_B).
+   - `reporting.summary`: auto-clamping ai propri dati (8 appuntamenti, EUR 600.0 dovute).
+   - `reporting.sessions`: 8 sedute personali restituite per PRAC_A.
+   - **IDOR Prevention (Fail-Closed)**: tentativo di interrogare le sedute di PRAC_B respinto server-side con `HTTP 403 PermissionError ("Non hai accesso ai dati di altri professionisti.")`.
+4. **Controlli Negativi di Sicurezza**:
+   - Guest: accesso respinto con HTTP 403 su `workspace.agenda`, `reporting.summary` ed `export_csv`.
+   - Sede inattiva (`CC-HTTP-UAT0000001 B`): accesso respinto con HTTP 403 `PermissionError ("La sede selezionata non è disponibile.")`.
+- **Esito tecnico**: **PASS_TECHNICAL_UAT** (21/21 checks PASS).
+
+### 5. Collaudo Browser Reale e Raccolta Evidenze (`infra/run_dev_browser_uat.cjs`)
+Eseguito collaudo end-to-end con Chromium reale su desktop (1440×900) e mobile (390×844) acquisendo 11 screenshot dal vivo:
+- `dev-agenda-manager-calendar-desktop.png`: popover selezione calendario rapido e griglia settimanale.
+- `dev-report-manager-desktop.png`: panoramica report Direzione con KPI cards e metriche allineate.
+- `dev-report-drilldown-desktop.png`: click su KPI, apertura tabella drilldown e drawer dettaglio seduta.
+- `dev-report-professionisti-desktop.png`: toggle report professionisti per la Direzione.
+- `dev-report-manager-mobile.png`: vista report responsive su mobile 390×844.
+- `dev-professionals-desktop.png`: directory professionisti con ricerca server-side e stati.
+- `dev-professionals-mobile.png`: directory professionisti responsive mobile.
+- `dev-agenda-professional-desktop.png`: agenda scoped Professionista A (assenza selettore globale "Tutti i professionisti").
+- `dev-report-professional-desktop.png`: report scoped Professionista A (dati strettamente personali, EUR 600 dovute).
+- `dev-report-professional-mobile.png`: report Professionista A su mobile.
+- `dev-report-secretariat-desktop.png`: report operativo Segreteria.
+
+### 6. Integrità Dati e Stato Finale
+- **Mutazioni dati di business**: **ZERO** (conteggi invariati: 17 appuntamenti, 12 pazienti, 2 professionisti, 2 branch, flag `cc_synthetic_dev=1`).
+- **Segreti**: zero credenziali o segreti in Git, file non autorizzati o log.
+- **PR #172**: mantenuta in stato **DRAFT / UNMERGED** (nessun merge, nessun push in produzione).
+
+Stato finale del candidato: **READY_FOR_OWNER_UAT**.
 
