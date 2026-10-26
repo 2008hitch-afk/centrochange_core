@@ -115,8 +115,9 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
   const [cursor, setCursor] = useState((value || romeToday()).slice(0, 7))
   const root = React.useRef<HTMLDivElement>(null)
   const trigger = React.useRef<HTMLButtonElement>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
   const popover = React.useRef<HTMLDivElement>(null)
-  useEffect(() => { setDraft(displayDate(value)); onValidityChange?.(!!value || !required) }, [value, resetKey])
+  useEffect(() => { setDraft(displayDate(value)); inputRef.current?.setCustomValidity(''); onValidityChange?.(!!value || !required) }, [value, resetKey])
   useEffect(() => {
     if (!open) return
     const outside = (event: PointerEvent) => {
@@ -133,7 +134,7 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
     return false
   }
   const choose = (iso: string) => {
-    setDraft(displayDate(iso)); onChange(iso); onValidityChange?.(true); setOpen(false)
+    inputRef.current?.setCustomValidity(''); setDraft(displayDate(iso)); onChange(iso); onValidityChange?.(true); setOpen(false)
     trigger.current?.focus()
   }
   const [year, month] = cursor.split('-').map(Number)
@@ -146,7 +147,7 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
   return <div className="cc-date-control" ref={root} onKeyDown={event => {
     if (open && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus() }
   }}>
-    <input className="date-input" type="text" inputMode="numeric" autoComplete="off" placeholder="GG/MM/AAAA"
+    <input ref={inputRef} className="date-input" type="text" inputMode="numeric" autoComplete="off" placeholder="GG/MM/AAAA"
       pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" title="Usa una data valida nel formato GG/MM/AAAA"
       aria-label={(calendarLabel === 'data' ? 'Data' : calendarLabel) + ' (GG/MM/AAAA)'}
       value={draft} required={required}
