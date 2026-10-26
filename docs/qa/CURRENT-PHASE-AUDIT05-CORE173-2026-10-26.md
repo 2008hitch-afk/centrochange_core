@@ -1,5 +1,16 @@
 # Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
 
+## ULTIMO GATE OWNER — 26/10/2026 (prevale sulla fotografia precedente sotto)
+
+**Owner ha risposto «Procediamo» alle due autorizzazioni distinte.**
+- **AUDIT-05 #171: `OWNER_ACCEPTED_SCOPED_AUDIT05`** nel solo perimetro funzionale approvato, ufficializzato [su Issue #171](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6427680735). PR #172 resta DRAFT/UNMERGED; **MERGE NON AUTORIZZATO**. Non promuove a PASS funzionalità trasversali non provate e non comprende CORE #173.
+- **CORE #173: `DEV_INSTALL_ALLOWED_CONDITIONAL`** nel SOLO `centrochange-dev`, annotato [su Issue #173](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6427702903). Candidato immutabile `d500fff45cc5ca70c5ef33575aac4e58d4fed505`, immagine `cc173-day-closure:d500fff`, Image ID atteso `sha256:8e9103aa301bf3da782e1882070de9d1518c07b908b12a775743eb93eb3cedd9`, CI `40396123393` SUCCESS. **Nessun deploy effettuato o autorizzato senza gate preflight**, backup completo cifrato, restore isolato, rollback e verifica baseline. Non autorizzati schema/ruoli/credenziali/dati storici/prod/merge.
+- **Verifica GOAL #173:** PR #175 HEAD `d500fff`, DRAFT/UNMERGED, backend React e test Oracle reali/Chromium clone riportati PASS da AGY. `READY_FOR_DEV_GATE` ≠ `DEV_INSTALLED` ≠ `OWNER_ACCEPTED_CORE173`. Solo dopo installazione condizionata e UAT Owner dedicata quest'ultima potrà essere accettata.
+- **Matrice CSV:** sempre **110 ID** e stati tecnici **12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED**. `Owner` aggiornato a `OWNER_ACCEPTED_FUNCTIONAL_LIMITED` per **soli 4 ID direttamente verificati #171** (`CC-CAP-002`, `CC-EXT-004`, `CC-EXT-009`, `CC-CAP-028`); nessuna accettazione per le altre capacità. Owner count ora **96 PENDING / 12 OWNER_ACCEPTED_FUNCTIONAL_LIMITED / 1 OWNER_ACCEPTED / 1 OWNER_APPROVED_DEV**. Ogni conteggio diverso riportato sotto rappresenta la **fotografia anteriore** alla decisione Owner.
+- **Prossimo passo autorizzato:** AGY esegue in un ciclo il gate DEV #173 alle condizioni puntuali della Issue, oppure STOP/ROLLBACK; produce unico rapporto `DEV_INSTALLED_READY_FOR_OWNER_UAT` o `BLOCKED`, nessuna nuova area funzionale. La PR documentale #174 resta DRAFT, da integrare solo con autorizzazione separata e preservando la cronologia.
+
+---
+
 **Perimetro temporale e funzionale:**
 
 **NOMI DA NON CONFONDERE:** in questo checkpoint «goal 5» dell'Owner significa **AUDIT-05 Professionisti, Issue #171**. Non significa il vecchio «GOAL-05 Delivery Closure» nominato nella roadmap MVP del 03/10: sono due numerazioni differenti. Il successivo lavoro *già richiesto* è **CORE #173**, non una delle fasi della roadmap storica.
