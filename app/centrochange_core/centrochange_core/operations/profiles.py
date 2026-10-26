@@ -82,8 +82,14 @@ def practitioners(center, limit=50, offset=0, search=''):
         # Use the exact UAT-owned manifest for display aliases, but always apply the
         # membership / self-only / DocType predicates from this authorized query.
         # Never alter the native Healthcare Practitioner name or search the bootstrap.
-        from centrochange_core.uat.display import _manifest
-        manifest = _manifest()
+        # The offline guarded API harness deliberately stubs a minimal Frappe
+        # module. Missing optional UAT display aliases must safely degrade to
+        # canonical search, never to unrestricted practitioner results.
+        try:
+            from centrochange_core.uat.display import _manifest
+            manifest = _manifest()
+        except ImportError:
+            manifest = None
         alias_names = []
         if manifest:
             for index, name in enumerate(manifest['fixture']['practitioners'], 1):
