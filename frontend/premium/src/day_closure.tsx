@@ -160,13 +160,18 @@ export function DayClosureModal({
     const reasonText = isArrear ? 'Completamento autonomo sedute arretrate' : 'Chiusura della mia giornata'
 
     try {
-      await call('operations.lifecycle.close_day', {
+      const res = await call<{ status?: string; day_closed?: boolean; remaining_pending?: number }>('operations.lifecycle.close_day', {
         center,
         date: selectedDate,
         sessions: JSON.stringify(payload),
-        reason: reasonText
+        reason: reasonText,
+        allow_partial: 0
       }, true)
-      feedback(`Chiusura giornata completata per il ${displayDate(selectedDate)}.`)
+      if (res && res.day_closed === false && (res.remaining_pending ?? 0) > 0) {
+        feedback(`Chiusura parziale registrata: restano ${res.remaining_pending} sedute da completare.`)
+      } else {
+        feedback(`Chiusura giornata completata per il ${displayDate(selectedDate)}.`)
+      }
       onSuccess()
     } catch (cause) {
       const msg = cause instanceof Error ? cause.message : 'Errore durante la chiusura della giornata.'

@@ -272,6 +272,7 @@ def get_day_closure_sessions(center, date=None):
 			p_name = getattr(p, 'name', None) or (p.get('name') if isinstance(p, dict) else None)
 			names[p_name] = p
 
+	now = now_utc()
 	sessions = []
 	for s in raw_sessions:
 		s.appointment_time = str(get_time(s.appointment_time))
@@ -285,6 +286,8 @@ def get_day_closure_sessions(center, date=None):
 
 		settlements = current_settlements(s.name)
 		s.mode_of_payment = settlements[0].mode_of_payment if settlements else None
+		app_end_utc = start_utc(s) + timedelta(minutes=int(s.duration or 60))
+		s.has_ended = 1 if app_end_utc <= now else 0
 		sessions.append(s)
 
 	return {
@@ -299,11 +302,13 @@ def get_day_closure_sessions(center, date=None):
 
 @frappe.whitelist(methods=['POST'])
 @atomic
-def close_day(center, date, sessions, reason=None):
+def close_day(center, date, sessions, reason=None, allow_partial=0):
 	require_actor()
 	require_center(center)
 	require_operational_center(center)
 	lock()
+
+	allow_partial = cint(allow_partial)
 
 	if isinstance(sessions, str):
 		try:
@@ -316,10 +321,12 @@ def close_day(center, date, sessions, reason=None):
 	user_roles = roles()
 	is_mgr = is_manager()
 	my_prac = None
+	allowed_patients = None
 	if 'CC Professional' in user_roles and not is_mgr:
 		my_prac = practitioner_for()
 		if not my_prac:
 			frappe.throw('Nessun profilo professionista associato al tuo utente.', frappe.PermissionError)
+		allowed_patients = set(patient_names() or [])
 
 	today_rome = _now_rome().date()
 	target_date = getdate(date)
@@ -328,6 +335,33 @@ def close_day(center, date, sessions, reason=None):
 		base_reason = 'Chiusura della mia giornata' if target_date == today_rome else 'Completamento autonomo sedute arretrate'
 
 	from centrochange_core.finance.collections import require_booking as require_payment_clearance
+
+	# Query all actionable pending sessions for this practitioner/center on target_date
+	closure_filters = {
+		'cc_center': center,
+		'appointment_date': target_date,
+		'status': ['!=', 'Cancelled'],
+		'cc_closure_state': ['in', ['Pending', 'Auto Locked', 'Reopened']]
+	}
+	if my_prac:
+		closure_filters['practitioner'] = my_prac
+	if allowed_patients is not None:
+		closure_filters['patient'] = ['in', list(allowed_patients)]
+
+	pending_candidates = frappe.get_all(
+		'Patient Appointment',
+		filters=closure_filters,
+		fields=['name', 'appointment_date', 'appointment_time', 'duration']
+	)
+	now = now_utc()
+	concluded_pending_names = []
+	future_pending_names = []
+	for p in pending_candidates:
+		p_end_utc = start_utc(p) + timedelta(minutes=int(p.duration or 60))
+		if p_end_utc <= now:
+			concluded_pending_names.append(p.name)
+		else:
+			future_pending_names.append(p.name)
 
 	updated = []
 	seen = set()
@@ -487,8 +521,27 @@ def close_day(center, date, sessions, reason=None):
 
 		updated.append({'name': doc.name, 'replay': False})
 
+	# Full-Day Contract validation:
+	unclosed_concluded = [name for name in concluded_pending_names if name not in seen]
+	if unclosed_concluded and not allow_partial:
+		frappe.throw(
+			f"La chiusura della giornata è incompleta: risultano ancora {len(unclosed_concluded)} sedute pendenti concluse da gestire per la data {target_date}.",
+			frappe.ValidationError
+		)
+
+	if future_pending_names and not allow_partial:
+		frappe.throw(
+			f"Impossibile completare la chiusura della giornata: risultano {len(future_pending_names)} sedute future non ancora concluse per la data {target_date}. Usa la chiusura parziale o attendi la conclusione della giornata.",
+			frappe.ValidationError
+		)
+
+	day_closed = (len(unclosed_concluded) == 0 and len(future_pending_names) == 0)
+	remaining_pending = len(unclosed_concluded) + len(future_pending_names)
+
 	return {
-		'status': 'PASS',
+		'status': 'PASS' if day_closed else 'PARTIAL',
+		'day_closed': bool(day_closed),
+		'remaining_pending': remaining_pending,
 		'date': str(target_date),
 		'updated_count': len(updated),
 		'updated': updated

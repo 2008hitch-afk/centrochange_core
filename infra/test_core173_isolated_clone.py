@@ -39,6 +39,7 @@ NET_NAME = 'cc173-clone-net'
 DB_CONTAINER = 'cc173-clone-db'
 REDIS_CONTAINER = 'cc173-clone-redis'
 BACKEND_CONTAINER = 'cc173-clone-backend'
+FRONTEND_CONTAINER = 'cc173-clone-frontend'
 
 DEV_DB = 'centrochange-dev-db-1'
 DEV_BACKEND = 'centrochange-dev-backend-1'
@@ -94,7 +95,7 @@ def get_dev_db_credentials():
 
 def cleanup():
     log("Cleaning up isolated clone resources...")
-    for c in [BACKEND_CONTAINER, DB_CONTAINER, REDIS_CONTAINER]:
+    for c in [FRONTEND_CONTAINER, BACKEND_CONTAINER, DB_CONTAINER, REDIS_CONTAINER]:
         subprocess.run(['docker', 'rm', '-f', c], capture_output=True)
     subprocess.run(['docker', 'network', 'rm', NET_NAME], capture_output=True)
     log("Cleanup complete.")
@@ -283,6 +284,48 @@ with open(common_path, 'w') as f:
     run_cmd(
         ['docker', 'exec', '-i', BACKEND_CONTAINER, 'python3', '-c', patch_script]
     )
+
+    # 10. Start gunicorn inside isolated backend container
+    log("Starting gunicorn inside isolated backend container...")
+    run_cmd([
+        'docker', 'exec', '-d', '-w', '/home/frappe/frappe-bench/sites', BACKEND_CONTAINER,
+        '/home/frappe/frappe-bench/env/bin/gunicorn',
+        '-b', '0.0.0.0:8000',
+        '-w', '2',
+        '--threads', '4',
+        '-t', '120',
+        'frappe.app:application'
+    ])
+
+    # 11. Start isolated frontend container cc173-clone-frontend mapping host port 8095
+    log(f"Starting isolated frontend container {FRONTEND_CONTAINER} on port 8095...")
+    run_cmd([
+        'docker', 'run', '-d',
+        '--name', FRONTEND_CONTAINER,
+        '--network', NET_NAME,
+        '-p', '127.0.0.1:8095:8080',
+        '-e', f'BACKEND={BACKEND_CONTAINER}:8000',
+        '-e', f'FRAPPE_SITE_NAME_HEADER={DEV_SITE}',
+        '-v', f'{APP_DIR}:/home/frappe/frappe-bench/apps/centrochange_core:ro',
+        '-v', f'{APP_DIR}/centrochange_core/public:/home/frappe/frappe-bench/assets/centrochange_core:ro',
+        dev_image,
+        '/usr/local/bin/entrypoint.sh', 'nginx-entrypoint.sh'
+    ])
+
+    log("Waiting for isolated frontend to respond on port 8095...")
+    ready = False
+    for attempt in range(30):
+        time.sleep(1)
+        res = subprocess.run(
+            ['curl', '-s', '-o', '/dev/null', '-w', '%{http_code}', '-H', f'Host: {DEV_SITE}', 'http://127.0.0.1:8095/login'],
+            capture_output=True, text=True
+        )
+        if res.stdout.strip() in ('200', '302', '301'):
+            ready = True
+            break
+    if not ready:
+        log("Warning: frontend did not respond 200/302 within 30s")
+
     log("Isolated clone environment ready.")
 
 
@@ -329,10 +372,12 @@ prac_b = practitioners[1].name
 user_b = practitioners[1].user_id
 
 patients = frappe.get_all('Patient', fields=['name'])
-if len(patients) < 2:
-    raise RuntimeError("At least two Patients required in database")
+if len(patients) < 4:
+    raise RuntimeError("At least four Patients required in database")
 patient_1 = patients[0].name
 patient_2 = patients[1].name
+patient_3 = patients[2].name
+patient_4 = patients[3].name
 
 # Ensure user_a has CC Professional role
 if 'CC Professional' not in frappe.get_roles(user_a):
@@ -359,8 +404,8 @@ with internal_write('cc_permission_write'):
         doc_mem.active = 1
         doc_mem.save(ignore_permissions=True)
 
-# Ensure patient_1 and patient_2 are actively assigned to prac_a in center
-for pat in [patient_1, patient_2]:
+# Ensure patients are actively assigned to prac_a in center
+for pat in [patient_1, patient_2, patient_3, patient_4]:
     assignment_name = frappe.db.get_value('CC Patient Assignment', {'patient': pat, 'center': center, 'practitioner': prac_a})
     with internal_write('cc_permission_write'):
         if not assignment_name:
@@ -398,6 +443,8 @@ def make_appointment(**kwargs):
     paid = int(kwargs.get('cc_paid', 0))
     late_cancel = int(kwargs.get('cc_late_cancellation', 0))
     rev = int(kwargs.get('cc_revision', 1))
+    price = float(kwargs.get('cc_price_snapshot', 100.0))
+    currency = str(kwargs.get('cc_currency_snapshot', 'EUR'))
 
     sql = (
         "INSERT INTO `tabPatient Appointment` ("
@@ -409,12 +456,12 @@ def make_appointment(**kwargs):
         "cc_performed, cc_paid, cc_revision, cc_settlement_revision, cc_closure_state"
         ") VALUES ("
         "%s, 0, 0, 60, 0, 0, 0, 0, 0, 0, "
-        "%s, %s, %s, %s, 'Paziente Test', %s, 'Dottore Test', %s, %s, 100.0, 'EUR', %s, "
+        "%s, %s, %s, %s, 'Paziente Test', %s, 'Dottore Test', %s, %s, %s, %s, %s, "
         "%s, %s, %s, 0, %s)"
     )
     frappe.db.sql(sql, (
         name, date_val, time_val, status_val, pat,
-        prac, cen, econ, late_cancel, performed, paid, rev, closure
+        prac, cen, econ, price, currency, late_cancel, performed, paid, rev, closure
     ))
     frappe.db.commit()
     return frappe.get_doc('Patient Appointment', name)
@@ -444,8 +491,8 @@ try:
         'mode_of_payment': 'Cash',
         'note': 'Seduta svolta con pagamento in contanti'
     }]
-    res1 = lifecycle.close_day(center, '2026-10-26', payload1, 'Chiusura giornaliera')
-    assert res1['status'] == 'PASS', f"close_day failed: {res1}"
+    res1 = lifecycle.close_day(center, '2026-10-26', payload1, 'Chiusura giornaliera', allow_partial=1)
+    assert res1['status'] in ('PASS', 'PARTIAL'), f"close_day failed: {res1}"
 
     # Verify MariaDB state
     doc1 = frappe.get_doc('Patient Appointment', app1.name)
@@ -523,8 +570,8 @@ try:
         'paid': 0,
         'note': 'Cancellazione tardiva: penale dovuta mantenuta'
     }]
-    res3 = lifecycle.close_day(center, '2026-10-26', payload3)
-    assert res3['status'] == 'PASS'
+    res3 = lifecycle.close_day(center, '2026-10-26', payload3, allow_partial=1)
+    assert res3['status'] in ('PASS', 'PARTIAL')
     doc3 = frappe.get_doc('Patient Appointment', app3.name)
     assert doc3.status == 'No Show'
     assert doc3.cc_performed == 0
@@ -702,15 +749,105 @@ try:
     test_results['scenario_6_automation_scheduler'] = 'PASS'
 
     # -------------------------------------------------------------
-    # Scenario 7: Reporting and CSV Parity
+    # Scenario 7: Reporting Oracle: Exact Reconciliation (KPI == Drilldown == CSV)
     # -------------------------------------------------------------
-    summary = reporting.summary(center, '2026-10-01', '2026-10-31')
-    assert 'EUR' in summary.get('currencies', {}), "EUR summary missing"
+    test_date = '2026-10-21'
+    oracle_log = []
+
+    s_a1 = make_appointment(
+        patient=patient_3, practitioner=prac_a, cc_center=center,
+        appointment_date=test_date, appointment_time='09:00:00', cc_price_snapshot=100.0
+    )
+    s_a2 = make_appointment(
+        patient=patient_4, practitioner=prac_a, cc_center=center,
+        appointment_date=test_date, appointment_time='10:00:00', cc_price_snapshot=150.0
+    )
+    s_a3 = make_appointment(
+        patient=patient_3, practitioner=prac_a, cc_center=center,
+        appointment_date=test_date, appointment_time='11:00:00', cc_price_snapshot=80.0
+    )
+    s_b1 = make_appointment(
+        patient=patient_3, practitioner=prac_b, cc_center=center,
+        appointment_date=test_date, appointment_time='09:00:00', cc_price_snapshot=200.0
+    )
+
+    # 7A. Pre-closure reconciliation (as user_a)
+    frappe.set_user(user_a)
+    summary_pre = reporting.summary(center, test_date, test_date)
+    drilldown_pre = reporting.sessions(center, test_date, test_date, kpi='all')
+    frappe.response = {}
+    reporting.export_csv(center=center, start=test_date, end=test_date)
+    csv_pre = frappe.response.get('filecontent', '')
+    csv_pre_rows = [r.split(';') for r in csv_pre.strip().splitlines()[1:] if r.strip()]
+
+    eur_pre = summary_pre['currencies']['EUR']
+    oracle_log.append(f"PRE-CLOSURE: total_kpi={eur_pre['sessions']}, to_close={eur_pre['to_close']}, performed={eur_pre['performed']}, paid={eur_pre['operational_paid']}")
+    oracle_log.append(f"PRE-CLOSURE: drilldown_total={drilldown_pre['total']}, csv_rows={len(csv_pre_rows)}")
+
+    assert eur_pre['sessions'] == 3, f"Expected 3 sessions for Doctor A pre-closure, got {eur_pre['sessions']}"
+    assert eur_pre['to_close'] == 3, f"Expected 3 to_close pre-closure, got {eur_pre['to_close']}"
+    assert eur_pre['performed'] == 0, f"Expected 0 performed pre-closure, got {eur_pre['performed']}"
+    assert eur_pre['operational_paid'] == 0, f"Expected 0 paid pre-closure, got {eur_pre['operational_paid']}"
+    assert drilldown_pre['total'] == eur_pre['sessions'] == len(csv_pre_rows), \
+        f"Pre-closure count mismatch: KPI={eur_pre['sessions']}, Drilldown={drilldown_pre['total']}, CSV={len(csv_pre_rows)}"
+
+    drill_names_pre = {r['name'] for r in drilldown_pre['appointments']}
+    assert s_b1.name not in drill_names_pre, f"Doctor B session {s_b1.name} leaked into Doctor A pre-closure drilldown!"
+    assert s_b1.name not in csv_pre, f"Doctor B session {s_b1.name} leaked into Doctor A pre-closure CSV!"
+
+    # 7B. Execute Day Closure (Full-Day Contract satisfied: all 3 concluded sessions included)
+    closure_payload = [
+        {'appointment': s_a1.name, 'performed': 1, 'paid': 1, 'mode_of_payment': 'Cash', 'note': 'Svolta e pagata'},
+        {'appointment': s_a2.name, 'performed': 1, 'paid': 0, 'note': 'Svolta da incassare'},
+        {'appointment': s_a3.name, 'performed': 0, 'paid': 0, 'note': 'Assente non dovuta'}
+    ]
+    close_res = lifecycle.close_day(center, test_date, closure_payload, 'Chiusura test riconciliazione', allow_partial=0)
+    assert close_res['status'] == 'PASS' and close_res['day_closed'] is True, f"Full day closure failed: {close_res}"
+    assert close_res['remaining_pending'] == 0, f"Expected 0 remaining pending, got {close_res['remaining_pending']}"
+
+    # 7C. Post-closure reconciliation
+    summary_post = reporting.summary(center, test_date, test_date)
+    drilldown_post = reporting.sessions(center, test_date, test_date, kpi='all')
+    drilldown_performed = reporting.sessions(center, test_date, test_date, kpi='performed')
+    drilldown_paid = reporting.sessions(center, test_date, test_date, kpi='operational_paid')
+    drilldown_unpaid = reporting.sessions(center, test_date, test_date, kpi='operational_unpaid')
 
     frappe.response = {}
-    reporting.export_csv(center=center, start='2026-10-01', end='2026-10-31')
-    csv_text = frappe.response.get('filecontent', '')
-    assert 'Svolta' in csv_text or 'Non svolta' in csv_text or 'Bloccata' in csv_text or 'In programma' in csv_text, "Expected classified statuses in CSV export"
+    reporting.export_csv(center=center, start=test_date, end=test_date)
+    csv_post = frappe.response.get('filecontent', '')
+    csv_post_lines = [r.split(';') for r in csv_post.strip().splitlines()[1:] if r.strip()]
+
+    eur_post = summary_post['currencies']['EUR']
+    oracle_log.append(f"POST-CLOSURE: sessions={eur_post['sessions']}, performed={eur_post['performed']}, paid={eur_post['operational_paid']}, unpaid={eur_post['operational_unpaid']}, due_amount={eur_post['due_snapshot_amount']}")
+    oracle_log.append(f"POST-CLOSURE: drilldown_total={drilldown_post['total']}, drilldown_performed={drilldown_performed['total']}, drilldown_paid={drilldown_paid['total']}, drilldown_unpaid={drilldown_unpaid['total']}")
+    oracle_log.append(f"POST-CLOSURE: csv_rows={len(csv_post_lines)}")
+
+    assert eur_post['sessions'] == 3, f"Expected 3 sessions, got {eur_post['sessions']}"
+    assert drilldown_post['total'] == 3, f"Expected 3 drilldown sessions, got {drilldown_post['total']}"
+    assert len(csv_post_lines) == 3, f"Expected 3 CSV rows, got {len(csv_post_lines)}"
+
+    assert eur_post['performed'] == 2, f"Expected 2 performed, got {eur_post['performed']}"
+    assert drilldown_performed['total'] == 2, f"Expected 2 performed drilldown, got {drilldown_performed['total']}"
+
+    assert eur_post['operational_paid'] == 1, f"Expected 1 paid, got {eur_post['operational_paid']}"
+    assert drilldown_paid['total'] == 1, f"Expected 1 paid drilldown, got {drilldown_paid['total']}"
+
+    assert eur_post['operational_unpaid'] == 1, f"Expected 1 unpaid, got {eur_post['operational_unpaid']}"
+    assert drilldown_unpaid['total'] == 1, f"Expected 1 unpaid drilldown, got {drilldown_unpaid['total']}"
+
+    assert float(eur_post['due_snapshot_amount']) == 250.0, f"Expected EUR 250 due amount, got {eur_post['due_snapshot_amount']}"
+    assert eur_post['due'] == 2, f"Expected 2 due sessions, got {eur_post['due']}"
+
+    csv_text_lower = csv_post.lower()
+    assert '100' in csv_post and '150' in csv_post and '80' in csv_post, "Amounts missing from CSV export"
+    assert 'contanti' in csv_text_lower or 'cash' in csv_text_lower, "Payment mode Cash missing from CSV"
+    assert 'non dovuto' in csv_text_lower, "Non dovuto status missing from CSV"
+
+    drill_names_post = {r['name'] for r in drilldown_post['appointments']}
+    assert s_b1.name not in drill_names_post, f"Doctor B session {s_b1.name} leaked into Doctor A post-closure drilldown!"
+    assert s_b1.name not in csv_post, f"Doctor B session {s_b1.name} leaked into Doctor A post-closure CSV!"
+
+    test_results['scenario_7_oracle_log'] = oracle_log
     test_results['scenario_7_reporting_parity'] = 'PASS'
 
     test_results['status'] = 'ALL_PASS'
@@ -756,6 +893,36 @@ print("CORE173_RESULT_JSON:" + json.dumps(test_results))
         if 'traceback' in result_json:
             log(f"Traceback:\n{result_json['traceback']}")
         raise RuntimeError(f"Isolated clone test failed: {result_json.get('error')}")
+
+    # Run real headless browser UAT against clone port 8095
+    log("Executing real headless browser UAT against isolated clone port 8095...")
+    env = dict(os.environ)
+    env['NODE_PATH'] = str(ROOT_DIR / 'frontend/premium/node_modules')
+    browser_proc = subprocess.run(
+        ['node', str(ROOT_DIR / 'infra/run_core173_clone_browser_uat.cjs')],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120
+    )
+    if browser_proc.returncode != 0:
+        log(f"Browser UAT failed (code {browser_proc.returncode}):\n{browser_proc.stderr}\n{browser_proc.stdout}")
+        raise RuntimeError(f"Real clone browser UAT failed: {browser_proc.stderr}")
+    log(f"Browser UAT completed successfully:\n{browser_proc.stdout}")
+
+    evidence_dir = ROOT_DIR / 'docs/evidence/issue-173'
+    required_shots = [
+        'core173-day-closure-modal-desktop.png',
+        'core173-day-closure-modal-mobile.png',
+        'core173-arrear-recovery-desktop.png',
+        'core173-report-reconciled-desktop.png',
+        'core173-report-reconciled-mobile.png'
+    ]
+    for shot in required_shots:
+        p = evidence_dir / shot
+        assert p.exists() and p.stat().st_size > 1000, f"Screenshot missing or empty: {shot}"
+        log(f"Verified real browser screenshot: {shot} ({p.stat().st_size} bytes)")
+    result_json['browser_uat'] = 'PASS'
 
     return result_json
 

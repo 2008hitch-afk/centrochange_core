@@ -150,6 +150,7 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         import importlib.util
         self.frappe = types.ModuleType('frappe')
         self.frappe.PermissionError = PermissionError
+        self.frappe.ValidationError = type('ValidationError', (ValueError,), {})
         self.frappe.whitelist = lambda **kwargs: lambda fn: fn
         self.frappe.throw = lambda msg, exc=ValueError: (_ for _ in ()).throw(exc(msg))
         self.frappe.in_test = True
@@ -351,6 +352,10 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         - Session 2: Svolta=1, Pagata=0 -> Due, Unpaid, Settlement recorded.
         - Session 3: Svolta=0 -> No Show, Non Due, Unpaid.
         """
+        # Exclude other today fixtures so PRO-A has exactly these 3 concluded sessions today
+        del self.appointments['APP-TODAY-FUTURE']
+        del self.appointments['APP-LATE-CANCEL-DUE']
+
         payload = [
             {'appointment': 'APP-TODAY-1', 'performed': 1, 'paid': 1, 'mode_of_payment': 'Cash', 'note': 'Svolta regolarmente'},
             {'appointment': 'APP-TODAY-2', 'performed': 1, 'paid': 0, 'mode_of_payment': None, 'note': 'Paziente pagherà alla prossima'},
@@ -358,6 +363,8 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         ]
         res = self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload, 'Chiusura della mia giornata')
         self.assertEqual(res['status'], 'PASS')
+        self.assertTrue(res['day_closed'])
+        self.assertEqual(res['remaining_pending'], 0)
         self.assertEqual(res['updated_count'], 3)
 
         # Check APP-TODAY-1
@@ -514,8 +521,8 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         payload = [
             {'appointment': 'APP-LATE-CANCEL-DUE', 'performed': 0, 'paid': 0, 'note': 'Penale applicata per assenza ingiustificata'}
         ]
-        res = self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload)
-        self.assertEqual(res['status'], 'PASS')
+        res = self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload, allow_partial=1)
+        self.assertEqual(res['status'], 'PARTIAL')
         doc = self.appointments['APP-LATE-CANCEL-DUE']
         self.assertEqual(doc.status, 'No Show')
         self.assertEqual(doc.cc_closure_state, 'Closed')
@@ -525,6 +532,40 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         # Check that per-session note is passed to audit event
         event = [e for e in self.events if e['name'] == 'APP-LATE-CANCEL-DUE'][0]
         self.assertEqual(event['reason'], 'Penale applicata per assenza ingiustificata')
+
+    def test_close_day_fails_if_concluded_sessions_omitted_without_allow_partial(self):
+        """Full-Day Contract: close_day fails closed if any actionable concluded sessions are omitted without allow_partial=1."""
+        del self.appointments['APP-TODAY-FUTURE']
+        payload = [
+            {'appointment': 'APP-TODAY-1', 'performed': 1, 'paid': 1, 'mode_of_payment': 'Cash'}
+        ]
+        with self.assertRaises(self.frappe.ValidationError) as ctx:
+            self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload)
+        self.assertIn('La chiusura della giornata è incompleta: risultano ancora', str(ctx.exception))
+
+    def test_close_day_succeeds_with_partial_status_when_allow_partial_is_true(self):
+        """Full-Day Contract: passing allow_partial=1 permits closing subset and returns status='PARTIAL', day_closed=False."""
+        del self.appointments['APP-TODAY-FUTURE']
+        payload = [
+            {'appointment': 'APP-TODAY-1', 'performed': 1, 'paid': 1, 'mode_of_payment': 'Cash'}
+        ]
+        res = self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload, allow_partial=1)
+        self.assertEqual(res['status'], 'PARTIAL')
+        self.assertFalse(res['day_closed'])
+        self.assertGreater(res['remaining_pending'], 0)
+        self.assertEqual(res['updated_count'], 1)
+
+    def test_close_day_fails_if_future_sessions_remain_without_allow_partial(self):
+        """Full-Day Contract: if future sessions remain today, full closure is rejected unless allow_partial=1."""
+        del self.appointments['APP-LATE-CANCEL-DUE']
+        payload = [
+            {'appointment': 'APP-TODAY-1', 'performed': 1, 'paid': 1, 'mode_of_payment': 'Cash'},
+            {'appointment': 'APP-TODAY-2', 'performed': 1, 'paid': 0},
+            {'appointment': 'APP-TODAY-3', 'performed': 0, 'paid': 0},
+        ]
+        with self.assertRaises(self.frappe.ValidationError) as ctx:
+            self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload)
+        self.assertIn('risultano 1 sedute future non ancora concluse', str(ctx.exception))
 
 
 if __name__ == '__main__':
