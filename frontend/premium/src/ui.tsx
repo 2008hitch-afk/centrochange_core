@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { ArrowDownRight, ArrowUpRight, X } from 'lucide-react'
-import { displayDate, money, type Row } from './api'
+import { ArrowDownRight, ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { displayDate, money, romeToday, type Row } from './api'
 import { demoText } from './demo_labels'
 
 export type Feedback = (message: string, fail?: boolean) => void
@@ -80,21 +80,115 @@ export function SearchableSelect({ label, options, value, onChange, required = f
     {invalidQuery && <small className="combobox-error" role="alert">Nessuna voce selezionata. Scegli dall’elenco o cancella il campo.</small>}
   </div>
 }
-export function DateInput({ value, onChange, required = false }: { value: string; onChange: (iso: string) => void; required?: boolean }) {
-  const [draft, setDraft] = useState(displayDate(value))
-  useEffect(() => setDraft(displayDate(value)), [value])
-  const parse = (text: string) => {
-    if (!required && text.trim() === '') { onChange(''); return true }
-    const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text)
-    if (!m) return false
-    const [, dd, mm, yyyy] = m
-    const date = new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd)))
-    if (date.getUTCDate() !== Number(dd) || date.getUTCMonth() + 1 !== Number(mm) || date.getUTCFullYear() !== Number(yyyy)) return false
-    onChange(`${yyyy}-${mm}-${dd}`)
-    return true
-  }
-  return <input className="date-input" type="text" inputMode="numeric" placeholder="GG/MM/AAAA" pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" title="Usa il formato GG/MM/AAAA" value={draft} onChange={e => { setDraft(e.target.value); e.currentTarget.setCustomValidity(parse(e.target.value) ? '' : 'Inserisci una data valida nel formato GG/MM/AAAA') }} onBlur={e => { e.currentTarget.setCustomValidity(parse(e.target.value) ? '' : 'Inserisci una data valida nel formato GG/MM/AAAA') }} required={required} />
+
+const itMonths = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+const itWeekdays = ['Lu', 'Ma', 'Me', 'Gi', 'Ve', 'Sa', 'Do']
+
+/** Date-only conversion uses UTC to avoid client timezone and DST changes. */
+export function parseItalianDate(text: string): string | null {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text.trim())
+  if (!match) return null
+  const [, day, month, year] = match
+  const y = Number(year), m = Number(month), d = Number(day)
+  if (y < 1000 || y > 9999 || m < 1 || m > 12 || d < 1 || d > 31) return null
+  const date = new Date(Date.UTC(y, m - 1, d))
+  if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) return null
+  return year + '-' + month + '-' + day
 }
+
+export function Time24Input({ value, onChange, required = true }: { value: string; onChange: (time: string) => void; required?: boolean }) {
+  return <input type="text" inputMode="numeric" autoComplete="off" placeholder="HH:mm" title="Inserisci l'ora in formato 24 ore (HH:mm)"
+    pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]" maxLength={5} value={value} required={required}
+    onChange={event => onChange(event.target.value)} />
+}
+
+export function DateInput({ value, onChange, required = false, onValidityChange, calendarLabel = 'data', resetKey }: {
+  value: string
+  onChange: (iso: string) => void
+  required?: boolean
+  onValidityChange?: (valid: boolean) => void
+  calendarLabel?: string
+  resetKey?: string
+}) {
+  const [draft, setDraft] = useState(displayDate(value))
+  const [open, setOpen] = useState(false)
+  const [cursor, setCursor] = useState((value || romeToday()).slice(0, 7))
+  const root = React.useRef<HTMLDivElement>(null)
+  const trigger = React.useRef<HTMLButtonElement>(null)
+  const popover = React.useRef<HTMLDivElement>(null)
+  useEffect(() => { setDraft(displayDate(value)); onValidityChange?.(!!value || !required) }, [value, resetKey])
+  useEffect(() => {
+    if (!open) return
+    const outside = (event: PointerEvent) => {
+      if (root.current && !root.current.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', outside)
+    return () => document.removeEventListener('pointerdown', outside)
+  }, [open])
+  const commit = (text: string) => {
+    const iso = parseItalianDate(text)
+    if (iso) { onChange(iso); onValidityChange?.(true); return true }
+    if (!required && !text.trim()) { onChange(''); onValidityChange?.(true); return true }
+    onValidityChange?.(false)
+    return false
+  }
+  const choose = (iso: string) => {
+    setDraft(displayDate(iso)); onChange(iso); onValidityChange?.(true); setOpen(false)
+    trigger.current?.focus()
+  }
+  const [year, month] = cursor.split('-').map(Number)
+  const firstWeekday = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  const moveMonth = (delta: number) => {
+    const date = new Date(Date.UTC(year, month - 1 + delta, 1))
+    setCursor(date.getUTCFullYear() + '-' + String(date.getUTCMonth() + 1).padStart(2, '0'))
+  }
+  return <div className="cc-date-control" ref={root} onKeyDown={event => {
+    if (open && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus() }
+  }}>
+    <input className="date-input" type="text" inputMode="numeric" autoComplete="off" placeholder="GG/MM/AAAA"
+      pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" title="Usa una data valida nel formato GG/MM/AAAA"
+      aria-label={(calendarLabel === 'data' ? 'Data' : calendarLabel) + ' (GG/MM/AAAA)'}
+      value={draft} required={required}
+      onChange={event => {
+        const text = event.target.value
+        setDraft(text)
+        event.currentTarget.setCustomValidity(commit(text) ? '' : 'Inserisci una data valida nel formato GG/MM/AAAA')
+      }}
+      onBlur={event => { event.currentTarget.setCustomValidity(commit(event.target.value) ? '' : 'Inserisci una data valida nel formato GG/MM/AAAA') }} />
+    <button ref={trigger} type="button" className="cc-date-trigger" aria-label={'Apri calendario ' + calendarLabel}
+      aria-expanded={open} onClick={() => {
+        if (open) { setOpen(false); return }
+        setCursor((parseItalianDate(draft) || value || romeToday()).slice(0, 7))
+        setOpen(true)
+        window.setTimeout(() => popover.current?.querySelector<HTMLSelectElement>('select')?.focus(), 0)
+      }}><CalendarDays size={17} aria-hidden="true" /></button>
+    {open && <div ref={popover} className="cc-date-popover" role="dialog" aria-label={'Calendario ' + calendarLabel}>
+      <div className="cc-date-navigation">
+        <button type="button" aria-label="Mese precedente" onClick={() => moveMonth(-1)}><ChevronLeft size={17} /></button>
+        <select aria-label="Mese" value={month} onChange={event => setCursor(year + '-' + String(event.target.value).padStart(2, '0'))}>
+          {itMonths.map((label, index) => <option key={label} value={index + 1}>{label}</option>)}
+        </select>
+        <select aria-label="Anno" value={year} onChange={event => setCursor(event.target.value + '-' + String(month).padStart(2, '0'))}>
+          {Array.from({ length: 201 }, (_, i) => i + 1900).map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <button type="button" aria-label="Mese successivo" onClick={() => moveMonth(1)}><ChevronRight size={17} /></button>
+      </div>
+      <div className="cc-date-grid">
+        {itWeekdays.map(day => <span key={day} className="cc-date-weekday">{day}</span>)}
+        {Array.from({ length: firstWeekday }, (_, index) => <span key={'empty-' + index} aria-hidden="true" />)}
+        {Array.from({ length: daysInMonth }, (_, index) => {
+          const day = index + 1
+          const iso = year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0')
+          return <button type="button" key={iso} aria-label={displayDate(iso)} aria-pressed={value === iso}
+            className={value === iso ? 'selected' : ''} onClick={() => choose(iso)}>{day}</button>
+        })}
+      </div>
+      <div className="cc-date-foot"><button type="button" onClick={() => choose(romeToday())}>Oggi</button><button type="button" onClick={() => { setOpen(false); trigger.current?.focus() }}>Annulla</button></div>
+    </div>}
+  </div>
+}
+
 export function FormError({ error }: { error: string }) { return error ? <p className="form-error" role="alert">{error}</p> : null }
 export function useAction(feedback: Feedback, onSuccess?: () => void) {
   const [busy, setBusy] = useState(false)
