@@ -120,3 +120,29 @@
 .pagination-bar{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid #eef2f6;font-size:12px;color:#677b92;flex-wrap:wrap;gap:8px}
 .pagination-bar strong{color:#284462}
 @media(max-width:760px){.practitioner-multi-popover{position:fixed;top:auto;bottom:20px;left:16px;right:16px;width:auto;max-width:calc(100vw - 32px);z-index:100}}
+
+
+/* AUDIT-05: accessible Italian calendar shared by report date fields. */
+.cc-date-control{position:relative;width:100%;min-width:145px}
+.cc-date-control>.date-input{width:100%;padding-right:38px}
+.cc-date-trigger{position:absolute;right:3px;top:3px;width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:7px;background:transparent;color:#376c9a;cursor:pointer}
+.cc-date-trigger:hover,.cc-date-trigger:focus-visible{background:#e9f5ff;outline:2px solid #2787ca;outline-offset:1px}
+.cc-date-popover{position:absolute;z-index:90;top:calc(100% + 6px);right:0;width:310px;max-width:calc(100vw - 28px);background:#fff;border:1px solid #cadae9;border-radius:12px;box-shadow:0 16px 38px #1b385c38;padding:12px;color:#34485e;box-sizing:border-box}
+.cc-date-navigation{display:flex;align-items:center;gap:5px;margin-bottom:9px}
+.cc-date-navigation button,.cc-date-foot button{border:0;border-radius:6px;background:#f1f6fc;color:#285a80;padding:7px;cursor:pointer}
+.cc-date-navigation button{display:grid;place-items:center;flex-shrink:0}
+.cc-date-navigation select{min-width:0;flex:1;background:#fff;border:1px solid #d9e3ed;border-radius:7px;font-size:12px;padding:6px 2px;color:#2c4a66}
+.cc-date-navigation select:nth-of-type(2){max-width:70px}
+.cc-date-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;text-align:center}
+.cc-date-grid .cc-date-weekday{font-size:11px;font-weight:700;color:#7489a1;padding:6px 0}
+.cc-date-grid button{border:0;border-radius:7px;padding:8px 2px;background:#fff;color:#30475e;cursor:pointer;font-size:12px}
+.cc-date-grid button:hover,.cc-date-grid button:focus-visible{background:#e8f4ff;outline:2px solid #2787ca}
+.cc-date-grid button.selected{background:#287fc3;color:white}
+.cc-date-foot{display:flex;justify-content:space-between;margin-top:10px;gap:10px}
+.cc-date-foot button{font-size:12px;padding:7px 12px}
+.schedule-editor{border:1px solid #dfe8f1;border-radius:9px;padding:12px;margin:8px 0 16px}
+.schedule-editor .scope-note{padding:0;margin:9px 0;overflow-wrap:anywhere}
+.schedule-editor-slot{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:center;gap:8px;margin-bottom:9px}
+.schedule-editor-slot .field{margin:0}
+.schedule-editor-slot .button{margin-top:17px}
+@media(max-width:420px){.schedule-editor-slot{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.schedule-editor-slot .button{grid-column:1/-1;margin-top:0}.cc-date-popover{right:-4px}}
