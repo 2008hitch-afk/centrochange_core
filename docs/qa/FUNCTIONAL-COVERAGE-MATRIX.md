@@ -1,5 +1,13 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## DECISIONE OWNER VIGENTE — 26/10/2026 (aggiornamento successivo al checkpoint precedente)
+
+- [AUDIT-05 #171 OWNER_ACCEPTED_SCOPED](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6427680735): accettazione limitata al perimetro Professionisti validato; nel CSV soltanto `CC-CAP-002`, `CC-EXT-004`, `CC-EXT-009`, `CC-CAP-028` ora `OWNER_ACCEPTED_FUNCTIONAL_LIMITED`. Le restanti righe trasversali restano parziali/pending.
+- [CORE #173 DEV_INSTALL_ALLOWED_CONDITIONAL](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6427702903): immagine esatta `cc173-day-closure:d500fff` su `d500fff45cc5ca70c5ef33575aac4e58d4fed505`, solo sei servizi applicativi DEV; vietati merge, prod, schema/DocPerm, ruoli e dati storici. **NON ancora DEV installato/OWNER_ACCEPTED CORE**. PR #175 DRAFT, #172 DRAFT, #174 docs-only DRAFT.
+- Stati tecnici invariati `12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED` (110 requisiti). Conteggio campo `Owner` **96 PENDING / 12 OWNER_ACCEPTED_FUNCTIONAL_LIMITED / 1 OWNER_ACCEPTED / 1 OWNER_APPROVED_DEV**.
+- [Checkpoint corrente completo](CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md) prevale su stati/commit/gate **storici** riportati sotto. Nessun GOAL successivo in valutazione.
+
+
 ## CHECKPOINT CORRENTE — 26/10/2026: AUDIT-05 #171 → CORE #173 (solo fase attuale)
 
 **LEGGERE PRIMA:** [Current Phase — Audit05 / CORE173](CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md) e la [matrice CSV 110 requisiti](FUNCTIONAL-COVERAGE-DETAIL.csv) dello stesso commit. Questa sezione **prevale sugli addendum storici sotto**, che descrivono commit e gate precedenti. Nessuna analisi dei GOAL successivi è inclusa in questo checkpoint; le loro righe restano preservate senza essere rivalutate.
