@@ -3,6 +3,7 @@ import type { Appointment } from '../src/api'
 import { configureDemoLabels, demoPatient, demoText, syntheticCode } from '../src/demo_labels'
 import { auditActorName, economyName, practitionerNameFor } from '../src/display_names'
 import { availableUnitLabel, sessionCountLabel } from '../src/patient_packages'
+import { parseItalianDate } from '../src/ui'
 
 async function chooseCombo(scope: Page | Locator, label: string | RegExp, value: string) {
   const field = scope.getByRole('combobox', { name: label })
@@ -663,14 +664,17 @@ test('AUDIT-03 modifica un giorno senza cancellare le altre fasce e annulla asse
   await page.screenshot({ path: info.outputPath('agenda-disponibilita.png'), fullPage: true })
   await page.getByRole('button', { name: 'Modifica orario' }).click()
   const dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Dalle').fill('10:00')
+  await expect(dialog.getByLabel('Dalle (fascia 1)')).toHaveValue('09:00')
+  await dialog.getByLabel('Dalle (fascia 1)').fill('10:00')
   await dialog.getByLabel(/^Alle/).fill('13:00')
   await dialog.getByLabel('Motivo').fill('Orario di prova')
+  await expect(dialog.getByRole('button', { name: 'Conferma' })).toBeDisabled()
+  await dialog.getByRole('checkbox', { name: /Ho verificato le fasce precedenti/ }).check()
   await dialog.getByRole('button', { name: 'Conferma' }).click()
   await expect.poll(() => writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeTruthy()
   expect(writes.find(write => write.method.endsWith('availability.set_schedule'))?.body.time_slots).toEqual([
-    { day: 'Tuesday', from_time: '14:00:00', to_time: '18:00:00' },
-    { day: 'Monday', from_time: '10:00', to_time: '13:00' }
+    { day: 'Monday', from_time: '10:00', to_time: '13:00' },
+    { day: 'Tuesday', from_time: '14:00', to_time: '18:00' }
   ])
   expect(writes.find(write => write.method.endsWith('availability.set_schedule'))?.body.expected_modified).toBe('2026-10-22 10:00:00')
   await page.getByRole('button', { name: 'Annulla assenza' }).click()
@@ -728,7 +732,7 @@ test('AUDIT-05: ricerca server trova un professionista oltre il bootstrap e most
   await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-${info.project.name}.png` })
   await page.getByRole('dialog').getByRole('button', { name: 'Chiudi' }).click()
   await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('NessunNome')
-  await expect(page.getByText('Nessun professionista trovato nel centro.')).toBeVisible()
+  await expect(page.getByText('Nessun risultato per questa ricerca.')).toBeVisible()
   expect(searches).toContain('Bianchi')
 })
 
@@ -1435,8 +1439,10 @@ test('gestione accessi invoca servizio membership auditato', async ({ page }) =>
   await page.getByRole('button', { name: 'Appartenenza', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Appartenenza al centro' })
   await dialog.getByRole('combobox', { name: 'Utente' }).selectOption('synthetic@example.invalid')
-  await dialog.getByRole('textbox', { name: 'Motivo' }).fill('Revisione sintetica')
-  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect(dialog.getByRole('button', { name: 'Conferma modifica' })).toBeDisabled()
+  await dialog.getByRole('combobox', { name: 'Nuovo stato' }).selectOption('0')
+  await dialog.getByRole('textbox', { name: 'Motivo della modifica' }).fill('Revisione sintetica')
+  await dialog.getByRole('button', { name: 'Conferma modifica' }).click()
   await expect.poll(() => writes.some(w => w.method.endsWith('security.lifecycle.set_membership'))).toBe(true)
   expect(writes.at(-1)?.body.center).toBe('CENTRO-A')
 })
@@ -2000,3 +2006,65 @@ test('AUDIT-05 UAT: Report multi-valuta con filtro e drilldown separato per valu
 })
 
 
+
+
+test('AUDIT-05: validazione date italiane, bisestili e canoniche senza timezone', () => {
+  expect(parseItalianDate('29/02/2024')).toBe('2024-02-29')
+  expect(parseItalianDate('29/02/2025')).toBeNull()
+  expect(parseItalianDate('31/04/2026')).toBeNull()
+  expect(parseItalianDate('26/10/2026')).toBe('2026-10-26')
+  expect(parseItalianDate('2026-10-26')).toBeNull()
+})
+
+test('AUDIT-05: filtri report accettano data scritta e calendario e bloccano periodo inverso', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('./#Report')
+  const start = page.getByRole('textbox', { name: 'data iniziale (GG/MM/AAAA)' })
+  const end = page.getByRole('textbox', { name: 'data finale (GG/MM/AAAA)' })
+  await start.fill('29/02/2025')
+  await expect(page.getByText(/Periodo non valido: inserisci due date/)).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Esporta CSV del centro' })).toHaveAttribute('aria-disabled', 'true')
+  await start.fill('28/09/2026')
+  await end.fill('04/10/2026')
+  await expect.poll(() => page.locator('.report-drilldown').count()).toBe(1)
+  await page.getByRole('button', { name: 'Apri calendario data iniziale' }).click()
+  const picker = page.getByRole('dialog', { name: 'Calendario data iniziale' })
+  await expect(picker).toBeVisible()
+  await picker.getByRole('button', { name: '28/09/2026' }).click()
+  await expect(start).toHaveValue('28/09/2026')
+  await end.fill('27/09/2026')
+  await expect(page.getByText(/Periodo non valido: inserisci due date/)).toBeVisible()
+})
+
+test('AUDIT-05: orari multipli non possono essere salvati senza revisione', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.route('**/api/method/centrochange_core.operations.workspace.schedules*', route => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify({ message: [{ name: 'SCHED-MULTI', practitioner: 'PR-001', modified: '2026-10-26 10:00:00',
+      time_slots: [
+        { day: 'Monday', from_time: '09:00:00', to_time: '12:00:00' },
+        { day: 'Monday', from_time: '14:00:00', to_time: '17:00:00' },
+        { day: 'Tuesday', from_time: '09:00:00', to_time: '18:00:00' }
+      ], absences: [] }] })
+  }))
+  await page.goto('./#Disponibilit%C3%A0')
+  await page.getByRole('button', { name: 'Modifica orario' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Modifica disponibilità' })
+  await expect(dialog.getByLabel('Dalle (fascia 1)')).toHaveValue('09:00')
+  await expect(dialog.getByLabel('Dalle (fascia 2)')).toHaveValue('14:00')
+  await expect(dialog.locator('input[type="time"]')).toHaveCount(0)
+  await dialog.getByLabel('Dalle (fascia 1)').fill('10:00')
+  await dialog.getByLabel('Motivo').fill('Rettifica prova')
+  await expect(dialog.getByRole('button', { name: 'Conferma' })).toBeDisabled()
+  expect(writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeUndefined()
+  await dialog.getByRole('checkbox', { name: /Ho verificato le fasce precedenti/ }).check()
+  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  const sent = await expect.poll(() => writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeTruthy()
+  const payload = writes.find(write => write.method.endsWith('availability.set_schedule'))!.body
+  expect(payload.time_slots).toEqual([
+    { day: 'Monday', from_time: '10:00', to_time: '12:00' },
+    { day: 'Monday', from_time: '14:00', to_time: '17:00' },
+    { day: 'Tuesday', from_time: '09:00', to_time: '18:00' }
+  ])
+  expect(payload.expected_modified).toBe('2026-10-26 10:00:00')
+})
