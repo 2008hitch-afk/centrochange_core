@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "capability_id": "CC-CAP-037",
+  "probe_id": "CAP037-UPGRADE-REHEARSAL-001",
+  "status": "BLOCKED",
+  "run_id": "REQUIRED_RUN_ID",
+  "started_at": null,
+  "finished_at": null,
+  "safety": {
+    "shared_runtime_touched": false,
+    "isolation_verified_before_mutation": false,
+    "synthetic_only": true,
+    "raw_evidence_outside_git": true,
+    "manual_unversioned_fix_used": false
+  },
+  "current_pins": {},
+  "target_pins": {},
+  "target_manifest_sha256": null,
+  "isolated": {
+    "compose_project": null,
+    "site": null,
+    "resources": []
+  },
+  "checkpoint": {
+    "created": false,
+    "artifact_count": 0,
+    "hashes": []
+  },
+  "migration": {
+    "exit_code": null,
+    "duration_seconds": null,
+    "supported_path_only": false,
+    "patch_state_verified": false
+  },
+  "schema": {
+    "baseline_inventory_sha256": null,
+    "post_upgrade_inventory_sha256": null,
+    "unexpected_delta": []
+  },
+  "hooks": {
+    "import_ok": false,
+    "resolution_ok": false
+  },
+  "assets": {
+    "build_ok": false,
+    "served_ok": false
+  },
+  "runtime_health": {
+    "backend": false,
+    "frontend": false,
+    "websocket": false,
+    "workers": false,
+    "scheduler": false
+  },
+  "regression": {
+    "suite": [],
+    "passed": 0,
+    "failed": 0,
+    "blocked": 0
+  },
+  "rollback": {
+    "performed": false,
+    "current_pins_restored": false,
+    "checkpoint_restored": false,
+    "integrity_verified": false,
+    "regression_smoke_passed": false
+  },
+  "repository_cleanliness": {
+    "current_checkout_clean": false,
+    "target_checkout_clean": false,
+    "app_heads_match_manifest": false
+  },
+  "cleanup": {
+    "verified": false,
+    "isolated_resources_remaining": []
+  },
+  "findings": [],
+  "classification_recommendation": null
+}

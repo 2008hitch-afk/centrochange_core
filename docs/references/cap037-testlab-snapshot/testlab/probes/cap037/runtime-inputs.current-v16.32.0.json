@@ -1,0 +1,25 @@
+{
+  "capability_id": "CC-CAP-037",
+  "current": {
+    "centrochange_core": {
+      "repository": "https://github.com/2008hitch-afk/centrochange_core.git",
+      "commit": "d3a9efe7718f8dd520f243dd2634cbaa113eb192"
+    },
+    "compose_file": "infra/compose.yaml",
+    "erpnext_image": "frappe/erpnext:v16.32.0@sha256:481168fa7ba34bb9803e80139dff6df80bc161352cc7b478ae90b0c0da814f90"
+  },
+  "target_image_id": "sha256:65e5593d65142723ee56e5056511ed841f4b6a0378c903ee661c427c9f705bfb",
+  "required_external_env_names": [
+    "CAP040_PROJECT",
+    "CAP040_IMAGE",
+    "DB_PASSWORD",
+    "ADMIN_PASSWORD",
+    "SITE_NAME",
+    "HTTP_PORT"
+  ],
+  "policy": {
+    "forbid_shared_project": "centrochange-dev",
+    "forbid_shared_site": "centrochange.local",
+    "external_secrets_only": true
+  }
+}
