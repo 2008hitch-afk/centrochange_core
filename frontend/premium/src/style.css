@@ -127,6 +127,8 @@
 .cc-date-control>.date-input{width:100%;padding-right:38px}
 .cc-date-trigger{position:absolute;right:3px;top:3px;width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:7px;background:transparent;color:#376c9a;cursor:pointer}
 .cc-date-trigger:hover,.cc-date-trigger:focus-visible{background:#e9f5ff;outline:2px solid #2787ca;outline-offset:1px}
+.panel:has(.cc-date-control){overflow:visible}
+.panel:has(.cc-date-popover)>.panel-toolbar{position:relative;z-index:5}
 .cc-date-popover{position:absolute;z-index:90;top:calc(100% + 6px);right:0;width:310px;max-width:calc(100vw - 28px);background:#fff;border:1px solid #cadae9;border-radius:12px;box-shadow:0 16px 38px #1b385c38;padding:12px;color:#34485e;box-sizing:border-box}
 .cc-date-navigation{display:flex;align-items:center;gap:5px;margin-bottom:9px}
 .cc-date-navigation button,.cc-date-foot button{border:0;border-radius:6px;background:#f1f6fc;color:#285a80;padding:7px;cursor:pointer}
