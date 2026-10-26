@@ -1,8 +1,12 @@
 # Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
 
-# Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
-
 > **ROUTER ANTI-CONFUSIONE — PRIMA LETTURA OBBLIGATORIA:** [REGISTRO OPERATIVO VIGENTE](ACTIVE-GOAL-ROUTER.md). Questo documento contiene **checkpoint successivi e fotografie storiche**: la sezione più recente prevale per lo stato, il registro determina *qual è l'AUDIT/CORE corrente*, e le Issue/PR GitHub live determinano che cosa è realmente eseguito. **AUDIT-05 Professionisti ≠ macro GOAL-05 Delivery Closure**. Non applicare le frasi «CORE #173 non implementata» o «owner acceptance #171 pending» presenti **nelle fotografie più vecchie qui sotto** allo stato attuale. Nessun GOAL 06/07 si avvia automaticamente.
+
+## DECISIONE OWNER SUCCESSIVA AL RAPPORTO AGY — 26/10/2026: NUOVO GATE DEV `500c882` AUTORIZZATO **CONDIZIONATAMENTE**, NON INSTALLATO
+
+Owner «Sì procediamo» dopo richiesta di installazione condizionata; [mandato canonico completo Issue #173 #6428982304](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428982304), [rinvio PR #175](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6428992485). La candidata immutabile è `500c882689a4ef1fcf6b10576676a3fb8850e850`, immagine `cc173-day-closure:500c882`, ID `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`. Installazione consentita **solo dopo** identificazione del test backend `120/121`, reviewer indipendente attestato sulla SHA, verifica CI e sorgenti, nuovo backup cifrato **post-Owner-UAT**, ripristino isolato, fingerprint e rollback `d500fff` pronto. La suite sintetica frontend è `200 PASS + 8 SKIP + 0 FAIL`, non 208 PASS. In caso di qualsiasi gate negativo, stop con DEV invariato. **Questo checkpoint registra la sola autorizzazione**: nessuna installazione nuova comprovata e nessuna accettazione CORE #173. No merge, produzione, cambi a dati/ruoli/schema/credenziali, né AUDIT-06.
+
+---
 
 ## ULTIMO CHECKPOINT AGY — 26/10/2026: REMEDIATION CORE #173 COMPLETATA, READ-ONLY DEV VERIFICATO, CANDIDATO PRONTO PER IL GATE DEV
 
