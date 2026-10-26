@@ -797,7 +797,7 @@ try:
 
     # 7B. Execute Day Closure (Full-Day Contract satisfied: all 3 concluded sessions included)
     closure_payload = [
-        {'appointment': s_a1.name, 'performed': 1, 'paid': 1, 'mode_of_payment': 'Cash', 'note': 'Svolta e pagata'},
+        {'appointment': s_a1.name, 'performed': 1, 'paid': 1, 'mode_of_payment': 'CC-MVP-POS-2f7eae6f7a09 Carta POS', 'note': 'Svolta e pagata'},
         {'appointment': s_a2.name, 'performed': 1, 'paid': 0, 'note': 'Svolta da incassare'},
         {'appointment': s_a3.name, 'performed': 0, 'paid': 0, 'note': 'Assente non dovuta'}
     ]
@@ -840,8 +840,12 @@ try:
 
     csv_text_lower = csv_post.lower()
     assert '100' in csv_post and '150' in csv_post and '80' in csv_post, "Amounts missing from CSV export"
-    assert 'contanti' in csv_text_lower or 'cash' in csv_text_lower, "Payment mode Cash missing from CSV"
+    assert 'carta pos · terminale 2f7e' in csv_text_lower, f"Humanized POS method missing from CSV: {csv_post}"
+    assert 'cc-mvp-pos' not in csv_text_lower, f"Technical POS ID leaked into CSV: {csv_post}"
     assert 'non dovuto' in csv_text_lower, "Non dovuto status missing from CSV"
+
+    assert drilldown_paid['appointments'][0]['mode_of_payment'] == 'CC-MVP-POS-2f7eae6f7a09 Carta POS', \
+        f"Drilldown mode_of_payment canonical ID mismatch: {drilldown_paid['appointments'][0]['mode_of_payment']}"
 
     drill_names_post = {r['name'] for r in drilldown_post['appointments']}
     assert s_b1.name not in drill_names_post, f"Doctor B session {s_b1.name} leaked into Doctor A post-closure drilldown!"

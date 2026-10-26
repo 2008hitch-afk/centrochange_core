@@ -1,5 +1,6 @@
 """Operational reports use scoped projections; management totals contain no note bodies."""
 import csv
+import re
 from io import StringIO
 from html import escape
 from collections import defaultdict
@@ -521,6 +522,39 @@ def safe_cell(value):
     return "'" + value if value.lstrip().startswith(('=', '+', '-', '@', '\t', '\r', '\n')) else value
 
 
+def format_payment_method(name):
+    if not name:
+        return ''
+    name_str = str(name).strip()
+    known = {
+        'Cash': 'Contanti (standard)',
+        'Wire Transfer': 'Bonifico',
+        'Bank Transfer': 'Bonifico',
+        'Bank Draft': 'Effetto bancario',
+        'Credit Card': 'Carta di credito',
+        'Cheque': 'Assegno',
+        'POS': 'Carta POS',
+        'Card': 'Carta POS',
+        'Contanti': 'Contanti (standard)',
+        'Bonifico': 'Bonifico',
+        'Carta di credito': 'Carta di credito',
+        'Carta di debito': 'Carta di debito',
+    }
+    if name_str in known:
+        return known[name_str]
+    pos_match = re.match(r'^CC-MVP-POS-([a-f0-9]{4})', name_str, re.IGNORECASE)
+    if pos_match:
+        return f"Carta POS · terminale {pos_match.group(1)}"
+    if name_str.upper() == 'CC DEV PROFILE CASH':
+        return 'Contanti (cassa sede DEV)'
+    if re.search(r'Carta\s+POS', name_str, re.IGNORECASE):
+        id_match = re.search(r'([a-f0-9]{4})', name_str)
+        if id_match:
+            return f"Carta POS · terminale {id_match.group(1)}"
+        return 'Carta POS'
+    return name_str
+
+
 def _format_csv_row(row, c, economy, manifest_data=None):
     econ_raw = row.get('cc_economic_state') or getattr(row, 'cc_economic_state', '')
     closure_state = row.get('cc_closure_state') or getattr(row, 'cc_closure_state', '')
@@ -603,7 +637,7 @@ def _format_csv_row(row, c, economy, manifest_data=None):
         status_label,
         economy.get(econ_raw, econ_raw or ''),
         payment_status,
-        mode_of_pay or '',
+        format_payment_method(mode_of_pay) if mode_of_pay else '',
         price_snap if price_snap is not None else '',
         currency_snap or 'EUR'
     ]

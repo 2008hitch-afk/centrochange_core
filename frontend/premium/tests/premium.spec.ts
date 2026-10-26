@@ -2284,4 +2284,67 @@ test('CORE #173: «Chiudi la mia giornata» apre modale, mostra riepilogo e arre
   expect(writes.some(w => w.method.endsWith('lifecycle.close_day'))).toBe(true)
 })
 
+test('CORE #173 UAT-173-01: «Non svolta» non fa false promesse economiche e mostra stato economico', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, { roles: ['CC Professional'] })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Chiudi la mia giornata' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Chiudi la mia giornata' })).toBeVisible()
+
+  // Click 'Non svolta'
+  await page.getByRole('button', { name: 'Non svolta', exact: true }).click()
+
+  // Verify text does NOT claim session will not be charged
+  await expect(page.getByText('non sarà addebitata')).toHaveCount(0)
+
+  // Verify correct Italian wording
+  await expect(page.getByText('La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.')).toBeVisible()
+  await expect(page.getByText('Situazione economica registrata:')).toBeVisible()
+})
+
+test('CORE #173 UAT-173-05/06: Report drilldown renderizza etichetta leggibile del metodo di pagamento senza ID tecnico', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          total: 1,
+          page: 1,
+          page_length: 50,
+          total_pages: 1,
+          kpi: 'all',
+          currency: 'EUR',
+          appointments: [
+            {
+              name: 'HLC-APP-TEST-POS',
+              patient: 'PAT-1',
+              patient_name: 'Paziente Test',
+              practitioner: 'PRAC-1',
+              practitioner_name: 'Dottore A',
+              appointment_date: '2026-10-14',
+              appointment_time: '12:00:00',
+              duration: 60,
+              status: 'Closed',
+              cc_closure_state: 'Closed',
+              cc_economic_state: 'Due',
+              cc_performed: 1,
+              cc_paid: 1,
+              mode_of_payment: 'CC-MVP-POS-2f7eae6f7a09 Carta POS',
+              cc_price_snapshot: 100.0,
+              cc_currency_snapshot: 'EUR',
+              cc_classified_paid: true
+            }
+          ]
+        }
+      })
+    })
+  })
+  await page.goto('./#Report')
+  const table = page.locator('.report-drilldown')
+  await expect(table.getByText('Carta POS · terminale 2f7e')).toBeVisible()
+  await expect(table.getByText('CC-MVP-POS-2f7eae6f7a09')).toHaveCount(0)
+})
+
+
 

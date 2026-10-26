@@ -4,6 +4,7 @@ import { type Boot, type Row, call, displayDate, romeToday, time } from './api'
 import { type Feedback, Button, Chip, DateInput, Empty, Field, FormError, Modal } from './ui'
 import { demoPatient, demoText } from './demo_labels'
 import { paymentMethodLabel } from './views'
+import { economyName } from './display_names'
 
 interface DayClosureSession {
   name: string
@@ -351,7 +352,12 @@ export function DayClosureModal({
                                 onChange={e => updateItem(s.name, { note: e.target.value })}
                               />
                             </Field>
-                            <p className="scope-note">La seduta non svolta verrà archiviata e non sarà addebitata.</p>
+                            <p className="scope-note">La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.</p>
+                            {s.cc_economic_state && (
+                              <p className="scope-note" style={{ marginTop: 4 }}>
+                                Situazione economica registrata: <strong>{economyName(s.cc_economic_state)}</strong>.
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
