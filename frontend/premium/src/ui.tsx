@@ -102,7 +102,7 @@ export function Time24Input({ value, onChange, required = true }: { value: strin
     onChange={event => onChange(event.target.value)} />
 }
 
-export function DateInput({ value, onChange, required = false, onValidityChange, calendarLabel = 'data', resetKey }: {
+export function DateInput({ value, onChange, required = false, onValidityChange, calendarLabel, resetKey }: {
   value: string
   onChange: (iso: string) => void
   required?: boolean
@@ -149,7 +149,7 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
   }}>
     <input ref={inputRef} className="date-input" type="text" inputMode="numeric" autoComplete="off" placeholder="GG/MM/AAAA"
       pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" title="Usa una data valida nel formato GG/MM/AAAA"
-      aria-label={(calendarLabel === 'data' ? 'Data' : calendarLabel) + ' (GG/MM/AAAA)'}
+      aria-label={calendarLabel ? calendarLabel + ' (GG/MM/AAAA)' : undefined}
       value={draft} required={required}
       onChange={event => {
         const text = event.target.value
@@ -157,14 +157,14 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
         event.currentTarget.setCustomValidity(commit(text) ? '' : 'Inserisci una data valida nel formato GG/MM/AAAA')
       }}
       onBlur={event => { event.currentTarget.setCustomValidity(commit(event.target.value) ? '' : 'Inserisci una data valida nel formato GG/MM/AAAA') }} />
-    <button ref={trigger} type="button" className="cc-date-trigger" aria-label={'Apri calendario ' + calendarLabel}
+    <button ref={trigger} type="button" className="cc-date-trigger" aria-label={calendarLabel ? 'Apri calendario ' + calendarLabel : 'Apri calendario'}
       aria-expanded={open} onClick={() => {
         if (open) { setOpen(false); return }
         setCursor((parseItalianDate(draft) || value || romeToday()).slice(0, 7))
         setOpen(true)
         window.setTimeout(() => popover.current?.querySelector<HTMLSelectElement>('select')?.focus(), 0)
       }}><CalendarDays size={17} aria-hidden="true" /></button>
-    {open && <div ref={popover} className="cc-date-popover" role="dialog" aria-label={'Calendario ' + calendarLabel}>
+    {open && <div ref={popover} className="cc-date-popover" role="dialog" aria-label={calendarLabel ? 'Calendario ' + calendarLabel : 'Calendario'}>
       <div className="cc-date-navigation">
         <button type="button" aria-label="Mese precedente" onClick={() => moveMonth(-1)}><ChevronLeft size={17} /></button>
         <select aria-label="Mese" value={month} onChange={event => setCursor(year + '-' + String(event.target.value).padStart(2, '0'))}>

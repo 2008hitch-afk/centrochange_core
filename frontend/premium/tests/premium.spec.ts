@@ -1830,13 +1830,13 @@ test('AUDIT-05 UAT: Visualizzazione neutra per seduta annullata e registrato per
 test('AUDIT-05 UAT: Metriche ribbon Agenda coerenti con filtro professionisti e stati temporali', async ({ page }) => {
   const p1 = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }
   const p2 = { name: 'PR-002', practitioner_name: 'Dott. Bianchi' }
-  const today = '2026-10-24'
+  const tomorrowDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
   const appointments = [
     // 2 appointments for PR-001: 1 performed, 1 cancelled
     { name: 'APP-1', practitioner: 'PR-001', appointment_date: today, appointment_time: '09:00:00', duration: 60, cc_performed: 1, status: 'Closed' },
     { name: 'APP-2', practitioner: 'PR-001', appointment_date: today, appointment_time: '10:00:00', duration: 60, cc_performed: 0, status: 'Cancelled' },
     // 2 appointments for PR-002: 1 future (scheduled tomorrow), 1 past to_close (08:00 today)
-    { name: 'APP-3', practitioner: 'PR-002', appointment_date: '2026-10-25', appointment_time: '15:00:00', duration: 60, cc_performed: 0, status: 'Scheduled' },
+    { name: 'APP-3', practitioner: 'PR-002', appointment_date: tomorrowDate, appointment_time: '15:00:00', duration: 60, cc_performed: 0, status: 'Scheduled' },
     { name: 'APP-4', practitioner: 'PR-002', appointment_date: today, appointment_time: '08:00:00', duration: 60, cc_performed: 0, status: 'Scheduled' },
   ]
   await mockApi(page, [], false, {}, { practitioners: [p1, p2] })
