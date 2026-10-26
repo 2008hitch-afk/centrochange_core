@@ -4,6 +4,14 @@
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
 
+## DECISIONE OWNER PIÙ RECENTE — 26/10/2026: GATE DEV `500c882` AUTORIZZATO SOLO CONDIZIONATAMENTE
+
+**Fonte live e vincolante:** [Issue #173 — Gate Owner #6428982304](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428982304) e [PR #175 — rinvio al gate](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6428992485). Owner «Sì procediamo»: **autorizzato l'intervento DEV soltanto se tutti i controlli preflight PASS**. Candidato esatto `500c882689a4ef1fcf6b10576676a3fb8850e850`, immagine `cc173-day-closure:500c882`, digest `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`; sei soli servizi applicativi `centrochange-dev`, precedente `d500fff` conservato per rollback. **Non significa che la nuova immagine sia stata installata**.
+
+Prima del rollout: spiegare 120/121 test backend, distinguere 200 PASS/8 SKIP Playwright, reviewer indipendente realmente attestato sulla SHA, CI correlata, backup cifrato **nuovo dopo scritture Owner** e restore isolato, fingerprint DEV post-UAT `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5` da confrontare a baseline live, rollback pronto. Gate FAIL ⇒ `BLOCKED_DEV_UNCHANGED`; se rollout PASS ⇒ smoke browser/API/ACL/CSV + fingerprint e `DEV_INSTALLED_READY_FOR_OWNER_UAT_CORE173_500c882`; regressione ⇒ rollback dei soli servizi e report `BLOCKED_SAFE_ROLLBACK`. Nessun dato storico, DB, Redis, schema, ruoli, credenziali, merge, produzione o AUDIT successivi autorizzati. **Owner acceptance CORE #173 ancora PENDING**.
+
+---
+
 ## 1. QUAL È IL PROGRAMMA CORRENTE — SENZA AMBIGUITÀ
 
 Il lavoro attuale è il **percorso di audit funzionali Premium React, una interfaccia/area alla volta**, con SOP v1.1 GOAL-DRIVEN e CORE cliente strettamente associati. Quando l'Owner dice **«goal 5»** nel contesto di questi walkthrough intende **AUDIT-05 Professionisti (Issue #171)** e il completamento collegato di **CORE #173**, **non** il «GOAL-05 — Delivery Closure & Continuity» della vecchia roadmap MVP.
