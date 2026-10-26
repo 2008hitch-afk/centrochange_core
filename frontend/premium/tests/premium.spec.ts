@@ -2068,3 +2068,32 @@ test('AUDIT-05: orari multipli non possono essere salvati senza revisione', asyn
   ])
   expect(payload.expected_modified).toBe('2026-10-26 10:00:00')
 })
+
+
+test('AUDIT-05: registro spiega Active=1 senza inventare il valore precedente', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.security.audit_view.events*', route => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify({ message: { events: [{
+      name: 'AUDIT-ACTIVE', event_type: 'CENTER_MEMBERSHIP', actor: 'direzione@example.invalid',
+      event_time: today + ' 11:30:00', reference_name: 'MEM-TEST', reason: 'Aggiornamento sintetico',
+      before_state: '{}', after_state: JSON.stringify({ Active: 1 })
+    }], has_more: false } })
+  }))
+  await page.goto('./#Registro%20modifiche')
+  await page.getByRole('row', { name: /Appartenenza al centro/ }).click()
+  const dialog = page.getByRole('dialog', { name: 'Appartenenza al centro' })
+  await expect(dialog.getByText('Stato appartenenza')).toBeVisible()
+  await expect(dialog.getByText('Prima: Non registrato')).toBeVisible()
+  await expect(dialog.getByText('Dopo: Attivo')).toBeVisible()
+})
+
+test('AUDIT-05: CSV del singolo professionista usa export del server senza prima pagina', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('./#Report')
+  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  await page.getByRole('combobox', { name: 'Professionista report' }).selectOption('PR-001')
+  const csv = page.locator('.professional-report a.button').filter({ hasText: 'Esporta CSV completo' })
+  await expect(csv).toHaveAttribute('href', /operations\.reporting\.export_csv/)
+  await expect(csv).toHaveAttribute('href', /practitioner=PR-001/)
+  await expect(csv).toHaveAttribute('aria-disabled', 'false')
+})
