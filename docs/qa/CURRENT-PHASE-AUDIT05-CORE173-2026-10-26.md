@@ -1,6 +1,10 @@
 # Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
 
-**Perimetro temporale e funzionale:** ricostruzione delle evidenze fino al 26/10/2026; include **AUDIT-05 Professionisti #171 / PR #172** e il requisito CORE **#173 «Chiudi la mia giornata»**, già approvato ma **non ancora attestato come implementato**. Gli altri GOAL, moduli o fasi successivi sono **ESCLUSI da questa valutazione**, anche quando alcune righe storiche dei 110 requisiti continuano a esistere nel CSV. Il documento non autorizza nuovi GOAL, merge, deploy, schema, policy o produzione.
+**Perimetro temporale e funzionale:**
+
+**NOMI DA NON CONFONDERE:** in questo checkpoint «goal 5» dell'Owner significa **AUDIT-05 Professionisti, Issue #171**. Non significa il vecchio «GOAL-05 Delivery Closure» nominato nella roadmap MVP del 03/10: sono due numerazioni differenti. Il successivo lavoro *già richiesto* è **CORE #173**, non una delle fasi della roadmap storica.
+
+ ricostruzione delle evidenze fino al 26/10/2026; include **AUDIT-05 Professionisti #171 / PR #172** e il requisito CORE **#173 «Chiudi la mia giornata»**, già approvato ma **non ancora attestato come implementato**. Gli altri GOAL, moduli o fasi successivi sono **ESCLUSI da questa valutazione**, anche quando alcune righe storiche dei 110 requisiti continuano a esistere nel CSV. Il documento non autorizza nuovi GOAL, merge, deploy, schema, policy o produzione.
 
 > **Regola di precedenza:** le Issue/PR GitHub e il codice sulla SHA effettiva sono fonte autorevole dello stato dinamico. Questo checkpoint è una fotografia verificata; ogni agente deve aggiornare HEAD, CI, reviewer e DEV prima di operare. La matrice CSV conserva il significato originale di `Stato` **tecnico**, separato da `Owner`.
 
