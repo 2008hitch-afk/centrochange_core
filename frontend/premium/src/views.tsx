@@ -296,7 +296,7 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
 
 const paymentMethodLabel = (name: string): string => {
   const known: Record<string, string> = { Cash: 'Contanti', 'Wire Transfer': 'Bonifico', 'Bank Transfer': 'Bonifico',
-    'Bank Draft': 'Effetto bancario', 'Credit Card': 'Carta di credito', Cheque: 'Assegno' }
+    'Bank Draft': 'Effetto bancario', 'Credit Card': 'Carta di credito', Cheque: 'Assegno', POS: 'Carta/POS', Card: 'Carta/POS', Contanti: 'Contanti', Bonifico: 'Bonifico', 'Carta di credito': 'Carta di credito', 'Carta di debito': 'Carta di debito' }
   if (known[name]) return known[name]
   if (/^CC-MVP-POS-/i.test(name)) return 'Carta/POS (configurazione di prova)'
   if (/^CC DEV PROFILE CASH$/i.test(name)) return 'Contanti (configurazione di prova)'
