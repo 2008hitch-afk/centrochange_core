@@ -329,10 +329,20 @@ def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,la
 def management_context(center):
     from centrochange_core.security.guards import require_manager,current_rows
     require_manager()
-    users=current_rows('Has Role',{'role':['in',['CC Professional','CC Secretariat','CC Finance','CC Accountant','CC Manager']]},pluck='parent')
-    return {'users':current_rows('User',{'name':['in',users or ['']]},fields=['name','full_name','enabled']),
-        'memberships':current_rows('CC Center Membership',{'center':center},fields=['name','user','active']),
-        'practitioners':current_rows('Healthcare Practitioner',fields=['name','practitioner_name','user_id','status'])}
+    permitted_roles = ['CC Professional', 'CC Secretariat', 'CC Finance', 'CC Accountant', 'CC Manager']
+    role_records = current_rows('Has Role', {'role': ['in', permitted_roles]}, fields=['parent', 'role'])
+    user_ids = sorted({row.parent for row in role_records})
+    role_names = {}
+    for row in role_records:
+        role_names.setdefault(row.parent, []).append(row.role)
+    visible_users = current_rows('User', {'name': ['in', user_ids or ['']]},
+                                 fields=['name', 'full_name', 'enabled'])
+    return {'users': [{**dict(row), 'roles': sorted(role_names.get(row.name, []))}
+                      for row in visible_users],
+        'memberships': current_rows('CC Center Membership', {'center': center},
+                                    fields=['name', 'user', 'active', 'modified']),
+        'practitioners': current_rows('Healthcare Practitioner',
+                                     fields=['name', 'practitioner_name', 'user_id', 'status', 'modified'])}
 
 
 @frappe.whitelist(methods=['GET'])
