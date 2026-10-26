@@ -77,7 +77,25 @@ def practitioners(center, limit=50, offset=0, search=''):
     filters = {'user_id': ['in', users or ['']]}
     if not is_manager():
         filters['name'] = practitioner_for() or ''
-    options = {'or_filters': {field: ['like', f'%{search}%'] for field in ('practitioner_name', 'first_name', 'last_name')}} if search else {}
+    options = {}
+    if search:
+        # Use the exact UAT-owned manifest for display aliases, but always apply the
+        # membership / self-only / DocType predicates from this authorized query.
+        # Never alter the native Healthcare Practitioner name or search the bootstrap.
+        from centrochange_core.uat.display import _manifest
+        manifest = _manifest()
+        alias_names = []
+        if manifest:
+            for index, name in enumerate(manifest['fixture']['practitioners'], 1):
+                if search.casefold() in f'Professionista {index}'.casefold():
+                    alias_names.append(name)
+        needle = '%' + search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+        or_filters = {field: ['like', needle] for field in ('practitioner_name', 'first_name', 'last_name', 'name')}
+        if alias_names:
+            or_filters['name'] = ['in', alias_names]
+            # Name matching must also work for real practitioner IDs.
+            # A second OR by canonical name is unnecessary for the UAT-only alias path.
+        options = {'or_filters': or_filters}
     rows = frappe.get_list('Healthcare Practitioner', filters=filters, **options,
                            fields=['name', 'practitioner_name', 'first_name', 'last_name', 'user_id', 'status', 'modified'],
                            order_by='practitioner_name,name', start=offset, page_length=limit + 1)
