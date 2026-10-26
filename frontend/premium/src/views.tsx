@@ -295,12 +295,28 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
 }
 
 const paymentMethodLabel = (name: string): string => {
-  const known: Record<string, string> = { Cash: 'Contanti', 'Wire Transfer': 'Bonifico', 'Bank Transfer': 'Bonifico',
-    'Bank Draft': 'Effetto bancario', 'Credit Card': 'Carta di credito', Cheque: 'Assegno', POS: 'Carta/POS', Card: 'Carta/POS', Contanti: 'Contanti', Bonifico: 'Bonifico', 'Carta di credito': 'Carta di credito', 'Carta di debito': 'Carta di debito' }
+  const known: Record<string, string> = {
+    Cash: 'Contanti (standard)',
+    'Wire Transfer': 'Bonifico',
+    'Bank Transfer': 'Bonifico',
+    'Bank Draft': 'Effetto bancario',
+    'Credit Card': 'Carta di credito',
+    Cheque: 'Assegno',
+    POS: 'Carta/POS',
+    Card: 'Carta/POS',
+    Contanti: 'Contanti (standard)',
+    Bonifico: 'Bonifico',
+    'Carta di credito': 'Carta di credito',
+    'Carta di debito': 'Carta di debito'
+  }
   if (known[name]) return known[name]
-  if (/^CC-MVP-POS-/i.test(name)) return 'Carta/POS (configurazione di prova)'
-  if (/^CC DEV PROFILE CASH$/i.test(name)) return 'Contanti (configurazione di prova)'
-  return 'Metodo configurato da verificare'
+  if (/^CC-MVP-POS-([a-f0-9]+)/i.test(name)) {
+    const match = name.match(/^CC-MVP-POS-([a-f0-9]{4})/i)
+    const suffix = match ? match[1] : ''
+    return `Carta/POS (Terminale ${suffix})`
+  }
+  if (/^CC DEV PROFILE CASH$/i.test(name)) return 'Contanti (cassa sede DEV)'
+  return name || 'Metodo configurato da verificare'
 }
 
 function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: { row: Appointment; boot: Boot; center: string; onClose: () => void; onSuccess: () => void; feedback: Feedback }) {
@@ -481,7 +497,7 @@ export function Professionals({ boot, center }: { boot: Boot; center: string }) 
   const selectedStatus = String(detail?.status ?? selected?.status ?? 'Active')
   return <><Heading eyebrow="OPERATIVITÀ" title="Professionisti" subtitle="Professionisti autorizzati per il centro selezionato." />
     <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco professionisti</h2><p>{rows.length} {rows.length === 1 ? 'professionista' : 'professionisti'} nel centro{hasMore ? ' · altri disponibili' : ''}</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={event => setQuery(event.target.value)} aria-label="Cerca professionisti" placeholder="Cerca professionista" /></label></div>{loading && <p className="panel-loading" role="status">Caricamento professionisti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => <strong>{practitionerName(row as Practitioner)}</strong> }, { key: 'status', label: 'Stato', render: (value) => value && value !== 'Active' ? 'Non attivo' : 'Attivo' }, { key: 'name', label: 'Scheda', render: () => <ArrowRight size={17} /> }]} onRow={row => { setSelected(row as Practitioner); setDetail(null); setError('') }} /> : <Empty title={term ? 'Nessun risultato per questa ricerca.' : 'Nessun professionista disponibile nel centro.'} />)}{hasMore && <Button variant="secondary" disabled={loading} onClick={() => void more()}>Carica altri</Button>}</section>
-    {selected && <Drawer title={practitionerName(selected)} onClose={() => { setSelected(null); setDetail(null) }}><div className="detail-summary"><Chip tone={selectedStatus !== 'Active' ? 'warn' : 'good'}>{selectedStatus !== 'Active' ? 'Non attivo' : 'Attivo nel centro'}</Chip><p>Centro: {centerNameFor(center, boot.centers)}</p></div>{detailLoading && <p className="detail-section" role="status">Caricamento scheda…</p>}{error && <p className="detail-section inline-error" role="alert">{error}</p>}{detail && <div className="detail-section"><h3>Scheda professionista</h3><dl className="property-list">{syntheticCode(detail.first_name) ? <div><dt>Identità</dt><dd>{practitionerName(selected)}</dd></div> : <><div><dt>Nome</dt><dd>{String(detail.first_name ?? '—')}</dd></div><div><dt>Cognome</dt><dd>{String(detail.last_name ?? '—')}</dd></div></>}</dl><p className="scope-note">Per modificare nome e cognome, apri Archivi → Professionisti.</p></div>}{!canReadProfile && <div className="detail-section"><p>È disponibile la sola identità operativa autorizzata per questo centro.</p></div>}</Drawer>}
+    {selected && <Drawer title={practitionerName(selected)} onClose={() => { setSelected(null); setDetail(null) }}><div className="detail-summary"><Chip tone={selectedStatus !== 'Active' ? 'warn' : 'good'}>{selectedStatus !== 'Active' ? 'Non attivo' : 'Attivo nel centro'}</Chip><p>Centro: {centerNameFor(center, boot.centers)}</p></div>{detailLoading && <p className="detail-section" role="status">Caricamento scheda…</p>}{error && <p className="detail-section inline-error" role="alert">{error}</p>}{detail && <div className="detail-section"><h3>Scheda professionista</h3><dl className="property-list">{syntheticCode(detail.first_name) ? <div><dt>Identità</dt><dd>{practitionerName(selected)}</dd></div> : <><div><dt>Nome</dt><dd>{String(detail.first_name ?? '—')}</dd></div><div><dt>Cognome</dt><dd>{String(detail.last_name ?? '—')}</dd></div></>}</dl>{boot.roles.includes('CC Manager') && <p className="scope-note">Per modificare nome e cognome, apri Archivi → Professionisti.</p>}</div>}{!canReadProfile && <div className="detail-section"><p>È disponibile la sola identità operativa autorizzata per questo centro.</p></div>}</Drawer>}
   </>
 }
 
@@ -491,9 +507,9 @@ export function ServiceCatalog({ boot, center }: { boot: Boot; center: string })
   const search = query.trim().toLocaleLowerCase('it-IT')
   const services = boot.services.filter(service => `${demoText(service.cc_service_label)} ${service.cc_service_label ?? ''} ${service.name}`.toLocaleLowerCase('it-IT').includes(search))
   return <><Heading eyebrow="OPERATIVITÀ" title="Servizi e professionisti" subtitle="Servizi disponibili nel centro selezionato e professionisti associati." />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Servizi del centro</h2><p>{centerNameFor(center, boot.centers)} · {services.length} {services.length === 1 ? "servizio" : "servizi"} · tariffe e durata dallo snapshot del catalogo autorizzato.</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Cerca servizi" placeholder="Cerca servizio" /></label></div><DataTable rows={services as unknown as Row[]} columns={[{ key: 'cc_service_label', label: 'Servizio', render: (value, row) => <strong>{demoText(value || row.name)}</strong> }, { key: 'duration', label: 'Durata', render: value => value == null ? 'Da definire' : `${String(value)} min` }, { key: 'cc_price_snapshot', label: 'Tariffa', render: (value, row) => money(value, String(row.cc_currency_snapshot || 'EUR')) }]} onRow={row => setSelected(row as typeof selected)} /></section>
-    <section className="panel catalog-practitioners"><div className="panel-toolbar"><div className="panel-title"><h2>Professionisti</h2><p>Associati al centro secondo le appartenenze e lo stato correnti del backend.</p></div></div><div className="schedule-grid">{boot.practitioners.map(practitioner => <article className="schedule-card" key={practitioner.name}><span className="avatar">{practitionerName(practitioner).slice(0, 2).toLocaleUpperCase('it-IT')}</span><h3>{practitionerName(practitioner)}</h3><Chip tone="good">Attivo nel centro</Chip></article>)}</div>{!boot.practitioners.length && <Empty title="Nessun professionista attivo" />}</section>
-    {selected && <Drawer title={demoText(selected.cc_service_label || selected.name)} onClose={() => setSelected(null)}><div className="detail-summary"><Chip tone="blue">Servizio disponibile</Chip><h3>{demoText(selected.cc_service_label || selected.name)}</h3><p>Centro: {centerNameFor(center, boot.centers)}</p></div><div className="detail-section"><h3>Scheda servizio</h3><dl className="property-list"><div><dt>Codice</dt><dd>{demoText(selected.name)}</dd></div><div><dt>Articolo canonico</dt><dd>{demoText(selected.cc_service_item || '—')}</dd></div><div><dt>Durata</dt><dd>{selected.duration == null ? 'Da definire' : `${selected.duration} min`}</dd></div><div><dt>Tariffa corrente per prenotazione</dt><dd>{money(selected.cc_price_snapshot, selected.cc_currency_snapshot || 'EUR')}</dd></div></dl><p className="scope-note">Tariffa corrente del catalogo autorizzato. Le sedute già prenotate conservano il proprio snapshot; questa scheda non modifica Item, Item Price o Appointment Type.</p></div></Drawer>}
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Servizi del centro</h2><p>{centerNameFor(center, boot.centers)} · {services.length} {services.length === 1 ? "servizio" : "servizi"} · tariffe e durate del catalogo servizi.</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Cerca servizi" placeholder="Cerca servizio" /></label></div><DataTable rows={services as unknown as Row[]} columns={[{ key: 'cc_service_label', label: 'Servizio', render: (value, row) => <strong>{demoText(value || row.name)}</strong> }, { key: 'duration', label: 'Durata', render: value => value == null ? 'Da definire' : `${String(value)} min` }, { key: 'cc_price_snapshot', label: 'Tariffa', render: (value, row) => money(value, String(row.cc_currency_snapshot || 'EUR')) }]} onRow={row => setSelected(row as typeof selected)} /></section>
+    <section className="panel catalog-practitioners"><div className="panel-toolbar"><div className="panel-title"><h2>Professionisti</h2><p>Professionisti abilitati a operare nella sede selezionata.</p></div></div><div className="schedule-grid">{boot.practitioners.map(practitioner => <article className="schedule-card" key={practitioner.name}><span className="avatar">{practitionerName(practitioner).slice(0, 2).toLocaleUpperCase('it-IT')}</span><h3>{practitionerName(practitioner)}</h3><Chip tone="good">Attivo nel centro</Chip></article>)}</div>{!boot.practitioners.length && <Empty title="Nessun professionista attivo" />}</section>
+    {selected && <Drawer title={demoText(selected.cc_service_label || selected.name)} onClose={() => setSelected(null)}><div className="detail-summary"><Chip tone="blue">Servizio disponibile</Chip><h3>{demoText(selected.cc_service_label || selected.name)}</h3><p>Centro: {centerNameFor(center, boot.centers)}</p></div><div className="detail-section"><h3>Scheda servizio</h3><dl className="property-list"><div><dt>Codice</dt><dd>{demoText(selected.name)}</dd></div><div><dt>Articolo canonico</dt><dd>{demoText(selected.cc_service_item || '—')}</dd></div><div><dt>Durata</dt><dd>{selected.duration == null ? 'Da definire' : `${selected.duration} min`}</dd></div><div><dt>Tariffa corrente per prenotazione</dt><dd>{money(selected.cc_price_snapshot, selected.cc_currency_snapshot || 'EUR')}</dd></div></dl><p className="scope-note">Tariffa valida per le nuove prenotazioni. Le sedute già fissate conservano la tariffa registrata al momento della prenotazione.</p></div></Drawer>}
   </>
 }
 
@@ -795,6 +811,14 @@ export function Access({ center, feedback, boot }: Context) {
     </form></Modal>}</>
 }
 
+const translateNotification = (msg: unknown) => {
+  const text = String(msg ?? '')
+  if (text === 'Pending sessions require daily closure; open the authorized session workspace.') {
+    return 'Ci sono sedute da chiudere. Apri l’Agenda per completare la chiusura.'
+  }
+  return text
+}
+
 export function Notifications({ boot, center }: Context) {
   const personal = boot.roles.includes('CC Professional') && !boot.roles.includes('CC Manager')
   const [rows, setRows] = useState<Row[]>([])
@@ -806,5 +830,5 @@ export function Notifications({ boot, center }: Context) {
     fields: personal ? ['name', 'subject', 'creation', 'read'] : ['name', 'message', 'state', 'creation'],
     limit_page_length: 100, order_by: 'creation desc'
   }).then(r => { if (live) { setRows(r); setLoading(false) } }).catch(e => { if (live) { setError(getError(e)); setLoading(false) } }); return () => { live = false } }, [center, personal, reload])
-  return <><Heading eyebrow="CENTRO CHANGE" title="Notifiche" subtitle={personal ? 'Promemoria e comunicazioni personali.' : 'Esiti e comunicazioni operative.'} /><section className={`panel${personal ? ' personal-notifications' : ''}`}><div className="panel-toolbar"><div className="panel-title"><h2>Notifiche recenti</h2></div></div>{loading ? <p className="panel-loading" role="status">Caricamento notifiche…</p> : error ? <div className="notification-error" role="alert"><p>{error}</p><Button variant="secondary" onClick={() => setReload(n => n + 1)}>Riprova</Button></div> : rows.length ? <DataTable rows={rows} columns={personal ? [{ key: 'subject', label: 'Messaggio' }, { key: 'read', label: 'Lettura', render: value => value ? 'Letta' : 'Da leggere' }, dateColumn('creation', 'Data')] : [{ key: 'message', label: 'Messaggio' }, { key: 'state', label: 'Stato', render: value => ({ Pending: 'In attesa', Sent: 'Inviata', Delivered: 'Consegnata', Failed: 'Non riuscita', Cancelled: 'Annullata' } as Record<string, string>)[String(value)] || 'Da verificare' }, dateColumn('creation', 'Data')]} /> : <Empty title="Nessuna notifica recente" detail="Le comunicazioni del centro appariranno qui." />}</section></>
+  return <><Heading eyebrow="CENTRO CHANGE" title="Notifiche" subtitle={personal ? 'Promemoria e comunicazioni personali.' : 'Esiti e comunicazioni operative.'} /><section className={`panel${personal ? ' personal-notifications' : ''}`}><div className="panel-toolbar"><div className="panel-title"><h2>Notifiche recenti</h2></div></div>{loading ? <p className="panel-loading" role="status">Caricamento notifiche…</p> : error ? <div className="notification-error" role="alert"><p>{error}</p><Button variant="secondary" onClick={() => setReload(n => n + 1)}>Riprova</Button></div> : rows.length ? <DataTable rows={rows} columns={personal ? [{ key: 'subject', label: 'Messaggio', render: value => translateNotification(value) }, { key: 'read', label: 'Lettura', render: value => value ? 'Letta' : 'Da leggere' }, dateColumn('creation', 'Data')] : [{ key: 'message', label: 'Messaggio', render: value => translateNotification(value) }, { key: 'state', label: 'Stato', render: value => ({ Pending: 'In attesa', Sent: 'Inviata', Delivered: 'Consegnata', Failed: 'Non riuscita', Cancelled: 'Annullata' } as Record<string, string>)[String(value)] || 'Da verificare' }, dateColumn('creation', 'Data')]} /> : <Empty title="Nessuna notifica recente" detail="Le comunicazioni del centro appariranno qui." />}</section></>
 }

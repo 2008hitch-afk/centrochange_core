@@ -23,13 +23,33 @@ const parse = (value: unknown): Row => {
   catch { return {} }
 }
 const words: Record<string, string> = { appointment: 'seduta', patient: 'paziente', practitioner: 'professionista', center: 'centro', time: 'ora', date: 'data', paid: 'pagata', economic: 'economico', closure: 'chiusura', state: 'stato', status: 'stato', service: 'servizio', price: 'prezzo', currency: 'valuta', reason: 'motivo', duration: 'durata', package: 'pacchetto', supplier: 'fornitore', amount: 'importo', previous: 'precedente', new: 'nuovo' }
-const label = (key: string, event: string) =>
-  (event === 'CENTER_MEMBERSHIP' && key.toLowerCase() === 'active' ? 'Stato appartenenza' :
-    ({ appointment_time: 'Ora seduta', appointment_date: 'Data seduta' } as Record<string, string>)[key]) ??
-  key.split('_').map(word => words[word] ?? word).join(' ')
+const fieldLabels: Record<string, string> = {
+  appointment_time: 'Ora seduta',
+  appointment_date: 'Data seduta',
+  start_date: 'Data inizio',
+  end_date: 'Data fine',
+  start_time: 'Ora inizio',
+  end_time: 'Ora fine',
+  from_time: 'Ora inizio',
+  to_time: 'Ora fine',
+  docstatus: 'Stato del documento'
+}
+const label = (key: string, event: string) => {
+  const lower = key.toLowerCase()
+  if (event === 'CENTER_MEMBERSHIP' && lower === 'active') return 'Stato appartenenza'
+  if (fieldLabels[lower]) return fieldLabels[lower]
+  if (fieldLabels[key]) return fieldLabels[key]
+  return key.split('_').map(word => words[word.toLowerCase()] ?? word).join(' ')
+}
 const textValue = (key: string, value: unknown, event: string, present: boolean) => {
   if (!present) return 'Non registrato'
   if (value == null || value === '') return 'Non indicato'
+  if (key.toLowerCase() === 'docstatus') {
+    const num = Number(value)
+    if (num === 0) return 'Bozza'
+    if (num === 1) return 'Confermato'
+    if (num === 2) return 'Annullato'
+  }
   if (event === 'CENTER_MEMBERSHIP' && key.toLowerCase() === 'active' && [0, 1, '0', '1', true, false].includes(value as never))
     return Number(value) === 1 ? 'Attivo' : 'Disattivo'
   if (typeof value === 'boolean') return value ? 'Sì' : 'No'
@@ -67,5 +87,5 @@ export function AuditLog({ feedback }: { feedback: Feedback }) {
       <form className="audit-search" onSubmit={e => { e.preventDefault(); setQuery(reference); setOffset(0) }}><Field label="Riferimento documento"><input value={reference} onChange={e => setReference(e.target.value)} maxLength={140} placeholder="Codice o parte del codice" /></Field><Button type="submit" variant="secondary">Cerca</Button></form>
       {error && <p className="inline-error" role="alert">{error}</p>}{loading ? <p className="panel-loading" role="status">Caricamento eventi…</p> : <DataTable rows={rows} columns={[{ key: 'event_type', label: 'Evento', render: value => eventName(value) }, { key: 'event_time', label: 'Quando', render: eventStamp }, { key: 'actor', label: 'Autore' }, { key: 'reference_name', label: 'Riferimento' }, { key: 'reason', label: 'Motivo' }]} onRow={setSelected} />}
       <div className="audit-pager"><Button variant="secondary" disabled={offset === 0} onClick={() => setOffset(value => Math.max(0, value - 100))}>Precedenti</Button><span>Pagina {Math.floor(offset / 100) + 1}</span><Button variant="secondary" disabled={!hasMore} onClick={() => setOffset(value => value + 100)}>Successivi</Button></div>
-    </section>{selected && <Drawer title={eventName(selected.event_type)} onClose={() => setSelected(null)}><div className="detail-summary"><h3>{eventName(selected.event_type)}</h3><p>{eventStamp(selected.event_time)} · {String(selected.actor ?? 'Autore non disponibile')}</p><p>Riferimento: {String(selected.reference_name ?? '—')}</p></div><div className="detail-section"><h3>Motivo</h3><p>{String(selected.reason ?? '—')}</p><h3>Cosa è cambiato</h3>{changes.length ? <div className="audit-changes">{changes.map(key => <div key={key}><strong>{label(key, String(selected.event_type ?? ''))}</strong><p><span>Prima:</span> {textValue(key, before[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(before, key))}</p><p><span>Dopo:</span> {textValue(key, after[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(after, key))}</p></div>)}</div> : <p>Dettaglio della modifica non disponibile in forma comparabile.</p>}<p className="scope-note">Il registro conserva l'evento originale; questa vista mostra solo la differenza leggibile.</p></div></Drawer>}</>
+    </section>{selected && <Drawer title={eventName(selected.event_type)} onClose={() => setSelected(null)}><div className="detail-summary"><p>{eventStamp(selected.event_time)} · {String(selected.actor ?? 'Autore non disponibile')}</p><p>Riferimento: {String(selected.reference_name ?? '—')}</p></div><div className="detail-section"><h3>Motivo</h3><p>{String(selected.reason ?? '—')}</p><h3>Cosa è cambiato</h3>{changes.length ? <div className="audit-changes">{changes.map(key => <div key={key}><strong>{label(key, String(selected.event_type ?? ''))}</strong><p><span>Prima:</span> {textValue(key, before[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(before, key))}</p><p><span>Dopo:</span> {textValue(key, after[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(after, key))}</p></div>)}</div> : <p>Dettaglio della modifica non disponibile in forma comparabile.</p>}<p className="scope-note">Il registro conserva l'evento originale; questa vista mostra solo la differenza leggibile.</p></div></Drawer>}</>
 }
