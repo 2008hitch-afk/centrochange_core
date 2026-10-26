@@ -4,6 +4,10 @@ Repository tecnico della soluzione **Centro Change** costruita su Frappe Framewo
 
 ## Checkpoint operativo vigente — 26/10/2026 (solo fase corrente)
 
+
+
+**Disambiguazione:** «goal 5» nelle verifiche correnti = **AUDIT-05 Professionisti #171**, NON il vecchio `GOAL-05` della roadmap MVP. La numerazione degli AUDIT e quella dei GOAL macro-MVP sono distinte.
+
 **Per riprendere Centro Change SENZA PERDERE IL PUNTO:** [Checkpoint AUDIT-05 → CORE #173](docs/qa/CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md), [matrice requisiti 110 ID CSV](docs/qa/FUNCTIONAL-COVERAGE-DETAIL.csv) e [matrice leggibile](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md).
 
 - **AUDIT-05 #171:** PR #172 `DRAFT/UNMERGED` (candidato `a3e41a1`), CI verde, DEV installato **secondo report AGY**, Owner UAT mirati PASS visivi, **Owner acceptance formale ancora PENDING**. Nessun merge o produzione.
