@@ -4,6 +4,8 @@ Repository tecnico della soluzione **Centro Change** costruita su Frappe Framewo
 
 ## Checkpoint operativo vigente — 26/10/2026 (solo fase corrente)
 
+**NOVITÀ OWNER — ultima decisione 26/10:** [#171 accettata funzionalmente nel solo perimetro AUDIT-05](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6427680735) e [#173 autorizzata alla SOLA installazione DEV condizionata](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6427702903) dopo backup cifrato+restore isolato, verifica SHA/Image ID `d500fff`, rollback e gate. Nessun merge, schema, ruoli, prod o dati storici autorizzati. Il testo che segue fotografa lo stato precedente, consultare [checkpoint corrente](docs/qa/CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md) e i commenti di autorizzazione per lo stato effettivo.
+
 
 
 **Disambiguazione:** «goal 5» nelle verifiche correnti = **AUDIT-05 Professionisti #171**, NON il vecchio `GOAL-05` della roadmap MVP. La numerazione degli AUDIT e quella dei GOAL macro-MVP sono distinte.
