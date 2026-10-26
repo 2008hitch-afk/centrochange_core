@@ -2,7 +2,19 @@
 
 Repository tecnico della soluzione **Centro Change** costruita su Frappe Framework / ERPNext con app custom `centrochange_core` e sito web nell'ecosistema Frappe.
 
-## Stato
+## Checkpoint operativo vigente — 26/10/2026 (solo fase corrente)
+
+**Per riprendere Centro Change SENZA PERDERE IL PUNTO:** [Checkpoint AUDIT-05 → CORE #173](docs/qa/CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md), [matrice requisiti 110 ID CSV](docs/qa/FUNCTIONAL-COVERAGE-DETAIL.csv) e [matrice leggibile](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md).
+
+- **AUDIT-05 #171:** PR #172 `DRAFT/UNMERGED` (candidato `a3e41a1`), CI verde, DEV installato **secondo report AGY**, Owner UAT mirati PASS visivi, **Owner acceptance formale ancora PENDING**. Nessun merge o produzione.
+- **CORE #173:** requisito «Chiudi la mia giornata» approvato, **non ancora implementato al checkpoint**; chiusura arretrati autonoma del professionista **senza sblocco Direzione**, mantenendo audit e controlli server-side. [Mandato AGY registrato](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6424378839), da eseguire sequenzialmente dopo il gate #171 e con nuova autorizzazione DEV dedicata.
+- **Matrice:** 110 ID invariati; sulla PR #172 `12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED` **tecnici**, non accettazione Owner. I GOAL successivi non sono trattati nel presente checkpoint.
+
+Il seguito del README contiene la **baseline storica MVP / GOAL-02 di inizio ottobre**, da consultare come fonte storica e non sostitutiva del checkpoint corrente.
+
+---
+
+## Stato storico MVP (fotografia precedente al checkpoint attuale)
 
 **GOAL-01 OWNER_ACCEPTED / DEV PASS — GOAL-02 TECHNICAL DONE / UAT READY**
 
@@ -10,7 +22,7 @@ Non è ancora una baseline definitiva di produzione. Le decisioni che dipendono 
 
 Candidate **goal02-20261005-rc1**: [Completion Report](docs/GOAL-02-COMPLETION-REPORT-2026-10-05.md), [Client Validation Guide](docs/uat/CLIENT-VALIDATION-GUIDE.md), [UAT Evidence Package](docs/uat/UAT-EVIDENCE-PACKAGE.md). UAT cliente e accettazione Owner restano da eseguire.
 
-## Baseline implementativa corrente
+## Baseline storica MVP (non sostituisce il checkpoint in alto)
 
 L'implementazione HC-0005 è autorizzata. La guida canonica per il build è:
 
