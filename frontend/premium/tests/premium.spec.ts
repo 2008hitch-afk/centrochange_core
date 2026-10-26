@@ -2023,7 +2023,7 @@ test('AUDIT-05: filtri report accettano data scritta e calendario e bloccano per
   const end = page.getByRole('textbox', { name: 'data finale (GG/MM/AAAA)' })
   await start.fill('29/02/2025')
   await expect(page.getByText(/Periodo non valido: inserisci due date/)).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Esporta CSV del centro' })).toHaveAttribute('aria-disabled', 'true')
+  await expect(page.locator('.heading-action a.button').first()).toHaveAttribute('aria-disabled', 'true')
   await start.fill('28/09/2026')
   await end.fill('04/10/2026')
   await expect.poll(() => page.locator('.report-drilldown').count()).toBe(1)
@@ -2059,7 +2059,7 @@ test('AUDIT-05: orari multipli non possono essere salvati senza revisione', asyn
   expect(writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeUndefined()
   await dialog.getByRole('checkbox', { name: /Ho verificato le fasce precedenti/ }).check()
   await dialog.getByRole('button', { name: 'Conferma' }).click()
-  const sent = await expect.poll(() => writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeTruthy()
+  await expect.poll(() => writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeTruthy()
   const payload = writes.find(write => write.method.endsWith('availability.set_schedule'))!.body
   expect(payload.time_slots).toEqual([
     { day: 'Monday', from_time: '10:00', to_time: '12:00' },
