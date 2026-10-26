@@ -2,31 +2,42 @@
 
 > **ROUTER ANTI-CONFUSIONE — PRIMA LETTURA OBBLIGATORIA:** [REGISTRO OPERATIVO VIGENTE](ACTIVE-GOAL-ROUTER.md). Questo documento contiene **checkpoint successivi e fotografie storiche**: la sezione più recente prevale per lo stato, il registro determina *qual è l'AUDIT/CORE corrente*, e le Issue/PR GitHub live determinano che cosa è realmente eseguito. **AUDIT-05 Professionisti ≠ macro GOAL-05 Delivery Closure**. Non applicare le frasi «CORE #173 non implementata» o «owner acceptance #171 pending» presenti **nelle fotografie più vecchie qui sotto** allo stato attuale. Nessun GOAL 06/07 si avvia automaticamente.
 
-## DECISIONE OWNER SUCCESSIVA AL RAPPORTO AGY — 26/10/2026: NUOVO GATE DEV `500c882` AUTORIZZATO **CONDIZIONATAMENTE**, NON INSTALLATO
+## ULTIMO STATO OPERATIVO — 26/10/2026: CANDIDATO 500c882 INSTALLATO SU DEV (`NEW_DEV_INSTALL_ALLOWED_CONDITIONAL_500c882`), PRONTO PER OWNER UAT
 
-Owner «Sì procediamo» dopo richiesta di installazione condizionata; [mandato canonico completo Issue #173 #6428982304](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428982304), [rinvio PR #175](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6428992485). La candidata immutabile è `500c882689a4ef1fcf6b10576676a3fb8850e850`, immagine `cc173-day-closure:500c882`, ID `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`. Installazione consentita **solo dopo** identificazione del test backend `120/121`, reviewer indipendente attestato sulla SHA, verifica CI e sorgenti, nuovo backup cifrato **post-Owner-UAT**, ripristino isolato, fingerprint e rollback `d500fff` pronto. La suite sintetica frontend è `200 PASS + 8 SKIP + 0 FAIL`, non 208 PASS. In caso di qualsiasi gate negativo, stop con DEV invariato. **Questo checkpoint registra la sola autorizzazione**: nessuna installazione nuova comprovata e nessuna accettazione CORE #173. No merge, produzione, cambi a dati/ruoli/schema/credenziali, né AUDIT-06.
+**Esecuzione Gate Owner ([Issue #173 commento #6428982304](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428982304)):**
+1. **Preflight 100% PASS:**
+   - Commit immutabile: `500c882689a4ef1fcf6b10576676a3fb8850e850` (`500c882`), working tree pulito, source parity `PASS`.
+   - Immagine candidata: `cc173-day-closure:500c882`, Image ID `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`, source label `500c882689a4ef1fcf6b10576676a3fb8850e850` `single-stack-full`.
+   - Immagine rollback baseline: `cc173-day-closure:d500fff` (`sha256:8e9103aa301bf3da782e1882070de9d1518c07b908b12a775743eb93eb3cedd9`) preservata sul runtime.
+   - GitHub Actions CI Premerge [Run 40412036299](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40412036299): `backend-offline` (15s) SUCCESS, `frontend-synthetic` (4m23s) SUCCESS.
+   - Chiarimento test backend mancante: 120 PASS, 1 SKIPPED (`test_mariadb_load_and_reconciliation` in `test_mariadb_load_and_reconciliation.py`, intenzionalmente saltato offline in quanto benchmark live MariaDB >500 appuntamenti condizionato a `CC_VOLUME_TEST_BACKEND`), 0 FAILED, 0 ERRORS. Frontend: 200 PASS + 8 SKIP + 0 FAIL.
+   - Revisione indipendente tracciabile: PASS, 0 Critical, 0 Important. Nessuna modifica al core Frappe/ERPNext, preservazione ID canonico POS in DB/settlement/API, formattazione leggibile in visualizzazione e CSV, testo prudente su sedute non svolte.
+   - DB Fingerprint pre-swap: `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5` coincidente al 100% con il post-salvataggio Owner.
+   - Nuovo backup cifrato: archivio GPG AES-256 in `/home/empv26/backups/centrochange/cc-dev-backup-5fultjsg` (directory protetta 0700/0600 su filesystem persistente non temporaneo). Ripristino isolato di prova (`verify_isolated_restore.py`): `PASS_RESTORE_VERIFIED` con 17 appuntamenti, 12 pazienti, 2 practitioner, zero perdite dati.
+   - Piano rollback: pronto e testato all'immagine `d500fff`.
+
+2. **Rollout DEV eseguito con successo:**
+   - Applicato ai soli 6 servizi applicativi: `backend`, `frontend`, `websocket`, `queue-short`, `queue-long`, `scheduler`.
+   - Nessuna modifica a MariaDB, Redis, volumi, porte, proxy, ruoli, credenziali o schema. Nessun `bench migrate`.
+   - Tutti e 6 i container running con Image ID esatto `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`.
+
+3. **Collaudo reale post-installazione (Live DEV su porta 8082):**
+   - 21 controlli tecnici multi-ruolo (`run_dev_technical_uat.py`): Manager, Segreteria, Professional A, Professional B, Guest, IDOR 403, cross-center 403 tutti PASS.
+   - UAT-173-01 live: Modale «Chiudi la mia giornata» alla selezione di «Non svolta» mostra inequivocabilmente: *«La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.»* e *«Situazione economica registrata: Da definire.»*. Falso impegno (*«non sarà addebitata»*) completamente assente.
+   - UAT-173-05/06 live: Report drilldown e CSV export per il 14/10/2026 mostrano `Carta POS · terminale 2f7e` (ID tecnico `CC-MVP-POS` non esposto al cliente). MariaDB su record `CC Settlement` `t6muud5trq` conserva rigorosamente l'ID canonico `CC-MVP-POS-2f7eae6f7a09 Carta POS`.
+   - Integrità DB post-installazione: fingerprint canonico invariato al bit (`20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5`, ZERO mutazioni).
+   - 6 screenshot browser reali acquisiti e verificati.
+
+**Stato attuale:** **`DEV_INSTALLED_READY_FOR_OWNER_UAT_CORE173_500c882`**.  
+Walkthrough richiesto all'Owner: verifica esclusiva dei due soli fix UX (avviso seduta non svolta e label POS umanizzato) su [Premium DEV](https://centro-uat.empv.it/premium/), senza ripetere i walkthrough già validati. PR #172, #174 e #175 rigorosamente in DRAFT / NO MERGE.
 
 ---
 
-## ULTIMO CHECKPOINT AGY — 26/10/2026: REMEDIATION CORE #173 COMPLETATA, READ-ONLY DEV VERIFICATO, CANDIDATO PRONTO PER IL GATE DEV
+## DECISIONE OWNER ANTECEDENTE — 26/10/2026: NUOVO GATE DEV `500c882` AUTORIZZATO CONDIZIONATAMENTE
 
-**Verifica Read-Only su DEV (salvataggio Owner del 14/10/2026 verificato senza mutazioni):**
-- **Appuntamento:** `HLC-APP-2026-00024` del 14/10/2026 (Paziente `test test`, Practitioner `HLC-PRAC-2026-00001`).
-- **Stato post-salvataggio Owner:** `status='Closed'`, `cc_closure_state='Closed'`, `cc_performed=1`, `cc_paid=1`, `cc_economic_state='Due'`, `cc_price_snapshot=100.0`, `cc_currency_snapshot='EUR'`, `cc_payment_terms_mode='Immediate'`.
-- **CC Settlement associato:** `t6muud5trq` (`CC-MVP-POS-2f7eae6f7a09 Carta POS`, `paid=1`, `sequence=1`, record singolo privo di duplicati).
-- **Audit Events correlati:** `t6m4ln0mm3` (`OPERATIONAL_SETTLEMENT`) e `t6mtqhh5ql` (`SESSION_LATE_COMPLETED` con actor `cc-http-uat0000001-a@example.invalid`).
-- **Integrità DEV:** Nessun record storico modificato; il 12/10 `HLC-APP-2026-00010` resta intatto in `Auto Locked`. Nuovo fingerprint canonico DB DEV post-salvataggio Owner: `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5`. Nessuna sovrascrittura o alterazione da parte del runtime engineer.
+Owner «Sì procediamo» dopo richiesta di installazione condizionata; [mandato canonico completo Issue #173 #6428982304](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428982304), [rinvio PR #175](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6428992485). La candidata immutabile è `500c882689a4ef1fcf6b10576676a3fb8850e850`, immagine `cc173-day-closure:500c882`, ID `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`. Installazione consentita solo dopo identificazione del test backend `120/121`, reviewer indipendente attestato sulla SHA, verifica CI e sorgenti, nuovo backup cifrato post-Owner-UAT, ripristino isolato, fingerprint e rollback `d500fff` pronto. In caso di qualsiasi gate negativo, stop con DEV invariato. Nessun merge, produzione, cambi a dati/ruoli/schema/credenziali, né AUDIT-06.
 
-**Correzioni implementate (UAT-173-01 e UAT-173-05/06):**
-1. **UAT-173-01:** In `day_closure.tsx`, rimosso il falso impegno economico e sostituito con la dicitura neutrale: «La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.» affiancata dall'indicazione dello stato economico registrato `economyName(s.cc_economic_state)`.
-2. **UAT-173-05/06:** In `reporting.py`, `views.tsx` e `appointment_timeline.tsx`, mappato l'ID tecnico POS nel label umano `Carta POS · terminale <4char>` per CSV, tabella drilldown Report e timeline, mantenendo rigorosamente l'ID canonico (`CC-MVP-POS-2f7eae6f7a09 Carta POS`) nel database, nelle API e nei settlement.
-
-**Test su clone isolato, CI e Candidato Docker:**
-- **Clone isolato Frappe/MariaDB:** Tutti i 7 scenari `PASS` (happy path, recupero arretrato, integrità economica, ACL fail-closed, atomicità rollback, scheduler, parità CSV e drilldown Report con formattazione POS). Headless Chromium UAT completato con 5 screenshot.
-- **Commit SHA Candidato:** `500c882689a4ef1fcf6b10576676a3fb8850e850` (`500c882`) su branch `issue-173/day-closure-recovery`, PR #175 DRAFT / NO MERGE.
-- **GitHub Actions Premerge Run:** Run `40412036299` SUCCESS (100% - `backend-offline` 15s, `frontend-synthetic` 4m23s).
-- **Immagine Docker Candidata:** `cc173-day-closure:500c882`, ID `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`.
-- **Stato del Gate:** **`READY_FOR_NEW_DEV_GATE`**. DEV inalterato sull'immagine precedente `cc173-day-closure:d500fff`. Nessun deploy senza nuovo esplicito gate condizionato dell'Owner.
+---
 
 ---
 
