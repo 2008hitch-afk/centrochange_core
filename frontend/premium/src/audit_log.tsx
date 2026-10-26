@@ -24,13 +24,13 @@ const parse = (value: unknown): Row => {
 }
 const words: Record<string, string> = { appointment: 'seduta', patient: 'paziente', practitioner: 'professionista', center: 'centro', time: 'ora', date: 'data', paid: 'pagata', economic: 'economico', closure: 'chiusura', state: 'stato', status: 'stato', service: 'servizio', price: 'prezzo', currency: 'valuta', reason: 'motivo', duration: 'durata', package: 'pacchetto', supplier: 'fornitore', amount: 'importo', previous: 'precedente', new: 'nuovo' }
 const label = (key: string, event: string) =>
-  (event === 'CENTER_MEMBERSHIP' && key === 'active' ? 'Stato appartenenza' :
+  (event === 'CENTER_MEMBERSHIP' && key.toLowerCase() === 'active' ? 'Stato appartenenza' :
     ({ appointment_time: 'Ora seduta', appointment_date: 'Data seduta' } as Record<string, string>)[key]) ??
   key.split('_').map(word => words[word] ?? word).join(' ')
 const textValue = (key: string, value: unknown, event: string, present: boolean) => {
   if (!present) return 'Non registrato'
   if (value == null || value === '') return 'Non indicato'
-  if (event === 'CENTER_MEMBERSHIP' && key === 'active' && [0, 1, '0', '1', true, false].includes(value as never))
+  if (event === 'CENTER_MEMBERSHIP' && key.toLowerCase() === 'active' && [0, 1, '0', '1', true, false].includes(value as never))
     return Number(value) === 1 ? 'Attivo' : 'Disattivo'
   if (typeof value === 'boolean') return value ? 'Sì' : 'No'
   if (typeof value === 'object') return JSON.stringify(value)
