@@ -1,5 +1,7 @@
 # AUDIT-05 — Professionisti e accessi
 
+> **CHECKPOINT 26/10/2026 — LEGGERE PRIMA:** [stato operativo corrente AUDIT-05 → CORE #173](CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md) e [matrice CSV aggiornata 110 requisiti](FUNCTIONAL-COVERAGE-DETAIL.csv). Le prove e i commit descritti più avanti in questo file sono **fotografie tecniche storiche**; non prendere il primo SHA o il primo stato `READY_FOR_OWNER_UAT` come ultimo candidato. Il candidato AUDIT-05 verificato è `a3e41a1`, PR #172 DRAFT/UNMERGED, CI verde, DEV riportato installato; UAT Owner finali #35-38 PASS **visivi**, #39 ancora distinto per ruolo Manager/Professional. Owner acceptance #171 **PENDING**; review formale GitHub non presente al checkpoint. Il nuovo flusso giornaliero e il recupero tardivo `CORE #173` sono **NON IMPLEMENTATI** fino a prova contraria. Nessun merge/prod autorizzato.
+
 Issue [#171](https://github.com/2008hitch-afk/centrochange_core/issues/171). Baseline `main` `61324c8f462a07aa1b893c69a52e825e4342f9db`. Questo documento è l'oracle del candidato; i risultati Frappe/DEV e la decisione Owner sono registrati nella PR e nella Issue, senza attribuire PASS live ai mock.
 
 I due addendum Owner del 24/10/2026 nella #171 integrano l'oracle dell'**account Professionista**: non basta la directory. Le prove mutative e temporali usano solo il Site/DB isolato `cc171-prof-restore-*`; nessuna di esse si applica al DEV condiviso.
