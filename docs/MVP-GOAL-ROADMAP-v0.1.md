@@ -1,5 +1,8 @@
 # Centro Change — MVP Goal Roadmap v0.1
 
+> **ATTENZIONE — CLASSIFICAZIONE DOCUMENTO (26/10/2026):** questo è il **programma macro di consegna approvato il 03/10/2026**, conservato integralmente per tracciabilità e per i futuri gate produzione/handover. **NON è la roadmap operativa degli AUDIT Premium React attualmente in esecuzione.** Le espressioni `CURRENT`, «Current status» e «Current command for Codex» riportate sotto sono **fotografie storiche di inizio ottobre**, NON il prossimo comando da eseguire oggi. **Leggere prima [REGISTRO OPERATIVO VIGENTE AUDIT/CORE](qa/ACTIVE-GOAL-ROUTER.md)**, quindi Issue/PR live: `AUDIT-05 Professionisti #171` → `CORE #173` (attualmente in remediation finale). `AUDIT-06 Servizi/catalogo/prezzi/disponibilità` è soltanto pianificato; `AUDIT-07+` non sono formalizzati. **Non confondere** `AUDIT-05` con questo `GOAL-05 Delivery Closure`, né utilizzare il numero 5 per inferire che Centro Change sia stato consegnato. Le approvazioni storiche valide rimangono valide nel loro *perimetro originario*, ma non autorizzano saltare i gate delle fasi successive.
+
+
 **Status:** OWNER APPROVED  
 **Approved on:** 2026-10-03  
 **Repository:** `2008hitch-afk/centrochange_core`  
