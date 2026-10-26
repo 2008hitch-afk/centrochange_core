@@ -1,5 +1,8 @@
 # Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
 
+> **ROUTER ANTI-CONFUSIONE — PRIMA LETTURA OBBLIGATORIA:** [REGISTRO OPERATIVO VIGENTE](ACTIVE-GOAL-ROUTER.md). Questo documento contiene **checkpoint successivi e fotografie storiche**: la sezione più recente prevale per lo stato, il registro determina *qual è l'AUDIT/CORE corrente*, e le Issue/PR GitHub live determinano che cosa è realmente eseguito. **AUDIT-05 Professionisti ≠ macro GOAL-05 Delivery Closure**. Non applicare le frasi «CORE #173 non implementata» o «owner acceptance #171 pending» presenti **nelle fotografie più vecchie qui sotto** allo stato attuale. Nessun GOAL 06/07 si avvia automaticamente.
+
+
 ## ULTIMO CHECKPOINT OWNER UAT — 26/10/2026: completato il walkthrough principale, remediation #173 autorizzata (NON DEPLOY)
 
 **Evidenze effettive Owner su DEV** ([issue #173 commenti UAT-173-01..06](https://github.com/2008hitch-afk/centrochange_core/issues/173)): modale Professional e badge 12/10 + 14/10 visibili; selettori Svolta/Pagata/Metodo funzionanti; **salvataggio realmente comandato** dall'Owner sulla giornata arretrata **14/10** senza sblocco Direzione; dopo refresh il 14/10 è scomparso dalle giornate ancora da chiudere. Report Direzione e CSV visualizzato indicano **14/10/2026 ore 12:00 Svolta / Pagamento registrato / Carta POS / tariffa prevista 100 €**. Le sedute 12/10 Bloccata, 15/10 Annullata, 26/10 Da chiudere restano visivamente distinte. **UAT-173-06 filtro NON impostato dall'Owner**: quattro date nell'export **non sono un difetto** ([rettifica](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428384872)). Owner **non ha ancora accettato formalmente CORE #173**.
@@ -40,11 +43,7 @@
 
 ---
 
-**Perimetro temporale e funzionale:**
-
-**NOMI DA NON CONFONDERE:** in questo checkpoint «goal 5» dell'Owner significa **AUDIT-05 Professionisti, Issue #171**. Non significa il vecchio «GOAL-05 Delivery Closure» nominato nella roadmap MVP del 03/10: sono due numerazioni differenti. Il successivo lavoro *già richiesto* è **CORE #173**, non una delle fasi della roadmap storica.
-
- ricostruzione delle evidenze fino al 26/10/2026; include **AUDIT-05 Professionisti #171 / PR #172** e il requisito CORE **#173 «Chiudi la mia giornata»**, già approvato ma **non ancora attestato come implementato**. Gli altri GOAL, moduli o fasi successivi sono **ESCLUSI da questa valutazione**, anche quando alcune righe storiche dei 110 requisiti continuano a esistere nel CSV. Il documento non autorizza nuovi GOAL, merge, deploy, schema, policy o produzione.
+**Perimetro temporale e funzionale della fotografia originaria:** ricostruzione delle evidenze fino al 26/10/2026; include **AUDIT-05 Professionisti #171 / PR #172** e il requisito CORE **#173 «Chiudi la mia giornata»**, già approvato ma **non ancora attestato come implementato**. Gli altri GOAL, moduli o fasi successivi sono **ESCLUSI da questa valutazione**, anche quando alcune righe storiche dei 110 requisiti continuano a esistere nel CSV. Il documento non autorizza nuovi GOAL, merge, deploy, schema, policy o produzione.
 
 > **Regola di precedenza:** le Issue/PR GitHub e il codice sulla SHA effettiva sono fonte autorevole dello stato dinamico. Questo checkpoint è una fotografia verificata; ogni agente deve aggiornare HEAD, CI, reviewer e DEV prima di operare. La matrice CSV conserva il significato originale di `Stato` **tecnico**, separato da `Owner`.
 
