@@ -1,5 +1,20 @@
 # Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
 
+## ULTIMO STATO VERIFICATO — CORE #173 DEV installato secondo rapporto AGY, UAT OWNER PENDING
+
+**Checkpoint successivo al gate autorizzativo qui sotto (26/10/2026):**
+
+- [Report AGY Issue #173 #6427998113](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6427998113), duplicato su [PR #175 #6427999519](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6427999519): stato comunicato **`DEV_INSTALLED_READY_FOR_OWNER_UAT`**.
+- Identità codice verificata direttamente su GitHub: PR #175 `OPEN/DRAFT/UNMERGED`, SHA `d500fff45cc5ca70c5ef33575aac4e58d4fed505`; [CI #40396123393](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40396123393) `backend-offline` e `frontend-synthetic` **SUCCESS**. PR #172 e #174 anch'esse ancora `DRAFT/UNMERGED`. L'Owner ha già dato accettazione **scoped** #171, non ancora accettazione #173.
+- **Dichiarato da AGY, non verificato direttamente dal revisore sul VPS:** tutti e 6 i container applicativi `centrochange-dev` usano `cc173-day-closure:d500fff` Image ID `sha256:8e9103aa301bf3da782e1882070de9d1518c07b908b12a775743eb93eb3cedd9`; DB/Redis invariati; fingerprint canonico prima/dopo `0f806a37849b571b213e71dcd5a7e6b6535a5bdb9314ca5c49fc2a536ed5e2ad`; 21/21 smoke tecnici, 6 screenshot DEV e rollback applicativo pronto.
+- Backup cifrato e restore isolato dichiarati PASS nel rapporto. **Attenzione retention:** il backup `/tmp/cc-core173-backup/.../backup.tar.gpg` e le chiavi `/tmp/cc-core173-keys/` sono su percorso temporaneo; AGY deve verificarne la conservazione protetta fino al completamento UAT/rollback, senza pubblicare o esportare segreti, e prima della consegna definire retention secondo policy. Non dedurre protezione durevole dal solo flag AES-256 o chmod 0600.
+- **Perimetro delle prove DEV:** lo smoke riportato dal tecnico ha consultato sedute di oggi e arretrate, inclusa `HLC-APP-2026-00024` del 14/10, ma afferma **ZERO mutazioni ai dati**. Quindi nessuna prova di `close_day` con salvataggio su record storici DEV e nessuna accettazione funzionale Owner. Le mutazioni + transazione/settlement/CSV sono provate sul **clone Frappe/MariaDB** come test tecnico, non dichiarare UAT mutativo DEV su storici.
+- **Walkthrough Owner successivo:** accedere solo a [Premium DEV](https://centro-uat.empv.it/premium/) con account Professionista autorizzato, Agenda → «Chiudi la mia giornata» → giorno 14/10/2026 → leggere sedute arretrate, stato, data/ora, tariffa e POS, non confermare su sedute preesistenti; controllare in Direzione report/Agenda/visibilità e mobile. Per conferma persistente utilizzare **esclusivamente fixture sintetiche dedicate, reversibili, previo piano di cleanup**; altrimenti l'Owner effettua UAT visivo e il backend reale persistente rimane provato soltanto sul clone.
+- **Gate:** `READY_FOR_OWNER_UAT_CORE173` (secondo rapporto AGY), **NON** `OWNER_ACCEPTED_CORE173`, `MERGED` o `PROD_DEPLOYED`. Non avviare successivi GOAL, non trasformare automaticamente requisiti Owner della matrice in PASS finché l'UAT conclusiva non è registrata. L'eventuale UAT Owner può esitare `PASS_SCOPED` o difetti mirati senza rifare #171.
+
+---
+
+
 ## ULTIMO GATE OWNER — 26/10/2026 (prevale sulla fotografia precedente sotto)
 
 **Owner ha risposto «Procediamo» alle due autorizzazioni distinte.**
