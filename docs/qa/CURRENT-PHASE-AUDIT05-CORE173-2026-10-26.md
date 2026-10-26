@@ -1,5 +1,19 @@
 # Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
 
+## ULTIMO CHECKPOINT OWNER UAT — 26/10/2026: completato il walkthrough principale, remediation #173 autorizzata (NON DEPLOY)
+
+**Evidenze effettive Owner su DEV** ([issue #173 commenti UAT-173-01..06](https://github.com/2008hitch-afk/centrochange_core/issues/173)): modale Professional e badge 12/10 + 14/10 visibili; selettori Svolta/Pagata/Metodo funzionanti; **salvataggio realmente comandato** dall'Owner sulla giornata arretrata **14/10** senza sblocco Direzione; dopo refresh il 14/10 è scomparso dalle giornate ancora da chiudere. Report Direzione e CSV visualizzato indicano **14/10/2026 ore 12:00 Svolta / Pagamento registrato / Carta POS / tariffa prevista 100 €**. Le sedute 12/10 Bloccata, 15/10 Annullata, 26/10 Da chiudere restano visivamente distinte. **UAT-173-06 filtro NON impostato dall'Owner**: quattro date nell'export **non sono un difetto** ([rettifica](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428384872)). Owner **non ha ancora accettato formalmente CORE #173**.
+
+**Due problemi UX confermati da correggere, senza altri GOAL:**
+1. In `day_closure.tsx` frase assoluta «La seduta non svolta ... non sarà addebitata» non è valida per `cc_economic_state='Due'` o penali già dovute.
+2. Nel Report e CSV è esposto il nome tecnico `CC-MVP-POS-...` davanti a «Carta POS»; mostrare etichetta leggibile senza perdere riconoscibilità tra diversi terminali/metodi e senza alterare l'identificativo canonico in Frappe/Settlement.
+
+**Ultima autorizzazione dell'Owner («ok procediamo»):** [MANDATO AGY UNICO DI REMEDIATION #173](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428463645): correggere 2 difetti sulla PR #175, fare **verifica read-only** su MariaDB/audit/CC Settlement delle scritture Owner del 14/10, test reali + review/CI e consegnare rapporto unico. NON autorizza nuove scritture DEV, rollback automatico dello storico Owner, nuovo deploy, merge, produzione o GOAL successivi. Il gate per qualsiasi **nuova immagine** richiederà autorizzazione specifica dopo la build e verifica del candidato.
+
+**Matrice:** 110 ID invariati e distribuzione tecnica precedente **12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED**; non cambiare lo stato `Owner` di CORE #173 da PENDING finché non saranno verificati fix e versione DEV e registrata accettazione. #171 già Owner Accepted Scoped; PR #172/#174/#175 ancora DRAFT/UNMERGED alla ricognizione precedente. Il salvataggio Owner sul DEV modifica legittimamente dati: il fingerprint pre/post dell'installazione AGY è precedente al test Owner, non provarne artificialmente l'invarianza attuale.
+
+---
+
 ## ULTIMO STATO VERIFICATO — CORE #173 DEV installato secondo rapporto AGY, UAT OWNER PENDING
 
 **Checkpoint successivo al gate autorizzativo qui sotto (26/10/2026):**
