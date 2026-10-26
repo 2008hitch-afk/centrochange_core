@@ -60,9 +60,9 @@ export function Availability({ boot, center, feedback }: { boot: Boot; center: s
     setDraftSlots(current => current.map((slot, i) => i === index ? { ...slot, ...patch } : slot))
     setReviewed(false)
   }
-  const timeValid = (value: string) => /^(?:[01]\\d|2[0-3]):[0-5]\\d$/.test(value)
+  const timeValid = (value: string) => /^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(value)
   const slotsValid = draftSlots.length > 0 && draftSlots.every(slot => timeValid(slot.from_time) && timeValid(slot.to_time) && slot.from_time < slot.to_time) &&
-    !draftSlots.some((slot, index) => draftSlots.some((other, second) => index !== second && slot.day === other.day && slot.from_time < other.to_time && slot.to_time > other.from_time)
+    !draftSlots.some((slot, index) => draftSlots.some((other, second) => index !== second && slot.day === other.day && slot.from_time < other.to_time && slot.to_time > other.from_time))
   const scheduleChanged = JSON.stringify(draftSlots) !== JSON.stringify(originalSlots)
   const daySlots = draftSlots.map((slot, index) => ({ slot, index })).filter(entry => entry.slot.day === weekday)
   const save = () => {
@@ -101,8 +101,8 @@ export function Availability({ boot, center, feedback }: { boot: Boot; center: s
           {!daySlots.length && <p>Nessuna fascia prevista per questo giorno.</p>}
           <Button type="button" variant="secondary" onClick={() => { setDraftSlots(current => [...current, { day: weekday, from_time: '09:00', to_time: '12:00' }]); setReviewed(false) }}><Plus size={16} /> Aggiungi fascia</Button>
           {!slotsValid && <p className="inline-error" role="alert">Controlla gli orari: usa HH:mm (24 ore), intervalli validi e senza sovrapposizioni. Mantieni almeno una fascia settimanale.</p>}
-          <p className="scope-note">Orario precedente: {originalSlots.map(slot => `${weekdays.find(day => day[0] === slot.day)?.[1}: ${slot.from_time}–${slot.to_time}`).join('; ') || 'nessuno'}.</p>
-          <p className="scope-note">Nuovo orario completo: {draftSlots.map(slot => `${weekdays.find(day => day[0] === slot.day)?.[1}: ${slot.from_time}–${slot.to_time}`).join('; ') || 'nessuno'}.</p>
+          <p className="scope-note">Orario precedente: {originalSlots.map(slot => `${weekdays.find(day => day[0] === slot.day)?.[1] ?? slot.day}: ${slot.from_time}–${slot.to_time}`).join('; ') || 'nessuno'}.</p>
+          <p className="scope-note">Nuovo orario completo: {draftSlots.map(slot => `${weekdays.find(day => day[0] === slot.day)?.[1] ?? slot.day}: ${slot.from_time}–${slot.to_time}`).join('; ') || 'nessuno'}.</p>
           <label className="checkbox-row"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} /> Ho verificato le fasce precedenti e quelle nuove; confermo questa modifica.</label>
         </div>
       </>}
