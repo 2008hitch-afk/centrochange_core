@@ -1,7 +1,30 @@
 # Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
 
+# Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
+
 > **ROUTER ANTI-CONFUSIONE — PRIMA LETTURA OBBLIGATORIA:** [REGISTRO OPERATIVO VIGENTE](ACTIVE-GOAL-ROUTER.md). Questo documento contiene **checkpoint successivi e fotografie storiche**: la sezione più recente prevale per lo stato, il registro determina *qual è l'AUDIT/CORE corrente*, e le Issue/PR GitHub live determinano che cosa è realmente eseguito. **AUDIT-05 Professionisti ≠ macro GOAL-05 Delivery Closure**. Non applicare le frasi «CORE #173 non implementata» o «owner acceptance #171 pending» presenti **nelle fotografie più vecchie qui sotto** allo stato attuale. Nessun GOAL 06/07 si avvia automaticamente.
 
+## ULTIMO CHECKPOINT AGY — 26/10/2026: REMEDIATION CORE #173 COMPLETATA, READ-ONLY DEV VERIFICATO, CANDIDATO PRONTO PER IL GATE DEV
+
+**Verifica Read-Only su DEV (salvataggio Owner del 14/10/2026 verificato senza mutazioni):**
+- **Appuntamento:** `HLC-APP-2026-00024` del 14/10/2026 (Paziente `test test`, Practitioner `HLC-PRAC-2026-00001`).
+- **Stato post-salvataggio Owner:** `status='Closed'`, `cc_closure_state='Closed'`, `cc_performed=1`, `cc_paid=1`, `cc_economic_state='Due'`, `cc_price_snapshot=100.0`, `cc_currency_snapshot='EUR'`, `cc_payment_terms_mode='Immediate'`.
+- **CC Settlement associato:** `t6muud5trq` (`CC-MVP-POS-2f7eae6f7a09 Carta POS`, `paid=1`, `sequence=1`, record singolo privo di duplicati).
+- **Audit Events correlati:** `t6m4ln0mm3` (`OPERATIONAL_SETTLEMENT`) e `t6mtqhh5ql` (`SESSION_LATE_COMPLETED` con actor `cc-http-uat0000001-a@example.invalid`).
+- **Integrità DEV:** Nessun record storico modificato; il 12/10 `HLC-APP-2026-00010` resta intatto in `Auto Locked`. Nuovo fingerprint canonico DB DEV post-salvataggio Owner: `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5`. Nessuna sovrascrittura o alterazione da parte del runtime engineer.
+
+**Correzioni implementate (UAT-173-01 e UAT-173-05/06):**
+1. **UAT-173-01:** In `day_closure.tsx`, rimosso il falso impegno economico e sostituito con la dicitura neutrale: «La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.» affiancata dall'indicazione dello stato economico registrato `economyName(s.cc_economic_state)`.
+2. **UAT-173-05/06:** In `reporting.py`, `views.tsx` e `appointment_timeline.tsx`, mappato l'ID tecnico POS nel label umano `Carta POS · terminale <4char>` per CSV, tabella drilldown Report e timeline, mantenendo rigorosamente l'ID canonico (`CC-MVP-POS-2f7eae6f7a09 Carta POS`) nel database, nelle API e nei settlement.
+
+**Test su clone isolato, CI e Candidato Docker:**
+- **Clone isolato Frappe/MariaDB:** Tutti i 7 scenari `PASS` (happy path, recupero arretrato, integrità economica, ACL fail-closed, atomicità rollback, scheduler, parità CSV e drilldown Report con formattazione POS). Headless Chromium UAT completato con 5 screenshot.
+- **Commit SHA Candidato:** `500c882689a4ef1fcf6b10576676a3fb8850e850` (`500c882`) su branch `issue-173/day-closure-recovery`, PR #175 DRAFT / NO MERGE.
+- **GitHub Actions Premerge Run:** Run `40412036299` SUCCESS (100% - `backend-offline` 15s, `frontend-synthetic` 4m23s).
+- **Immagine Docker Candidata:** `cc173-day-closure:500c882`, ID `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`.
+- **Stato del Gate:** **`READY_FOR_NEW_DEV_GATE`**. DEV inalterato sull'immagine precedente `cc173-day-closure:d500fff`. Nessun deploy senza nuovo esplicito gate condizionato dell'Owner.
+
+---
 
 ## ULTIMO CHECKPOINT OWNER UAT — 26/10/2026: completato il walkthrough principale, remediation #173 autorizzata (NON DEPLOY)
 
