@@ -57,6 +57,9 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         self.user_roles = ['CC Professional']
         self.user_practitioner = 'PRO-A'
 
+        self.operational_centers = {'CENTRO-A'}
+        self.assigned_patients = ['PAT-1', 'PAT-2', 'PAT-3', 'PAT-4']
+
         # Appointments dataset
         self.appointments = {
             # Today's appointments (2026-10-26) for PRO-A
@@ -81,6 +84,24 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
                 practitioner='PRO-A', cc_center='CENTRO-A', appointment_date='2026-10-26',
                 appointment_time='11:00:00', duration=60, status='Scheduled',
                 cc_closure_state='Pending', cc_economic_state='Pending',
+                cc_performed=0, cc_paid=0, cc_revision=1, cc_settlement_revision=0,
+                cc_package=None, check_permission=lambda perm: None
+            ),
+            # Future appointment today (at 19:00:00, clock is at 18:00:00)
+            'APP-TODAY-FUTURE': Record(
+                name='APP-TODAY-FUTURE', doctype='Patient Appointment', patient='PAT-1',
+                practitioner='PRO-A', cc_center='CENTRO-A', appointment_date='2026-10-26',
+                appointment_time='19:00:00', duration=60, status='Scheduled',
+                cc_closure_state='Pending', cc_economic_state='Pending',
+                cc_performed=0, cc_paid=0, cc_revision=1, cc_settlement_revision=0,
+                cc_package=None, check_permission=lambda perm: None
+            ),
+            # Late cancellation with due fee (already Due)
+            'APP-LATE-CANCEL-DUE': Record(
+                name='APP-LATE-CANCEL-DUE', doctype='Patient Appointment', patient='PAT-2',
+                practitioner='PRO-A', cc_center='CENTRO-A', appointment_date='2026-10-26',
+                appointment_time='12:00:00', duration=60, status='Open',
+                cc_closure_state='Pending', cc_economic_state='Due',
                 cc_performed=0, cc_paid=0, cc_revision=1, cc_settlement_revision=0,
                 cc_package=None, check_permission=lambda perm: None
             ),
@@ -169,6 +190,8 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         security_guards = types.ModuleType('centrochange_core.security.guards')
         security_guards.require_operations = lambda center=None: None
         security_guards.require_center = lambda center: None
+        security_guards.require_operational_center = self._mock_require_operational_center
+        security_guards.patient_names = lambda user=None: self.assigned_patients
         security_guards.require_actor = lambda: None
         security_guards.is_manager = lambda user=None: 'CC Manager' in self.user_roles
         security_guards.roles = lambda user=None: self.user_roles
@@ -201,7 +224,7 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         sys.modules['centrochange_core.operations.packages'] = ops_packages
 
         ops_notes = types.ModuleType('centrochange_core.operations.notes')
-        ops_notes.require_context = lambda pat, center: None
+        ops_notes.require_context = self._mock_require_context
         sys.modules['centrochange_core.operations.notes'] = ops_notes
 
         spec.loader.exec_module(self.lifecycle)
@@ -253,6 +276,11 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
                         if isinstance(cond, list) and cond[0] == '!=':
                             if app.status == cond[1]:
                                 match = False
+                    if 'patient' in filters:
+                        cond = filters['patient']
+                        if isinstance(cond, list) and cond[0] == 'in':
+                            if app.patient not in cond[1]:
+                                match = False
                 if match:
                     res.append(Record(app))
             return res
@@ -261,6 +289,16 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
                     Record(name='PAT-2', first_name='Luigi', last_name='Verdi'),
                     Record(name='PAT-3', first_name='Anna', last_name='Bianchi')]
         return []
+
+    def _mock_require_operational_center(self, center):
+        if center not in self.operational_centers:
+            raise PermissionError(f"La sede {center} non è operativa: nuove operazioni non consentite.")
+
+    def _mock_require_context(self, patient, center):
+        if center not in self.operational_centers:
+            raise PermissionError(f"La sede {center} non è operativa.")
+        if patient not in self.assigned_patients:
+            raise PermissionError(f"Il paziente {patient} non è assegnato in questo centro.")
 
     def _mock_current_rows(self, doctype, filters=None, fields=None, pluck=None):
         if doctype == 'CC Settlement':
@@ -293,8 +331,8 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         res = self.lifecycle.get_day_closure_sessions('CENTRO-A', '2026-10-26')
         self.assertEqual(res['date'], '2026-10-26')
         self.assertTrue(res['is_today'])
-        # Today's appointments for PRO-A: APP-TODAY-1, APP-TODAY-2, APP-TODAY-3, APP-CANCELLED
-        self.assertEqual(len(res['sessions']), 4)
+        # Today's appointments for PRO-A: APP-TODAY-1, APP-TODAY-2, APP-TODAY-3, APP-CANCELLED, APP-TODAY-FUTURE, APP-LATE-CANCEL-DUE
+        self.assertEqual(len(res['sessions']), 6)
         # Arrear dates must contain 2026-10-12 from APP-ARREAR-12
         self.assertIn('2026-10-12', res['arrear_dates'])
 
@@ -391,10 +429,11 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         ]
         with self.assertRaises(PermissionError) as ctx:
             self.lifecycle.close_day('CENTRO-A', '2026-10-20', payload)
-        self.assertIn('già stata chiusa definitivamente', str(ctx.exception))
+        self.assertIn('Non è consentito sovrascrivere una seduta consolidata', str(ctx.exception))
 
     def test_idempotent_duplicate_replay_does_not_mutate(self):
         """Submitting exact same closure parameters for an already closed session returns replay=True without duplicate audit events."""
+        self.settlements.append(Record(appointment='APP-CLOSED', mode_of_payment='Cash', sequence=1))
         payload = [
             {'appointment': 'APP-CLOSED', 'performed': 1, 'paid': 1, 'mode_of_payment': 'Cash'}
         ]
@@ -408,11 +447,84 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
     def test_cancelled_appointment_cannot_be_closed_as_performed(self):
         """Cancelled appointments cannot be marked as performed in day closure."""
         payload = [
-            {'appointment': 'APP-CANCELLED', 'performed': 1, 'paid': 1}
+            {'appointment': 'APP-CANCELLED', 'performed': 1, 'paid': 1, 'mode_of_payment': 'Cash'}
         ]
         with self.assertRaises(ValueError) as ctx:
             self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload)
         self.assertIn('cancellata e non può essere chiusa', str(ctx.exception))
+
+    def test_non_operational_center_rejected(self):
+        """Non-operational center must be rejected with PermissionError."""
+        with self.assertRaises(PermissionError) as ctx:
+            self.lifecycle.get_day_closure_sessions('CENTRO-INATTIVO', '2026-10-26')
+        self.assertIn('non è operativa', str(ctx.exception))
+
+        payload = [{'appointment': 'APP-TODAY-1', 'performed': 1, 'paid': 0}]
+        with self.assertRaises(PermissionError) as ctx:
+            self.lifecycle.close_day('CENTRO-INATTIVO', '2026-10-26', payload)
+        self.assertIn('non è operativa', str(ctx.exception))
+
+    def test_revoked_patient_assignment_denies_closure(self):
+        """When a patient assignment is revoked, direct API closure is denied via require_context."""
+        self.assigned_patients = ['PAT-2', 'PAT-3', 'PAT-4']  # PAT-1 revoked
+        payload = [{'appointment': 'APP-TODAY-1', 'performed': 1, 'paid': 0}]  # PAT-1
+        with self.assertRaises(PermissionError) as ctx:
+            self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload)
+        self.assertIn('non è assegnato', str(ctx.exception))
+
+    def test_target_date_mismatch_rejected(self):
+        """Attempting to close a session whose appointment_date differs from target date must be rejected."""
+        payload = [{'appointment': 'APP-ARREAR-12', 'performed': 1, 'paid': 0}]  # Date is 2026-10-12
+        with self.assertRaises(ValueError) as ctx:
+            self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload)  # Request date is 2026-10-26
+        self.assertIn('diversa dalla data richiesta', str(ctx.exception))
+
+    def test_missing_performed_field_rejected(self):
+        """Missing or malformed performed field in payload must be rejected."""
+        payload = [{'appointment': 'APP-TODAY-1'}]  # No performed
+        with self.assertRaises(ValueError) as ctx:
+            self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload)
+        self.assertIn('Esito prestazione (performed) mancante', str(ctx.exception))
+
+    def test_future_session_closure_rejected(self):
+        """Future sessions (clock is 18:00, session ends at 20:00) cannot be closed as performed OR no-show."""
+        payload_performed = [{'appointment': 'APP-TODAY-FUTURE', 'performed': 1, 'paid': 0}]
+        with self.assertRaises(ValueError) as ctx:
+            self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload_performed)
+        self.assertIn('futuro', str(ctx.exception))
+
+        payload_noshow = [{'appointment': 'APP-TODAY-FUTURE', 'performed': 0, 'paid': 0}]
+        with self.assertRaises(ValueError) as ctx:
+            self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload_noshow)
+        self.assertIn('futuro', str(ctx.exception))
+
+    def test_duplicate_appointments_in_payload_rejected(self):
+        """Payload containing duplicate appointment entries must fail closed."""
+        payload = [
+            {'appointment': 'APP-TODAY-1', 'performed': 1, 'paid': 0},
+            {'appointment': 'APP-TODAY-1', 'performed': 1, 'paid': 0}
+        ]
+        with self.assertRaises(ValueError) as ctx:
+            self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload)
+        self.assertIn('duplicata nel payload', str(ctx.exception))
+
+    def test_unperformed_session_preserves_due_economic_state(self):
+        """When an appointment already has cc_economic_state='Due' (e.g. late cancellation fee),
+        closing as performed=0 does NOT wipe it to 'Non Due', preserving economic obligation."""
+        payload = [
+            {'appointment': 'APP-LATE-CANCEL-DUE', 'performed': 0, 'paid': 0, 'note': 'Penale applicata per assenza ingiustificata'}
+        ]
+        res = self.lifecycle.close_day('CENTRO-A', '2026-10-26', payload)
+        self.assertEqual(res['status'], 'PASS')
+        doc = self.appointments['APP-LATE-CANCEL-DUE']
+        self.assertEqual(doc.status, 'No Show')
+        self.assertEqual(doc.cc_closure_state, 'Closed')
+        self.assertEqual(doc.cc_performed, 0)
+        self.assertEqual(doc.cc_economic_state, 'Due')  # Preserved Due!
+
+        # Check that per-session note is passed to audit event
+        event = [e for e in self.events if e['name'] == 'APP-LATE-CANCEL-DUE'][0]
+        self.assertEqual(event['reason'], 'Penale applicata per assenza ingiustificata')
 
 
 if __name__ == '__main__':

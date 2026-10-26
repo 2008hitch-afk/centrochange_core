@@ -280,6 +280,7 @@ test('AUDIT-04 due emissioni volontarie identiche usano chiavi diverse', async (
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)
   await page.goto('./#Pazienti')
+  await expect(page.getByRole('heading', { name: 'Pazienti', exact: true })).toBeVisible()
   await page.locator('tbody tr').first().click()
   const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
   await expect(drawer).toBeVisible()
@@ -2254,6 +2255,7 @@ test('AUDIT-05 UAT-05-34: seduta Auto Locked e Pending mostra Bloccata e Pagamen
   })
 
   await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
   // Nella tabella di dettaglio:
   // Stato seduta deve essere 'Bloccata'
   const table = page.locator('.report-drilldown')
