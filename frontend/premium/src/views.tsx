@@ -742,32 +742,54 @@ function FinanceDetail({ row, tab, center, centers, canWrite, assignees, account
   return <Drawer title={title} onClose={onClose}><div className="detail-summary"><Chip tone={String(row.state ?? row.status).includes('Error') ? 'bad' : 'blue'}>{financeFieldValue('state', row.state ?? row.status ?? tab)}</Chip><h3>{title}</h3><p>Centro: {centerNameFor(center, centers)}</p></div><div className="detail-section"><h3>Informazioni</h3><dl className="property-list">{Object.entries(row).filter(([k]) => !['name', 'problem'].includes(k)).map(([k, v]) => <div key={k}><dt>{financeFieldLabel(k)}</dt><dd>{financeFieldValue(k, v)}</dd></div>)}</dl>{detail && <><h3>Posizione</h3><dl className="property-list">{Object.entries(detail).filter(([, v]) => !Array.isArray(v) && typeof v !== 'object').map(([k, v]) => <div key={k}><dt>{financeFieldLabel(k)}</dt><dd>{financeFieldValue(k, v)}</dd></div>)}</dl></>}{Boolean(row.problem) && <p className="inline-error">{String(row.problem)}</p>}{canWrite && tab === 'Coda amministrativa' && <><Button variant="secondary" onClick={() => setAction(true)}>Gestisci condizione</Button>{action && <form onSubmit={e => { e.preventDefault(); void run(() => finance('admin_queue.manage', { name: row.name, priority, assignee: assignee || null, due_at: dueAt ? dueAt.replace('T', ' ') : null, defer_until: deferUntil ? deferUntil.replace('T', ' ') : null, reason }, true)) }}><Field label="Priorità" required><select value={priority} onChange={e => setPriority(Number(e.target.value))}>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}</select></Field><Field label="Assegnatario"><select value={assignee} onChange={e => setAssignee(e.target.value)}><option value="">Nessuno</option>{assignees.map(u => <option key={u} value={u}>{u}</option>)}</select></Field><Field label="Scadenza UTC"><input type="datetime-local" value={dueAt} onChange={e => setDueAt(e.target.value)} /></Field><Field label="Rinvio fino a UTC"><input type="datetime-local" value={deferUntil} onChange={e => setDeferUntil(e.target.value)} /></Field><Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required /></Field><FormError error={error} /><Button disabled={busy} type="submit">Conferma</Button></form>}</>}</div><FinanceActions row={row} tab={tab} center={center} canWrite={canWrite} accounts={accounts} suppliers={suppliers} items={items} feedback={feedback} onChange={onChange} /></Drawer>
 }
 
-export function Access({ center, feedback }: Context) {
+export function Access({ center, feedback, boot }: Context) {
   const [data, setData] = useState<Row | null>(null)
   const [form, setForm] = useState<'membership' | 'practitioner' | null>(null)
   const [user, setUser] = useState('')
   const [practitioner, setPractitioner] = useState('')
-  const [active, setActive] = useState('1')
+  const [active, setActive] = useState('')
   const [reason, setReason] = useState('')
   const [reload, setReload] = useState(0)
   const { busy, error, run } = useAction(feedback, () => { setForm(null); setReload(x => x + 1) })
   useEffect(() => {
     if (!center) return
-    let live = true
+    let live = true; setData(null)
     ops<Row>('workspace.management_context', { center }).then(r => { if (live) setData(r) }).catch(e => feedback(getError(e), true))
     return () => { live = false }
   }, [center, reload])
   const users = data?.users as Row[] ?? []
   const practitioners = data?.practitioners as Row[] ?? []
+  const memberships = data?.memberships as Row[] ?? []
+  const roleLabel: Record<string, string> = { 'CC Manager': 'Direzione', 'CC Professional': 'Professionista', 'CC Secretariat': 'Segreteria', 'CC Finance': 'Finanza', 'CC Accountant': 'Commercialista' }
+  const userRoles = (row: Row) => ((row.roles as string[] | undefined) ?? []).map(role => roleLabel[role] || role).join(', ')
+  const readableUser = (row: Row) => {
+    const name = String(row.full_name ?? '').trim()
+    const id = String(row.name ?? '')
+    const label = name && name !== id && !syntheticCode(name) ? name : id
+    return userRoles(row) ? label + ' · ' + userRoles(row) : label
+  }
+  const selectedAccount = users.find(entry => entry.name === user)
+  const currentMembership = memberships.find(entry => entry.user === user)
+  const selectedPractitioner = practitioners.find(entry => entry.name === practitioner)
+  const openForm = (next: 'membership' | 'practitioner') => {
+    setUser(''); setPractitioner(''); setActive(''); setReason(''); setForm(next)
+  }
   const submit = () => form === 'membership'
     ? call('security.lifecycle.set_membership', { user, center, active, reason }, true)
     : call('security.lifecycle.set_practitioner_state', { practitioner, active, reason }, true)
-  return <><Heading eyebrow="AMMINISTRAZIONE" title="Gestione accessi" subtitle="Utenti e appartenenze al centro. Ogni modifica passa dal servizio con audit." action={<div className="button-group"><Button variant="secondary" onClick={() => setForm('practitioner')}>Stato professionista</Button><Button onClick={() => setForm('membership')}><Plus size={17} /> Appartenenza</Button></div>} />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Appartenenze</h2><p>Stato degli utenti nel centro selezionato.</p></div></div>{!data ? <p className="panel-loading">Caricamento…</p> : <DataTable rows={data.memberships as Row[] ?? []} columns={[{ key: 'user', label: 'Utente' }, { key: 'active', label: 'Stato', render: v => <Chip tone={v ? 'good' : 'neutral'}>{v ? 'Attivo' : 'Disattivo'}</Chip> }]} />}</section>
-    {form && <Modal title={form === 'membership' ? 'Appartenenza al centro' : 'Stato professionista'} onClose={() => setForm(null)}><form onSubmit={e => { e.preventDefault(); void run(submit) }}>
-      {form === 'membership' ? <Field label="Utente" required><select value={user} onChange={e => setUser(e.target.value)} required><option value="">Seleziona</option>{users.map(u => <option key={String(u.name)} value={String(u.name)}>{String(u.full_name ?? u.name)}</option>)}</select></Field> : <Field label="Professionista" required><select value={practitioner} onChange={e => setPractitioner(e.target.value)} required><option value="">Seleziona</option>{practitioners.map(p => <option key={String(p.name)} value={String(p.name)}>{String(demoText(p.practitioner_name) ?? p.name)}</option>)}</select></Field>}
-      <Field label="Stato" required><select value={active} onChange={e => setActive(e.target.value)}><option value="1">Attivo</option><option value="0">Disattivo</option></select></Field>
-      <Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setForm(null)}>Annulla</Button><Button type="submit" disabled={busy}>Conferma</Button></div>
+  return <><Heading eyebrow="AMMINISTRAZIONE" title="Gestione accessi" subtitle="Consulta gli account autorizzati e gestisci le appartenenze con una motivazione." action={<div className="button-group"><Button variant="secondary" onClick={() => openForm('practitioner')}>Stato professionista</Button><Button onClick={() => openForm('membership')}><Plus size={17} /> Appartenenza</Button></div>} />
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Appartenenze a {centerNameFor(center, boot.centers)}</h2><p>Identità, ruolo e stato dell'account nella sede selezionata.</p></div></div>{!data ? <p className="panel-loading" role="status">Caricamento…</p> : <DataTable rows={memberships} columns={[{ key: 'user', label: 'Utente', render: value => {
+      const account = users.find(entry => entry.name === value)
+      return account ? readableUser(account) : String(value ?? 'Utente non disponibile')
+    } }, { key: 'active', label: 'Stato appartenenza', render: value => <Chip tone={Number(value) === 1 ? 'good' : 'neutral'}>{Number(value) === 1 ? 'Attivo' : 'Disattivo'}</Chip> }]} />}</section>
+    {form && <Modal title={form === 'membership' ? 'Appartenenza al centro' : 'Stato professionista'} onClose={() => setForm(null)}><form onSubmit={e => { e.preventDefault(); if (active && reason.trim() && (form === 'membership' ? user : practitioner)) void run(submit) }}>
+      <p className="scope-note">Sede interessata: <strong>{centerNameFor(center, boot.centers)}</strong>. Scegli consapevolmente il nuovo stato; la modifica viene registrata.</p>
+      {form === 'membership' ? <Field label="Utente" required><select value={user} onChange={e => { setUser(e.target.value); setActive('') }} required><option value="">Seleziona un utente</option>{users.map(u => <option key={String(u.name)} value={String(u.name)}>{readableUser(u)}</option>)}</select></Field> : <Field label="Professionista" required><select value={practitioner} onChange={e => { setPractitioner(e.target.value); setActive('') }} required><option value="">Seleziona un professionista</option>{practitioners.map(p => <option key={String(p.name)} value={String(p.name)}>{demoText(p.practitioner_name) || String(p.name)}</option>)}</select></Field>}
+      {form === 'membership' && selectedAccount && <p className="scope-note">Account: {readableUser(selectedAccount)}. Appartenenza attuale: <strong>{currentMembership ? Number(currentMembership.active) === 1 ? 'Attiva' : 'Disattiva' : 'Non presente in questa sede'}</strong>.</p>}
+      {form === 'practitioner' && selectedPractitioner && <p className="scope-note">Stato attuale del professionista: <strong>{selectedPractitioner.status === 'Active' ? 'Attivo' : 'Non attivo'}</strong>.</p>}
+      <Field label="Nuovo stato" required><select value={active} onChange={e => setActive(e.target.value)} required><option value="">Scegli lo stato da impostare</option><option value="1">Attivo</option><option value="0">Disattivo</option></select></Field>
+      {active !== '' && <p className="scope-note">{active === '0' ? 'La disattivazione impedirà le operazioni consentite tramite questa appartenenza o stato.' : 'L’attivazione rende disponibile la relativa appartenenza o stato, senza assegnare nuovi ruoli.'}</p>}
+      <Field label="Motivo della modifica" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setForm(null)}>Annulla</Button><Button type="submit" disabled={busy || !active || !reason.trim() || !(form === 'membership' ? user : practitioner)}>{busy ? 'Salvataggio…' : 'Conferma modifica'}</Button></div>
     </form></Modal>}</>
 }
 
