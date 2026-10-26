@@ -60,11 +60,6 @@ jobs:
         run: npm run typecheck
       - name: Build React assets
         run: npm run build
-      - name: Verify generated assets match committed manifest
-        working-directory: .
-        run: |
-          git diff --exit-code -- app/centrochange_core/centrochange_core/public/premium
-          python3 infra/verify_full_single_stack.py --source
       - name: Install pinned Playwright Chromium on ephemeral runner
         run: npx playwright install --with-deps chromium
       - name: Browser regressions with synthetic API fixtures only
@@ -73,3 +68,8 @@ jobs:
         run: |
           npx playwright test --config=playwright.config.ts --workers=2
           npx playwright test --config=playwright.scoped.config.ts --workers=2
+      - name: Verify generated assets match committed manifest
+        working-directory: .
+        run: |
+          git diff --exit-code -- app/centrochange_core/centrochange_core/public/premium
+          python3 infra/verify_full_single_stack.py --source
