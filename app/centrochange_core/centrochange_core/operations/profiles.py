@@ -96,9 +96,9 @@ def practitioners(center, limit=50, offset=0, search=''):
                 if search.casefold() in f'Professionista {index}'.casefold():
                     alias_names.append(name)
         needle = '%' + search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
-        or_filters = [[field, 'like', needle] for field in ('practitioner_name', 'first_name', 'last_name', 'name')]
+        or_filters = {field: ['like', needle] for field in ('practitioner_name', 'first_name', 'last_name', 'name')}
         if alias_names:
-            or_filters.append(['name', 'in', alias_names])
+            or_filters['name'] = ['in', alias_names]
         options = {'or_filters': or_filters}
     rows = frappe.get_list('Healthcare Practitioner', filters=filters, **options,
                            fields=['name', 'practitioner_name', 'first_name', 'last_name', 'user_id', 'status', 'modified'],
