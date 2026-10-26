@@ -2,21 +2,23 @@
 
 Repository tecnico della soluzione **Centro Change** costruita su Frappe Framework / ERPNext con app custom `centrochange_core` e sito web nell'ecosistema Frappe.
 
-## Checkpoint operativo vigente — 26/10/2026 (solo fase corrente)
+## FASE ATTIVA / RIPRESA OBBLIGATORIA (26/10/2026)
 
-**NOVITÀ OWNER — ultima decisione 26/10:** [#171 accettata funzionalmente nel solo perimetro AUDIT-05](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6427680735) e [#173 autorizzata alla SOLA installazione DEV condizionata](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6427702903) dopo backup cifrato+restore isolato, verifica SHA/Image ID `d500fff`, rollback e gate. Nessun merge, schema, ruoli, prod o dati storici autorizzati. Il testo che segue fotografa lo stato precedente, consultare [checkpoint corrente](docs/qa/CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md) e i commenti di autorizzazione per lo stato effettivo.
+**PUNTO DI INGRESSO UNICO:** [REGISTRO OPERATIVO — AUDIT e CORE attivi](docs/qa/ACTIVE-GOAL-ROUTER.md). Prima di prendere decisioni, leggere questo indice e verificare live **Issue #171, #173 e PR #172, #175, #174**. Non partire dalle roadmap datate, da una vecchia chat o dal paragrafo storico sotto.
 
+**Percorso attuale (SOP v1.1 GOAL-DRIVEN, un'area alla volta):**
 
+- **AUDIT-03 Agenda:** accettazione Owner precedente registrata.
+- **AUDIT-04 Pazienti #167:** CLOSED / Owner accettato.
+- **AUDIT-05 Professionisti #171:** **OWNER_ACCEPTED_SCOPED** ([gate](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6427680735)); PR #172 **DRAFT/UNMERGED**, non ancora consolidata su `main`.
+- **CORE #173 «Chiudi la mia giornata» e recupero autonomo arretrati:** **UNITÀ CORRENTE**. PR #175 **DRAFT/UNMERGED**, ultimo DEV `d500fff` installato **secondo AGY**. Owner UAT-173-01..06 svolte; 2 correzioni UX + audit post-save **solo lettura** affidati ad AGY tramite [mandato unico vigente](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428463645). **Owner acceptance CORE #173 PENDING**. Per la nuova immagine necessaria autorizzazione DEV dedicata.
+- **AUDIT-06 Servizi/catalogo/prezzi/disponibilità:** **pianificato** in #171, NON avviato/autorizzato. **AUDIT-07+**: non ancora definiti e autorizzati in una sequenza canonica; non inventarli.
 
-**Disambiguazione:** «goal 5» nelle verifiche correnti = **AUDIT-05 Professionisti #171**, NON il vecchio `GOAL-05` della roadmap MVP. La numerazione degli AUDIT e quella dei GOAL macro-MVP sono distinte.
+**Attenzione alla numerazione:** `AUDIT-05` del flusso professionisti **non** equivale al `GOAL-05 Delivery Closure` nella [roadmap MVP storica del 03/10/2026](docs/MVP-GOAL-ROADMAP-v0.1.md). Tale documento NON è il dispatcher dell'attività corrente. Ogni ripresa deve usare l'unità con **nome + issue**, mai solo un numero.
 
-**Per riprendere Centro Change SENZA PERDERE IL PUNTO:** [Checkpoint AUDIT-05 → CORE #173](docs/qa/CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md), [matrice requisiti 110 ID CSV](docs/qa/FUNCTIONAL-COVERAGE-DETAIL.csv) e [matrice leggibile](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md).
+**Documentazione attuale:** [checkpoint dettagliato della fase](docs/qa/CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md), [matrice 110 requisiti CSV](docs/qa/FUNCTIONAL-COVERAGE-DETAIL.csv), [riepilogo requisiti](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md). **Tutte le modifiche documentali in PR #174 sono DRAFT/UNMERGED** e non sono ancora la versione `main`; non confondere gli stati di due branch.
 
-- **AUDIT-05 #171:** PR #172 `DRAFT/UNMERGED` (candidato `a3e41a1`), CI verde, DEV installato **secondo report AGY**, Owner UAT mirati PASS visivi, **Owner acceptance formale ancora PENDING**. Nessun merge o produzione.
-- **CORE #173:** requisito «Chiudi la mia giornata» approvato, **non ancora implementato al checkpoint**; chiusura arretrati autonoma del professionista **senza sblocco Direzione**, mantenendo audit e controlli server-side. [Mandato AGY registrato](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6424378839), da eseguire sequenzialmente dopo il gate #171 e con nuova autorizzazione DEV dedicata.
-- **Matrice:** 110 ID invariati; sulla PR #172 `12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED` **tecnici**, non accettazione Owner. I GOAL successivi non sono trattati nel presente checkpoint.
-
-Il seguito del README contiene la **baseline storica MVP / GOAL-02 di inizio ottobre**, da consultare come fonte storica e non sostitutiva del checkpoint corrente.
+**Stop gates:** nessun altro AUDIT/GOAL, merge, produzione, variazione credenziali, DocPerm, schema o dati storici senza decisione pertinente Owner. `CI PASS` ≠ `DEV INSTALLED` ≠ `OWNER ACCEPTED` ≠ `MERGED`.
 
 ---
 
