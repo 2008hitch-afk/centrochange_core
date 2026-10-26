@@ -113,7 +113,7 @@ MAX_CSV_RECORDS = 20000
 CSV_APPOINTMENT_FIELDS = [
     'name', 'appointment_date', 'appointment_time', 'duration', 'status',
     'patient', 'patient_name', 'practitioner', 'practitioner_name',
-    'appointment_type', 'cc_service_label', 'cc_economic_state', 'cc_performed', 'cc_paid',
+    'appointment_type', 'cc_service_label', 'cc_closure_state', 'cc_economic_state', 'cc_performed', 'cc_paid',
     'cc_late_cancellation', 'cc_price_snapshot', 'cc_currency_snapshot'
 ]
 
@@ -521,18 +521,32 @@ def safe_cell(value):
 
 
 def _format_csv_row(row, c, economy, manifest_data=None):
+    econ_raw = row.get('cc_economic_state') or getattr(row, 'cc_economic_state', '')
+    closure_state = row.get('cc_closure_state') or getattr(row, 'cc_closure_state', '')
+
     if c['paid']:
         payment_status = 'Registrato'
     elif c['cancelled']:
         payment_status = '— (annullata)'
     elif c['future']:
         payment_status = 'In programma'
-    elif (row.get('cc_economic_state') or getattr(row, 'cc_economic_state', None)) in ('Non Due', 'Waived', 'Package Covered'):
+    elif econ_raw in ('Non Due', 'Waived', 'Package Covered'):
         payment_status = 'Non dovuto'
+    elif econ_raw == 'Pending':
+        payment_status = 'Da definire'
     else:
         payment_status = 'Da incassare'
 
-    status_label = 'Svolta' if c['performed'] else ('Annullata' if c['cancelled'] else ('In programma' if c['future'] else 'Da chiudere'))
+    if c['performed']:
+        status_label = 'Svolta'
+    elif c['cancelled']:
+        status_label = 'Annullata'
+    elif c['future']:
+        status_label = 'In programma'
+    elif closure_state == 'Auto Locked':
+        status_label = 'Bloccata'
+    else:
+        status_label = 'Da chiudere'
 
     patient_val = row.get('patient_name') or getattr(row, 'patient_name', '')
     practitioner_val = row.get('practitioner_name') or getattr(row, 'practitioner_name', '')

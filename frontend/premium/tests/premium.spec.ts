@@ -2097,3 +2097,152 @@ test('AUDIT-05: CSV del singolo professionista usa export del server senza prima
   await expect(csv).toHaveAttribute('href', /practitioner=PR-001/)
   await expect(csv).toHaveAttribute('aria-disabled', 'false')
 })
+
+
+test('AUDIT-05 UAT-05-31: SCHEDULE_CHANGED mostra diff vero per giorno senza mostrare giorni invariati', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.security.audit_view.events*', route => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify({ message: { events: [{
+      name: 'AUDIT-SCHED-1', event_type: 'SCHEDULE_CHANGED', actor: 'direzione@example.invalid',
+      event_time: today + ' 13:56:00', reference_name: 'CC-12507e71086733d4', reason: 'Aggiunta martedì',
+      before_state: JSON.stringify([{ day: 'Monday', from_time: '09:00:00', to_time: '12:00:00' }]),
+      after_state: JSON.stringify([
+        { day: 'Monday', doctype: 'Healthcare Schedule Time Slot', from_time: '09:00:00', to_time: '12:00:00' },
+        { day: 'Tuesday', doctype: 'Healthcare Schedule Time Slot', from_time: '09:00:00', to_time: '12:00:00' }
+      ])
+    }], has_more: false } })
+  }))
+  await page.goto('./#Registro%20modifiche')
+  await page.getByRole('row', { name: /Orario aggiornato/ }).click()
+  const dialog = page.getByRole('dialog', { name: 'Orario aggiornato' })
+  await expect(dialog.getByText('Martedì', { exact: true })).toBeVisible()
+  await expect(dialog.getByText('Prima: Nessuna fascia oraria')).toBeVisible()
+  await expect(dialog.getByText('Dopo: 09:00 – 12:00')).toBeVisible()
+  // Lunedì non deve comparire perché identico prima e dopo
+  await expect(dialog.getByText('Lunedì')).toHaveCount(0)
+  // Non deve comparire il vecchio fallback di errore
+  await expect(dialog.getByText('Dettaglio della modifica non disponibile in forma comparabile.')).toHaveCount(0)
+})
+
+
+test('AUDIT-05 UAT-05-31: SCHEDULE_CHANGED con orari identici o malformati gestiti con messaggi onesti', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.security.audit_view.events*', route => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify({ message: { events: [
+      {
+        name: 'AUDIT-SCHED-IDENTICAL', event_type: 'SCHEDULE_CHANGED', actor: 'direzione@example.invalid',
+        event_time: today + ' 14:00:00', reference_name: 'CC-SAME', reason: 'Replay senza modifiche',
+        before_state: JSON.stringify([{ day: 'Monday', from_time: '09:00', to_time: '12:00' }]),
+        after_state: JSON.stringify([{ day: 'Monday', from_time: '09:00', to_time: '12:00' }])
+      },
+      {
+        name: 'AUDIT-SCHED-MALFORMED', event_type: 'SCHEDULE_CHANGED', actor: 'direzione@example.invalid',
+        event_time: today + ' 14:05:00', reference_name: 'CC-BAD', reason: 'Dati incompleti',
+        before_state: '{not valid json',
+        after_state: '{also bad'
+      }
+    ], has_more: false } })
+  }))
+  await page.goto('./#Registro%20modifiche')
+
+  // Identico
+  await page.getByRole('row', { name: /Replay senza modifiche/ }).click()
+  const dialog1 = page.getByRole('dialog', { name: 'Orario aggiornato' })
+  await expect(dialog1.getByText('Nessuna variazione di orario registrata.')).toBeVisible()
+  await page.getByRole('button', { name: 'Chiudi' }).click()
+
+  // Malformato
+  await page.getByRole('row', { name: /Dati incompleti/ }).click()
+  const dialog2 = page.getByRole('dialog', { name: 'Orario aggiornato' })
+  await expect(dialog2.getByText('Dati dell’orario non disponibili o non conformi.')).toBeVisible()
+})
+
+
+test('AUDIT-05 UAT-05-33: notifiche localizzano importi in euro e date scadenza italiane', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/frappe.client.get_list*', route => {
+    const url = new URL(route.request().url())
+    if (url.searchParams.get('doctype') === 'CC Notification') {
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: [
+            {
+              name: 'NOTIF-PAY-1',
+              message: 'Prima di una seduta successiva è richiesta la verifica del pagamento. Importi aperti: 100.00 EUR — scadenza 2026-10-15. Bonifico DEV simulato: CC SYNTHETIC BANK.',
+              state: 'Sent',
+              creation: '2026-10-15 11:08:02'
+            },
+            {
+              name: 'NOTIF-PAY-2',
+              message: 'Prima di una seduta successiva è richiesta la verifica del pagamento. Importi aperti: 50.00 EUR — scadenza 2026-09-30; 25.50 EUR — scadenza 2026-10-01. Istruzioni di pagamento DEV presso la segreteria.',
+              state: 'Sent',
+              creation: '2026-10-12 11:08:03'
+            }
+          ]
+        })
+      })
+    }
+    return route.continue()
+  })
+
+  await page.goto('./#Notifiche')
+  await expect(page.getByText('100,00 € — scadenza 15/10/2026')).toBeVisible()
+  await expect(page.getByText('Bonifico DEV simulato: CC SYNTHETIC BANK.')).toBeVisible()
+  await expect(page.getByText('50,00 € — scadenza 30/09/2026; 25,50 € — scadenza 01/10/2026')).toBeVisible()
+})
+
+
+test('AUDIT-05 UAT-05-34: seduta Auto Locked e Pending mostra Bloccata e Pagamento Da definire', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          total: 1,
+          page: 1,
+          page_length: 50,
+          total_pages: 1,
+          kpi: 'all',
+          currency: 'EUR',
+          appointments: [
+            {
+              name: 'HLC-APP-2026-00010',
+              appointment_date: '2026-10-12',
+              appointment_time: '09:00:00',
+              duration: 60,
+              patient: 'PAT-1',
+              patient_name: 'Paziente Uno',
+              practitioner: 'PRAC-1',
+              practitioner_name: 'Dott. Uno',
+              cc_service_label: 'Visita specialistica',
+              status: 'Open',
+              cc_closure_state: 'Auto Locked',
+              cc_economic_state: 'Pending',
+              cc_performed: 0,
+              cc_paid: 0,
+              cc_classified_future: false,
+              cc_classified_to_close: true,
+              cc_classified_unpaid: false,
+              cc_classified_cancelled: false,
+              cc_classified_paid: false,
+              cc_price_snapshot: 100.0,
+              cc_currency_snapshot: 'EUR'
+            }
+          ]
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  // Nella tabella di dettaglio:
+  // Stato seduta deve essere 'Bloccata'
+  const table = page.locator('.report-drilldown')
+  await expect(table.getByText('Bloccata')).toBeVisible()
+  // Pagamento operativo deve essere 'Da definire' (NON 'Da incassare')
+  await expect(table.getByText('Da definire')).toBeVisible()
+  await expect(table.getByText('Da incassare')).toHaveCount(0)
+})
+

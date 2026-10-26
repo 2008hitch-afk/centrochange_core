@@ -439,6 +439,52 @@ class OperationalReportingTests(unittest.TestCase):
         self.assertEqual(res_cancelled['total'], 1)
         self.assertEqual(len(res_cancelled['appointments']), 1)
 
+    def test_owner_uat_scenario_auto_locked_and_pending_csv_representation(self):
+        """UAT-05-34: Auto Locked session with Pending economic state must be exported
+        with status_label='Bloccata' and payment_status='Da definire' (NEVER 'Da incassare')."""
+        self.frappe.flags['cc_test_clock'] = datetime(2026, 10, 26, 18, 0, 0, tzinfo=ROME)
+        self.appointments = [
+            Record(name='HLC-APP-2026-00010', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-12',
+                   appointment_time='09:00:00', duration=60, status='Open', cc_closure_state='Auto Locked',
+                   cc_economic_state='Pending', cc_performed=0, cc_paid=0, cc_late_cancellation=0,
+                   cc_service_label='Visita 10', cc_price_snapshot=100.0, cc_currency_snapshot='EUR'),
+            Record(name='HLC-APP-2026-00024', patient='PAT-2', patient_name='Paziente 2', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-14',
+                   appointment_time='12:00:00', duration=60, status='Scheduled', cc_closure_state='Auto Locked',
+                   cc_economic_state='Pending', cc_performed=0, cc_paid=0, cc_late_cancellation=0,
+                   cc_service_label='Visita 24', cc_price_snapshot=100.0, cc_currency_snapshot='EUR'),
+            Record(name='HLC-APP-2026-00031', patient='PAT-3', patient_name='Paziente 3', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-15',
+                   appointment_time='10:00:00', duration=60, status='Cancelled', cc_closure_state='Closed',
+                   cc_economic_state='Due', cc_performed=0, cc_paid=0, cc_late_cancellation=1,
+                   cc_service_label='Visita 31', cc_price_snapshot=100.0, cc_currency_snapshot='EUR'),
+            Record(name='HLC-APP-2026-00038', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
+                   practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-26',
+                   appointment_time='09:00:00', duration=60, status='Scheduled', cc_closure_state='Pending',
+                   cc_economic_state='Pending', cc_performed=0, cc_paid=0, cc_late_cancellation=0,
+                   cc_service_label='Visita 38', cc_price_snapshot=100.0, cc_currency_snapshot='EUR'),
+        ]
+        self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-26', kpi='all')
+        lines = [l for l in self.frappe.response['filecontent'].strip().split('\n') if l.strip()]
+        self.assertEqual(len(lines), 5)  # 1 header + 4 rows
+        # Row 00010: Auto Locked, Pending -> Bloccata, Da definire, Da definire
+        self.assertIn('Bloccata', lines[1])
+        self.assertIn('Da definire', lines[1])
+        self.assertNotIn('Da incassare', lines[1])
+        # Row 00024: Auto Locked, Pending -> Bloccata, Da definire, Da definire
+        self.assertIn('Bloccata', lines[2])
+        self.assertIn('Da definire', lines[2])
+        self.assertNotIn('Da incassare', lines[2])
+        # Row 00031: Cancelled, Due late cancel -> Annullata, Tariffa prevista, — (annullata)
+        self.assertIn('Annullata', lines[3])
+        self.assertIn('Tariffa prevista', lines[3])
+        self.assertIn('— (annullata)', lines[3])
+        # Row 00038: Pending closure, Pending econ -> Da chiudere, Da definire, Da definire
+        self.assertIn('Da chiudere', lines[4])
+        self.assertIn('Da definire', lines[4])
+        self.assertNotIn('Da incassare', lines[4])
+
     def test_late_cancellation_with_due_tariff_reconciliation(self):
         """Late cancellation without package has status='Cancelled', cc_economic_state='Due', cc_late_cancellation=1.
         Summary KPI 'due' must count it AND sessions drilldown/export must include it without discrepancy."""
