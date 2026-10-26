@@ -783,7 +783,7 @@ test('AUDIT-05: selettore Report professionisti usa la stessa identità leggibil
   const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', status: 'Active' }
   await mockApi(page, [], true, {}, { practitioners: [row] })
   await page.goto('./#Report')
-  await page.getByRole('button', { name: 'Report professionisti' }).click()
+  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
   const select = page.getByRole('combobox', { name: 'Professionista report' })
   await expect(select).toContainText('Professionista di prova A')
   await expect(select).not.toContainText('CC-HTTP-AbCd123456 a')
@@ -793,7 +793,7 @@ test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo'
   await mockApi(page, [], false, { cc_performed: 1 }, { roles: ['CC Secretariat'] })
   await page.goto('./')
   await openSection(page, 'Report')
-  await page.getByRole('button', { name: 'Report professionisti' }).click()
+  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
   await page.getByLabel('Professionista report').selectOption('PR-001')
   await expect(page.locator('.professional-report').getByText('Sedute svolte')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Compensi e fatture autorizzati' })).toHaveCount(0)
@@ -1591,7 +1591,7 @@ test('AUDIT-05 MUST-FIX 3 & 4: Report paginazione server-side e query isolata Pr
   await expect(paginationBar).toContainText('Pagina 2 di 3 (120 sedute totali)')
   expect(sessionCalls.some(call => call.includes('page=2'))).toBe(true)
 
-  await page.getByRole('button', { name: 'Report professionisti' }).click()
+  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
   await page.getByRole('combobox', { name: 'Professionista report' }).selectOption('PR-001')
 
   await expect.poll(() => sessionCalls.some(call => call.includes('practitioner=PR-001') && call.includes('kpi=all'))).toBe(true)
