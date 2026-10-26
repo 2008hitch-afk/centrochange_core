@@ -527,6 +527,10 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
   const [reload, setReload] = useState(0)
 
   const [profSessions, setProfSessions] = useState<Appointment[]>([])
+  const [profPage, setProfPage] = useState(1)
+  const [profTotalPages, setProfTotalPages] = useState(1)
+  const [profTotal, setProfTotal] = useState(0)
+  const [profSummary, setProfSummary] = useState<Row | null>(null)
   const [profLoading, setProfLoading] = useState(false)
   const [profError, setProfError] = useState('')
 
@@ -597,27 +601,29 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
 
   useEffect(() => {
     if (!center || !validPeriod || !professionalOpen || !detailProfessional) {
-      setProfSessions([])
+      setProfSessions([]); setProfSummary(null); setProfTotal(0); setProfTotalPages(1); setProfLoading(false)
       return
     }
     let live = true
-    setProfLoading(true)
-    setProfError('')
-    ops<{ appointments: Appointment[]; total: number }>('reporting.sessions', {
-      center, start, end, practitioner: detailProfessional, kpi: 'all', page: 1, page_length: 0
-    }).then(res => {
+    setProfLoading(true); setProfError(''); setProfSessions([]); setProfSummary(null)
+    Promise.all([
+      ops<{ appointments: Appointment[]; total: number; total_pages?: number }>('reporting.sessions', {
+        center, start, end, practitioner: detailProfessional, kpi: 'all', page: profPage, page_length: 50
+      }),
+      ops<Row>('reporting.summary', { center, start, end, practitioner: detailProfessional })
+    ]).then(([res, totals]) => {
       if (live) {
         setProfSessions(res.appointments || [])
+        setProfTotal(res.total ?? 0)
+        setProfTotalPages(res.total_pages ?? Math.max(1, Math.ceil((res.total ?? 0) / 50)))
+        setProfSummary(totals)
         setProfLoading(false)
       }
     }).catch(err => {
-      if (live) {
-        setProfError(getError(err))
-        setProfLoading(false)
-      }
+      if (live) { setProfError(getError(err)); setProfSessions([]); setProfSummary(null); setProfTotal(0); setProfLoading(false) }
     })
     return () => { live = false }
-  }, [center, start, end, validPeriod, professionalOpen, detailProfessional, reload])
+  }, [center, start, end, validPeriod, professionalOpen, detailProfessional, profPage, reload])
 
   const currencies = data?.currencies as Record<string, Row> ?? {}
   const kpiLabel: Record<string, string> = {
@@ -635,13 +641,9 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
     center, start, end, practitioner: effectivePractitioner || '', kpi: selectedKpi || 'all', currency: selectedCurrency !== 'all' ? selectedCurrency : ''
   })
 
-  const exportProfessional = () => {
-    if (!validPeriod || !detailProfessional || profLoading || !!profError) return
-    const safe = (value: unknown) => { const text = String(value ?? ''); const guarded = /^[=+\-@\t\r\n]/.test(text.trimStart()) ? "'" + text : text; return '"' + guarded.replaceAll('"', '""') + '"' }
-    const rows = [['Data', 'Ora', 'Paziente', 'Servizio', 'Stato'], ...profSessions.map(row => [displayDate(row.appointment_date), time(row.appointment_time), demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name), demoText(row.cc_service_label) || 'Seduta', row.cc_performed ? 'Svolta' : row.status === 'Cancelled' ? 'Annullata' : 'In programma'])]
-    const blob = new Blob(['\ufeff' + rows.map(row => row.map(safe).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' })
-    const href = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = href; link.download = 'centrochange-report-professionista.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(href), 1000)
-  }
+  const professionalExportUrl = csvUrl('operations.reporting.export_csv', {
+    center, start, end, practitioner: detailProfessional, kpi: 'all'
+  })
 
   const selectKpi = (k: string, curr: string = 'all') => {
     setSelectedKpi(k)
@@ -676,11 +678,10 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
       </div>)}{Boolean(data?.truncated) && <p className="inline-error" role="alert">Totali parziali: restringi il periodo. L'esportazione è sospesa.</p>}
       {validPeriod && <div className="report-drilldown"><div className="report-drilldown-header"><h3>Dettaglio sedute — {kpiLabel[selectedKpi] || 'Tutte'}{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 ? ` (${selectedCurrency})` : ''} ({totalSessions})</h3><div className="button-group">{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 && <Button variant="secondary" onClick={() => { setSelectedCurrency('all'); setPage(1) }}>Tutte le valute</Button>}<a className={`button secondary ${sessionsError || sessionsLoading ? 'disabled' : ''}`} href={sessionsError || sessionsLoading || loading || !data || !!data.truncated ? undefined : exportUrl} aria-disabled={sessionsLoading || loading || !data || !!sessionsError || !!data?.truncated} onClick={e => { if (sessionsError || sessionsLoading || loading || !data || data.truncated) e.preventDefault() }}><Download size={16} /> Esporta CSV ({kpiLabel[selectedKpi] || 'Filtro'}{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 ? ` ${selectedCurrency}` : ''})</a></div></div>{sessionsLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : sessionsError ? <p className="inline-error" role="alert">{sessionsError}</p> : !sessions.length ? <Empty title="Nessuna seduta per questo filtro" detail="Modifica il filtro KPI o il periodo per visualizzare i record." /> : <><DataTable rows={sessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (_v, row) => demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name) }, { key: 'practitioner_name', label: 'Professionista', render: (_v, row) => demoText(row.practitioner_name || row.practitioner) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato seduta', render: (v, row) => row.cc_performed ? 'Svolta' : (v === 'Cancelled' ? 'Annullata' : (row.cc_classified_future ? 'In programma' : 'Da chiudere')) }, { key: 'cc_paid', label: 'Pagamento operativo', render: (v, row) => { if (v) return <Chip tone="good">Registrato</Chip>; if (row.status === 'Cancelled') return <Chip tone="neutral">— (annullata)</Chip>; if (row.cc_classified_future) return <Chip tone="blue">In programma</Chip>; if (['Non Due', 'Waived', 'Package Covered'].includes(String(row.cc_economic_state))) return <Chip tone="neutral">Non dovuto</Chip>; return <Chip tone="warn">Da incassare</Chip> } }, { key: 'mode_of_payment', label: 'Metodo', render: v => String(v || '—') }, { key: 'cc_price_snapshot', label: 'Tariffa prevista', render: (v, row) => v != null ? money(v, String(row.cc_currency_snapshot || 'EUR')) : '—' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />{totalPages > 1 && <div className="pagination-bar" role="navigation" aria-label="Paginazione sedute"><span>Pagina <strong>{page}</strong> di <strong>{totalPages}</strong> ({totalSessions} sedute totali)</span><div className="button-group"><Button variant="secondary" disabled={page <= 1 || sessionsLoading} onClick={() => setPage(p => Math.max(1, p - 1))}>Precedente</Button><Button variant="secondary" disabled={page >= totalPages || sessionsLoading} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Successiva</Button></div></div>}</>}</div>}
     </section>
-    {professionalOpen && <section className="panel professional-report"><div className="panel-toolbar"><div className="panel-title"><h2>Attività del professionista</h2><p>Consulta le sedute di una persona senza modificare il filtro del riepilogo superiore. Il periodo è condiviso; non indica compensi pagati.</p></div><div className="toolbar-right"><Field label="Professionista"><select aria-label="Professionista report" value={detailProfessional} onChange={event => setDetailProfessional(event.target.value)}><option value="">Seleziona</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field><Button variant="secondary" onClick={exportProfessional} disabled={!validPeriod || !professional || profLoading || !!profError}><Download size={16} /> Esporta CSV</Button>{financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode="professionals" buttonLabel="Compensi e fatture autorizzati" />}</div></div>{!validPeriod ? <p className="inline-error" role="alert">Correggi il periodo prima di visualizzare o esportare le sedute.</p> : !detailProfessional ? <Empty title="Seleziona un professionista" /> : profLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : profError ? <p className="inline-error" role="alert">{profError}</p> : (() => {
-      const performed = profSessions.filter(row => !!row.cc_performed && row.status !== 'Cancelled').length
-      const cancelled = profSessions.filter(row => row.status === 'Cancelled').length
-      const toClose = profSessions.filter(row => row.cc_classified_to_close).length
-      return <><div className="metrics-grid inset"><Metric label="Sedute nel periodo" value={String(profSessions.length)} /><Metric label="Sedute svolte" value={String(performed)} tone="green" /><Metric label="Sedute da chiudere" value={String(toClose)} tone="amber" /><Metric label="Sedute annullate" value={String(cancelled)} tone="purple" /></div><DataTable rows={profSessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (value, row) => demoPatient(row.patient, value, row.patient_first_name, row.patient_last_name) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato', render: (value, row) => row.cc_performed ? 'Svolta' : value === 'Cancelled' ? 'Annullata' : 'In programma' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} /></>
+    {professionalOpen && <section className="panel professional-report"><div className="panel-toolbar"><div className="panel-title"><h2>Attività del professionista</h2><p>Consulta le sedute di una persona senza modificare il filtro del riepilogo superiore. Il periodo è condiviso; non indica compensi pagati.</p></div><div className="toolbar-right"><Field label="Professionista"><select aria-label="Professionista report" value={detailProfessional} onChange={event => { setDetailProfessional(event.target.value); setProfPage(1) }}><option value="">Seleziona</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field><a className="button secondary" href={validPeriod && detailProfessional && !profLoading && !profError && profSummary && !profSummary.truncated ? professionalExportUrl : undefined} aria-disabled={!validPeriod || !detailProfessional || profLoading || !!profError || !profSummary || !!profSummary.truncated} onClick={event => { if (!validPeriod || !detailProfessional || profLoading || profError || !profSummary || profSummary.truncated) event.preventDefault() }}><Download size={16} /> Esporta CSV completo</a>{financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode="professionals" buttonLabel="Compensi e fatture autorizzati" />}</div></div>{!validPeriod ? <p className="inline-error" role="alert">Correggi il periodo prima di visualizzare o esportare le sedute.</p> : !detailProfessional ? <Empty title="Seleziona un professionista" /> : profLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : profError ? <p className="inline-error" role="alert">{profError}</p> : (() => {
+      const professionalCurrencies = (profSummary?.currencies as Record<string, Row> | undefined) ?? {}
+      const sum = (key: string) => Object.values(professionalCurrencies).reduce((value, item) => value + Number(item[key] ?? 0), 0)
+      return <><div className="metrics-grid inset"><Metric label="Sedute nel periodo" value={String(profTotal)} /><Metric label="Sedute svolte" value={String(sum('performed'))} tone="green" /><Metric label="Sedute da chiudere" value={String(sum('to_close'))} tone="amber" /><Metric label="Sedute annullate" value={String(sum('cancelled'))} tone="purple" /></div>{Boolean(profSummary?.truncated) && <p className="inline-error" role="alert">Riepilogo parziale: restringi il periodo per consultare ed esportare dati completi.</p>}<DataTable rows={profSessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (value, row) => demoPatient(row.patient, value, row.patient_first_name, row.patient_last_name) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato', render: (value, row) => row.cc_performed ? 'Svolta' : value === 'Cancelled' ? 'Annullata' : 'In programma' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />{profTotalPages > 1 && <div className="pagination-bar" role="navigation" aria-label="Paginazione attività professionista"><span>Pagina {profPage} di {profTotalPages} · {profTotal} sedute</span><div className="button-group"><Button variant="secondary" disabled={profPage <= 1 || profLoading} onClick={() => setProfPage(p => Math.max(1, p - 1))}>Precedente</Button><Button variant="secondary" disabled={profPage >= profTotalPages || profLoading} onClick={() => setProfPage(p => Math.min(profTotalPages, p + 1))}>Successiva</Button></div></div>}</>
     })()}</section>}
     {selectedAppointment && <AppointmentDetail row={selectedAppointment} boot={boot} center={center} onClose={() => setSelectedAppointment(null)} onSuccess={() => { setSelectedAppointment(null); setReload(x => x + 1) }} feedback={feedback} />}
   </>
