@@ -205,6 +205,7 @@ def appointment_events(appointment):
              'APPOINTMENT_RESCHEDULED':('appointment_date','appointment_time'),
              'SESSION_CANCELLED':('late','economic'),
              'SESSION_CLOSED':('performed','economic'),
+             'SESSION_LATE_COMPLETED':('performed','economic','paid'),
              'SESSION_AUTO_LOCKED':('closure',),
              'SESSION_REOPENED':('closure',),
              'ECONOMIC_WAIVER':('economic','late'),

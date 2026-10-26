@@ -61,7 +61,8 @@ def classify_session(row, now_rome=None):
     is_future = False
     is_to_close = False
 
-    if not is_cancelled and not is_performed:
+    closure_state = getattr(row, 'cc_closure_state', '') or (row.get('cc_closure_state', '') if isinstance(row, dict) else '')
+    if not is_cancelled and not is_performed and closure_state != 'Closed':
         if end_rome > now_rome:
             is_future = True
         else:
@@ -545,6 +546,8 @@ def _format_csv_row(row, c, economy, manifest_data=None):
         status_label = 'In programma'
     elif closure_state == 'Auto Locked':
         status_label = 'Bloccata'
+    elif closure_state == 'Closed' and not c['performed']:
+        status_label = 'Non svolta'
     else:
         status_label = 'Da chiudere'
 

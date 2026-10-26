@@ -148,3 +148,36 @@
 .schedule-editor-slot .field{margin:0}
 .schedule-editor-slot .button{margin-top:17px}
 @media(max-width:420px){.schedule-editor-slot{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.schedule-editor-slot .button{grid-column:1/-1;margin-top:0}.cc-date-popover{right:-4px}}
+
+/* CORE #173: Chiudi la mia giornata & recupero sedute arretrate */
+.day-closure-container { display: flex; flex-direction: column; gap: 16px; max-width: 760px; margin: 0 auto; }
+.day-closure-toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.arrear-banner { background: #fffbeb; border: 1px solid #fde68a; border-radius: 9px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.arrear-banner-title { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #b45309; }
+.arrear-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.arrear-badge { background: #fff; border: 1px solid #fcd34d; color: #b45309; border-radius: 6px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
+.arrear-badge:hover, .arrear-badge.active { background: #f59e0b; color: #fff; border-color: #d97706; }
+.day-closure-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+.summary-card { display: flex; flex-direction: column; align-items: center; text-align: center; font-size: 11px; color: #64748b; }
+.summary-card strong { font-size: 16px; color: #1e293b; margin-top: 2px; }
+.summary-card.text-good strong { color: #16a34a; }
+.summary-card.text-neutral strong { color: #64748b; }
+.summary-card.text-warn strong { color: #d97706; }
+.day-closure-list { display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px; }
+.day-closure-card { background: #fff; border: 1px solid #dce5ee; border-radius: 10px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+.day-closure-card.is-closed { background: #f8fafc; opacity: 0.85; border-color: #e2e8f0; }
+.day-closure-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.card-patient { display: flex; flex-direction: column; gap: 2px; }
+.card-patient .patient-name { display: inline-flex; align-items: center; gap: 5px; font-weight: 650; font-size: 14px; color: #1e293b; }
+.card-patient .session-service { font-size: 12px; color: #64748b; }
+.card-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.session-time { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #64748b; }
+.day-closure-card-body { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #e2e8f0; display: flex; flex-direction: column; gap: 10px; }
+.control-row { display: flex; align-items: center; gap: 12px; }
+.control-label { font-size: 13px; font-weight: 600; color: #334155; min-width: 80px; }
+.segmented-toggle { display: inline-flex; border-radius: 7px; border: 1px solid #cbd5e1; overflow: hidden; }
+.segmented-btn { padding: 6px 16px; font-size: 12px; font-weight: 600; border: 0; background: #f8fafc; color: #475569; cursor: pointer; transition: all 0.15s ease; }
+.segmented-btn:first-child { border-right: 1px solid #cbd5e1; }
+.segmented-btn.selected-yes { background: #22c55e; color: #fff; }
+.segmented-btn.selected-no { background: #ef4444; color: #fff; }
+.payment-subcontrols, .not-performed-subcontrols { padding: 8px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 8px; }

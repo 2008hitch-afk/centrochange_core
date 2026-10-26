@@ -485,6 +485,23 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
         : doctype === 'CC Patient Assignment' ? [{ name: 'ASSIGN-001', patient: 'PAT-001', center: 'CENTRO-A', practitioner: 'PR-001', active: 1 }] : []
     }
     else if (method.endsWith('frappe.client.get')) message = { name: 'XML-001', lines_json: JSON.stringify([{ description: 'Visita sintetica', qty: 1, rate: 80 }]), tax_total: 0 }
+    else if (method.endsWith('lifecycle.get_day_closure_sessions')) {
+      const qDate = new URL(req.url()).searchParams.get('date') || today
+      message = {
+        date: qDate,
+        sessions: agendaRows ?? [{ ...appointment, ...appointmentState, patient_name: 'Paziente Sintetico', patient_first_name: 'Paziente', patient_last_name: 'Sintetico' }],
+        arrear_dates: ['2026-10-12'],
+        practitioner: 'PR-001',
+        is_admin: false,
+      }
+    }
+    else if (method.endsWith('lifecycle.close_day')) {
+      message = {
+        date: today,
+        closed: 1,
+        results: [{ name: 'APP-001', status: 'Closed', performed: 1, paid: 1, economic_state: 'Due' }],
+      }
+    }
     else if (req.method() === 'POST') message = { name: 'SYNTHETIC-NEW' }
     else status = 404
     await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(status === 200 ? { message } : { exc: 'PermissionError' }) })
@@ -2245,4 +2262,24 @@ test('AUDIT-05 UAT-05-34: seduta Auto Locked e Pending mostra Bloccata e Pagamen
   await expect(table.getByText('Da definire')).toBeVisible()
   await expect(table.getByText('Da incassare')).toHaveCount(0)
 })
+
+test('CORE #173: «Chiudi la mia giornata» apre modale, mostra riepilogo e arretrati, e invia chiusura', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, { roles: ['CC Professional'] })
+  await page.goto('./#Agenda')
+  await expect(page.getByRole('button', { name: 'Chiudi la mia giornata' }).first()).toBeVisible()
+  await page.getByRole('button', { name: 'Chiudi la mia giornata' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Chiudi la mia giornata' })).toBeVisible()
+  await expect(page.getByText('Sedute arretrate da completare')).toBeVisible()
+  await expect(page.getByText('12/10/2026')).toBeVisible()
+  const confirmBtn = page.getByRole('button', { name: 'Conferma chiusura giornata' })
+  await expect(confirmBtn).toBeVisible()
+  await expect(confirmBtn).toBeDisabled()
+  await page.getByRole('button', { name: 'Svolta', exact: true }).click()
+  await expect(confirmBtn).toBeEnabled()
+  await confirmBtn.click()
+  await expect(page.getByRole('heading', { name: 'Chiudi la mia giornata' })).toHaveCount(0)
+  expect(writes.some(w => w.method.endsWith('lifecycle.close_day'))).toBe(true)
+})
+
 

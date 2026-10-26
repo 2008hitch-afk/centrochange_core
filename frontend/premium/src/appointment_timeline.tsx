@@ -7,6 +7,7 @@ const events: Record<string, string> = {
   APPOINTMENT_RESCHEDULED: 'Prenotazione spostata',
   SESSION_CANCELLED: 'Seduta cancellata',
   SESSION_CLOSED: 'Seduta chiusa',
+  SESSION_LATE_COMPLETED: 'Chiusura tardiva seduta',
   SESSION_AUTO_LOCKED: 'Seduta bloccata automaticamente',
   SESSION_REOPENED: 'Seduta riaperta',
   ECONOMIC_WAIVER: 'Rinuncia economica registrata',
