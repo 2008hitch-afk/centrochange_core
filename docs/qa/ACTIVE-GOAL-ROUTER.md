@@ -4,6 +4,14 @@
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
 
+## CHECKPOINT DI GOVERNO POST-RICONCILIAZIONE — 27/10/2026
+
+**L'Owner non ha ancora accettato formalmente la CORE #173.** Tutto il walkthrough visivo è PASS, delta fingerprint DB riconciliato secondo confronto AGY fra backup e runtime (1 appuntamento `Pending → Auto Locked` alle 07:00 più 1 audit append-only) e sorgente scheduler GitHub coerente. L'insieme è `READY_FOR_OWNER_FUNCTIONAL_ACCEPTANCE`, non `OWNER_ACCEPTED`, `MERGED` né `PRODUCTION`. [Audit aggiornato Issue #173 #6440523846](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440523846).
+
+**Review PR #175:** ora esiste una **review formale COMMENTED** su SHA `b498ea5`, autore GitHub `2008hitch-afk`, corpo «Code & Security Review Auditor (QA / Security persona)» PASS. Il solo titolo/ruolo non prova l'indipendenza reale dall'implementatore: **non chiamarla indipendentemente verificata**. Prima di un eventuale merge dimostrare revisore distinto tramite evidenza attribuibile (o decisione eccezione esplicita Owner), senza falsificare approvazioni. Non ripetere i test Owner né attivare altri GOAL.
+
+---
+
 ## RICONCILIAZIONE TECNICA IN SOLA LETTURA E REVISIONE PR #175 COMPLETATE — 27/10/2026: STATO READY_FOR_OWNER_ACCEPTANCE
 
 A seguito del walkthrough visivo Owner con PASS completo su calendario (`UAT-173-UX-DATE-POPOVER-CLIPPED`) e nota economica 13px (`UAT-173-UX-ECONOMIC-NOTE-READABILITY`) registrati nei commenti [#6438865876](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438865876) e [#6439127526](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6439127526), è stata eseguita la riconciliazione tecnica in sola lettura richiesta:
