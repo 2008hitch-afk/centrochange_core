@@ -4,6 +4,14 @@
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
 
+## OWNER UAT COMPLETATO SUI DUE FIX — 27/10/2026: PASS AVVISO ECONOMICO E METODO POS; UX FINITURA #173 APERTA
+
+Nuovo screenshot Owner sulla data 26/10, seduta ore 09:00 con `Non svolta` **selezionata ma senza conferma/salvataggio**: visibili messaggio economico prudente e «Situazione economica registrata: Da definire». **`UAT-173-FINAL-01 PASS_OWNER_VISUAL`**. Già Owner confermato punto 2 POS `UAT-173-FINAL-02 PASS_OWNER_VISUAL`. **I due difetti iniziali risolti su immagine `500c882`.**
+
+**Rimane `FAIL_OWNER_VISUAL_CALENDAR_CLIPPING`**, calendario condiviso `DateInput` che esce/taglia il margine sinistro nella modale, e **osservazione `UAT-173-UX-ECONOMIC-NOTE-READABILITY`** per testo economico troppo piccolo/poco contrastato. **NON DECLARARE `CORE173_OWNER_ACCEPTED`**. [Unico mandato tecnico di finitura su Issue #173](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6437654512): correggere popover comune + leggibilità, test browser desktop/mobile e altri DateInput, CI/reviewer e preparare nuova candidata; **STOP prima di qualsiasi nuovo deploy** fino a un gate DEV esplicitamente autorizzato. Nessun altro GOAL né merge.
+
+---
+
 ## OWNER UAT POST-DEV — 27/10/2026: POS CONFERMATO, CALENDARIO TAGLIATO, MESSAGGIO ECONOMICO DA VERIFICARE
 
 L'Owner ha dichiarato «**punto 2 va bene**»: la presentazione POS del Report della CORE #173 su immagine DEV `500c882` è **PASS_OWNER_VISUAL**, senza implicare nuova lettura indipendente del CSV. **NUOVO BUG UX** fotografato nella modale «Chiudi la mia giornata»: calendario `DateInput` / `cc-date-popover` **tagliato sul margine sinistro della modale desktop** (`UAT-173-UX-DATE-POPOVER-CLIPPED`). La correzione deve considerare il componente riusabile e gli altri form Premium, con regressioni desktop/mobile; **NON autorizza nuovo deploy/merge**. Il controllo Owner del testo «Non svolta» è **PENDING**: nello screenshot 26/10 era visibile il pulsante, ma non ancora selezionato. Chiudere senza premere conferma su dati esistenti; test informativo possibile selezionando `Non svolta` il 26/10 e leggendo il messaggio. Stato complessivo `CORE173_OWNER_ACCEPTANCE_PENDING`, non GOAL chiuso. **[Issue #173, osservazione Owner #6437494426](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6437494426)**.
