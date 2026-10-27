@@ -4,6 +4,16 @@
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
 
+## ULTIMO REPORT LIVE — 26/10/2026: CORE #173 `500c882` DEV INSTALLATO SECONDO AGY, OWNER UAT MIRATO PENDING
+
+**L'ultima evidenza, successiva al gate condizionato qui sotto, è [rapporto AGY Issue #173 #6429206418](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6429206418) / [PR #175 #6429210219](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6429210219).** AGY attesta il PASS del preflight e l'installazione in DEV della *sola* immagine `cc173-day-closure:500c882` (SHA `500c882689a4ef1fcf6b10576676a3fb8850e850`, ID `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`) sui sei servizi applicativi. Restano DB/Redis/schema invariati; nuovo backup cifrato dopo Owner UAT e restore isolato riportati PASS; fingerprint dominio pre/post `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5` invariato; test DEV multiruolo 21/21 e verifica due UX fix PASS secondo AGY. CI GitHub `40412036299` entrambi i job SUCCESS. **ChatGPT non ha eseguito controlli direttamente sul VPS:** la prova d'installazione è il rapporto operatore, non una ispezione runtime indipendente.
+
+**Test di regressione:** backend `120 PASS, 1 SKIP` (`test_mariadb_load_and_reconciliation` benchmark live intenzionalmente escluso dalla suite offline), frontend `200 PASS, 8 SKIP`; zero FAIL riportati. AGY dichiara reviewer indipendente PASS, ma **la PR #175 non presenta review formale GitHub** alla verifica, per cui prima del merge va resa rintracciabile l'identità e la prova del reviewer indipendente. Nessun blocco automatico del walkthrough Owner visivo limitato.
+
+**PASSAGE ATTUALE:** `DEV_INSTALLED_READY_FOR_OWNER_UAT_CORE173_500c882` **secondo AGY**, **NON** `CORE173_OWNER_ACCEPTED`. Prossima azione autorizzata: Owner effettua **solo** lettura visiva di (1) «Non svolta» con messaggio economico prudente, **senza confermare**, (2) Report Direzione e CSV 14/10 con `Carta POS · terminale 2f7e`. Registrare UAT senza rifare i test precedenti. PR #172/#174/#175 ancora DRAFT/UNMERGED. AUDIT-06 non autorizzato; nessuna produzione.
+
+---
+
 ## DECISIONE OWNER PIÙ RECENTE — 26/10/2026: GATE DEV `500c882` AUTORIZZATO SOLO CONDIZIONATAMENTE
 
 **Fonte live e vincolante:** [Issue #173 — Gate Owner #6428982304](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428982304) e [PR #175 — rinvio al gate](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6428992485). Owner «Sì procediamo»: **autorizzato l'intervento DEV soltanto se tutti i controlli preflight PASS**. Candidato esatto `500c882689a4ef1fcf6b10576676a3fb8850e850`, immagine `cc173-day-closure:500c882`, digest `sha256:790be16e4aad2f74baabda8b1a9d7a16d7bc22c220f24a3ebe312f20716ca7aa`; sei soli servizi applicativi `centrochange-dev`, precedente `d500fff` conservato per rollback. **Non significa che la nuova immagine sia stata installata**.
