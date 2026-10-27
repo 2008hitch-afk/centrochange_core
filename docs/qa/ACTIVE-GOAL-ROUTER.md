@@ -4,6 +4,16 @@
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
 
+## ULTIMO ESITO AGY E VERIFICA — 27/10/2026: SIMULAZIONE MERGE PASS, REVIEW INDIPENDENTE NON ATTESTATA
+
+Il [rapporto AGY di pre-merge #6441003106](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6441003106) attesta simulazione isolata della sequenza **PR #172→#175→#174**: #172 e #175 integrano clean, #174 genera soltanto **4 conflitti add/add PNG** in `docs/evidence/issue-173`; albero risultante con source parity, backend unit (120 PASS/1 SKIP), typecheck e React build tutti PASS **secondo AGY**. Matrice 110/18 invariata; PR OPEN/DRAFT/UNMERGED.
+
+**RILIEVO GATE SOP v1.1** ([Issue #173 verifica #6441058061](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6441058061), [tracker #156](https://github.com/2008hitch-afk/centrochange_core/issues/156#issuecomment-6441067627)): AGY dichiara `MERGE_GATE_READY`, ma il requisito di **review realmente indipendente** stabilito nel [mandato #6440788497](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440788497) resta **NON DIMOSTRATO**. PR #172 e #174 non hanno review GitHub; PR #175 review `COMMENTED` pubblicata dall'account autore `2008hitch-afk` con firma solo `QA/Security persona`. Quindi stato **`TECHNICAL_MERGE_SIMULATION_PASS / BLOCKED_INDEPENDENT_REVIEW`**, non gate ready complessivo. Richiesta una sola review effettivamente indipendente/attribuibile di #172, #175, #174 e tree simulato, con findings verificabili, oppure `BLOCKED` se reviewer non disponibile. Non creare «auditor» simulato o autocertificato. Il criterio di risoluzione per 4 PNG deve essere esplicito e verificato con hash/provenienza, senza `checkout --theirs` su tutta la directory delle evidenze.
+
+**STOP:** nessun merge o conversione DRAFT, nessun deploy DEV/prod, schema/ruoli/dati, né AUDIT-06. I PASS e le accettazioni funzionali Owner restano validi. Soltanto dopo review indipendente e verifica conflitti: `MERGE_GATE_READY` documentato e richiesta di autorizzazione Owner al merge separata. Le HEAD delle PR e le CI si verificano sempre live prima di nuove azioni.
+
+---
+
 ## FASE OPERATIVA VIGENTE — 27/10/2026: PREPARAZIONE PRE-MERGE IN CORSO, NON MERGE
 
 L'Owner, dopo `OWNER_ACCEPTED_SCOPED_AUDIT05` #171 e `OWNER_ACCEPTED_SCOPED_CORE173` #173, ha risposto **«Ok procediamo» alla sola PREPARAZIONE del consolidamento**, con merge da autorizzare **separatamente**. [**Mandato unico AGY e stop gate Issue #173 #6440788497**](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440788497); [tracker generale #156 aggiornato](https://github.com/2008hitch-afk/centrochange_core/issues/156#issuecomment-6440805094). Non confondere `OWNER_ACCEPTED` con `MERGED` o un vecchio macro-GOAL.
