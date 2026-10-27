@@ -11,7 +11,8 @@ const labels: Record<string, string> = {
   CENTER_MEMBERSHIP: 'Appartenenza al centro', PATIENT_ASSIGNMENT: 'Assegnazione paziente',
   RECEIPT_POSTED: 'Pagamento registrato', PROFESSIONAL_RULE_CONFIGURED: 'Regola compenso configurata',
   SCHEDULE_CHANGED: 'Orario aggiornato', ABSENCE_CREATED: 'Assenza registrata',
-  ABSENCE_CANCELLED: 'Assenza annullata', SESSION_AUTO_LOCKED: 'Chiusura seduta bloccata automaticamente'
+  ABSENCE_CANCELLED: 'Assenza annullata', SESSION_AUTO_LOCKED: 'Chiusura seduta bloccata automaticamente',
+  SESSION_LATE_COMPLETED: 'Chiusura tardiva seduta'
 }
 const eventName = (value: unknown) => labels[String(value)] ?? 'Modifica registrata'
 const eventStamp = (value: unknown) => {

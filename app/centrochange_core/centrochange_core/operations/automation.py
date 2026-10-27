@@ -14,8 +14,22 @@ def enqueue_notice(key,user,kind,doctype,name,message):
 	if existing:
 		return existing
 	with internal_write('cc_notification_write'):
-		return frappe.get_doc({'doctype':'CC Notification','event_key':key,'recipient':user,'kind':kind,
-			'reference_doctype':doctype,'reference_name':name,'message':message,'state':'Pending'}).insert(ignore_permissions=True).name
+		notice = frappe.get_doc({'doctype':'CC Notification','event_key':key,'recipient':user,'kind':kind,
+			'reference_doctype':doctype,'reference_name':name,'message':message,'state':'Pending'}).insert(ignore_permissions=True)
+		try:
+			if frappe.db.exists('DocType', 'Notification Log'):
+				frappe.get_doc({
+					'doctype': 'Notification Log',
+					'for_user': user,
+					'subject': message,
+					'type': 'Alert',
+					'document_type': doctype,
+					'document_name': name,
+					'cc_notification': notice.name
+				}).insert(ignore_permissions=True)
+		except Exception:
+			pass
+		return notice.name
 
 
 @atomic
@@ -45,7 +59,7 @@ def catch_up():
 					key=f'closure-reminder:{date}:{doc.practitioner}'
 					existed=frappe.db.get_value('CC Notification',{'event_key':key},for_update=True)
 					enqueue_notice(key,user,'CLOSURE_REMINDER','Healthcare Practitioner',doc.practitioner,
-						'Hai sedute da chiudere oggi. Apri la tua Agenda per completarle.')
+						'Hai sedute da chiudere oggi. Apri «Chiudi la mia giornata» per completarle prima delle ore 07:00.')
 					reminded+=int(not bool(existed))
 		return {'locked':locked,'reminders':reminded}
 	finally:

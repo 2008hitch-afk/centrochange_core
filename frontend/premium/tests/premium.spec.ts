@@ -280,6 +280,7 @@ test('AUDIT-04 due emissioni volontarie identiche usano chiavi diverse', async (
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)
   await page.goto('./#Pazienti')
+  await expect(page.getByRole('heading', { name: 'Pazienti', exact: true })).toBeVisible()
   await page.locator('tbody tr').first().click()
   const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
   await expect(drawer).toBeVisible()
@@ -485,6 +486,23 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
         : doctype === 'CC Patient Assignment' ? [{ name: 'ASSIGN-001', patient: 'PAT-001', center: 'CENTRO-A', practitioner: 'PR-001', active: 1 }] : []
     }
     else if (method.endsWith('frappe.client.get')) message = { name: 'XML-001', lines_json: JSON.stringify([{ description: 'Visita sintetica', qty: 1, rate: 80 }]), tax_total: 0 }
+    else if (method.endsWith('lifecycle.get_day_closure_sessions')) {
+      const qDate = new URL(req.url()).searchParams.get('date') || today
+      message = {
+        date: qDate,
+        sessions: agendaRows ?? [{ ...appointment, ...appointmentState, patient_name: 'Paziente Sintetico', patient_first_name: 'Paziente', patient_last_name: 'Sintetico' }],
+        arrear_dates: ['2026-10-12'],
+        practitioner: 'PR-001',
+        is_admin: false,
+      }
+    }
+    else if (method.endsWith('lifecycle.close_day')) {
+      message = {
+        date: today,
+        closed: 1,
+        results: [{ name: 'APP-001', status: 'Closed', performed: 1, paid: 1, economic_state: 'Due' }],
+      }
+    }
     else if (req.method() === 'POST') message = { name: 'SYNTHETIC-NEW' }
     else status = 404
     await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(status === 200 ? { message } : { exc: 'PermissionError' }) })
@@ -2237,6 +2255,7 @@ test('AUDIT-05 UAT-05-34: seduta Auto Locked e Pending mostra Bloccata e Pagamen
   })
 
   await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
   // Nella tabella di dettaglio:
   // Stato seduta deve essere 'Bloccata'
   const table = page.locator('.report-drilldown')
@@ -2245,4 +2264,193 @@ test('AUDIT-05 UAT-05-34: seduta Auto Locked e Pending mostra Bloccata e Pagamen
   await expect(table.getByText('Da definire')).toBeVisible()
   await expect(table.getByText('Da incassare')).toHaveCount(0)
 })
+
+test('CORE #173: «Chiudi la mia giornata» apre modale, mostra riepilogo e arretrati, e invia chiusura', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, { roles: ['CC Professional'] })
+  await page.goto('./#Agenda')
+  await expect(page.getByRole('button', { name: 'Chiudi la mia giornata' }).first()).toBeVisible()
+  await page.getByRole('button', { name: 'Chiudi la mia giornata' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Chiudi la mia giornata' })).toBeVisible()
+  await expect(page.getByText('Sedute arretrate da completare')).toBeVisible()
+  await expect(page.getByText('12/10/2026')).toBeVisible()
+  const confirmBtn = page.getByRole('button', { name: 'Conferma chiusura giornata' })
+  await expect(confirmBtn).toBeVisible()
+  await expect(confirmBtn).toBeDisabled()
+  await page.getByRole('button', { name: 'Svolta', exact: true }).click()
+  await expect(confirmBtn).toBeEnabled()
+  await confirmBtn.click()
+  await expect(page.getByRole('heading', { name: 'Chiudi la mia giornata' })).toHaveCount(0)
+  expect(writes.some(w => w.method.endsWith('lifecycle.close_day'))).toBe(true)
+})
+
+test('CORE #173 UAT-173-01: «Non svolta» non fa false promesse economiche e mostra stato economico', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, { roles: ['CC Professional'] })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Chiudi la mia giornata' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Chiudi la mia giornata' })).toBeVisible()
+
+  // Click 'Non svolta'
+  await page.getByRole('button', { name: 'Non svolta', exact: true }).click()
+
+  // Verify text does NOT claim session will not be charged
+  await expect(page.getByText('non sarà addebitata')).toHaveCount(0)
+
+  // Verify correct Italian wording
+  await expect(page.getByText('La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.')).toBeVisible()
+  await expect(page.getByText('Situazione economica registrata:')).toBeVisible()
+})
+
+test('CORE #173 UAT-173-05/06: Report drilldown renderizza etichetta leggibile del metodo di pagamento senza ID tecnico', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          total: 1,
+          page: 1,
+          page_length: 50,
+          total_pages: 1,
+          kpi: 'all',
+          currency: 'EUR',
+          appointments: [
+            {
+              name: 'HLC-APP-TEST-POS',
+              patient: 'PAT-1',
+              patient_name: 'Paziente Test',
+              practitioner: 'PRAC-1',
+              practitioner_name: 'Dottore A',
+              appointment_date: '2026-10-14',
+              appointment_time: '12:00:00',
+              duration: 60,
+              status: 'Closed',
+              cc_closure_state: 'Closed',
+              cc_economic_state: 'Due',
+              cc_performed: 1,
+              cc_paid: 1,
+              mode_of_payment: 'CC-MVP-POS-2f7eae6f7a09 Carta POS',
+              cc_price_snapshot: 100.0,
+              cc_currency_snapshot: 'EUR',
+              cc_classified_paid: true
+            }
+          ]
+        }
+      })
+    })
+  })
+  await page.goto('./#Report')
+  const table = page.locator('.report-drilldown')
+  await expect(table.getByText('Carta POS · terminale 2f7e')).toBeVisible()
+  await expect(table.getByText('CC-MVP-POS-2f7eae6f7a09')).toHaveCount(0)
+})
+
+test('CORE #173 UAT-173-UX-DATE-POPOVER-CLIPPED: Popover calendario condiviso rimane allineato e interamente dentro i confini della modale e del viewport', async ({ page }, testInfo) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, { roles: ['CC Professional'] })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Chiudi la mia giornata' }).first().click()
+  const modal = page.locator('.modal')
+  await expect(modal).toBeVisible()
+
+  // Open calendar popover from DateInput in toolbar
+  const trigger = modal.locator('.cc-date-trigger').first()
+  await expect(trigger).toBeVisible()
+  await trigger.click()
+
+  const popover = modal.locator('.cc-date-popover')
+  await expect(popover).toBeVisible()
+
+  // Assert popover is within modal bounds on desktop (zero left clipping)
+  const modalBox = await modal.boundingBox()
+  const popoverBox = await popover.boundingBox()
+  expect(modalBox).not.toBeNull()
+  expect(popoverBox).not.toBeNull()
+  if (modalBox && popoverBox) {
+    expect(popoverBox.x).toBeGreaterThanOrEqual(modalBox.x)
+    expect(popoverBox.x + popoverBox.width).toBeLessThanOrEqual(modalBox.x + modalBox.width)
+  }
+
+  // Save evidence screenshot
+  await page.screenshot({ path: `../../docs/evidence/issue-173/fixed-calendar-popover-${testInfo.project.name}.png` })
+
+  // Escape key closes popover and refocuses trigger
+  await page.keyboard.press('Escape')
+  await expect(popover).toHaveCount(0)
+
+  // Re-open and test outside click closes popover
+  await trigger.click()
+  await expect(popover).toBeVisible()
+  await page.locator('.modal-head').click({ position: { x: 5, y: 5 } })
+  await expect(popover).toHaveCount(0)
+})
+
+test('CORE #173 UAT-173-UX-ECONOMIC-NOTE-READABILITY: Informativa economica su «Non svolta» ha classe dedicata, font 13px e contrasto elevato WCAG AAA', async ({ page }, testInfo) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, { roles: ['CC Professional'] })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Chiudi la mia giornata' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Chiudi la mia giornata' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Non svolta', exact: true }).click()
+
+  const economicNote = page.locator('.day-closure-economic-note')
+  await expect(economicNote).toBeVisible()
+
+  const textElem = economicNote.locator('.economic-note-text')
+  await expect(textElem).toBeVisible()
+  await expect(textElem).toHaveText('La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.')
+
+  const statusElem = economicNote.locator('.economic-note-status')
+  await expect(statusElem).toBeVisible()
+  await expect(statusElem).toContainText('Situazione economica registrata:')
+
+  // Check computed styles
+  const styles = await textElem.evaluate(el => {
+    const cs = window.getComputedStyle(el)
+    return { fontSize: cs.fontSize, color: cs.color }
+  })
+  expect(styles.fontSize).toBe('13px')
+  expect(styles.color).toBe('rgb(51, 65, 85)') // #334155, contrast 9.90:1 against #f8fafc (WCAG AAA)
+
+  // Capture screenshot of improved economic note
+  if (testInfo.project.name === 'desktop') {
+    await page.screenshot({ path: '../../docs/evidence/issue-173/fixed-economic-note-contrast-desktop.png' })
+  }
+})
+
+test('CORE #173: Popover calendario su toolbar destra rimane allineato a destra senza fuoriuscire', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./#Registro%20modifiche')
+  await expect(page.locator('.panel-toolbar.audit-filters')).toBeVisible()
+
+  const trigger = page.locator('.toolbar-right .cc-date-trigger').last()
+  await expect(trigger).toBeVisible()
+  await trigger.click()
+
+  const popover = page.locator('.cc-date-popover')
+  await expect(popover).toBeVisible()
+  if (testInfo.project.name === 'desktop') {
+    await expect(popover).toHaveClass(/align-right/)
+  } else {
+    await expect(popover).toHaveClass(/align-left/)
+  }
+  const popoverBox = await popover.boundingBox()
+  const viewport = page.viewportSize()
+  expect(popoverBox).not.toBeNull()
+  expect(viewport).not.toBeNull()
+  if (popoverBox && viewport) {
+    expect(popoverBox.x).toBeGreaterThanOrEqual(0)
+    expect(popoverBox.x + popoverBox.width).toBeLessThanOrEqual(viewport.width + 5)
+  }
+
+  if (testInfo.project.name === 'desktop') {
+    await page.screenshot({ path: '../../docs/evidence/issue-173/fixed-calendar-report-toolbar-desktop.png' })
+  }
+})
+
+
+
+
 

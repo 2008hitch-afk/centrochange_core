@@ -1,12 +1,13 @@
 import { type Row, displayDate, time } from './api'
 import { Empty } from './ui'
-import { auditActorName, closureName, economyName } from './display_names'
+import { auditActorName, closureName, economyName, paymentMethodLabel } from './display_names'
 
 const events: Record<string, string> = {
   APPOINTMENT_BOOKED: 'Prenotazione creata',
   APPOINTMENT_RESCHEDULED: 'Prenotazione spostata',
   SESSION_CANCELLED: 'Seduta cancellata',
   SESSION_CLOSED: 'Seduta chiusa',
+  SESSION_LATE_COMPLETED: 'Chiusura tardiva seduta',
   SESSION_AUTO_LOCKED: 'Seduta bloccata automaticamente',
   SESSION_REOPENED: 'Seduta riaperta',
   ECONOMIC_WAIVER: 'Rinuncia economica registrata',
@@ -23,6 +24,7 @@ const fact = (key: string, value: unknown) => {
   if (key === 'appointment_time') return time(value)
   if (key === 'economic') return economyName(String(value))
   if (key === 'closure') return closureName(String(value))
+  if (key === 'method') return paymentMethodLabel(value)
   if (['late', 'performed', 'paid'].includes(key)) return value === true || value === 1 ? 'Sì' : 'No'
   return String(value)
 }
