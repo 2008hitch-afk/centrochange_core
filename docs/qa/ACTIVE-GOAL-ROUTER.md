@@ -4,6 +4,14 @@
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
 
+## OWNER RECHECK `b498ea5` — 27/10/2026: CALENDARIO DESKTOP PASS, NOTA ECONOMICA ANCORA DA MOSTRARE
+
+**Prove Owner:** due screenshot della modale `Chiudi la mia giornata` su DEV con immagine installata secondo AGY `b498ea5`. **Calendario 27/10:** mese, anno, griglia e comandi totalmente entro i bordi della modale, nessun taglio sinistro → `PASS_OWNER_VISUAL_CALENDAR_DESKTOP`. **Giornata 26/10:** seduta ore 09:00 e pulsanti `Svolta / Non svolta` visibili, ma **`Non svolta` non selezionato** → la nuova informativa economica non è visibile, dunque `PENDING_OWNER_VISUAL_ECONOMIC_NOTE_READABILITY`. Prossimo unico step Owner: cliccare solo `Non svolta` su 26/10, valutare font/contrasto del messaggio, fare screenshot, chiudere senza salvare. [Risultato documentato su Issue #173 #6438865876](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438865876).
+
+**Resta aperta, separatamente, la riconciliazione del fingerprint DEV precedente `20aa6b31...` vs pre-swap `a5d098d6...` ([Issue #173 #6438773327](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438773327)).** Il test grafico non costituisce prova d'integrità DB. `CORE173_OWNER_ACCEPTANCE_PENDING`, PR #172/#174/#175 DRAFT/UNMERGED, nessun merge, produzione o AUDIT-06 autorizzato.
+
+---
+
 ## DEV AGGIORNATO CON CANDIDATA b498ea5 — 27/10/2026: CANDIDATO b498ea5 INSTALLATO CON SUCCESSO SU DEV (`DEV_INSTALLED_READY_FOR_OWNER_UAT_CORE173_B498EA5`)
 
 Eseguito il mandato Owner di gate condizionato [Issue #173 commento #6438344580](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438344580).
