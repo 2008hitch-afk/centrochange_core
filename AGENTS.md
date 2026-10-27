@@ -1,5 +1,11 @@
 # AGENTS.md — Centro Change
 
+## PRIORITÀ STATO OWNER PIÙ RECENTE — 27/10/2026
+
+[**CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`**](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) su DEV `b498ea5`, **AUDIT-05 #171 `OWNER_ACCEPTED_SCOPED`**. È completata l'accettazione funzionale del perimetro verificato, **non** il merge né il gestionale globale. **La prossima unità NON è automaticamente AUDIT-06**: prima serve gate di consolidamento per PR #172→#175 e docs #174, con reviewer realmente indipendente identificabile, CI coerenti, ordine PR e **nuovo permesso Owner specifico**. Le PR sono DRAFT/UNMERGED e Issue #173 OPEN. La review formale della PR #175 è `COMMENTED` dall'account GitHub `2008hitch-afk` con descrizione «QA/Security persona»: **non confonderla con una review approvativa indipendente attestata**. Non eseguire merge/produzione/nuovi deploy/nuovo GOAL su generiche dichiarazioni di accettazione. Leggere per primo il [router](docs/qa/ACTIVE-GOAL-ROUTER.md) + Issue/PR LIVE. Le sezioni storiche sotto descrivono gate precedenti e non annullano questa decisione.
+
+---
+
 ## ROTTA CORRENTE — OBBLIGATORIA PRIMA DI OGNI ALTRA INFORMAZIONE (26/10/2026)
 
 **Leggere per primo `docs/qa/ACTIVE-GOAL-ROUTER.md` e controllare LIVE le Issue/PR specificate.** Il file determina quale AUDIT/CORE sia in corso; non riprendere il percorso operativo dal vecchio `docs/MVP-GOAL-ROADMAP-v0.1.md`, né dalle sezioni storiche di questo `AGENTS.md` che chiamano «current GOAL-02». I macro-GOAL MVP 01–05 e gli AUDIT funzionali (03, 04, 05, 06...) **sono numerazioni diverse**.
