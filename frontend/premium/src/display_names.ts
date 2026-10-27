@@ -49,6 +49,36 @@ const economyNames: Record<string, string> = {
 export const closureName = (value: unknown) => closureNames[String(value ?? '')] ?? String(value ?? '—')
 export const economyName = (value: unknown) => economyNames[String(value ?? '')] ?? String(value ?? '—')
 
+export const paymentMethodLabel = (name: unknown): string => {
+  const str = String(name ?? '').trim()
+  if (!str) return '—'
+  const known: Record<string, string> = {
+    Cash: 'Contanti (standard)',
+    'Wire Transfer': 'Bonifico',
+    'Bank Transfer': 'Bonifico',
+    'Bank Draft': 'Effetto bancario',
+    'Credit Card': 'Carta di credito',
+    Cheque: 'Assegno',
+    POS: 'Carta POS',
+    Card: 'Carta POS',
+    Contanti: 'Contanti (standard)',
+    Bonifico: 'Bonifico',
+    'Carta di credito': 'Carta di credito',
+    'Carta di debito': 'Carta di debito'
+  }
+  if (known[str]) return known[str]
+  const match = str.match(/^CC-MVP-POS-([a-f0-9]{4})/i)
+  if (match) {
+    return `Carta POS · terminale ${match[1]}`
+  }
+  if (/^CC DEV PROFILE CASH$/i.test(str)) return 'Contanti (cassa sede DEV)'
+  if (/Carta\s+POS/i.test(str)) {
+    const idMatch = str.match(/([a-f0-9]{4})/)
+    return idMatch ? `Carta POS · terminale ${idMatch[1]}` : 'Carta POS'
+  }
+  return str
+}
+
 const syntheticAuditRoles: Record<string, string> = {
   m: 'Manager di prova', s: 'Segreteria di prova', a: 'Professionista di prova A',
   b: 'Professionista di prova B', c: 'Professionista di prova C',

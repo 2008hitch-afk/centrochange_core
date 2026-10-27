@@ -207,6 +207,22 @@ class OperationalReportingTests(unittest.TestCase):
         self.assertNotIn('Paziente 1', content)
         self.assertIn('centrochange-report-centro.csv', self.frappe.response['filename'])
 
+    def test_payment_method_human_readable_labels_in_csv(self):
+        from centrochange_core.operations.reporting import format_payment_method
+        self.assertEqual(format_payment_method('CC-MVP-POS-2f7eae6f7a09 Carta POS'), 'Carta POS · terminale 2f7e')
+        self.assertEqual(format_payment_method('CC-MVP-POS-82dd2129d692 Carta POS'), 'Carta POS · terminale 82dd')
+        self.assertEqual(format_payment_method('POS'), 'Carta POS')
+        self.assertEqual(format_payment_method('Cash'), 'Contanti (standard)')
+        self.assertEqual(format_payment_method('CC DEV PROFILE CASH'), 'Contanti (cassa sede DEV)')
+        self.assertEqual(format_payment_method(None), '')
+        self.assertEqual(format_payment_method(''), '')
+
+        # Test export_csv includes formatted payment method
+        self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-24', kpi='operational_paid')
+        content = self.frappe.response['filecontent']
+        self.assertIn('Carta POS', content)
+        self.assertNotIn('CC-MVP-POS', content)
+
     def test_temporal_transition_no_overlap(self):
         """A session scheduled today at 15:00 is future at 12:00, but to_close at 16:30."""
         # 1. At 12:00 (before session): APP-4 is future

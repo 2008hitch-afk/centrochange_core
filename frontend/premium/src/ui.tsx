@@ -112,6 +112,7 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
 }) {
   const [draft, setDraft] = useState(displayDate(value))
   const [open, setOpen] = useState(false)
+  const [alignRight, setAlignRight] = useState(false)
   const [cursor, setCursor] = useState((value || romeToday()).slice(0, 7))
   const root = React.useRef<HTMLDivElement>(null)
   const trigger = React.useRef<HTMLButtonElement>(null)
@@ -120,11 +121,25 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
   useEffect(() => { setDraft(displayDate(value)); inputRef.current?.setCustomValidity(''); onValidityChange?.(!!value || !required) }, [value, resetKey])
   useEffect(() => {
     if (!open) return
+    const updateAlignment = () => {
+      if (!root.current) return
+      const rect = root.current.getBoundingClientRect()
+      const container = root.current.closest('.modal, .drawer, .panel')
+      const containerRect = container ? container.getBoundingClientRect() : { left: 0, right: window.innerWidth }
+      const spaceRight = containerRect.right - rect.left
+      const spaceLeft = rect.right - containerRect.left
+      setAlignRight(spaceRight < 315 && spaceLeft >= 310)
+    }
+    updateAlignment()
+    window.addEventListener('resize', updateAlignment)
     const outside = (event: PointerEvent) => {
       if (root.current && !root.current.contains(event.target as Node)) setOpen(false)
     }
     document.addEventListener('pointerdown', outside)
-    return () => document.removeEventListener('pointerdown', outside)
+    return () => {
+      window.removeEventListener('resize', updateAlignment)
+      document.removeEventListener('pointerdown', outside)
+    }
   }, [open])
   const commit = (text: string) => {
     const iso = parseItalianDate(text)
@@ -161,10 +176,18 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
       aria-expanded={open} onClick={() => {
         if (open) { setOpen(false); return }
         setCursor((parseItalianDate(draft) || value || romeToday()).slice(0, 7))
+        if (root.current) {
+          const rect = root.current.getBoundingClientRect()
+          const container = root.current.closest('.modal, .drawer, .panel')
+          const containerRect = container ? container.getBoundingClientRect() : { left: 0, right: window.innerWidth }
+          const spaceRight = containerRect.right - rect.left
+          const spaceLeft = rect.right - containerRect.left
+          setAlignRight(spaceRight < 315 && spaceLeft >= 310)
+        }
         setOpen(true)
         window.setTimeout(() => popover.current?.querySelector<HTMLSelectElement>('select')?.focus(), 0)
       }}><CalendarDays size={17} aria-hidden="true" /></button>
-    {open && <div ref={popover} className="cc-date-popover" role="dialog" aria-label={calendarLabel ? 'Calendario ' + calendarLabel : 'Calendario'}>
+    {open && <div ref={popover} className={`cc-date-popover ${alignRight ? 'align-right' : 'align-left'}`} role="dialog" aria-label={calendarLabel ? 'Calendario ' + calendarLabel : 'Calendario'}>
       <div className="cc-date-navigation">
         <button type="button" aria-label="Mese precedente" onClick={() => moveMonth(-1)}><ChevronLeft size={17} /></button>
         <select aria-label="Mese" value={month} onChange={event => setCursor(year + '-' + String(event.target.value).padStart(2, '0'))}>
