@@ -352,12 +352,16 @@ export function DayClosureModal({
                                 onChange={e => updateItem(s.name, { note: e.target.value })}
                               />
                             </Field>
-                            <p className="scope-note">La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.</p>
-                            {s.cc_economic_state && (
-                              <p className="scope-note" style={{ marginTop: 4 }}>
-                                Situazione economica registrata: <strong>{economyName(s.cc_economic_state)}</strong>.
+                            <div className="day-closure-economic-note">
+                              <p className="economic-note-text">
+                                La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.
                               </p>
-                            )}
+                              {s.cc_economic_state && (
+                                <p className="economic-note-status">
+                                  Situazione economica registrata: <strong>{economyName(s.cc_economic_state)}</strong>.
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>

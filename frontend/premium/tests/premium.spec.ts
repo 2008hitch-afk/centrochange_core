@@ -2346,5 +2346,111 @@ test('CORE #173 UAT-173-05/06: Report drilldown renderizza etichetta leggibile d
   await expect(table.getByText('CC-MVP-POS-2f7eae6f7a09')).toHaveCount(0)
 })
 
+test('CORE #173 UAT-173-UX-DATE-POPOVER-CLIPPED: Popover calendario condiviso rimane allineato e interamente dentro i confini della modale e del viewport', async ({ page }, testInfo) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, { roles: ['CC Professional'] })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Chiudi la mia giornata' }).first().click()
+  const modal = page.locator('.modal')
+  await expect(modal).toBeVisible()
+
+  // Open calendar popover from DateInput in toolbar
+  const trigger = modal.locator('.cc-date-trigger').first()
+  await expect(trigger).toBeVisible()
+  await trigger.click()
+
+  const popover = modal.locator('.cc-date-popover')
+  await expect(popover).toBeVisible()
+
+  // Assert popover is within modal bounds on desktop (zero left clipping)
+  const modalBox = await modal.boundingBox()
+  const popoverBox = await popover.boundingBox()
+  expect(modalBox).not.toBeNull()
+  expect(popoverBox).not.toBeNull()
+  if (modalBox && popoverBox) {
+    expect(popoverBox.x).toBeGreaterThanOrEqual(modalBox.x)
+    expect(popoverBox.x + popoverBox.width).toBeLessThanOrEqual(modalBox.x + modalBox.width)
+  }
+
+  // Save evidence screenshot
+  await page.screenshot({ path: `../../docs/evidence/issue-173/fixed-calendar-popover-${testInfo.project.name}.png` })
+
+  // Escape key closes popover and refocuses trigger
+  await page.keyboard.press('Escape')
+  await expect(popover).toHaveCount(0)
+
+  // Re-open and test outside click closes popover
+  await trigger.click()
+  await expect(popover).toBeVisible()
+  await page.locator('.modal-head').click({ position: { x: 5, y: 5 } })
+  await expect(popover).toHaveCount(0)
+})
+
+test('CORE #173 UAT-173-UX-ECONOMIC-NOTE-READABILITY: Informativa economica su «Non svolta» ha classe dedicata, font 13px e contrasto elevato WCAG AAA', async ({ page }, testInfo) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes, true, {}, { roles: ['CC Professional'] })
+  await page.goto('./#Agenda')
+  await page.getByRole('button', { name: 'Chiudi la mia giornata' }).first().click()
+  await expect(page.getByRole('heading', { name: 'Chiudi la mia giornata' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Non svolta', exact: true }).click()
+
+  const economicNote = page.locator('.day-closure-economic-note')
+  await expect(economicNote).toBeVisible()
+
+  const textElem = economicNote.locator('.economic-note-text')
+  await expect(textElem).toBeVisible()
+  await expect(textElem).toHaveText('La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.')
+
+  const statusElem = economicNote.locator('.economic-note-status')
+  await expect(statusElem).toBeVisible()
+  await expect(statusElem).toContainText('Situazione economica registrata:')
+
+  // Check computed styles
+  const styles = await textElem.evaluate(el => {
+    const cs = window.getComputedStyle(el)
+    return { fontSize: cs.fontSize, color: cs.color }
+  })
+  expect(styles.fontSize).toBe('13px')
+  expect(styles.color).toBe('rgb(51, 65, 85)') // #334155, contrast 9.90:1 against #f8fafc (WCAG AAA)
+
+  // Capture screenshot of improved economic note
+  if (testInfo.project.name === 'desktop') {
+    await page.screenshot({ path: '../../docs/evidence/issue-173/fixed-economic-note-contrast-desktop.png' })
+  }
+})
+
+test('CORE #173: Popover calendario su toolbar destra rimane allineato a destra senza fuoriuscire', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./#Registro%20modifiche')
+  await expect(page.locator('.panel-toolbar.audit-filters')).toBeVisible()
+
+  const trigger = page.locator('.toolbar-right .cc-date-trigger').last()
+  await expect(trigger).toBeVisible()
+  await trigger.click()
+
+  const popover = page.locator('.cc-date-popover')
+  await expect(popover).toBeVisible()
+  if (testInfo.project.name === 'desktop') {
+    await expect(popover).toHaveClass(/align-right/)
+  } else {
+    await expect(popover).toHaveClass(/align-left/)
+  }
+  const popoverBox = await popover.boundingBox()
+  const viewport = page.viewportSize()
+  expect(popoverBox).not.toBeNull()
+  expect(viewport).not.toBeNull()
+  if (popoverBox && viewport) {
+    expect(popoverBox.x).toBeGreaterThanOrEqual(0)
+    expect(popoverBox.x + popoverBox.width).toBeLessThanOrEqual(viewport.width + 5)
+  }
+
+  if (testInfo.project.name === 'desktop') {
+    await page.screenshot({ path: '../../docs/evidence/issue-173/fixed-calendar-report-toolbar-desktop.png' })
+  }
+})
+
+
+
 
 
