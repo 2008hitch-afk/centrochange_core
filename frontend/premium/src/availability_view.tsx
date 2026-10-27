@@ -5,7 +5,33 @@ import { type Feedback, Button, Chip, DateInput, Time24Input, Empty, Field, Form
 import { practitionerName } from './display_names'
 
 const weekdays = [['Monday', 'Lunedì'], ['Tuesday', 'Martedì'], ['Wednesday', 'Mercoledì'], ['Thursday', 'Giovedì'], ['Friday', 'Venerdì'], ['Saturday', 'Sabato'], ['Sunday', 'Domenica']]
+const dayOrder: Record<string, number> = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 }
 type Slot = { day: string; from_time: string; to_time: string }
+
+const sortSlots = (slots: Slot[]) => {
+  return [...slots].sort((a, b) => {
+    const da = dayOrder[a.day] ?? 99
+    const db = dayOrder[b.day] ?? 99
+    if (da !== db) return da - db
+    return a.from_time.localeCompare(b.from_time)
+  })
+}
+
+const groupSlotsByDay = (slots: Slot[]): { day: string; label: string; intervals: string[] }[] => {
+  const sorted = sortSlots(slots)
+  const map = new Map<string, string[]>()
+  for (const s of sorted) {
+    if (!map.has(s.day)) map.set(s.day, [])
+    map.get(s.day)!.push(`${time(s.from_time)}–${time(s.to_time)}`)
+  }
+  const result: { day: string; label: string; intervals: string[] }[] = []
+  for (const [dayKey, dayLabel] of weekdays) {
+    if (map.has(dayKey)) {
+      result.push({ day: dayKey, label: dayLabel, intervals: map.get(dayKey)! })
+    }
+  }
+  return result
+}
 
 export function Availability({ boot, center, feedback }: { boot: Boot; center: string; feedback: Feedback }) {
   const [rows, setRows] = useState<Row[]>([])
@@ -40,9 +66,9 @@ export function Availability({ boot, center, feedback }: { boot: Boot; center: s
 
   const resetSchedule = (person: string) => {
     const existing = rows.find(row => row.practitioner === person)
-    const slots = ((existing?.time_slots as Slot[] | undefined) ?? []).map(slot => ({
+    const slots = sortSlots(((existing?.time_slots as Slot[] | undefined) ?? []).map(slot => ({
       day: slot.day, from_time: time(slot.from_time), to_time: time(slot.to_time)
-    }))
+    })))
     setOriginalSlots(slots)
     setDraftSlots(slots.map(slot => ({ ...slot })))
     setExpectedModified(existing ? String(existing.modified ?? '') : '')
@@ -83,7 +109,7 @@ export function Availability({ boot, center, feedback }: { boot: Boot; center: s
         const professional = boot.practitioners.find(value => value.name === row.practitioner)
         const absences = (row.absences as Row[] | undefined) ?? []
         return <article className="schedule-card" key={String(row.name)}><span className="avatar">{practitionerName(professional ?? { name: String(row.practitioner), practitioner_name: String(row.practitioner) }).slice(0, 2).toLocaleUpperCase('it-IT')}</span><h3>{practitionerName(professional ?? { name: String(row.practitioner), practitioner_name: String(row.practitioner) })}</h3>
-          {((row.time_slots as Slot[] | undefined) ?? []).map((slot, index) => <p key={`${slot.day}-${index}`}><span>{weekdays.find(day => day[0] === slot.day)?.[1] ?? slot.day}</span><strong>{time(slot.from_time)} – {time(slot.to_time)}</strong></p>)}
+          {groupSlotsByDay((row.time_slots as Slot[] | undefined) ?? []).map(group => <p key={group.day}><span>{group.label}</span><strong>{group.intervals.join(', ')}</strong></p>)}
           {absences.length > 0 && <div className="schedule-absences"><Chip tone="warn">{absences.length} {absences.length === 1 ? 'assenza' : 'assenze'}</Chip>{absences.map(absence => <div key={String(absence.name)} className="schedule-absence"><span>{displayDate(absence.start_date)} – {displayDate(absence.end_date || absence.start_date)} · {time(absence.start_time)}–{time(absence.end_time)}</span><Button variant="ghost" onClick={() => open('cancel', String(row.practitioner), String(absence.name))}>Annulla assenza</Button></div>)}</div>}
         </article>
       })}</div>}
@@ -100,10 +126,33 @@ export function Availability({ boot, center, feedback }: { boot: Boot; center: s
             <Button type="button" variant="secondary" onClick={() => { setDraftSlots(current => current.filter((_, i) => i !== index)); setReviewed(false) }}>Rimuovi</Button>
           </div>)}
           {!daySlots.length && <p>Nessuna fascia prevista per questo giorno.</p>}
-          <Button type="button" variant="secondary" onClick={() => { setDraftSlots(current => [...current, { day: weekday, from_time: '09:00', to_time: '12:00' }]); setReviewed(false) }}><Plus size={16} /> Aggiungi fascia</Button>
+          <Button type="button" variant="secondary" onClick={() => { setDraftSlots(current => sortSlots([...current, { day: weekday, from_time: '09:00', to_time: '12:00' }])); setReviewed(false) }}><Plus size={16} /> Aggiungi fascia</Button>
           {!slotsValid && <p className="inline-error" role="alert">Controlla gli orari: usa HH:mm (24 ore), intervalli validi e senza sovrapposizioni. Mantieni almeno una fascia settimanale.</p>}
-          <p className="scope-note">Orario precedente: {originalSlots.map(slot => `${weekdays.find(day => day[0] === slot.day)?.[1] ?? slot.day}: ${slot.from_time}–${slot.to_time}`).join('; ') || 'nessuno'}.</p>
-          <p className="scope-note">Nuovo orario completo: {draftSlots.map(slot => `${weekdays.find(day => day[0] === slot.day)?.[1] ?? slot.day}: ${slot.from_time}–${slot.to_time}`).join('; ') || 'nessuno'}.</p>
+          <div className="schedule-comparison-card">
+            <strong>Confronto orario settimanale:</strong>
+            <div className="schedule-comparison-grid">
+              <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, padding: '8px 12px' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#64748b', display: 'block', marginBottom: 4 }}>Orario precedente</span>
+                {groupSlotsByDay(originalSlots).length ? (
+                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, lineHeight: 1.5 }}>
+                    {groupSlotsByDay(originalSlots).map(g => (
+                      <li key={g.day}><strong>{g.label}:</strong> {g.intervals.join(', ')}</li>
+                    ))}
+                  </ul>
+                ) : <span style={{ fontSize: 12, color: '#94a3b8' }}>Nessuna fascia configurata</span>}
+              </div>
+              <div style={{ background: '#fff', border: '1px solid #cbd5e1', borderRadius: 6, padding: '8px 12px' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#0f172a', display: 'block', marginBottom: 4 }}>Nuovo orario proposto</span>
+                {groupSlotsByDay(draftSlots).length ? (
+                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, lineHeight: 1.5 }}>
+                    {groupSlotsByDay(draftSlots).map(g => (
+                      <li key={g.day}><strong>{g.label}:</strong> {g.intervals.join(', ')}</li>
+                    ))}
+                  </ul>
+                ) : <span style={{ fontSize: 12, color: '#ef4444' }}>Nessuna fascia configurata</span>}
+              </div>
+            </div>
+          </div>
           <label className="checkbox-row"><input type="checkbox" checked={reviewed} onChange={event => setReviewed(event.target.checked)} /> Ho verificato le fasce precedenti e quelle nuove; confermo questa modifica.</label>
         </div>
       </>}

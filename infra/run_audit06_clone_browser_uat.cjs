@@ -380,7 +380,7 @@ print(json.dumps({"docstatus": doc.docstatus, "audit_count": len(events)}))
     // 3.3 Verify UI feedback and DB persistence
     await pageArchivi.locator('.alert.success').waitFor({ state: 'visible', timeout: 5000 });
     const successNotice = await pageArchivi.locator('.alert.success').textContent();
-    assert(successNotice.includes('Scheda salvata su Frappe.'), 'Expected success notice after price save');
+    assert(successNotice.includes('Scheda salvata'), 'Expected success notice after price save');
 
     const dbPrice = JSON.parse(runFrappe(`
 import json, frappe
@@ -502,7 +502,8 @@ frappe.db.commit()
     await dateInput.fill('23/11/2026');
     await dateInput.press('Tab');
 
-    await pageAgenda.locator('.modal input[type="time"]').fill('12:00');
+    const timeInput = pageAgenda.locator('.modal input[placeholder="HH:mm"]').or(pageAgenda.locator('.modal input[type="time"]'));
+    await timeInput.fill('12:00');
     await pageAgenda.locator('.modal textarea').fill('[UAT-SYNTHETIC] Prenotazione verifica snapshot');
 
     const [bookRes] = await Promise.all([

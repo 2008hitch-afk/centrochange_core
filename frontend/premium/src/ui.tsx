@@ -229,8 +229,8 @@ export function Metric({ label, value, trend, tone = 'blue', onClick, active, cl
   const isClickable = !!onClick
   return <article className={`metric-card ${tone} ${isClickable ? 'clickable' : ''} ${active ? 'active' : ''} ${className}`.trim()} onClick={onClick} onKeyDown={e => { if (onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick() } }} tabIndex={isClickable ? 0 : undefined} role={isClickable ? 'button' : undefined} aria-pressed={isClickable ? active : undefined}><div className="metric-top"><span>{label}</span>{trend && <span className="metric-trend">{trend.startsWith('+') ? <ArrowUpRight /> : <ArrowDownRight />}{trend}</span>}</div><strong>{value}</strong><div className="metric-rule" /></article>
 }
-export function DataTable({ rows, columns, onRow }: { rows: Row[]; columns: { key: string; label: string; render?: (value: unknown, row: Row) => React.ReactNode }[]; onRow?: (row: Row) => void }) {
-  if (!rows.length) return <Empty title="Nessun elemento" detail="Modifica i filtri o scegli un altro periodo." />
+export function DataTable({ rows, columns, onRow, emptyTitle = 'Nessun elemento', emptyDetail = 'Modifica i filtri o scegli un altro periodo.' }: { rows: Row[]; columns: { key: string; label: string; render?: (value: unknown, row: Row) => React.ReactNode }[]; onRow?: (row: Row) => void; emptyTitle?: string; emptyDetail?: string }) {
+  if (!rows.length) return <Empty title={emptyTitle} detail={emptyDetail} />
   return <div className="table-scroll"><table><thead><tr>{columns.map((c, i) => <th key={`${c.key}-${i}`} scope="col">{c.label}</th>)}</tr></thead><tbody>{rows.map((row, i) => <tr key={String(row.name ?? i)} className={onRow ? 'clickable' : ''} onClick={() => onRow?.(row)} onKeyDown={e => { if (onRow && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onRow(row) } }} tabIndex={onRow ? 0 : undefined}>{columns.map((c, j) => <td key={`${c.key}-${j}`}>{c.render ? c.render(row[c.key], row) : demoText(row[c.key] ?? '—')}</td>)}</tr>)}</tbody></table></div>
 }
 export const dateColumn = (key: string, label: string) => ({ key, label, render: (v: unknown) => displayDate(v) })
