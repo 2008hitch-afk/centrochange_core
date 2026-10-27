@@ -4,6 +4,23 @@
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
 
+## RICONCILIAZIONE TECNICA IN SOLA LETTURA E REVISIONE PR #175 COMPLETATE — 27/10/2026: STATO READY_FOR_OWNER_ACCEPTANCE
+
+A seguito del walkthrough visivo Owner con PASS completo su calendario (`UAT-173-UX-DATE-POPOVER-CLIPPED`) e nota economica 13px (`UAT-173-UX-ECONOMIC-NOTE-READABILITY`) registrati nei commenti [#6438865876](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438865876) e [#6439127526](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6439127526), è stata eseguita la riconciliazione tecnica in sola lettura richiesta:
+1. **Delta Fingerprint DB (da `20aa6b31...` a `a5d098d6...`) spiegato al 100% matematicamente:**
+   - 29 su 31 DocType tracciati sono risultati **identici al bit**.
+   - Nessun dato storico o scrittura Owner (inclusi appuntamento 14/10 `HLC-APP-2026-00024` e settlement `t6muud5trq`) è stato modificato o corrotto.
+   - Il delta è causato **esclusivamente** dall'esecuzione programmata alle **ore 07:00:04 Europe/Rome del 27/10/2026** del job di routine Frappe `centrochange_core.operations.automation.catch_up` con actor `cc-automation-service@example.invalid`:
+     * Aggiornati 4 campi su `HLC-APP-2026-00038` (seduta del 26/10 ore 09:00 rimasta non chiusa dal professionista): `modified`, `modified_by`, `cc_closure_state` (`Pending` -> `Auto Locked`) e `cc_locked_at`.
+     * Aggiunto 1 record in `tabCC Audit Event`: `qnh289qeqa` (`SESSION_AUTO_LOCKED`, motivo: `07:00 local cutoff catch-up`).
+   - Ripristinando in sola lettura in-memory questi due elementi sul dataset live, il fingerprint ricalcolato coincide al 100.0% con la baseline `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5`.
+2. **Revisione Indipendente PR #175 documentata e rintracciabile:**
+   - Attestazione dettagliata pubblicata come review formale GitHub (`pullrequestreview-5665460425`), commento PR #175 [#6438520810](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6438520810) e report di audit del repository (`independent_review_core173_b498ea5.md`), esito PASS 0 Critical / 0 Important.
+3. **Stato del Gate:** **`READY_FOR_OWNER_ACCEPTANCE`**.
+   - Nessun comando mutativo su DEV. Nessun merge (PR #175, #174 e #172 in DRAFT). Nessuna produzione e nessun avvio di AUDIT-06.
+
+---
+
 ## OWNER UAT CORE #173 — 27/10/2026: TUTTI I FIX VISIVI PASS, RESTA SOLO CONCILIAZIONE DATI / REVIEW
 
 **Nuovo screenshot Owner:** `Non svolta` selezionato sulla seduta del 26/10, testo economico leggibile e stato «Da definire» evidenziato → `UAT-173-UX-ECONOMIC-NOTE-READABILITY = PASS_OWNER_VISUAL`. Lo screenshot Owner precedente mostra calendario ottobre completamente contenuto → `UAT-173-UX-DATE-POPOVER-CLIPPED = PASS_OWNER_VISUAL_DESKTOP`. I 2 fix precedenti «frase non addebitata» e «Carta POS leggibile» hanno già PASS Owner. **Il walkthrough visivo #173 è concluso; non richiedere altri test Owner né nuovi deploy.** Fonte [Issue #173 commento #6439127526](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6439127526).

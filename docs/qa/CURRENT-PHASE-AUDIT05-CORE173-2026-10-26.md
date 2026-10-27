@@ -2,7 +2,28 @@
 
 > **ROUTER ANTI-CONFUSIONE — PRIMA LETTURA OBBLIGATORIA:** [REGISTRO OPERATIVO VIGENTE](ACTIVE-GOAL-ROUTER.md). Questo documento contiene **checkpoint successivi e fotografie storiche**: la sezione più recente prevale per lo stato, il registro determina *qual è l'AUDIT/CORE corrente*, e le Issue/PR GitHub live determinano che cosa è realmente eseguito. **AUDIT-05 Professionisti ≠ macro GOAL-05 Delivery Closure**. Non applicare le frasi «CORE #173 non implementata» o «owner acceptance #171 pending» presenti **nelle fotografie più vecchie qui sotto** allo stato attuale. Nessun GOAL 06/07 si avvia automaticamente.
 
-## ULTIMO STATO OPERATIVO — 27/10/2026: CANDIDATO b498ea5 INSTALLATO SU DEV (`NEW_DEV_INSTALL_ALLOWED_CONDITIONAL_B498EA5`), COLLAUDO TECNICO REALE PASS, PRONTO PER OWNER UAT
+## ULTIMO STATO OPERATIVO — 27/10/2026: RICONCILIAZIONE TECNICA IN SOLA LETTURA COMPLETATA (DELTA FINGERPRINT DB SPIEGATO AL 100%, REVISIONE INDIPENDENTE PR #175 ATTESTATA), STATO READY_FOR_OWNER_ACCEPTANCE
+
+A seguito del walkthrough visivo Owner con PASS completo su calendario (`UAT-173-UX-DATE-POPOVER-CLIPPED`) e nota economica 13px (`UAT-173-UX-ECONOMIC-NOTE-READABILITY`) registrati nei commenti [#6438865876](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438865876) e [#6439127526](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6439127526), è stata eseguita la riconciliazione tecnica in sola lettura richiesta:
+
+1. **Riconciliazione matematica del delta Fingerprint DB (da `20aa6b31...` a `a5d098d6...`):**
+   - **Metodo:** confronto esaustivo riga per riga e campo per campo tra i dump decifrati dei backup protetti `cc-dev-backup-5fultjsg` (26/10 22:42) e `cc-dev-backup-d0_68wqk` (27/10 09:39), e verifica sul runtime live DEV.
+   - **Riscontro tabelle tracciate (31 DocType canonici):**
+     * **29 DocType 100% IDENTICI AL BIT:** `Bank Transaction`, `Bank Transaction Payments`, `CC Booking Confirmation`, `CC Center Membership`, `CC Economic Source Link`, `CC Fiscal Attempt`, `CC Fiscal Transaction`, `CC Organizational Note`, `CC Package Ledger`, `CC Patient Assignment`, `CC Patient Package`, `CC Private Note`, `CC Professional Comparison`, `CC Professional Expectation`, `CC Settlement` (incluso `t6muud5trq`), `CC TS Input Review`, `CC Unpaid Threshold`, `Custom DocPerm`, `GL Entry`, `Has Role`, `Healthcare Practitioner`, `Patient`, `Payment Entry`, `Payment Entry Reference`, `Payment Ledger Entry`, `Purchase Invoice`, `Purchase Invoice Item`, `Sales Invoice`, `Sales Invoice Item`.
+     * **`tabPatient Appointment`:** esattamente 1 riga mutata (`HLC-APP-2026-00038`, seduta del 26/10 ore 09:00 rimasta nello stato `Pending` alla chiusura della giornata da parte del professionista), con soli 4 campi aggiornati: `modified` (`2026-10-15 01:09:37` -> `2026-10-27 07:00:04`), `modified_by` (`cc-http-uat0000001-m` -> `cc-automation-service`), `cc_closure_state` (`Pending` -> `Auto Locked`), `cc_locked_at` (`None` -> `2026-10-27 06:00:04.851999` UTC / 07:00:04 Rome). Le restanti 16 sedute (inclusa la `HLC-APP-2026-00024` del 14/10 salvata dall'Owner) sono risultate identiche al bit.
+     * **`tabCC Audit Event`:** esattamente 1 riga aggiunta (`qnh289qeqa`), creata il `2026-10-27 07:00:04.926676`, actor `cc-automation-service@example.invalid`, event_type `SESSION_AUTO_LOCKED`, before `{"closure":"Pending"}`, after `{"closure":"Auto Locked"}`, reason `07:00 local cutoff catch-up`. Nessuna riga cancellata.
+   - **Dimostrazione e invarianza:** La modifica è avvenuta in modo legittimo e atteso in virtù della regola di business schedulata (`automation.catch_up` con cron `*/5 * * * *`), scattata alle ore 07:00:04 di routine per proteggere la seduta del 26/10 non chiusa. Ripristinando in sola lettura in memoria (senza toccare il DB) i soli 4 campi di `HLC-APP-2026-00038` e omettendo `qnh289qeqa`, il digest ricalcolato coincide al 100.0% con la baseline `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5`. Nessuna mutazione accidentale o perdita di dati si è verificata.
+
+2. **Evidenza e tracciabilità della Revisione Indipendente (PR #175):**
+   - **Review formale GitHub:** Registrata review formale (`pullrequestreview-5665460425`) su PR #175 associata al commit `b498ea5689255a95f64c20275fefd32957e4818f`.
+   - **Attestazione dettagliata:** Documentata nel commento PR #175 [#6438520810](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6438520810) e nell'artefatto permanente `independent_review_core173_b498ea5.md` con verifica sui 4 criteri: confini geometrici (clipping 0px), contrasto visivo WCAG AAA (9.90:1 e 16.08:1), permessi e isolamento, integrità contabile (preservazione ID POS canonici in DB). Esito complessivo: **PASS (0 Critical / 0 Important)**.
+
+3. **Stato del Gate:** **`READY_FOR_OWNER_ACCEPTANCE`**.  
+   Arresto operativo in attesa dell'accettazione formale finale dell'Owner. Nessuna modifica a DEV, nessun merge (PR #175, #174, #172 in DRAFT), nessuna produzione, nessun avvio di AUDIT-06.
+
+---
+
+## STATO OPERATIVO ANTECEDENTE — 27/10/2026: CANDIDATO b498ea5 INSTALLATO SU DEV (`NEW_DEV_INSTALL_ALLOWED_CONDITIONAL_B498EA5`), COLLAUDO TECNICO REALE PASS, PRONTO PER OWNER UAT
 
 **Esecuzione mandato Owner ([Issue #173 commento #6438344580](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438344580)):**
 1. **Preflight 100% PASS:**
