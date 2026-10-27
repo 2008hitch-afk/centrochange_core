@@ -1,10 +1,40 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+> **ATTENZIONE: NUMERAZIONE E FASE ATTIVA** — prima di leggere i vari addendum datati, aprire il [REGISTRO OPERATIVO CORRENTE](ACTIVE-GOAL-ROUTER.md). Il lavoro attuale è **AUDIT-05 Professionisti #171 (accepted scoped) + CORE #173 (fix UAT in corso)**. `AUDIT-06` è pianificato ma non autorizzato; `AUDIT-07+` non formalizzati. Il **macro `GOAL-05`** della roadmap MVP del 03/10 è una numerazione diversa. Questo file conserva **110 requisiti**, non assegna automaticamente GOAL alle righe rimaste e non sostituisce le Issue/PR live. I riepiloghi sottostanti sono snapshot cronologici; la fonte puntuale è il [CSV dello stesso commit](FUNCTIONAL-COVERAGE-DETAIL.csv).
+
+
+## DECISIONE OWNER VIGENTE — 27/10/2026: CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`
+
+Conferma formale dell'Owner [Issue #173 #6440597230](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) dopo completamento walkthrough UX e riconciliazione tecnica AGY: **«Chiudi la mia giornata» e recupero arretrati** accettati nel solo perimetro DEV `b498ea5`. Nel [CSV](FUNCTIONAL-COVERAGE-DETAIL.csv), **4 ID** mappati al percorso CORE #173 diventano `OWNER_ACCEPTED_FUNCTIONAL_LIMITED`: `CC-CAP-014` (pagamento operativo e settlement), `CC-CAP-022` (chiusura e recupero tardivo, **non tutta la riapertura**), `CC-CAP-024` (Auto Locked ore 07 con audit e recupero, **non reminder end-to-end**), `CC-ACT-004` (chiusura con Svolta/Pagata/metodo), con evidenze e lacune residue esplicite. Le altre righe, come `CC-CAP-023` reminder ore 21, `CC-CAP-025` regole disdetta 48h, `CC-CAP-029` export/stampa/email globali, rimangono nello stato precedente.
+
+**Invarianti:** 110 righe, 18 colonne, 110 ID unici; tecnici **12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED**; Owner **92 PENDING / 16 OWNER_ACCEPTED_FUNCTIONAL_LIMITED / 1 OWNER_ACCEPTED / 1 OWNER_APPROVED_DEV**. `OWNER_ACCEPTED_FUNCTIONAL_LIMITED` indica precisamente il sottoperimetro della nota; non trasforma tutto il requisito in PASS. Nessun merge consentito: PR #172/#175/#174 DRAFT/UNMERGED, review formalizzata ma indipendenza effettiva da attestare prima del gate merge, nessuna produzione o AUDIT-06 autorizzati. La [rotta operativa](ACTIVE-GOAL-ROUTER.md) prevale sui checkpoint storici sotto.
+
+---
+
+## DECISIONE OWNER VIGENTE — 26/10/2026 (aggiornamento successivo al checkpoint precedente)
+
+- [AUDIT-05 #171 OWNER_ACCEPTED_SCOPED](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6427680735): accettazione limitata al perimetro Professionisti validato; nel CSV soltanto `CC-CAP-002`, `CC-EXT-004`, `CC-EXT-009`, `CC-CAP-028` ora `OWNER_ACCEPTED_FUNCTIONAL_LIMITED`. Le restanti righe trasversali restano parziali/pending.
+- [CORE #173 DEV_INSTALL_ALLOWED_CONDITIONAL](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6427702903): immagine esatta `cc173-day-closure:d500fff` su `d500fff45cc5ca70c5ef33575aac4e58d4fed505`, solo sei servizi applicativi DEV; vietati merge, prod, schema/DocPerm, ruoli e dati storici. **NON ancora DEV installato/OWNER_ACCEPTED CORE**. PR #175 DRAFT, #172 DRAFT, #174 docs-only DRAFT.
+- Stati tecnici invariati `12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED` (110 requisiti). Conteggio campo `Owner` **96 PENDING / 12 OWNER_ACCEPTED_FUNCTIONAL_LIMITED / 1 OWNER_ACCEPTED / 1 OWNER_APPROVED_DEV**.
+- [Checkpoint corrente completo](CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md) prevale su stati/commit/gate **storici** riportati sotto. Nessun GOAL successivo in valutazione.
+
+
+## CHECKPOINT CORRENTE — 26/10/2026: AUDIT-05 #171 → CORE #173 (solo fase attuale)
+
+**LEGGERE PRIMA:** [Current Phase — Audit05 / CORE173](CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md) e la [matrice CSV 110 requisiti](FUNCTIONAL-COVERAGE-DETAIL.csv) dello stesso commit. Questa sezione **prevale sugli addendum storici sotto**, che descrivono commit e gate precedenti. Nessuna analisi dei GOAL successivi è inclusa in questo checkpoint; le loro righe restano preservate senza essere rivalutate.
+
+- **Stato tecnico esatto CSV #172:** **12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED = 110**, zero duplicati, 18 colonne invarianti. **Stato Owner distinto**: 100 PENDING, 8 OWNER_ACCEPTED_FUNCTIONAL_LIMITED, 1 OWNER_ACCEPTED, 1 OWNER_APPROVED_DEV. Questi conteggi non sono percentuali di prodotto completato.
+- **Perché differiva:** la matrice precedente su `main` aveva **11/59/29/11**, mentre il primo addendum della PR #172 riportava **11/61/27/11**. Quest'ultimo era **testualmente obsoleto**: il CSV attuale della PR #172 ha 12/60/27/11. Non modificare status funzionali sulla base della sola differenza tra branch.
+- **#171 AUDIT-05:** Issue OPEN, PR #172 DRAFT/UNMERGED HEAD `a3e41a10287639a7c200992e45c3173b8ea33b46`, [CI #40374937104](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40374937104) SUCCESS. DEV installato secondo [rapporto AGY](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6423949297); UAT Owner [#35](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6424029516), [#36](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6424060422), [#37](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6424126085), [#38](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6424152452) PASS **visivi e circoscritti**. [#39](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6424190750): nota di Auto Locked non prevista per account Manager, recheck Professional o prova browser tecnico ancora da attestare; review GitHub formale non presente. **Owner acceptance #171 ancora PENDING**. Nessun merge/prod.
+- **#173 CORE:** «Chiudi la mia giornata» e recupero tardivo senza sblocco quotidiano della Direzione **APPROVATI COME REQUISITI MA NON IMPLEMENTATI** al checkpoint. [Mandato esecutivo](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6424378839) inviato ad AGY; esecuzione sequenziale solo dopo gate #171. Non usare lo stato `Auto Locked` legacy per dichiarare la funzione già svolta. Nuovo gate DEV separato.
+- **Stati affidabili:** `PASS_TECHNICAL_CLONE` (API/DB isolati) ≠ `PASS_DEV_READ_ONLY` ≠ `PASS_OWNER_VISUAL` ≠ `OWNER_ACCEPTED` ≠ `MERGED` ≠ `PRODUCTION`.
+
+
 ## AUDIT-05 Professionisti — checkpoint tecnico #171 (24/10/2026)
 
 La [PR DRAFT #172](https://github.com/2008hitch-afk/centrochange_core/pull/172) verifica directory, scheda, modifica scoped e **account Professionista** secondo i due addendum Owner della [Issue #171](https://github.com/2008hitch-afk/centrochange_core/issues/171). L'oracle completo è nel [rapporto AUDIT-05](AUDIT-05-PROFESSIONALS.md). Il clone Frappe/MariaDB isolato ha provato chiusura pagata/non pagata, disponibilità propria, note riservate, reminder/lock con clock controllato, segregazione e report. La verifica dello SHA finale, la CI, la review indipendente finale e il gate DEV restano separati; nessuna accettazione Owner è implicita.
 
-Il CSV contiene sempre **110 righe**: **11 PASS, 61 PARTIAL, 27 NOT_TESTED, 11 BLOCKED**. `CC-CAP-023/024` passano da `NOT_TESTED` a `PARTIAL` per i test temporali reali sul clone, mentre l'esecuzione del scheduler nel DEV resta da dimostrare. Le altre righe mantengono lo stato precedente con evidenze più precise; i requisiti trasversali non sono promossi a PASS sulla sola prova account.
+Al **checkpoint storico iniziale** si indicavano **11 PASS, 61 PARTIAL, 27 NOT_TESTED, 11 BLOCKED** (testo non più coerente col CSV della PR). **Rettifica autorevole al 26/10: 12 PASS, 60 PARTIAL, 27 NOT_TESTED, 11 BLOCKED**; fare riferimento al CSV aggiornato e al checkpoint di fase sopra. `CC-CAP-023/024` passano da `NOT_TESTED` a `PARTIAL` per i test temporali reali sul clone, mentre l'esecuzione del scheduler nel DEV resta da dimostrare. Le altre righe mantengono lo stato precedente con evidenze più precise; i requisiti trasversali non sono promossi a PASS sulla sola prova account.
 
 ## Addendum Owner UAT — AUDIT-04 Pazienti accettato funzionalmente (24/10/2026)
 

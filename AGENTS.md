@@ -1,17 +1,33 @@
 # AGENTS.md — Centro Change
 
+## PRIORITÀ STATO OWNER PIÙ RECENTE — 27/10/2026
+
+[**CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`**](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) su DEV `b498ea5`, **AUDIT-05 #171 `OWNER_ACCEPTED_SCOPED`**. È completata l'accettazione funzionale del perimetro verificato, **non** il merge né il gestionale globale. **La prossima unità NON è automaticamente AUDIT-06**: prima serve gate di consolidamento per PR #172→#175 e docs #174, con reviewer realmente indipendente identificabile, CI coerenti, ordine PR e **nuovo permesso Owner specifico**. Le PR sono DRAFT/UNMERGED e Issue #173 OPEN. La review formale della PR #175 è `COMMENTED` dall'account GitHub `2008hitch-afk` con descrizione «QA/Security persona»: **non confonderla con una review approvativa indipendente attestata**. Non eseguire merge/produzione/nuovi deploy/nuovo GOAL su generiche dichiarazioni di accettazione. Leggere per primo il [router](docs/qa/ACTIVE-GOAL-ROUTER.md) + Issue/PR LIVE. Le sezioni storiche sotto descrivono gate precedenti e non annullano questa decisione.
+
+---
+
+## ROTTA CORRENTE — OBBLIGATORIA PRIMA DI OGNI ALTRA INFORMAZIONE (26/10/2026)
+
+**Leggere per primo `docs/qa/ACTIVE-GOAL-ROUTER.md` e controllare LIVE le Issue/PR specificate.** Il file determina quale AUDIT/CORE sia in corso; non riprendere il percorso operativo dal vecchio `docs/MVP-GOAL-ROADMAP-v0.1.md`, né dalle sezioni storiche di questo `AGENTS.md` che chiamano «current GOAL-02». I macro-GOAL MVP 01–05 e gli AUDIT funzionali (03, 04, 05, 06...) **sono numerazioni diverse**.
+
+**Active execution al checkpoint:** AUDIT-05 Professionisti **#171** `OWNER_ACCEPTED_SCOPED`, PR #172 DRAFT non merged; work package **CORE #173** «Chiudi la mia giornata» e recupero tardivo in remediation finale UAT ([mandato Owner #6428463645](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428463645)), PR #175 DRAFT, DEV precedente `d500fff` installato secondo AGY. **Nuovo gate DEV condizionato AUTORIZZATO dall'Owner il 26/10 sulla SOLA immagine `cc173-day-closure:500c882`** ([dettagli completi su Issue #173](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428982304)): AGY può installare soltanto dopo test/reviewer, backup post-UAT e restore isolato, verifica fingerprint e rollback tutti PASS; altrimenti STOP. **NON è un deploy già effettuato**, né merge/produzione. PR documentale #174 ancora DRAFT. Solo `AUDIT-06 Servizi/catalogo/prezzi/disponibilità` è **pianificato** in #171 come successivo, **non è avviato né autorizzato**; AUDIT-07+ non formalizzati. Non confondere `goal 5` usato dall'Owner per l'AUDIT-05 con il macro `GOAL-05 Delivery Closure` dello storico MVP.
+
+**Precedenza:** decisione Owner specifica e più recente + Issue/PR/CI live → registro operativo vigente → checkpoint corrente e matrice 110 ID → documentazione storica. Mai dedurre `OWNER_ACCEPTED` da `CI PASS`, `CLONE PASS` da mock o `MERGED` da `DEV INSTALLED`. Niente altri GOAL, merge, produzione, permessi/schema/dati storici senza gate. Aggiornare registro e Issue quando cambia la fase, senza inventare numeri/nomi delle aree future.
+
+
 Queste istruzioni valgono per Codex e per qualsiasi agente operativo che modifica questo repository.
 
 ## Prima di sviluppare
 
 Leggere nell'ordine:
 
-1. `README.md`
-2. `ARCHITECTURE.md`
-3. `SECURITY.md`
-4. `docs/DECISIONS.md`
-5. `docs/RUNTIME-BASELINE.md`
-6. la issue GitHub assegnata
+1. `docs/qa/ACTIVE-GOAL-ROUTER.md` + Issue/PR attive **live**
+2. `README.md` (leggere le sezioni storiche come storico)
+3. `ARCHITECTURE.md`
+4. `SECURITY.md`
+5. `docs/DECISIONS.md`
+6. `docs/RUNTIME-BASELINE.md`
+7. la issue GitHub assegnata e l'ultimo mandato Owner specifico
 
 ## Ruolo operativo
 
@@ -139,12 +155,9 @@ Le 40 capability storiche sono evidenza architetturale da riusare: non vanno rid
 Le capability Finance/Admin `CC-CAP-041..050` derivano dal delivery design approvato e richiedono nuova implementazione/evidenza.
 
 
-## Macro-goal execution
+## Macro-goal execution — STORICO DI INIZIO OTTOBRE, NON GATE ATTIVO
 
-Current macro-goal: **GOAL-02 — MVP Ready for Client UAT (#23)**.
-GOAL-01 is OWNER_ACCEPTED / DEV PASS under DECISION-055; reuse its accepted baseline. GOAL-02 is authorized by HC-0005 DECISION-056. No automatic stack merge or GOAL-03 authorization.
-
-Codex should work autonomously within the active goal and should not stop after each child issue. Stop only for a material blocker as defined in `docs/MVP-GOAL-ROADMAP-v0.1.md`. GOAL-03 is not authorized.
+**Questa sezione in origine indicava GOAL-02 (#23) come current macro-goal della roadmap MVP del 03/10/2026. È una fotografia storica e non comanda più il lavoro funzionale odierno.** La rotta attiva e i suoi gate sono nel [registro operativo](docs/qa/ACTIVE-GOAL-ROUTER.md). Le decisioni storiche DECISION-055 e DECISION-056 restano tracciate nel percorso MVP, ma non permettono di saltare #173 o avviare 03/04/05 macro né gli AUDIT 06/07. Codex continua a lavorare in autonomia all'interno del GOAL *attivo e autorizzato* secondo SOP v1.1, fermandosi soltanto ai gate materiali. Nessun merge o produzione automatica.
 
 
 ## Cross-client Goal Learning Extraction

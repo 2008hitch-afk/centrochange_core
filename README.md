@@ -2,7 +2,33 @@
 
 Repository tecnico della soluzione **Centro Change** costruita su Frappe Framework / ERPNext con app custom `centrochange_core` e sito web nell'ecosistema Frappe.
 
-## Stato
+## STATO ATTIVO PIÙ RECENTE — 27/10/2026: CORE #173 ACCETTATA NEL PERIMETRO UAT, MERGE NON AUTORIZZATO
+
+[**Decisione Owner formale #173 `OWNER_ACCEPTED_SCOPED_CORE173`**](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) sulla versione DEV `b498ea5`, dopo PASS dei test Owner e riconciliazione DB alle ore 07 del 27/10 secondo AGY. **AUDIT-05 #171** è `OWNER_ACCEPTED_SCOPED`. PR **#172, #175, #174 OPEN/DRAFT/UNMERGED**: accettazione non equivale a merge o produzione. **Prima di integrare:** dimostrare indipendenza del reviewer (la review attuale è `COMMENTED`, pubblicata dall'account `2008hitch-afk` come «QA/Security persona»), riconciliare branch/CI e chiedere autorizzazione Owner specifica. **AUDIT-06 pianificato ma non avviato.** Il registro [ACTIVE-GOAL-ROUTER.md](docs/qa/ACTIVE-GOAL-ROUTER.md) è la fonte di navigazione; le righe della «FASE ATTIVA» del 26/10 riportate qui sotto sono fotografia storica, non mandato corrente.
+
+---
+
+## FASE ATTIVA / RIPRESA OBBLIGATORIA (26/10/2026)
+
+**PUNTO DI INGRESSO UNICO:** [REGISTRO OPERATIVO — AUDIT e CORE attivi](docs/qa/ACTIVE-GOAL-ROUTER.md). Prima di prendere decisioni, leggere questo indice e verificare live **Issue #171, #173 e PR #172, #175, #174**. Non partire dalle roadmap datate, da una vecchia chat o dal paragrafo storico sotto.
+
+**Percorso attuale (SOP v1.1 GOAL-DRIVEN, un'area alla volta):**
+
+- **AUDIT-03 Agenda:** accettazione Owner precedente registrata.
+- **AUDIT-04 Pazienti #167:** CLOSED / Owner accettato.
+- **AUDIT-05 Professionisti #171:** **OWNER_ACCEPTED_SCOPED** ([gate](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6427680735)); PR #172 **DRAFT/UNMERGED**, non ancora consolidata su `main`.
+- **CORE #173 «Chiudi la mia giornata» e recupero autonomo arretrati:** **UNITÀ CORRENTE**. PR #175 **DRAFT/UNMERGED**, ultimo DEV `d500fff` installato **secondo AGY**. Owner UAT-173-01..06 svolte; 2 correzioni UX + audit post-save **solo lettura** affidati ad AGY tramite [mandato unico vigente](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428463645). **Owner acceptance CORE #173 PENDING**. **NOVITÀ 26/10:** [Owner ha autorizzato condizionatamente il gate DEV per sola candidata `500c882`](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428982304): prima dell'installazione devono risultare PASS test/reviewer/backup nuovo+restore isolato/identità+fingerprint+rollback. **Non è stata attestata alcuna installazione della nuova immagine**; un fallimento impone STOP. Nessun merge o produzione.
+- **AUDIT-06 Servizi/catalogo/prezzi/disponibilità:** **pianificato** in #171, NON avviato/autorizzato. **AUDIT-07+**: non ancora definiti e autorizzati in una sequenza canonica; non inventarli.
+
+**Attenzione alla numerazione:** `AUDIT-05` del flusso professionisti **non** equivale al `GOAL-05 Delivery Closure` nella [roadmap MVP storica del 03/10/2026](docs/MVP-GOAL-ROADMAP-v0.1.md). Tale documento NON è il dispatcher dell'attività corrente. Ogni ripresa deve usare l'unità con **nome + issue**, mai solo un numero.
+
+**Documentazione attuale:** [checkpoint dettagliato della fase](docs/qa/CURRENT-PHASE-AUDIT05-CORE173-2026-10-26.md), [matrice 110 requisiti CSV](docs/qa/FUNCTIONAL-COVERAGE-DETAIL.csv), [riepilogo requisiti](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md). **Tutte le modifiche documentali in PR #174 sono DRAFT/UNMERGED** e non sono ancora la versione `main`; non confondere gli stati di due branch.
+
+**Stop gates:** nessun altro AUDIT/GOAL, merge, produzione, variazione credenziali, DocPerm, schema o dati storici senza decisione pertinente Owner. `CI PASS` ≠ `DEV INSTALLED` ≠ `OWNER ACCEPTED` ≠ `MERGED`.
+
+---
+
+## Stato storico MVP (fotografia precedente al checkpoint attuale)
 
 **GOAL-01 OWNER_ACCEPTED / DEV PASS — GOAL-02 TECHNICAL DONE / UAT READY**
 
@@ -10,7 +36,7 @@ Non è ancora una baseline definitiva di produzione. Le decisioni che dipendono 
 
 Candidate **goal02-20261005-rc1**: [Completion Report](docs/GOAL-02-COMPLETION-REPORT-2026-10-05.md), [Client Validation Guide](docs/uat/CLIENT-VALIDATION-GUIDE.md), [UAT Evidence Package](docs/uat/UAT-EVIDENCE-PACKAGE.md). UAT cliente e accettazione Owner restano da eseguire.
 
-## Baseline implementativa corrente
+## Baseline storica MVP (non sostituisce il checkpoint in alto)
 
 L'implementazione HC-0005 è autorizzata. La guida canonica per il build è:
 
