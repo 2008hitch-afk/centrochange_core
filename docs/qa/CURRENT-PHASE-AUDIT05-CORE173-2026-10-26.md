@@ -2,6 +2,14 @@
 
 > **ROUTER ANTI-CONFUSIONE — PRIMA LETTURA OBBLIGATORIA:** [REGISTRO OPERATIVO VIGENTE](ACTIVE-GOAL-ROUTER.md). Questo documento contiene **checkpoint successivi e fotografie storiche**: la sezione più recente prevale per lo stato, il registro determina *qual è l'AUDIT/CORE corrente*, e le Issue/PR GitHub live determinano che cosa è realmente eseguito. **AUDIT-05 Professionisti ≠ macro GOAL-05 Delivery Closure**. Non applicare le frasi «CORE #173 non implementata» o «owner acceptance #171 pending» presenti **nelle fotografie più vecchie qui sotto** allo stato attuale. Nessun GOAL 06/07 si avvia automaticamente.
 
+## ULTIMA DECISIONE OWNER — 27/10/2026: GATE DEV `b498ea5` AUTORIZZATO CONDIZIONATAMENTE, NON ESEGUITO
+
+Owner ha risposto «AUTORIZZO» alla proposta di installazione DEV condizionata. **Mandato unico completo e vincolante:** [Issue #173 commento #6438344580](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438344580), richiamato sulla [PR #175](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6438352865). Candidato esatto `b498ea5689255a95f64c20275fefd32957e4818f`, immagine `cc173-day-closure:b498ea5`, Image ID `sha256:6ba1b26f05e04174171ec221fc91987e1c2405b732bda6d6176cb332bcdb0e43`; target solo sei servizi applicativi `centrochange-dev`; baseline DEV `500c882` preservata per rollback. **Non attestare installazione già avvenuta**.
+
+**Preflight bloccante:** identity/source parity/CI `40479774074`, review indipendente rintracciabile sulla nuova SHA (zero review formali GitHub al checkpoint), test reali e clone, nuovo backup cifrato post-Owner e restore isolato verificato, fingerprint canonico DEV `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5` riscontrato live e rollback pronto; se FAIL STOP DEV invariato. Solo se tutto PASS cambio immagine sei container e smoke Chromium DEV calendario condiviso anti-clipping desktop/mobile, altre viste DateInput, informativa economica leggibile; preservare due fix Owner PASS e dati storici. Owner successivamente recheck visivo **solo calendario e leggibilità**, senza mutazioni. Nessun merge/prod/schema/ruoli/credenziali/altro GOAL o accettazione #173 implicita.
+
+---
+
 ## ULTIMO STATO OPERATIVO — 27/10/2026: FINITURA UX CORE #173 COMPLETATA (CALENDARIO CONDIVISO E INFORMATIVA ECONOMICA WCAG AAA), CANDIDATO b498ea5 PRONTO PER IL GATE DEV
 
 **Esecuzione mandato Owner ([Issue #173 commento #6437654512](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6437654512)):**
