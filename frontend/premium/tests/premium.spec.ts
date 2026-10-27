@@ -957,7 +957,7 @@ test('selettore pazienti lungo filtra senza perdere scelta e invia ID canonico',
   const patients = [...boot.patients, ...Array.from({ length: 10 }, (_, i) => ({ name: `PAT-${String(i + 2).padStart(3, '0')}`, patient_name: `Paziente Demo ${i + 2}` })), { name: 'PAT-ZETA', patient_name: 'Zeta Sintetica' }]
   await mockApi(page, writes, true, {}, { patients })
   await page.goto('./')
-  await page.getByRole('button', { name: 'Nuova prenotazione' }).click()
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Nuova prenotazione' })
   const select = dialog.getByRole('combobox', { name: 'Paziente' })
   await select.fill('Zeta')
@@ -972,7 +972,7 @@ test('AUDIT-04 UX-04-09: combobox unico supporta tastiera, filtro, clear e valid
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes, true, {}, { patients: [...boot.patients, { name: 'PAT-002', patient_name: 'Secondo Paziente' }] })
   await page.goto('./#Agenda')
-  await page.getByRole('button', { name: 'Nuova prenotazione' }).click()
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Nuova prenotazione' })
   const patient = dialog.getByRole('combobox', { name: 'Paziente' })
   await expect(dialog.locator('.searchable-select').first().locator('select')).toHaveCount(0)
@@ -1359,7 +1359,7 @@ test('data italiana non valida blocca prenotazione e ISO valido raggiunge API', 
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)
   await page.goto('./')
-  await page.getByRole('button', { name: 'Nuova prenotazione' }).click()
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Nuova prenotazione' })
   await dialog.getByRole('textbox', { name: 'Motivo' }).fill('Controllo data sintetica')
   await dialog.locator('.date-input').fill('31/02/2026')

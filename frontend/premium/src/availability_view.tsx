@@ -64,6 +64,7 @@ export function Availability({ boot, center, feedback }: { boot: Boot; center: s
   const slotsValid = draftSlots.length > 0 && draftSlots.every(slot => timeValid(slot.from_time) && timeValid(slot.to_time) && slot.from_time < slot.to_time) &&
     !draftSlots.some((slot, index) => draftSlots.some((other, second) => index !== second && slot.day === other.day && slot.from_time < other.to_time && slot.to_time > other.from_time))
   const scheduleChanged = JSON.stringify(draftSlots) !== JSON.stringify(originalSlots)
+  const isManagerOrSec = boot.roles.includes('CC Manager') || boot.roles.includes('CC Secretariat')
   const daySlots = draftSlots.map((slot, index) => ({ slot, index })).filter(entry => entry.slot.day === weekday)
   const save = () => {
     if (form === 'cancel') return run(() => schedule('availability.cancel_absence', { availability: target, reason }, true), 'Assenza annullata.')
@@ -88,7 +89,7 @@ export function Availability({ boot, center, feedback }: { boot: Boot; center: s
       })}</div>}
     </section>
     {form && <Modal title={form === 'schedule' ? 'Modifica disponibilità' : form === 'absence' ? 'Registra assenza' : 'Annulla assenza'} onClose={() => setForm(null)}><form onSubmit={event => { event.preventDefault(); void save() }}>
-      {form === 'cancel' ? <p>L'assenza selezionata sarà annullata. Indica il motivo per conservarlo nel registro.</p> : <Field label="Professionista" required><select value={practitioner} onChange={event => { setPractitioner(event.target.value); if (form === 'schedule') resetSchedule(event.target.value) }}>{boot.practitioners.map(value => <option key={value.name} value={value.name}>{practitionerName(value)}</option>)}</select></Field>}
+      {form === 'cancel' ? <p>L'assenza selezionata sarà annullata. Indica il motivo per conservarlo nel registro.</p> : <Field label="Professionista" required><select disabled={!isManagerOrSec} value={practitioner} onChange={event => { setPractitioner(event.target.value); if (form === 'schedule') resetSchedule(event.target.value) }}>{boot.practitioners.map(value => <option key={value.name} value={value.name}>{practitionerName(value)}</option>)}</select></Field>}
       {form === 'schedule' && <>
         <Field label="Giorno da modificare" required><select value={weekday} onChange={event => { setWeekday(event.target.value); setReviewed(false) }}>{weekdays.map(day => <option key={day[0]} value={day[0]}>{day[1]}</option>)}</select></Field>
         <div className="schedule-editor">
