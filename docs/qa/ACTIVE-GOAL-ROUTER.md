@@ -14,6 +14,12 @@ Completato il mandato di finitura [Issue #173 commento #6437654512](https://gith
 
 ---
 
+## ULTIMA DECISIONE OWNER — 27/10/2026: `b498ea5` AUTORIZZATO AL SOLO GATE DEV CONDIZIONATO
+
+**Nuovo stato autorizzativo prevalente:** [Issue #173 #6438344580](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438344580), in seguito a risposta Owner «AUTORIZZO». **Candidata unica** commit `b498ea5689255a95f64c20275fefd32957e4818f`, immagine `cc173-day-closure:b498ea5` ID `sha256:6ba1b26f05e04174171ec221fc91987e1c2405b732bda6d6176cb332bcdb0e43`; sei soli servizi `centrochange-dev`. Baseline DEV precedente `500c882` da preservare per rollback. Questo **non attesta nuova installazione già effettuata**. Preflight bloccante: clean commit/source parity/CI `40479774074` SUCCESS, revisione indipendente provata sulla SHA (non basta la frase PASS), test veri, backup cifrato nuovo e restore isolato, fingerprint canonico live atteso `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5`, rollback; su FAIL **STOP DEV invariato**. Solo if PASS fare swap 6 servizi + UAT browser desktop/mobile, DateInput in altre schermate, leggibilità e ACL/CSV, fingerprint invariato. **Owner verifica alla fine solo calendario e nota economica**. Niente merge/produzione/DB storico/schema/ruoli/credenziali/altro AUDIT/accettazione implicita. [PR #175 gate richiamato qui](https://github.com/2008hitch-afk/centrochange_core/pull/175#issuecomment-6438352865).
+
+---
+
 ## OWNER UAT COMPLETATO SUI DUE FIX — 27/10/2026: PASS AVVISO ECONOMICO E METODO POS; UX FINITURA #173 APERTA
 
 Nuovo screenshot Owner sulla data 26/10, seduta ore 09:00 con `Non svolta` **selezionata ma senza conferma/salvataggio**: visibili messaggio economico prudente e «Situazione economica registrata: Da definire». **`UAT-173-FINAL-01 PASS_OWNER_VISUAL`**. Già Owner confermato punto 2 POS `UAT-173-FINAL-02 PASS_OWNER_VISUAL`. **I due difetti iniziali risolti su immagine `500c882`.**
