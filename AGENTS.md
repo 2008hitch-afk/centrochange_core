@@ -1,10 +1,11 @@
 # AGENTS.md — Centro Change
 
-## AGGIORNAMENTO OWNER VINCOLANTE — 27/10/2026: ROADMAP AUDIT E CONSOLIDAMENTO
+## AGGIORNAMENTO OWNER VINCOLANTE — 27/10/2026: NUMERAZIONE CONSECUTIVA AUDIT
 
-- Verifica GitHub: PR #172, #175, #174 integrate su `main` HEAD `39be56b99319fc7aae3a612fb9052badfe8b9880`, issue #171/#173 chiuse. L'integrazione **non** ha eseguito deploy DEV/produzione; non affermare che `main` sia sul runtime. I paragrafi pre-merge seguenti sono **storici**.
-- **Ordine di esecuzione approvato dall'Owner, senza rinumerare gli AUDIT:** `01 → 02 → 03 → 04 → 05 → 06 → 07 → 10 → 11 → 12 → 13 → 08 → 09 → 14`. **AUDIT-08 e AUDIT-09 vengono DOPO AUDIT-13 e PRIMA di AUDIT-14**, mantenendo nome, identificativo, requisiti e gate. Leggere [matrice sezione C](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md) e [router](docs/qa/ACTIVE-GOAL-ROUTER.md) prima di proporre nuovi interventi. Non avviare automaticamente alcun AUDIT.
-- Questo cambiamento riguarda **esclusivamente la pianificazione**. Non toccare app, API, database, ruoli, CI, server, dataset, cron, scope commerciale o la matrice CSV 110×18 per il solo riordino. Resta obbligatorio il normale gate separato per ogni GOAL, DEV, reviewer, merge e produzione.
+- PR #172, #175, #174 sono già integrate su `main` (HEAD `39be56b99319fc7aae3a612fb9052badfe8b9880`), issue #171/#173 chiuse; **merge non significa installazione DEV/prod**. Le sezioni pre-merge seguenti rimangono solo storiche.
+- **Nuova istruzione Owner che SOSTITUISCE il precedente riordino senza rinumerazione:** AUDIT futuri numerati consecutivamente **01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14**. **Ex 10→08 (Report), ex 11→09 (Archivi), ex 12→10 (Accessi e registro), ex 13→11 (Primo incontro), ex 08→12 (Finanza), ex 09→13 (Compensi/fatture passive/SdI/TS).** I vecchi 01–07 e 14 non cambiano.
+- **Riferimenti univoci:** [matrice sezione C](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md) e [router corrente](docs/qa/ACTIVE-GOAL-ROUTER.md). Per nuovo GOAL usare i numeri CANONICI; nei report/Issue precedenti al riordino interpretare i vecchi numeri tramite la mappa, senza rinominare testimonianze già accettate o cambiare numeri Issue/PR. Nessun nuovo AUDIT avviato/autorizzato automaticamente.
+- **Scope invariato:** mantenere intatti requisiti, fonte dati, permessi, test ed evidenze. Il semplice cambio numerazione non autorizza modifiche software, DB, runtime, schemi, credenziali, DEV/prod o merge. Il CSV rimane 110 ID × 18 colonne, non modificato.
 
 ---
 
