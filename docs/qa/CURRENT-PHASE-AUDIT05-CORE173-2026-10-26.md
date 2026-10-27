@@ -1,8 +1,39 @@
-# Centro Change — checkpoint autorevole della fase attuale (26/10/2026)
+# Centro Change — checkpoint autorevole della fase attuale (27/10/2026)
 
 > **ROUTER ANTI-CONFUSIONE — PRIMA LETTURA OBBLIGATORIA:** [REGISTRO OPERATIVO VIGENTE](ACTIVE-GOAL-ROUTER.md). Questo documento contiene **checkpoint successivi e fotografie storiche**: la sezione più recente prevale per lo stato, il registro determina *qual è l'AUDIT/CORE corrente*, e le Issue/PR GitHub live determinano che cosa è realmente eseguito. **AUDIT-05 Professionisti ≠ macro GOAL-05 Delivery Closure**. Non applicare le frasi «CORE #173 non implementata» o «owner acceptance #171 pending» presenti **nelle fotografie più vecchie qui sotto** allo stato attuale. Nessun GOAL 06/07 si avvia automaticamente.
 
-## ULTIMO STATO OPERATIVO — 26/10/2026: CANDIDATO 500c882 INSTALLATO SU DEV (`NEW_DEV_INSTALL_ALLOWED_CONDITIONAL_500c882`), PRONTO PER OWNER UAT
+## ULTIMO STATO OPERATIVO — 27/10/2026: FINITURA UX CORE #173 COMPLETATA (CALENDARIO CONDIVISO E INFORMATIVA ECONOMICA WCAG AAA), CANDIDATO b498ea5 PRONTO PER IL GATE DEV
+
+**Esecuzione mandato Owner ([Issue #173 commento #6437654512](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6437654512)):**
+1. **Conferma PASS precedenti verifiche visive Owner:**
+   - `UAT-173-FINAL-01` (avviso economico seduta non svolta) e `UAT-173-FINAL-02` (metodo POS `Carta POS · terminale 2f7e` in Report e CSV) confermati PASS dall'Owner sulla versione DEV `500c882`. Nessuna ripetizione né alterazione dei testi approvati o degli ID canonici.
+
+2. **Risoluzione P1 `UAT-173-UX-DATE-POPOVER-CLIPPED` (Calendario condiviso che esce dalla modale):**
+   - **Causa radice identificata e misurata:** `.cc-date-popover` in `style.css` aveva `right: 0; width: 310px;`. Quando `DateInput` è posizionato a sinistra (es. nella toolbar della modale «Chiudi la mia giornata»), il popover si estendeva a sinistra debordando dal contenitore con `overflow: auto` e veniva tagliato di 52px su desktop (1440x900) e di 56px su mobile (390x844), finendo fuori schermo a sinistra.
+   - **Correzione implementata:** In `ui.tsx`, introdotto calcolo reattivo dell'allineamento su apertura e resize (`updateAlignment`), confrontando lo spazio a destra e a sinistra rispetto al contenitore (`.modal`, `.drawer`, `.panel`) o al viewport. Nelle modali e a sinistra si applica `align-left` (`left: 0; right: auto;`); nelle toolbar a destra (es. Report / Registro modifiche) si applica `align-right` (`left: auto; right: 0;`).
+   - **Esito geometrico e controlli:** Bounding box desktop del popover x = 451px, modale x = 425px (delta +26px all'interno del margine sinistro e +254px all'interno del margine destro). Su mobile x = 32px, modale x = 14px (delta +18px all'interno e +34px dal bordo destro). Clipping completamente azzerato. Mantenuta interazione da tastiera (Escape chiude e riporta il focus al trigger), click outside, navigazione mese/anno, selezione giorno e digitazione manuale `GG/MM/AAAA`.
+
+3. **Risoluzione P2 `UAT-173-UX-ECONOMIC-NOTE-READABILITY` (Leggibilità e contrasto informativa economica):**
+   - **Problema identificato:** Il testo informativo per sedute non svolte (*«La seduta verrà registrata come non svolta. Eventuali importi già dovuti o penali restano invariati.»* e *«Situazione economica registrata: ...»*) ereditava la classe generica `.scope-note` (font-size 11px, colore `#8e9bad` su sfondo `#f8fafc`, con rapporto di contrasto 2.70:1, insufficiente per WCAG AA).
+   - **Correzione implementata:** In `day_closure.tsx` e `style.css`, introdotta la classe dedicata `.day-closure-economic-note` con `.economic-note-text` e `.economic-note-status` a **13px**, line-height 1.45, colore slate-700 **`#334155`** (contrasto **9.90:1**, conforme **WCAG AAA** su sfondo `#f8fafc`) e stato economico in grassetto slate-900 **`#0f172a`** (contrasto **16.08:1**, conforme **WCAG AAA**). Nessuna alterazione al testo approvato.
+
+4. **Verifiche e Regressioni complete:**
+   - **Sorgenti e Parità:** `python3 infra/verify_full_single_stack.py --source` -> `PASS full single-stack source parity`. Chunk hash aggiornato a `style-cQaYlO60.js` in `infra/verify_full_single_stack.py` e nel manifesto.
+   - **Suite Backend:** `python3 -m unittest discover -s tests -p 'test_*.py' -v` -> **120 PASS, 1 SKIPPED, 0 FAILED** (121 test eseguiti).
+   - **Suite Frontend E2E / Sintetica:** Playwright 12/12 test CORE #173 PASS, 18/18 test Report/AuditLog PASS. Assert specifici su bounding box popover (nessun clipping), Escape, click outside, computed font-size 13px e colore `#334155`.
+   - **Clone Reale Isolato:** `python3 infra/test_core173_isolated_clone.py` -> 7/7 scenari PASS (happy path, recupero arretrato, integrità economica, ACL fail-closed, atomicità rollback, scheduler, parità CSV e drilldown Report). Headless Chromium UAT completato con screenshot prima/dopo.
+   - **Revisione Indipendente:** PASS, 0 Critical, 0 Important. Nessuna modifica al core Frappe/ERPNext, nessun leak di dati sensibili, idempotenza e permessi rigorosamente rispettati.
+   - **GitHub Actions CI:** Workflow `Offline premerge` [Run 40479774074](https://github.com/2008hitch-afk/centrochange_core/actions/runs/40479774074) completato con **SUCCESS** (`backend-offline` 12s, `frontend-synthetic` 5m1s).
+
+5. **Identificativi Candidato:**
+   - **Commit SHA Candidato:** `b498ea5689255a95f64c20275fefd32957e4818f` (`b498ea5`) su branch `issue-173/day-closure-recovery`, PR #175 DRAFT / NO MERGE.
+   - **Immagine Docker Candidata:** `cc173-day-closure:b498ea5`, Image ID `6ba1b26f05e0`, Digest `sha256:6ba1b26f05e04174171ec221fc91987e1c2405b732bda6d6176cb332bcdb0e43`.
+   - **Stato DEV:** Il runtime DEV rimane rigorosamente **inalterato** sull'immagine precedente `cc173-day-closure:500c882`, database fingerprint `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5`. Nessuna nuova installazione eseguita sul DEV.
+   - **Stato del Gate:** **`CORE173_UX_FINISH_READY_FOR_NEW_DEV_GATE`**. Fermata rigorosa in attesa di eventuale autorizzazione condizionata Owner. Nessun merge (PR #172, #174, #175 DRAFT), nessuna produzione, nessun nuovo GOAL.
+
+---
+
+## STATO OPERATIVO PRECEDENTE — 26/10/2026: CANDIDATO 500c882 INSTALLATO SU DEV (`NEW_DEV_INSTALL_ALLOWED_CONDITIONAL_500c882`), PRONTO PER OWNER UAT
 
 **Esecuzione Gate Owner ([Issue #173 commento #6428982304](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6428982304)):**
 1. **Preflight 100% PASS:**
