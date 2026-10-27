@@ -4,6 +4,15 @@
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
 
+## STATO CORRENTE / DECISIONE OWNER — 27/10/2026: INTEGRAZIONE E ORDINE AUDIT
+
+- **Merge verificato su GitHub:** PR [#172](https://github.com/2008hitch-afk/centrochange_core/pull/172) → [#175](https://github.com/2008hitch-afk/centrochange_core/pull/175) → [#174](https://github.com/2008hitch-afk/centrochange_core/pull/174) integrati su `main`, HEAD `39be56b99319fc7aae3a612fb9052badfe8b9880`. [Issue #171](https://github.com/2008hitch-afk/centrochange_core/issues/171) e [#173](https://github.com/2008hitch-afk/centrochange_core/issues/173) chiuse. Fonte: [tracker #156](https://github.com/2008hitch-afk/centrochange_core/issues/156#issuecomment-6442719696). **MERGED ≠ DEPLOYED**: nessun nuovo deploy DEV o produzione incluso nell'integrazione; ultimo runtime DEV attestato dall'esecutore `b498ea5`.
+- **Nuova decisione Owner sul SOLO ordine di lavoro:** `01 → 02 → 03 → 04 → 05 → 06 → 07 → 10 → 11 → 12 → 13 → 08 → 09 → 14`. Gli AUDIT **08 (Finanza, fatture, incassi e banca)** e **09 (compensi, fatture passive, SdI/TS e coda amministrativa)** sono **posticipati dopo AUDIT-13 e immediatamente prima di AUDIT-14**. I numeri degli AUDIT restano immutati. Fonte canonicale della sequenza: [matrice — sezione C](FUNCTIONAL-COVERAGE-MATRIX.md).
+- **Stato gate:** AUDIT-06 non avviato/non autorizzato; AUDIT-07/10/11/12/13/08/09/14 solo pianificati, da formalizzare quando arrivano al turno. Nessun avvio automatico, merge, produzione, mutazione dati o nuova installazione DEV. Non trasferire il PASS scoped di CORE #173 all'intero AUDIT-07. La matrice CSV `FUNCTIONAL-COVERAGE-DETAIL.csv` resta 110 righe × 18 colonne, invariata.
+- **Precedenza temporale:** questa sezione integra/supera per stato e sequenza tutti i blocchi datati precedenti, inclusi quelli che indicano ancora #172/#175/#174 DRAFT/UNMERGED o un GOAL ancora ACTIVE. Prima di operare, verificare sempre live PR/Issue e gate.
+
+---
+
 ## ULTIMO ESITO AGY E VERIFICA — 27/10/2026: SIMULAZIONE MERGE PASS, REVIEW INDIPENDENTE NON ATTESTATA
 
 Il [rapporto AGY di pre-merge #6441003106](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6441003106) attesta simulazione isolata della sequenza **PR #172→#175→#174**: #172 e #175 integrano clean, #174 genera soltanto **4 conflitti add/add PNG** in `docs/evidence/issue-173`; albero risultante con source parity, backend unit (120 PASS/1 SKIP), typecheck e React build tutti PASS **secondo AGY**. Matrice 110/18 invariata; PR OPEN/DRAFT/UNMERGED.
