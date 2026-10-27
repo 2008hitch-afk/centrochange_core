@@ -2,6 +2,16 @@
 
 > **ROUTER ANTI-CONFUSIONE — PRIMA LETTURA OBBLIGATORIA:** [REGISTRO OPERATIVO VIGENTE](ACTIVE-GOAL-ROUTER.md). Questo documento contiene **checkpoint successivi e fotografie storiche**: la sezione più recente prevale per lo stato, il registro determina *qual è l'AUDIT/CORE corrente*, e le Issue/PR GitHub live determinano che cosa è realmente eseguito. **AUDIT-05 Professionisti ≠ macro GOAL-05 Delivery Closure**. Non applicare le frasi «CORE #173 non implementata» o «owner acceptance #171 pending» presenti **nelle fotografie più vecchie qui sotto** allo stato attuale. Nessun GOAL 06/07 si avvia automaticamente.
 
+## ACCETTAZIONE FUNZIONALE FINALE OWNER CORE #173 — 27/10/2026: `OWNER_ACCEPTED_SCOPED_CORE173` (NO MERGE)
+
+L'Owner, alla richiesta esplicita di accettazione funzionale di «Chiudi la mia giornata» e recupero arretrati sulla versione DEV `b498ea5` **senza autorizzazione al merge**, ha risposto **«confermo»**. [Decisione ufficiale Issue #173 #6440597230](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230). Sono accettati esclusivamente il percorso CORE #173 realmente collaudato, il salvataggio Owner della giornata storica 14/10, parità Report/CSV e i successivi fix UX. Il delta del fingerprint DB è spiegato dalle scritture lecite di scheduler alle ore 07:00 il 27/10 e ricostruito da AGY tramite backup + query in sola lettura [#6439335841](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6439335841). Nessun nuovo salvataggio Owner richiesto.
+
+**Tracciamento matrice:** solo `CC-CAP-014`, `CC-CAP-022`, `CC-CAP-024`, `CC-ACT-004` promossi nel campo Owner a `OWNER_ACCEPTED_FUNCTIONAL_LIMITED` con perimetro e gap, mentre `Stato` tecnico resta PARTIAL (nessuna dichiarazione di funzionalità trasversali globalmente PASS). Complessivi Owner 92 PENDING / 16 OWNER_ACCEPTED_FUNCTIONAL_LIMITED / 1 OWNER_ACCEPTED / 1 OWNER_APPROVED_DEV; tecnici 12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED.
+
+**Separazione dei gate:** la PR #175 è DRAFT/UNMERGED, assieme a #172 e #174. La review formale GitHub `COMMENTED` è pubblicata da `2008hitch-afk` e firmata solo come «QA/Security persona», quindi resta da provare l'indipendenza reale del reviewer prima del merge. Prima di qualsiasi integrazione serviranno nuova verifica degli SHA/CI, piano PR dipendenti, verifica reviewer indipendente e permesso Owner specifico. Questo checkpoint NON autorizza merge/produzione, nuove modifiche DB/DEV o AUDIT-06; Issue #173 ancora OPEN per consolidamento.
+
+---
+
 ## ULTIMO STATO OPERATIVO — 27/10/2026: RICONCILIAZIONE TECNICA IN SOLA LETTURA COMPLETATA (DELTA FINGERPRINT DB SPIEGATO AL 100%, REVISIONE INDIPENDENTE PR #175 ATTESTATA), STATO READY_FOR_OWNER_ACCEPTANCE
 
 A seguito del walkthrough visivo Owner con PASS completo su calendario (`UAT-173-UX-DATE-POPOVER-CLIPPED`) e nota economica 13px (`UAT-173-UX-ECONOMIC-NOTE-READABILITY`) registrati nei commenti [#6438865876](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438865876) e [#6439127526](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6439127526), è stata eseguita la riconciliazione tecnica in sola lettura richiesta:
