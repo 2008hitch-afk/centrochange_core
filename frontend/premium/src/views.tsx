@@ -3,7 +3,7 @@ import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar'
 import dayjs from 'dayjs'
 import 'dayjs/locale/it'
 import { Plus, ChevronLeft, ChevronRight, RefreshCw, Filter, Download, CalendarDays, Check, Search, ArrowRight, UserRound, Clock3 } from 'lucide-react'
-import { type Appointment, type Boot, type FinanceBoot, type Patient, type ReschedulePaymentBlock, type Row, ops, finance, schedule, call, requestKey, romeToday, displayDate, money, time } from './api'
+import { type Appointment, type Boot, type FinanceBoot, type Patient, type Practitioner, type ReschedulePaymentBlock, type Row, ops, finance, schedule, call, requestKey, romeToday, displayDate, money, time } from './api'
 import { type Feedback, Button, Chip, DataTable, DateInput, Drawer, Empty, Field, FormError, Heading, Metric, Modal, SearchableSelect, dateColumn, moneyColumn, useAction } from './ui'
 import { FinanceActions } from './finance_actions'
 import { FinanceCreate } from './finance_create'
@@ -16,7 +16,7 @@ import { financeFieldLabel, financeFieldValue } from './finance_locale'
 import { NoteHistory } from './note_history'
 import { AppointmentTimeline } from './appointment_timeline'
 import { WeekGrid } from './week_grid'
-import { demoPatient, demoText } from './demo_labels'
+import { demoPatient, demoText, syntheticCode } from './demo_labels'
 import { centerNameFor, closureName, economyName, practitionerName, practitionerNameFor } from './display_names'
 
 dayjs.locale('it')
@@ -29,7 +29,193 @@ const monthLabel = (date: Date) => new Intl.DateTimeFormat('it-IT', { month: 'lo
 const getError = (e: unknown) => e instanceof Error ? e.message : 'Caricamento non riuscito.'
 const csvUrl = (method: string, params: Row) => '/api/method/centrochange_core.' + method + '?' + new URLSearchParams(Object.entries(params).map(([k, v]) => [k, String(v ?? '')]))
 
+function CalendarPopover({ current, onSelect, onClose }: { current: Date; onSelect: (d: Date) => void; onClose: () => void }) {
+  const [viewDate, setViewDate] = useState(current)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose() } }
+    const handleClickOutside = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) onClose() }
+    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => { document.removeEventListener('keydown', handleKeyDown); document.removeEventListener('mousedown', handleClickOutside) }
+  }, [onClose])
+  const startOfMonth = dayjs(viewDate).startOf('month')
+  const daysInMonth = startOfMonth.daysInMonth()
+  const startDayOfWeek = (startOfMonth.day() + 6) % 7
+  const days: (number | null)[] = []
+  for (let i = 0; i < startDayOfWeek; i++) days.push(null)
+  for (let i = 1; i <= daysInMonth; i++) days.push(i)
+  const monthName = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }).format(viewDate)
+  const weekdays = ['Lu', 'Ma', 'Me', 'Gi', 'Ve', 'Sa', 'Do']
+  const todayStr = romeToday()
+  const currentStr = iso(current)
+  const pickDay = (dayNum: number) => {
+    const chosen = dayjs(viewDate).date(dayNum).hour(12).minute(0).second(0).toDate()
+    onSelect(chosen); onClose()
+  }
+  return <div className="calendar-popover" ref={ref} role="dialog" aria-label="Seleziona data">
+    <div className="calendar-popover-header">
+      <button type="button" className="icon-button bordered" aria-label="Mese precedente" onClick={() => setViewDate(dayjs(viewDate).subtract(1, 'month').toDate())}><ChevronLeft size={16} /></button>
+      <strong style={{ textTransform: 'capitalize' }}>{monthName}</strong>
+      <button type="button" className="icon-button bordered" aria-label="Mese successivo" onClick={() => setViewDate(dayjs(viewDate).add(1, 'month').toDate())}><ChevronRight size={16} /></button>
+    </div>
+    <div className="calendar-popover-grid">
+      {weekdays.map(w => <div key={w} className="calendar-popover-weekday">{w}</div>)}
+      {days.map((d, i) => {
+        if (d === null) return <div key={`empty-${i}`} />
+        const thisDateStr = dayjs(viewDate).date(d).format('YYYY-MM-DD')
+        const isToday = thisDateStr === todayStr
+        const isSelected = thisDateStr === currentStr
+        return <button type="button" key={d} className={`calendar-popover-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`} onClick={() => pickDay(d)}>{d}</button>
+      })}
+    </div>
+  </div>
+}
+
+function PractitionerMultiSelect({
+  practitioners,
+  selected,
+  onChange
+}: {
+  practitioners: Practitioner[]
+  selected: string[]
+  onChange: (selected: string[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+  const isAll = selected.length === 0 || selected.length === practitioners.length
+
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setOpen(false)
+      }
+    }
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    const timer = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside)
+    }, 0)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [open])
+
+  const filtered = practitioners.filter(p => {
+    if (!query.trim()) return true
+    const q = query.toLowerCase()
+    return practitionerName(p).toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+  })
+
+  const toggle = (id: string) => {
+    if (isAll) {
+      onChange([id])
+    } else {
+      if (selected.includes(id)) {
+        const next = selected.filter(x => x !== id)
+        onChange(next)
+      } else {
+        const next = [...selected, id]
+        onChange(next.length === practitioners.length ? [] : next)
+      }
+    }
+  }
+
+  const selectAll = () => {
+    onChange([])
+    setQuery('')
+  }
+
+  const label = isAll
+    ? `Tutti i professionisti (${practitioners.length})`
+    : selected.length === 1
+      ? practitionerName(practitioners.find(p => p.name === selected[0]) ?? { name: selected[0], practitioner_name: selected[0] } as Practitioner)
+      : `${selected.length} professionisti selezionati`
+
+  return (
+    <div className="practitioner-multi-wrap" ref={ref}>
+      <button
+        type="button"
+        className="button secondary practitioner-filter-trigger"
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label="Filtro professionisti"
+      >
+        <Filter size={15} />
+        <span className="filter-label-text">{label}</span>
+      </button>
+      {open && (
+        <div className="practitioner-multi-popover" role="dialog" aria-label="Seleziona professionisti">
+          <div className="multi-popover-search">
+            <Search size={14} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Cerca professionista…"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              aria-label="Cerca professionista"
+              autoFocus
+            />
+          </div>
+          <div className="multi-popover-actions">
+            <button type="button" className="text-button" onClick={selectAll}>Tutti</button>
+            <button type="button" className="text-button" onClick={() => onChange([])}>Reset</button>
+          </div>
+          <div className="multi-popover-list" role="group" aria-label="Elenco professionisti">
+            {filtered.length === 0 ? (
+              <div className="multi-popover-empty">Nessun professionista trovato</div>
+            ) : (
+              filtered.map(p => {
+                const checked = isAll || selected.includes(p.name)
+                return (
+                  <label key={p.name} className="multi-popover-item">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggle(p.name)}
+                      aria-label={practitionerName(p)}
+                    />
+                    <span className="p-avatar">{(practitionerName(p) || p.name).slice(0, 2).toUpperCase()}</span>
+                    <span className="p-name">{practitionerName(p)}</span>
+                  </label>
+                )
+              })
+            )}
+          </div>
+          {!isAll && selected.length > 0 && (
+            <div className="multi-popover-chips">
+              {selected.map(id => {
+                const p = practitioners.find(x => x.name === id)
+                return (
+                  <span key={id} className="chip-badge">
+                    {p ? practitionerName(p) : id}
+                    <button type="button" onClick={() => toggle(id)} aria-label={`Rimuovi ${p ? practitionerName(p) : id}`}>×</button>
+                  </span>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refreshBoot: () => Promise<void> }) {
+  const isManager = boot.roles.includes('CC Manager')
+  const isSecretariat = boot.roles.includes('CC Secretariat')
+  const isProfessional = boot.roles.includes('CC Professional') && !isManager && !isSecretariat
+
   const [date, setDate] = useState(() => wallDate(romeToday(), '12:00'))
   const [mode, setMode] = useState<'day' | 'week'>('week')
   const [rows, setRows] = useState<Appointment[]>([])
@@ -38,30 +224,54 @@ export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refr
   const [bookingPractitioner, setBookingPractitioner] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [practitioner, setPractitioner] = useState('all')
+  const [selectedPractitioners, setSelectedPractitioners] = useState<string[]>([])
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [schedules, setSchedules] = useState<Row[]>([])
   const [reload, setReload] = useState(0)
+
   const start = mode === 'week' ? dayjs(date).subtract((date.getDay() + 6) % 7, 'day').toDate() : date
   const end = mode === 'week' ? dayjs(start).add(6, 'day').toDate() : date
+
+  useEffect(() => {
+    if (!center) return
+    ops<Row[]>('workspace.schedules', { center }).then(setSchedules).catch(() => {})
+  }, [center, reload])
+
   useEffect(() => {
     if (!center) return
     let live = true; setLoading(true); setError('')
-    ops<{ appointments: Appointment[]; truncated: boolean }>('workspace.agenda', { center, start: iso(start), end: iso(end) }).then(data => {
-      if (!live) return; setRows(data.appointments); if (data.truncated) setError('Più di 200 sedute: restringi il periodo.'); setLoading(false)
+    const pracParam = isProfessional ? (boot.practitioners[0]?.name || undefined) : (selectedPractitioners.length ? selectedPractitioners.join(',') : undefined)
+    ops<{ appointments: Appointment[]; truncated: boolean; total?: number }>('workspace.agenda', { center, start: iso(start), end: iso(end), practitioner: pracParam }).then(data => {
+      if (!live) return; setRows(data.appointments); if (data.truncated) setError(`Visualizzate le prime ${data.appointments.length} sedute. Restringi il periodo o filtra per professionista.`); setLoading(false)
     }).catch(e => { if (live) { setError(getError(e)); setLoading(false) } })
     return () => { live = false }
-  }, [center, iso(start), iso(end), reload])
-  const resources = boot.practitioners.filter(p => practitioner === 'all' || p.name === practitioner).map(p => ({ id: p.name, title: practitionerName(p) }))
-  const events = rows.filter(r => practitioner === 'all' || r.practitioner === practitioner).map(r => ({ id: r.name, title: `${time(r.appointment_time)}  ${fullName(r)} · ${demoText(r.cc_service_label) || 'Seduta'}`, start: wallDate(r.appointment_date, r.appointment_time), end: dayjs(wallDate(r.appointment_date, r.appointment_time)).add(Number(r.duration || 60), 'minute').toDate(), resourceId: r.practitioner, row: r }))
+  }, [center, iso(start), iso(end), selectedPractitioners, reload])
+
+  const isAll = !isProfessional && (selectedPractitioners.length === 0 || selectedPractitioners.length === boot.practitioners.length)
+  const effectivePractitioners = isProfessional
+    ? [boot.practitioners[0]?.name].filter(Boolean) as string[]
+    : (isAll ? boot.practitioners.map(p => p.name) : selectedPractitioners)
+  const resources = boot.practitioners.filter(p => effectivePractitioners.includes(p.name)).map(p => ({ id: p.name, title: practitionerName(p) }))
+  const displayedRows = rows.filter(r => effectivePractitioners.includes(r.practitioner))
+  const events = displayedRows.map(r => ({ id: r.name, title: `${time(r.appointment_time)}  ${fullName(r)} · ${demoText(r.cc_service_label) || 'Seduta'}`, start: wallDate(r.appointment_date, r.appointment_time), end: dayjs(wallDate(r.appointment_date, r.appointment_time)).add(Number(r.duration || 60), 'minute').toDate(), resourceId: r.practitioner, row: r }))
+  const bookingPractitionerId = (!isAll && effectivePractitioners.length === 1) ? effectivePractitioners[0] : (isProfessional ? (boot.practitioners[0]?.name || '') : '')
   const days = Array.from({ length: 7 }, (_, index) => dayjs(start).add(index, 'day').toDate())
-  const visitCount = rows.length
-  const completed = rows.filter(r => !!r.cc_performed).length
+  const visitCount = displayedRows.length
+  const completed = displayedRows.filter(r => !!r.cc_performed && r.status !== 'Cancelled').length
+  const nowRome = dayjs()
+  const toClose = displayedRows.filter(r => {
+    if (r.cc_performed || r.status === 'Cancelled') return false
+    const end = dayjs(`${r.appointment_date}T${r.appointment_time || '00:00:00'}`).add(Number(r.duration || 60), 'minute')
+    return !end.isAfter(nowRome)
+  }).length
   const step = (n: number) => setDate(dayjs(date).add(n * (mode === 'week' ? 7 : 1), 'day').toDate())
   const refresh = () => { setSelected(null); setBooking(false); setReload(x => x + 1); void refreshBoot() }
-  return <><Heading eyebrow="IL TUO SPAZIO DI LAVORO" title="Agenda" subtitle={`${displayDate(iso(start))}${mode === 'week' ? ' – ' + displayDate(iso(end)) : ''}  ·  ${monthLabel(date)}`} action={<Button onClick={() => { setBookingPractitioner(practitioner === 'all' ? '' : practitioner); setBooking(true) }}><Plus size={18} /> Nuova prenotazione</Button>} />
-    <div className="metrics-grid"><Metric label="Sedute nel periodo" value={visitCount} tone="blue" /><Metric label="Sedute svolte" value={completed} tone="green" /><Metric label="Da completare" value={visitCount - completed} tone="amber" /><Metric label="Professionisti" value={resources.length} tone="purple" /></div>
-    <section className="panel calendar-panel"><div className="panel-toolbar"><div className="toolbar-left"><div className="segmented"><button className={mode === 'day' ? 'selected' : ''} onClick={() => setMode('day')}>Giorno</button><button className={mode === 'week' ? 'selected' : ''} onClick={() => setMode('week')}>Settimana</button></div><button className="icon-button bordered" title="Precedente" aria-label="Periodo precedente" onClick={() => step(-1)}><ChevronLeft /></button><button className="icon-button bordered" title="Successivo" aria-label="Periodo successivo" onClick={() => step(1)}><ChevronRight /></button><Button variant="secondary" onClick={() => setDate(wallDate(romeToday(), '12:00'))}>Oggi</Button></div><div className="toolbar-right"><label className="select-wrap"><Filter size={16} /><select value={practitioner} onChange={e => setPractitioner(e.target.value)} aria-label="Professionista"><option value="all">Tutti i professionisti</option>{boot.practitioners.map(p => <option key={p.name} value={p.name}>{practitionerName(p)}</option>)}</select></label><button className="icon-button bordered" title="Aggiorna" aria-label="Aggiorna agenda" onClick={() => setReload(x => x + 1)}><RefreshCw /></button></div></div>
+
+  return <><Heading eyebrow="IL TUO SPAZIO DI LAVORO" title="Agenda" subtitle={`${displayDate(iso(start))}${mode === 'week' ? ' – ' + displayDate(iso(end)) : ''}  ·  ${monthLabel(date)}`} action={<Button onClick={() => { setBookingPractitioner(bookingPractitionerId); setBooking(true) }}><Plus size={18} /> Nuova prenotazione</Button>} />
+    <div className="metrics-grid"><Metric label="Sedute nel periodo" value={visitCount} tone="blue" /><Metric label="Sedute svolte" value={completed} tone="green" /><Metric label="Sedute da chiudere" value={toClose} tone="amber" /><Metric label="Professionisti" value={resources.length} tone="purple" /></div>
+    <section className="panel calendar-panel"><div className="panel-toolbar"><div className="toolbar-left"><div className="segmented"><button className={mode === 'day' ? 'selected' : ''} onClick={() => setMode('day')}>Giorno</button><button className={mode === 'week' ? 'selected' : ''} onClick={() => setMode('week')}>Settimana</button></div><button className="icon-button bordered" title="Precedente" aria-label="Periodo precedente" onClick={() => step(-1)}><ChevronLeft /></button><button className="icon-button bordered" title="Successivo" aria-label="Periodo successivo" onClick={() => step(1)}><ChevronRight /></button><Button variant="secondary" onClick={() => setDate(wallDate(romeToday(), '12:00'))}>Oggi</Button><div className="calendar-popover-wrap"><Button variant="secondary" onClick={() => setCalendarOpen(open => !open)} aria-expanded={calendarOpen} aria-label="Apri calendario"><CalendarDays size={16} /> Scegli data</Button>{calendarOpen && <CalendarPopover current={date} onSelect={setDate} onClose={() => setCalendarOpen(false)} />}</div></div><div className="toolbar-right">{isProfessional ? <span className="agenda-practitioner-label">Professionista: <strong>{practitionerName(boot.practitioners[0] ?? { name: effectivePractitioners[0], practitioner_name: 'Mio profilo' } as Practitioner)}</strong></span> : <><PractitionerMultiSelect practitioners={boot.practitioners} selected={selectedPractitioners} onChange={setSelectedPractitioners} /><select aria-label="Professionista" value={selectedPractitioners.length === 1 ? selectedPractitioners[0] : isAll ? 'all' : selectedPractitioners.join(',')} onChange={e => { const val = e.target.value; setSelectedPractitioners(val === 'all' || !val ? [] : [val]) }} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0, margin: 0, padding: 0 }} tabIndex={-1}><option value="all">Tutti i professionisti</option>{boot.practitioners.map(p => <option key={p.name} value={p.name}>{practitionerName(p)}</option>)}</select></>}<button className="icon-button bordered" title="Aggiorna" aria-label="Aggiorna agenda" onClick={() => setReload(x => x + 1)}><RefreshCw /></button></div></div>
       {error && <p className="inline-error" role="alert">{error}</p>}
-      {loading ? <div className="calendar-loading" role="status">Caricamento agenda…</div> : !resources.length ? <Empty title="Nessun professionista disponibile" detail="Verifica l'assegnazione al centro selezionato." /> : mode === 'week' ? <WeekGrid days={days.map(iso)} resources={resources} rows={rows} onSelect={setSelected} onBook={(day, professional) => { setDate(wallDate(day, '12:00')); setBookingPractitioner(professional); setBooking(true) }} /> : <div className="calendar-wrap"><Calendar localizer={localizer} culture="it" events={events} resources={resources} resourceIdAccessor="id" resourceTitleAccessor="title" view={Views.DAY} date={date} onNavigate={setDate} onView={v => setMode(v === Views.WEEK ? 'week' : 'day')} toolbar={false} popup selectable min={wallDate(iso(date), '07:00')} max={wallDate(iso(date), '21:00')} step={30} timeslots={2} startAccessor="start" endAccessor="end" onSelectEvent={e => setSelected(e.row)} onSelectSlot={slot => { setDate(slot.start); setBookingPractitioner(practitioner === 'all' ? '' : practitioner); setBooking(true) }} eventPropGetter={e => ({ className: e.row.status === 'Cancelled' ? 'event-cancelled' : e.row.cc_performed ? 'event-done' : 'event-booked' })} messages={{ noEventsInRange: 'Nessuna seduta nel periodo', showMore: count => `+ ${count} altre`, allDay: 'Tutto il giorno' }} /></div>}
+      {loading ? <div className="calendar-loading" role="status">Caricamento agenda…</div> : !resources.length ? <Empty title="Nessun professionista disponibile" detail="Verifica l'assegnazione al centro selezionato." /> : mode === 'week' ? <WeekGrid days={days.map(iso)} resources={resources} rows={rows} schedules={schedules} onSelect={setSelected} onBook={(day, professional) => { setDate(wallDate(day, '12:00')); setBookingPractitioner(professional); setBooking(true) }} /> : <div className="calendar-wrap"><Calendar localizer={localizer} culture="it" events={events} resources={resources} resourceIdAccessor="id" resourceTitleAccessor="title" view={Views.DAY} date={date} onNavigate={setDate} onView={v => setMode(v === Views.WEEK ? 'week' : 'day')} toolbar={false} popup selectable min={wallDate(iso(date), '07:00')} max={wallDate(iso(date), '21:00')} step={30} timeslots={2} startAccessor="start" endAccessor="end" onSelectEvent={e => setSelected(e.row)} onSelectSlot={slot => { setDate(slot.start); setBookingPractitioner(bookingPractitionerId); setBooking(true) }} eventPropGetter={e => ({ className: e.row.status === 'Cancelled' ? 'event-cancelled' : e.row.cc_performed ? 'event-done' : 'event-booked' })} messages={{ noEventsInRange: 'Nessuna seduta nel periodo', showMore: count => `+ ${count} altre`, allDay: 'Tutto il giorno' }} /></div>}
     </section>{booking && <Booking boot={boot} center={center} onClose={() => setBooking(false)} onSuccess={refresh} feedback={feedback} date={iso(date)} initialPractitioner={bookingPractitioner} />}{selected && <AppointmentDetail row={selected} boot={boot} center={center} onClose={() => setSelected(null)} onSuccess={refresh} feedback={feedback} />}</>
 }
 
@@ -84,6 +294,31 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
   return <Modal title="Nuova prenotazione" onClose={onClose}><form onSubmit={e => { e.preventDefault(); void submit() }}><div className="form-grid"><SearchableSelect label="Paziente" options={boot.patients.map(p => ({ value: p.name, label: demoPatient(p.name, p.patient_name, p.first_name, p.last_name) }))} value={patient} onChange={setPatient} required /><SearchableSelect label="Professionista" options={boot.practitioners.map(p => ({ value: p.name, label: practitionerName(p) }))} value={practitioner} onChange={setPractitioner} required /><SearchableSelect label="Servizio" options={boot.services.map(s => ({ value: s.name, label: demoText(s.cc_service_label) || s.name }))} value={service} onChange={setService} required /><SearchableSelect label="Pacchetto" options={packages.map(p => ({ value: String(p.name), label: `${demoText(p.label || p.name)} · ${availableUnitLabel(Number(p.available))}` }))} value={packageName} onChange={setPackageName} empty="Nessun pacchetto" /><Field label="Data" required><DateInput value={day} onChange={setDay} required /></Field><Field label="Ora" required><input type="time" value={clock} onChange={e => setClock(e.target.value)} required /></Field></div><Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} rows={3} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Annulla</Button><Button disabled={busy || !patient || !practitioner || !service} type="submit">{busy ? 'Salvataggio…' : 'Conferma prenotazione'}</Button></div></form></Modal>
 }
 
+const paymentMethodLabel = (name: string): string => {
+  const known: Record<string, string> = {
+    Cash: 'Contanti (standard)',
+    'Wire Transfer': 'Bonifico',
+    'Bank Transfer': 'Bonifico',
+    'Bank Draft': 'Effetto bancario',
+    'Credit Card': 'Carta di credito',
+    Cheque: 'Assegno',
+    POS: 'Carta/POS',
+    Card: 'Carta/POS',
+    Contanti: 'Contanti (standard)',
+    Bonifico: 'Bonifico',
+    'Carta di credito': 'Carta di credito',
+    'Carta di debito': 'Carta di debito'
+  }
+  if (known[name]) return known[name]
+  if (/^CC-MVP-POS-([a-f0-9]+)/i.test(name)) {
+    const match = name.match(/^CC-MVP-POS-([a-f0-9]{4})/i)
+    const suffix = match ? match[1] : ''
+    return `Carta/POS (Terminale ${suffix})`
+  }
+  if (/^CC DEV PROFILE CASH$/i.test(name)) return 'Contanti (cassa sede DEV)'
+  return name || 'Metodo configurato da verificare'
+}
+
 function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: { row: Appointment; boot: Boot; center: string; onClose: () => void; onSuccess: () => void; feedback: Feedback }) {
   const overrideKeys = useRef<Record<string, string>>({})
   const [tab, setTab] = useState<'Seduta' | 'Storico' | 'Note'>('Seduta')
@@ -100,7 +335,7 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: 
   const [moveBusy, setMoveBusy] = useState(false)
   const [moveError, setMoveError] = useState('')
   const [paid, setPaid] = useState(Boolean(row.cc_paid))
-  const [paymentMethod, setPaymentMethod] = useState(boot.payment_methods[0] ?? '')
+  const [paymentMethod, setPaymentMethod] = useState('')
   const [note, setNote] = useState('')
   const [privateNote, setPrivateNote] = useState(false)
   const [corrects, setCorrects] = useState<string | null>(null)
@@ -160,6 +395,10 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: 
       } finally { setMoveBusy(false) }
       return
     }
+    if (action === 'close' && paid && !boot.payment_methods.includes(paymentMethod)) {
+      feedback('Seleziona un metodo di pagamento valido.', true)
+      return
+    }
     const args = action === 'close' ? { appointment: row.name, paid: paid ? 1 : 0, mode_of_payment: paid ? paymentMethod : null, reason } : { appointment: row.name, reason }
     if (await run(() => ops(`lifecycle.${action}`, args, true))) setAction('')
   }
@@ -178,7 +417,7 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback }: 
   }
   const entries = (key: string) => Array.isArray(history?.[key]) ? history[key] as Row[] : []
   return <><Drawer title={fullName(row)} onClose={onClose}><div className="detail-summary"><Chip tone={row.status === 'Cancelled' ? 'bad' : row.cc_performed ? 'good' : 'blue'}>{row.status === 'Cancelled' ? 'Cancellata' : row.cc_performed ? 'Svolta' : 'Prenotata'}</Chip><h3>{demoText(row.cc_service_label) || 'Seduta'}</h3><p><CalendarDays size={16} /> {displayDate(row.appointment_date)} · {time(row.appointment_time)}</p><p><UserRound size={16} /> {practitionerNameFor(row.practitioner, boot.practitioners, row.practitioner_name)}</p><p><Clock3 size={16} /> {row.duration} min · {money(row.cc_price_snapshot, row.cc_currency_snapshot || 'EUR')}</p></div><div className="detail-tabs" role="tablist">{(['Seduta', 'Storico', 'Note'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div>
-    {tab === 'Seduta' && <><div className="detail-section"><h3>Stato operativo</h3><p>Chiusura: {closureName(row.cc_closure_state)}<br />Economia: {economyName(row.cc_economic_state)}</p><div className="action-grid">{actions.map(a => <Button key={a.id} variant={a.id === 'close' ? 'primary' : a.id === 'cancel' ? 'danger' : 'secondary'} onClick={() => setAction(a.id)}>{a.label}</Button>)}</div></div>{action && <form className="action-form" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{actions.find(a => a.id === action)?.label}</h3>{action === 'move' && <div className="form-grid"><Field label="Nuova data"><DateInput value={moveDate} onChange={value => { setMoveDate(value); setPaymentBlock(null) }} required /></Field><Field label="Nuova ora"><input type="time" value={moveTime} onChange={e => { setMoveTime(e.target.value); setPaymentBlock(null) }} required /></Field></div>}{action === 'close' && <><label className="checkbox-row"><input type="checkbox" checked={paid} onChange={e => setPaid(e.target.checked)} /> Pagata</label>{paid && <Field label="Metodo di pagamento" required><select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required>{boot.payment_methods.map(p => <option key={p}>{p}</option>)}</select></Field>}</>}<Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={action === 'move' ? moveError : error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setAction(''); setPaymentBlock(null) }}>Annulla</Button><Button disabled={busy || moveBusy} type="submit">{busy || moveBusy ? 'Salvataggio…' : 'Conferma'}</Button></div></form>}</>}
+    {tab === 'Seduta' && <><div className="detail-section"><h3>Stato operativo</h3><p>Chiusura: {closureName(row.cc_closure_state)}<br />Economia: {economyName(row.cc_economic_state)}</p>{row.cc_closure_state === 'Auto Locked' && !administrative && <p className="scope-note">La chiusura della seduta è bloccata automaticamente per superamento dei termini giornalieri.</p>}<div className="action-grid">{actions.map(a => <Button key={a.id} variant={a.id === 'close' ? 'primary' : a.id === 'cancel' ? 'danger' : 'secondary'} onClick={() => setAction(a.id)}>{a.label}</Button>)}</div></div>{action && <form className="action-form" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{actions.find(a => a.id === action)?.label}</h3>{action === 'move' && <div className="form-grid"><Field label="Nuova data"><DateInput value={moveDate} onChange={value => { setMoveDate(value); setPaymentBlock(null) }} required /></Field><Field label="Nuova ora"><input type="time" value={moveTime} onChange={e => { setMoveTime(e.target.value); setPaymentBlock(null) }} required /></Field></div>}{action === 'close' && <><label className="checkbox-row"><input type="checkbox" checked={paid} onChange={e => { setPaid(e.target.checked); setPaymentMethod('') }} /> Pagata</label>{paid && <><Field label="Metodo di pagamento" required><select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required><option value="">Seleziona un metodo</option>{boot.payment_methods.map(p => <option key={p} value={p}>{paymentMethodLabel(p)}</option>)}</select></Field><p className="scope-note">La scelta registra il pagamento operativo, non una fattura o un incasso contabile. Se compaiono più configurazioni simili, verifica quale utilizzare prima di confermare.</p></>}</>}<Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={action === 'move' ? moveError : error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setAction(''); setPaymentBlock(null) }}>Annulla</Button><Button disabled={busy || moveBusy} type="submit">{busy || moveBusy ? 'Salvataggio…' : 'Conferma'}</Button></div></form>}</>}
     {tab === 'Storico' && <div className="detail-section"><h3>Eventi della seduta</h3><p className="scope-note">Modifiche e motivi relativi a questa seduta. Le versioni delle note sono nella scheda Note.</p>{eventsError && <p className="inline-error" role="alert">{eventsError}</p>}{!events && !eventsError ? <p role="status">Caricamento eventi…</p> : events && <AppointmentTimeline rows={events} />}<h3>Altre sedute del paziente</h3>{!history ? <p role="status">Caricamento sedute…</p> : entries('appointments').length ? <div className="timeline">{entries('appointments').map((a, i) => <article key={i}><strong>{displayDate(a.appointment_date)} · {demoText(a.cc_service_label) || 'Seduta'}</strong><span>{closureName(a.cc_closure_state)} · {economyName(a.cc_economic_state)}</span></article>)}</div> : <Empty title="Nessun'altra seduta nel centro" />}<h3>Pacchetti</h3>{entries('packages').map((p, i) => <p key={i}>{demoText(p.label)} · Residue: {String(p.remaining)}</p>)}</div>}
     {tab === 'Note' && <div className="detail-section"><h3>Note organizzative</h3><NoteHistory rows={entries('organizational_notes')} onCorrect={n => { setNote(String(n.content ?? '')); setPrivateNote(false); setCorrects(String(n.name)) }} />{boot.roles.includes('CC Professional') && <><h3>Note riservate</h3><NoteHistory rows={entries('private_notes')} privateNotes onCorrect={n => { setNote(String(n.content ?? '')); setPrivateNote(true); setCorrects(String(n.name)) }} /></>}<form onSubmit={e => { e.preventDefault(); void run(() => ops('notes.add_note', { patient: row.patient, center, content: note, private: privateNote ? 1 : 0, corrects }, true), 'Nota registrata.').then(ok => { if (ok) { setNote(''); setCorrects(null); setHistory(null); void ops<Row>('workspace.patient_history', { patient: row.patient, center }).then(setHistory) } }) }}><Field label={corrects ? "Rettifica nota" : "Nuova nota"}><textarea required value={note} onChange={e => setNote(e.target.value)} maxLength={100000} /></Field>{boot.roles.includes('CC Professional') && <label className="checkbox-row"><input type="checkbox" checked={privateNote} onChange={e => setPrivateNote(e.target.checked)} /> Nota professionale riservata</label>}<FormError error={error} /><Button disabled={busy || !note} type="submit">{corrects ? "Registra rettifica" : "Aggiungi nota"}</Button></form></div>}
   </Drawer>{paymentBlock && <Modal title="Verifica pagamenti prima dello spostamento" onClose={() => { setPaymentBlock(null); setMoveError('') }}><p className="scope-note">La prenotazione resta invariata finché la verifica non viene completata.</p>{paymentBlock.can_override ? <form onSubmit={e => { e.preventDefault(); void authorizeAndMove() }}><p>Posizioni che impediscono lo spostamento:</p><ul className="payment-block-list">{paymentBlock.debts.map((debt, index) => <li key={`${debt.reference_doctype}:${debt.reference_name}`}><strong>{debt.reference_doctype === 'Sales Invoice' ? 'Fattura' : 'Seduta non fatturata'} {index + 1}</strong><span>{money(debt.amount, debt.currency)} · scadenza {displayDate(debt.due_date)} · {centerNameFor(debt.center, boot.centers)}</span></li>)}</ul><p className="scope-note">Debito, fatture e scadenze originarie restano conservati nello storico.</p><Field label="Motivazione della deroga" required><textarea value={overrideReason} onChange={e => setOverrideReason(e.target.value)} required maxLength={2000} /></Field><Field label="Nuova scadenza" required><DateInput value={overrideDue} onChange={setOverrideDue} required /></Field><FormError error={moveError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setPaymentBlock(null); setMoveError('') }}>Annulla</Button><Button disabled={moveBusy || !overrideReason.trim() || !overrideDue} type="submit">{moveBusy ? 'Verifica in corso…' : 'Autorizza e procedi'}</Button></div></form> : <><p role="alert">Serve una verifica dei pagamenti. Contatta la segreteria o la Direzione: il tuo ruolo non può autorizzare una deroga.</p><div className="form-actions"><Button onClick={() => setPaymentBlock(null)}>Chiudi</Button></div></>}</Modal>}</>
@@ -208,22 +447,54 @@ export function Patients({ boot, center, feedback, refreshBoot }: Context & { re
 
 export function Professionals({ boot, center }: { boot: Boot; center: string }) {
   const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<(typeof boot.practitioners)[number] | null>(null)
+  const [rows, setRows] = useState<Practitioner[]>([])
+  const [hasMore, setHasMore] = useState(false)
+  const [selected, setSelected] = useState<Practitioner | null>(null)
   const [detail, setDetail] = useState<Row | null>(null)
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const searchGeneration = useRef(0)
   const canReadProfile = boot.roles.includes('CC Manager') || boot.roles.includes('CC Professional')
+  const term = query.trim()
+  useEffect(() => {
+    searchGeneration.current += 1
+    setSelected(null); setDetail(null); setRows([]); setHasMore(false); setError('')
+    if (!canReadProfile) {
+      const needle = term.toLocaleLowerCase('it-IT')
+      setRows(boot.practitioners.filter(row => practitionerName(row).toLocaleLowerCase('it-IT').includes(needle)))
+      setLoading(false)
+      return
+    }
+    let live = true
+    setLoading(true)
+    const timer = window.setTimeout(() => {
+      ops<{ rows: Practitioner[]; has_more: boolean }>('profiles.practitioners', { center, limit: 50, offset: 0, search: term })
+        .then(result => { if (live) { setRows(result.rows); setHasMore(result.has_more) } })
+        .catch(cause => { if (live) setError(getError(cause)) })
+        .finally(() => { if (live) setLoading(false) })
+    }, term ? 180 : 0)
+    return () => { live = false; clearTimeout(timer) }
+  }, [center, term, boot, canReadProfile])
+  const more = async () => {
+    const generation = searchGeneration.current
+    setLoading(true); setError('')
+    try {
+      const result = await ops<{ rows: Practitioner[]; has_more: boolean }>('profiles.practitioners', { center, limit: 50, offset: rows.length, search: term })
+      if (generation === searchGeneration.current) { setRows(current => [...current, ...result.rows]); setHasMore(result.has_more) }
+    } catch (cause) { if (generation === searchGeneration.current) setError(getError(cause)) }
+    finally { if (generation === searchGeneration.current) setLoading(false) }
+  }
   useEffect(() => {
     if (!selected || !canReadProfile) return
-    let live = true; setLoading(true); setError(''); setDetail(null)
-    ops<Row>('profiles.practitioner_detail', { center, name: selected.name }).then(value => { if (live) setDetail(value) }).catch(cause => { if (live) setError(getError(cause)) }).finally(() => { if (live) setLoading(false) })
+    let live = true; setDetailLoading(true); setError(''); setDetail(null)
+    ops<Row>('profiles.practitioner_detail', { center, name: selected.name }).then(value => { if (live) setDetail(value) }).catch(cause => { if (live) setError(getError(cause)) }).finally(() => { if (live) setDetailLoading(false) })
     return () => { live = false }
   }, [selected, center, canReadProfile])
-  const term = query.trim().toLocaleLowerCase('it-IT')
-  const rows = boot.practitioners.filter(row => `${practitionerName(row)} ${row.practitioner_name} ${row.name}`.toLocaleLowerCase('it-IT').includes(term))
-  return <><Heading eyebrow="OPERATIVITÀ" title="Professionisti" subtitle="Professionisti attivi e autorizzati per il centro selezionato." />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco professionisti</h2><p>{rows.length} {rows.length === 1 ? 'professionista' : 'professionisti'} nel centro</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={event => setQuery(event.target.value)} aria-label="Cerca professionisti" placeholder="Cerca professionista" /></label></div><DataTable rows={rows as unknown as Row[]} columns={[{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => <strong>{practitionerName(row as unknown as typeof boot.practitioners[number])}</strong> }, { key: 'name', label: 'Scheda', render: () => <ArrowRight size={17} /> }]} onRow={row => { setSelected(row as typeof selected); setDetail(null); setError('') }} /></section>
-    {selected && <Drawer title={practitionerName(selected)} onClose={() => { setSelected(null); setDetail(null) }}><div className="detail-summary"><Chip tone="good">Attivo nel centro</Chip><h3>{practitionerName(selected)}</h3><p>Centro: {centerNameFor(center, boot.centers)}</p></div>{loading && <p className="detail-section" role="status">Caricamento scheda…</p>}{error && <p className="detail-section inline-error" role="alert">{error}</p>}{detail && <div className="detail-section"><h3>Scheda professionista</h3><dl className="property-list"><div><dt>Nome</dt><dd>{practitionerName({ name: selected.name, practitioner_name: String(detail.practitioner_name ?? selected.practitioner_name) })}</dd></div><div><dt>Stato</dt><dd>{detail.status === 'Active' ? 'Attivo' : String(detail.status ?? '—')}</dd></div></dl><p className="scope-note">Scheda consultabile secondo i permessi del server. Le modifiche autorizzate restano nell'archivio dedicato.</p></div>}{!canReadProfile && <div className="detail-section"><p>È disponibile la sola identità operativa autorizzata per questo centro.</p></div>}</Drawer>}
+  const selectedStatus = String(detail?.status ?? selected?.status ?? 'Active')
+  return <><Heading eyebrow="OPERATIVITÀ" title="Professionisti" subtitle="Professionisti autorizzati per il centro selezionato." />
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco professionisti</h2><p>{rows.length} {rows.length === 1 ? 'professionista' : 'professionisti'} nel centro{hasMore ? ' · altri disponibili' : ''}</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={event => setQuery(event.target.value)} aria-label="Cerca professionisti" placeholder="Cerca professionista" /></label></div>{loading && <p className="panel-loading" role="status">Caricamento professionisti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => <strong>{practitionerName(row as Practitioner)}</strong> }, { key: 'status', label: 'Stato', render: (value) => value && value !== 'Active' ? 'Non attivo' : 'Attivo' }, { key: 'name', label: 'Scheda', render: () => <ArrowRight size={17} /> }]} onRow={row => { setSelected(row as Practitioner); setDetail(null); setError('') }} /> : <Empty title={term ? 'Nessun risultato per questa ricerca.' : 'Nessun professionista disponibile nel centro.'} />)}{hasMore && <Button variant="secondary" disabled={loading} onClick={() => void more()}>Carica altri</Button>}</section>
+    {selected && <Drawer title={practitionerName(selected)} onClose={() => { setSelected(null); setDetail(null) }}><div className="detail-summary"><Chip tone={selectedStatus !== 'Active' ? 'warn' : 'good'}>{selectedStatus !== 'Active' ? 'Non attivo' : 'Attivo nel centro'}</Chip><p>Centro: {centerNameFor(center, boot.centers)}</p></div>{detailLoading && <p className="detail-section" role="status">Caricamento scheda…</p>}{error && <p className="detail-section inline-error" role="alert">{error}</p>}{detail && <div className="detail-section"><h3>Scheda professionista</h3><dl className="property-list">{syntheticCode(detail.first_name) ? <div><dt>Identità</dt><dd>{practitionerName(selected)}</dd></div> : <><div><dt>Nome</dt><dd>{String(detail.first_name ?? '—')}</dd></div><div><dt>Cognome</dt><dd>{String(detail.last_name ?? '—')}</dd></div></>}</dl>{boot.roles.includes('CC Manager') && <p className="scope-note">Per modificare nome e cognome, apri Archivi → Professionisti.</p>}</div>}{!canReadProfile && <div className="detail-section"><p>È disponibile la sola identità operativa autorizzata per questo centro.</p></div>}</Drawer>}
   </>
 }
 
@@ -233,45 +504,199 @@ export function ServiceCatalog({ boot, center }: { boot: Boot; center: string })
   const search = query.trim().toLocaleLowerCase('it-IT')
   const services = boot.services.filter(service => `${demoText(service.cc_service_label)} ${service.cc_service_label ?? ''} ${service.name}`.toLocaleLowerCase('it-IT').includes(search))
   return <><Heading eyebrow="OPERATIVITÀ" title="Servizi e professionisti" subtitle="Servizi disponibili nel centro selezionato e professionisti associati." />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Servizi del centro</h2><p>{centerNameFor(center, boot.centers)} · {services.length} {services.length === 1 ? "servizio" : "servizi"} · tariffe e durata dallo snapshot del catalogo autorizzato.</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Cerca servizi" placeholder="Cerca servizio" /></label></div><DataTable rows={services as unknown as Row[]} columns={[{ key: 'cc_service_label', label: 'Servizio', render: (value, row) => <strong>{demoText(value || row.name)}</strong> }, { key: 'duration', label: 'Durata', render: value => value == null ? 'Da definire' : `${String(value)} min` }, { key: 'cc_price_snapshot', label: 'Tariffa', render: (value, row) => money(value, String(row.cc_currency_snapshot || 'EUR')) }]} onRow={row => setSelected(row as typeof selected)} /></section>
-    <section className="panel catalog-practitioners"><div className="panel-toolbar"><div className="panel-title"><h2>Professionisti</h2><p>Associati al centro secondo le appartenenze e lo stato correnti del backend.</p></div></div><div className="schedule-grid">{boot.practitioners.map(practitioner => <article className="schedule-card" key={practitioner.name}><span className="avatar">{practitionerName(practitioner).slice(0, 2).toLocaleUpperCase('it-IT')}</span><h3>{practitionerName(practitioner)}</h3><Chip tone="good">Attivo nel centro</Chip></article>)}</div>{!boot.practitioners.length && <Empty title="Nessun professionista attivo" />}</section>
-    {selected && <Drawer title={demoText(selected.cc_service_label || selected.name)} onClose={() => setSelected(null)}><div className="detail-summary"><Chip tone="blue">Servizio disponibile</Chip><h3>{demoText(selected.cc_service_label || selected.name)}</h3><p>Centro: {centerNameFor(center, boot.centers)}</p></div><div className="detail-section"><h3>Scheda servizio</h3><dl className="property-list"><div><dt>Codice</dt><dd>{demoText(selected.name)}</dd></div><div><dt>Articolo canonico</dt><dd>{demoText(selected.cc_service_item || '—')}</dd></div><div><dt>Durata</dt><dd>{selected.duration == null ? 'Da definire' : `${selected.duration} min`}</dd></div><div><dt>Tariffa corrente per prenotazione</dt><dd>{money(selected.cc_price_snapshot, selected.cc_currency_snapshot || 'EUR')}</dd></div></dl><p className="scope-note">Tariffa corrente del catalogo autorizzato. Le sedute già prenotate conservano il proprio snapshot; questa scheda non modifica Item, Item Price o Appointment Type.</p></div></Drawer>}
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Servizi del centro</h2><p>{centerNameFor(center, boot.centers)} · {services.length} {services.length === 1 ? "servizio" : "servizi"} · tariffe e durate del catalogo servizi.</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Cerca servizi" placeholder="Cerca servizio" /></label></div><DataTable rows={services as unknown as Row[]} columns={[{ key: 'cc_service_label', label: 'Servizio', render: (value, row) => <strong>{demoText(value || row.name)}</strong> }, { key: 'duration', label: 'Durata', render: value => value == null ? 'Da definire' : `${String(value)} min` }, { key: 'cc_price_snapshot', label: 'Tariffa', render: (value, row) => money(value, String(row.cc_currency_snapshot || 'EUR')) }]} onRow={row => setSelected(row as typeof selected)} /></section>
+    <section className="panel catalog-practitioners"><div className="panel-toolbar"><div className="panel-title"><h2>Professionisti</h2><p>Professionisti abilitati a operare nella sede selezionata.</p></div></div><div className="schedule-grid">{boot.practitioners.map(practitioner => <article className="schedule-card" key={practitioner.name}><span className="avatar">{practitionerName(practitioner).slice(0, 2).toLocaleUpperCase('it-IT')}</span><h3>{practitionerName(practitioner)}</h3><Chip tone="good">Attivo nel centro</Chip></article>)}</div>{!boot.practitioners.length && <Empty title="Nessun professionista attivo" />}</section>
+    {selected && <Drawer title={demoText(selected.cc_service_label || selected.name)} onClose={() => setSelected(null)}><div className="detail-summary"><Chip tone="blue">Servizio disponibile</Chip><h3>{demoText(selected.cc_service_label || selected.name)}</h3><p>Centro: {centerNameFor(center, boot.centers)}</p></div><div className="detail-section"><h3>Scheda servizio</h3><dl className="property-list"><div><dt>Codice</dt><dd>{demoText(selected.name)}</dd></div><div><dt>Articolo canonico</dt><dd>{demoText(selected.cc_service_item || '—')}</dd></div><div><dt>Durata</dt><dd>{selected.duration == null ? 'Da definire' : `${selected.duration} min`}</dd></div><div><dt>Tariffa corrente per prenotazione</dt><dd>{money(selected.cc_price_snapshot, selected.cc_currency_snapshot || 'EUR')}</dd></div></dl><p className="scope-note">Tariffa valida per le nuove prenotazioni. Le sedute già fissate conservano la tariffa registrata al momento della prenotazione.</p></div></Drawer>}
   </>
 }
 
 export { Availability } from './availability_view'
 
 export function Reports({ boot, center, feedback, financeBoot }: Context & { financeBoot?: FinanceBoot | null }) {
+  const isManager = boot.roles.includes('CC Manager')
+  const isSecretariat = boot.roles.includes('CC Secretariat')
+  const isProfessional = boot.roles.includes('CC Professional') && !isManager && !isSecretariat
+  const myPractitioner = isProfessional ? (boot.practitioners[0]?.name || '') : ''
+
   const [start, setStart] = useState(dayjs(romeToday()).startOf('month').format('YYYY-MM-DD'))
   const [end, setEnd] = useState(romeToday())
+  const [startValid, setStartValid] = useState(true)
+  const [endValid, setEndValid] = useState(true)
+  const [preset, setPreset] = useState<'today' | 'week' | 'month' | 'last_month' | 'custom'>('month')
   const [data, setData] = useState<Row | null>(null)
   const [loading, setLoading] = useState(true)
   const [professionalOpen, setProfessionalOpen] = useState(false)
-  const [professional, setProfessional] = useState('')
+  const [professional, setProfessional] = useState(isProfessional ? myPractitioner : '')
+  const [detailProfessional, setDetailProfessional] = useState(isProfessional ? myPractitioner : '')
+  const [selectedKpi, setSelectedKpi] = useState<string>('all')
+  const [selectedCurrency, setSelectedCurrency] = useState<string>('all')
   const [sessions, setSessions] = useState<Appointment[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(false)
   const [sessionsError, setSessionsError] = useState('')
-  const [sessionsTruncated, setSessionsTruncated] = useState(false)
-  useEffect(() => { if (!center) return; let live = true; setLoading(true); ops<Row>('reporting.summary', { center, start, end }).then(r => { if (live) { setData(r); setLoading(false) } }).catch(e => { if (live) { feedback(getError(e), true); setLoading(false) } }); return () => { live = false } }, [center, start, end])
-  useEffect(() => {
-    if (!professionalOpen || !professional) return
-    let live = true; setSessionsLoading(true); setSessionsError('')
-    ops<{ appointments: Appointment[]; truncated: boolean }>('workspace.agenda', { center, start, end }).then(result => {
-      if (live) { setSessions(result.appointments.filter(row => row.practitioner === professional)); setSessionsTruncated(result.truncated); setSessionsLoading(false) }
-    }).catch(cause => { if (live) { setSessionsError(getError(cause)); setSessionsLoading(false) } })
-    return () => { live = false }
-  }, [center, start, end, professional, professionalOpen])
-  const currencies = data?.currencies as Record<string, Row> ?? {}
-  const exportProfessional = () => {
-    if (!professional || sessionsTruncated || sessionsLoading || sessionsError) return
-    const safe = (value: unknown) => { const text = String(value ?? ''); const guarded = /^[=+\-@\t\r\n]/.test(text.trimStart()) ? "'" + text : text; return '"' + guarded.replaceAll('"', '""') + '"' }
-    const rows = [['Data', 'Ora', 'Paziente', 'Servizio', 'Stato'], ...sessions.map(row => [displayDate(row.appointment_date), time(row.appointment_time), demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name), demoText(row.cc_service_label) || 'Seduta', row.cc_performed ? 'Svolta' : row.status === 'Cancelled' ? 'Annullata' : 'In programma'])]
-    const blob = new Blob(['\ufeff' + rows.map(row => row.map(safe).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' })
-    const href = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = href; link.download = 'centrochange-report-professionista.csv'; link.click(); setTimeout(() => URL.revokeObjectURL(href), 1000)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalSessions, setTotalSessions] = useState(0)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  const [reload, setReload] = useState(0)
+
+  const [profSessions, setProfSessions] = useState<Appointment[]>([])
+  const [profPage, setProfPage] = useState(1)
+  const [profTotalPages, setProfTotalPages] = useState(1)
+  const [profTotal, setProfTotal] = useState(0)
+  const [profSummary, setProfSummary] = useState<Row | null>(null)
+  const [profLoading, setProfLoading] = useState(false)
+  const [profError, setProfError] = useState('')
+
+  const applyPreset = (p: 'today' | 'week' | 'month' | 'last_month') => {
+    setPreset(p)
+    setPage(1)
+    const today = dayjs(romeToday())
+    if (p === 'today') {
+      setStart(today.format('YYYY-MM-DD'))
+      setEnd(today.format('YYYY-MM-DD'))
+    } else if (p === 'week') {
+      const mon = today.subtract((today.day() + 6) % 7, 'day')
+      setStart(mon.format('YYYY-MM-DD'))
+      setEnd(mon.add(6, 'day').format('YYYY-MM-DD'))
+    } else if (p === 'month') {
+      setStart(today.startOf('month').format('YYYY-MM-DD'))
+      setEnd(today.format('YYYY-MM-DD'))
+    } else if (p === 'last_month') {
+      const prev = today.subtract(1, 'month')
+      setStart(prev.startOf('month').format('YYYY-MM-DD'))
+      setEnd(prev.endOf('month').format('YYYY-MM-DD'))
+    }
   }
-  return <><Heading eyebrow="OPERATIVITÀ" title="Report" subtitle="Andamento delle sedute e dati operativi del centro." action={<div className="button-group"><Button variant="secondary" onClick={() => setProfessionalOpen(value => !value)}>Report professionisti</Button><a className="button secondary" href={csvUrl('operations.reporting.export_csv', { center, start, end })} aria-disabled={loading || !!data?.truncated} onClick={e => { if (loading || data?.truncated) e.preventDefault() }}><Download size={17} /> Esporta CSV centro</a></div>} />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Riepilogo operativo</h2><p>Pagamenti operativi distinti dal saldo contabile. I valori restano separati per valuta.</p></div><div className="toolbar-right"><Field label="Dal"><DateInput value={start} onChange={setStart} required /></Field><Field label="Al"><DateInput value={end} onChange={setEnd} required /></Field></div></div>{loading ? <p className="panel-loading">Caricamento…</p> : !Object.keys(currencies).length ? <Empty title="Nessun dato nel periodo" /> : Object.entries(currencies).map(([currency, r]) => <div className="report-currency" key={currency}><h3>{currency === 'UNSET' ? 'Valuta da verificare' : currency}</h3><div className="metrics-grid inset"><Metric label="Sedute" value={String(r.sessions ?? 0)} /><Metric label="Svolte" value={String(r.performed ?? 0)} tone="green" /><Metric label="Pagate operativamente" value={String(r.operational_paid ?? 0)} tone="green" /><Metric label="Con economia dovuta" value={String(r.due ?? 0)} tone="amber" /><Metric label="Valore dovuto" value={currency === 'UNSET' ? 'Da verificare' : money(r.due_snapshot_amount, currency)} tone="purple" /></div></div>)}{Boolean(data?.truncated) && <p className="inline-error" role="alert">Totali parziali: restringi il periodo. L'esportazione è sospesa.</p>}</section>
-    {professionalOpen && <section className="panel professional-report"><div className="panel-toolbar"><div className="panel-title"><h2>Report professionisti</h2><p>Sedute del professionista nel periodo selezionato. Nessuna attribuzione contabile dedotta.</p></div><div className="toolbar-right"><Field label="Professionista"><select aria-label="Professionista report" value={professional} onChange={event => { setProfessional(event.target.value); setSessions([]) }}><option value="">Seleziona</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{demoText(row.practitioner_name)}</option>)}</select></Field><Button variant="secondary" onClick={exportProfessional} disabled={!professional || sessionsLoading || sessionsTruncated || !!sessionsError}><Download size={16} /> Esporta CSV</Button>{financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode="professionals" buttonLabel="Compensi e fatture autorizzati" />}</div></div>{!professional ? <Empty title="Seleziona un professionista" /> : sessionsLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : sessionsError ? <p className="inline-error" role="alert">{sessionsError}</p> : <><div className="metrics-grid inset"><Metric label="Sedute nel periodo" value={sessions.length} /><Metric label="Sedute svolte" value={sessions.filter(row => !!row.cc_performed).length} tone="green" /><Metric label="Da completare" value={sessions.filter(row => !row.cc_performed && row.status !== 'Cancelled').length} tone="amber" /></div><DataTable rows={sessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (value, row) => demoPatient(row.patient, value, row.patient_first_name, row.patient_last_name) }, { key: 'cc_service_label', label: 'Servizio' }, { key: 'status', label: 'Stato', render: (value, row) => row.cc_performed ? 'Svolta' : value === 'Cancelled' ? 'Annullata' : 'In programma' }]} />{sessionsTruncated && <p className="inline-error" role="alert">Risultati parziali: restringi il periodo. L'esportazione è sospesa.</p>}</>}</section>}
+
+  const effectivePractitioner = isProfessional ? myPractitioner : professional
+  const validPeriod = startValid && endValid && !!start && !!end && start <= end
+
+  useEffect(() => {
+    if (!center || !validPeriod) { setData(null); setLoading(false); return }
+    let live = true
+    setData(null); setLoading(true)
+    const profParam = effectivePractitioner || undefined
+    ops<Row>('reporting.summary', { center, start, end, practitioner: profParam })
+      .then(r => { if (live) { setData(r); setLoading(false) } })
+      .catch(e => { if (live) { setData(null); feedback(getError(e), true); setLoading(false) } })
+    return () => { live = false }
+  }, [center, start, end, effectivePractitioner, validPeriod, reload])
+
+  useEffect(() => {
+    if (!center || !validPeriod) { setSessions([]); setTotalSessions(0); setSessionsLoading(false); return }
+    let live = true
+    setSessions([]); setSessionsLoading(true)
+    setSessionsError('')
+    const profParam = effectivePractitioner || undefined
+    const currParam = selectedCurrency !== 'all' ? selectedCurrency : undefined
+    ops<{ appointments: Appointment[]; total: number; total_pages?: number }>('reporting.sessions', {
+      center, start, end, practitioner: profParam, kpi: selectedKpi, currency: currParam, page, page_length: 50
+    })
+      .then(result => {
+        if (live) {
+          setSessions(result.appointments || [])
+          setTotalSessions(result.total ?? (result.appointments || []).length)
+          setTotalPages(result.total_pages ?? Math.max(1, Math.ceil((result.total ?? 0) / 50)))
+          setSessionsLoading(false)
+        }
+      })
+      .catch(cause => {
+        if (live) {
+          setSessions([])
+          setTotalSessions(0)
+          setTotalPages(1)
+          setSessionsError(getError(cause) || 'Impossibile caricare il dettaglio delle sedute dal server.')
+          setSessionsLoading(false)
+        }
+      })
+    return () => { live = false }
+  }, [center, start, end, effectivePractitioner, validPeriod, selectedKpi, selectedCurrency, page, reload])
+
+  useEffect(() => {
+    if (!center || !validPeriod || !professionalOpen || !detailProfessional) {
+      setProfSessions([]); setProfSummary(null); setProfTotal(0); setProfTotalPages(1); setProfLoading(false)
+      return
+    }
+    let live = true
+    setProfLoading(true); setProfError(''); setProfSessions([]); setProfSummary(null)
+    Promise.all([
+      ops<{ appointments: Appointment[]; total: number; total_pages?: number }>('reporting.sessions', {
+        center, start, end, practitioner: detailProfessional, kpi: 'all', page: profPage, page_length: 50
+      }),
+      ops<Row>('reporting.summary', { center, start, end, practitioner: detailProfessional })
+    ]).then(([res, totals]) => {
+      if (live) {
+        setProfSessions(res.appointments || [])
+        setProfTotal(res.total ?? 0)
+        setProfTotalPages(res.total_pages ?? Math.max(1, Math.ceil((res.total ?? 0) / 50)))
+        setProfSummary(totals)
+        setProfLoading(false)
+      }
+    }).catch(err => {
+      if (live) { setProfError(getError(err)); setProfSessions([]); setProfSummary(null); setProfTotal(0); setProfLoading(false) }
+    })
+    return () => { live = false }
+  }, [center, start, end, validPeriod, professionalOpen, detailProfessional, profPage, reload])
+
+  const currencies = data?.currencies as Record<string, Row> ?? {}
+  const kpiLabel: Record<string, string> = {
+    all: 'Tutte le sedute',
+    performed: 'Sedute svolte',
+    future: 'Appuntamenti futuri',
+    to_close: 'Sedute da chiudere',
+    operational_paid: 'Con pagamento registrato',
+    operational_unpaid: 'Svolte senza pagamento',
+    cancelled: 'Sedute annullate',
+    due: 'Con tariffa prevista'
+  }
+
+  const exportUrl = csvUrl('operations.reporting.export_csv', {
+    center, start, end, practitioner: effectivePractitioner || '', kpi: selectedKpi || 'all', currency: selectedCurrency !== 'all' ? selectedCurrency : ''
+  })
+
+  const professionalExportUrl = csvUrl('operations.reporting.export_csv', {
+    center, start, end, practitioner: detailProfessional, kpi: 'all'
+  })
+
+  const selectKpi = (k: string, curr: string = 'all') => {
+    setSelectedKpi(k)
+    setSelectedCurrency(curr)
+    setPage(1)
+  }
+
+  return <><Heading eyebrow="OPERATIVITÀ" title="Report" subtitle="Andamento delle sedute e dati operativi del centro." action={<div className="button-group"><Button variant="secondary" onClick={() => setProfessionalOpen(v => !v)}>Dettaglio professionista</Button><a className="button secondary" href={validPeriod && !loading && data && !data.truncated && !sessionsError && !sessionsLoading ? exportUrl : undefined} aria-disabled={!validPeriod || loading || !data || !!data.truncated || !!sessionsError || sessionsLoading} onClick={e => { if (!validPeriod || loading || !data || data.truncated || sessionsError || sessionsLoading) e.preventDefault() }}><Download size={17} /> {isProfessional ? 'Esporta le mie sedute' : 'Esporta CSV del centro'}</a>{validPeriod && financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode={isProfessional ? 'professionals' : 'patients'} buttonLabel="Compensi e fatture autorizzati" />}</div>} />
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Riepilogo sedute e pagamenti</h2><p>Panoramica del periodo: sedute, pagamenti operativi e tariffe previste. Non rappresenta la contabilità né i compensi professionali.</p></div><div className="toolbar-right">{isProfessional ? <span className="agenda-practitioner-label">Report personale: <strong>{practitionerName(boot.practitioners[0] ?? { name: myPractitioner, practitioner_name: 'Mio profilo' } as Practitioner)}</strong></span> : <Field label="Professionista"><select aria-label="Filtro professionista" value={professional} onChange={event => { setProfessional(event.target.value); setPage(1) }}><option value="">Tutti i professionisti</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field>}<Field label="Dal"><DateInput value={start} onChange={v => { setStart(v); setPreset('custom'); setPage(1) }} onValidityChange={setStartValid} calendarLabel="data iniziale" resetKey={preset} required /></Field><Field label="Al"><DateInput value={end} onChange={v => { setEnd(v); setPreset('custom'); setPage(1) }} onValidityChange={setEndValid} calendarLabel="data finale" resetKey={preset} required /></Field></div></div>
+      <div className="period-presets" role="group" aria-label="Scorciatoie periodo"><button type="button" className={preset === 'today' ? 'selected' : ''} onClick={() => applyPreset('today')}>Oggi</button><button type="button" className={preset === 'week' ? 'selected' : ''} onClick={() => applyPreset('week')}>Questa settimana</button><button type="button" className={preset === 'month' ? 'selected' : ''} onClick={() => applyPreset('month')}>Questo mese</button><button type="button" className={preset === 'last_month' ? 'selected' : ''} onClick={() => applyPreset('last_month')}>Mese scorso</button></div>
+      {!validPeriod ? <p className="inline-error" role="alert">Periodo non valido: inserisci due date complete nel formato GG/MM/AAAA, con «Dal» precedente o uguale ad «Al». Report ed esportazioni sono sospesi.</p> : loading ? <p className="panel-loading">Caricamento…</p> : !Object.keys(currencies).length ? <Empty title="Nessun dato nel periodo" /> : Object.entries(currencies).map(([currency, r]) => <div className="report-currency" key={currency}>
+        <div className="report-group">
+          <h3 className="report-group-title">Sedute e appuntamenti ({currency === 'UNSET' ? 'Valuta da verificare' : currency})</h3>
+          <div className="metrics-grid inset">
+            <Metric label="Sedute totali" value={String(r.sessions ?? 0)} onClick={() => selectKpi('all', currency)} active={selectedKpi === 'all' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Sedute svolte" value={String(r.performed ?? 0)} tone="green" onClick={() => selectKpi('performed', currency)} active={selectedKpi === 'performed' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Appuntamenti futuri" value={String(r.future ?? 0)} tone="blue" onClick={() => selectKpi('future', currency)} active={selectedKpi === 'future' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Sedute da chiudere" value={String(r.to_close ?? 0)} tone="amber" onClick={() => selectKpi('to_close', currency)} active={selectedKpi === 'to_close' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Sedute annullate" value={String(r.cancelled ?? 0)} tone="purple" onClick={() => selectKpi('cancelled', currency)} active={selectedKpi === 'cancelled' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+          </div>
+        </div>
+        <div className="report-group">
+          <h3 className="report-group-title">Stato pagamenti operativi</h3>
+          <div className="metrics-grid inset">
+            <Metric label="Con pagamento registrato" value={String(r.operational_paid ?? 0)} tone="green" onClick={() => selectKpi('operational_paid', currency)} active={selectedKpi === 'operational_paid' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Svolte senza pagamento" value={String(r.operational_unpaid ?? 0)} tone="amber" onClick={() => selectKpi('operational_unpaid', currency)} active={selectedKpi === 'operational_unpaid' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Con tariffa prevista" value={String(r.due ?? 0)} tone="purple" onClick={() => selectKpi('due', currency)} active={selectedKpi === 'due' && (selectedCurrency === currency || selectedCurrency === 'all')} />
+            <Metric label="Valore tariffe previste" value={currency === 'UNSET' ? 'Da verificare' : money(r.due_snapshot_amount, currency)} tone="purple" />
+          </div>
+          <p className="scope-note">Valore tariffe previste: importo teorico calcolato sulle tariffe di catalogo delle sedute con economia dovuta; non costituisce estratto conto contabile né incasso.</p>
+        </div>
+      </div>)}{Boolean(data?.truncated) && <p className="inline-error" role="alert">Totali parziali: restringi il periodo. L'esportazione è sospesa.</p>}
+      {validPeriod && <div className="report-drilldown"><div className="report-drilldown-header"><h3>Dettaglio sedute — {kpiLabel[selectedKpi] || 'Tutte'}{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 ? ` (${selectedCurrency})` : ''} ({totalSessions})</h3><div className="button-group">{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 && <Button variant="secondary" onClick={() => { setSelectedCurrency('all'); setPage(1) }}>Tutte le valute</Button>}<a className={`button secondary ${sessionsError || sessionsLoading ? 'disabled' : ''}`} href={sessionsError || sessionsLoading || loading || !data || !!data.truncated ? undefined : exportUrl} aria-disabled={sessionsLoading || loading || !data || !!sessionsError || !!data?.truncated} onClick={e => { if (sessionsError || sessionsLoading || loading || !data || data.truncated) e.preventDefault() }}><Download size={16} /> Esporta CSV ({kpiLabel[selectedKpi] || 'Filtro'}{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 ? ` ${selectedCurrency}` : ''})</a></div></div>{sessionsLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : sessionsError ? <p className="inline-error" role="alert">{sessionsError}</p> : !sessions.length ? <Empty title="Nessuna seduta per questo filtro" detail="Modifica il filtro KPI o il periodo per visualizzare i record." /> : <><DataTable rows={sessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (_v, row) => demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name) }, { key: 'practitioner_name', label: 'Professionista', render: (_v, row) => demoText(row.practitioner_name || row.practitioner) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato seduta', render: (v, row) => row.cc_performed ? 'Svolta' : (v === 'Cancelled' ? 'Annullata' : (row.cc_classified_future ? 'In programma' : (row.cc_closure_state === 'Auto Locked' ? 'Bloccata' : 'Da chiudere'))) }, { key: 'cc_paid', label: 'Pagamento operativo', render: (v, row) => { if (v) return <Chip tone="good">Registrato</Chip>; if (row.status === 'Cancelled') return <Chip tone="neutral">— (annullata)</Chip>; if (row.cc_classified_future) return <Chip tone="blue">In programma</Chip>; if (['Non Due', 'Waived', 'Package Covered'].includes(String(row.cc_economic_state))) return <Chip tone="neutral">Non dovuto</Chip>; if (row.cc_economic_state === 'Pending') return <Chip tone="neutral">Da definire</Chip>; return <Chip tone="warn">Da incassare</Chip> } }, { key: 'mode_of_payment', label: 'Metodo', render: v => String(v || '—') }, { key: 'cc_price_snapshot', label: 'Tariffa prevista', render: (v, row) => v != null ? money(v, String(row.cc_currency_snapshot || 'EUR')) : '—' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />{totalPages > 1 && <div className="pagination-bar" role="navigation" aria-label="Paginazione sedute"><span>Pagina <strong>{page}</strong> di <strong>{totalPages}</strong> ({totalSessions} sedute totali)</span><div className="button-group"><Button variant="secondary" disabled={page <= 1 || sessionsLoading} onClick={() => setPage(p => Math.max(1, p - 1))}>Precedente</Button><Button variant="secondary" disabled={page >= totalPages || sessionsLoading} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Successiva</Button></div></div>}</>}</div>}
+    </section>
+    {professionalOpen && <section className="panel professional-report"><div className="panel-toolbar"><div className="panel-title"><h2>Attività del professionista</h2><p>Consulta le sedute di una persona senza modificare il filtro del riepilogo superiore. Il periodo è condiviso; non indica compensi pagati.</p></div><div className="toolbar-right"><Field label="Professionista"><select aria-label="Professionista report" value={detailProfessional} onChange={event => { setDetailProfessional(event.target.value); setProfPage(1) }}><option value="">Seleziona</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field><a className="button secondary" href={validPeriod && detailProfessional && !profLoading && !profError && profSummary && !profSummary.truncated ? professionalExportUrl : undefined} aria-disabled={!validPeriod || !detailProfessional || profLoading || !!profError || !profSummary || !!profSummary.truncated} onClick={event => { if (!validPeriod || !detailProfessional || profLoading || profError || !profSummary || profSummary.truncated) event.preventDefault() }}><Download size={16} /> Esporta CSV completo</a>{financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode="professionals" buttonLabel="Compensi e fatture autorizzati" />}</div></div>{!validPeriod ? <p className="inline-error" role="alert">Correggi il periodo prima di visualizzare o esportare le sedute.</p> : !detailProfessional ? <Empty title="Seleziona un professionista" /> : profLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : profError ? <p className="inline-error" role="alert">{profError}</p> : (() => {
+      const professionalCurrencies = (profSummary?.currencies as Record<string, Row> | undefined) ?? {}
+      const sum = (key: string) => Object.values(professionalCurrencies).reduce((value, item) => value + Number(item[key] ?? 0), 0)
+      return <><div className="metrics-grid inset"><Metric label="Sedute nel periodo" value={String(profTotal)} /><Metric label="Sedute svolte" value={String(sum('performed'))} tone="green" /><Metric label="Sedute da chiudere" value={String(sum('to_close'))} tone="amber" /><Metric label="Sedute annullate" value={String(sum('cancelled'))} tone="purple" /></div>{Boolean(profSummary?.truncated) && <p className="inline-error" role="alert">Riepilogo parziale: restringi il periodo per consultare ed esportare dati completi.</p>}<DataTable rows={profSessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (value, row) => demoPatient(row.patient, value, row.patient_first_name, row.patient_last_name) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato', render: (value, row) => row.cc_performed ? 'Svolta' : value === 'Cancelled' ? 'Annullata' : 'In programma' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />{profTotalPages > 1 && <div className="pagination-bar" role="navigation" aria-label="Paginazione attività professionista"><span>Pagina {profPage} di {profTotalPages} · {profTotal} sedute</span><div className="button-group"><Button variant="secondary" disabled={profPage <= 1 || profLoading} onClick={() => setProfPage(p => Math.max(1, p - 1))}>Precedente</Button><Button variant="secondary" disabled={profPage >= profTotalPages || profLoading} onClick={() => setProfPage(p => Math.min(profTotalPages, p + 1))}>Successiva</Button></div></div>}</>
+    })()}</section>}
+    {selectedAppointment && <AppointmentDetail row={selectedAppointment} boot={boot} center={center} onClose={() => setSelectedAppointment(null)} onSuccess={() => { setSelectedAppointment(null); setReload(x => x + 1) }} feedback={feedback} />}
   </>
 }
 
@@ -332,40 +757,93 @@ function FinanceDetail({ row, tab, center, centers, canWrite, assignees, account
   return <Drawer title={title} onClose={onClose}><div className="detail-summary"><Chip tone={String(row.state ?? row.status).includes('Error') ? 'bad' : 'blue'}>{financeFieldValue('state', row.state ?? row.status ?? tab)}</Chip><h3>{title}</h3><p>Centro: {centerNameFor(center, centers)}</p></div><div className="detail-section"><h3>Informazioni</h3><dl className="property-list">{Object.entries(row).filter(([k]) => !['name', 'problem'].includes(k)).map(([k, v]) => <div key={k}><dt>{financeFieldLabel(k)}</dt><dd>{financeFieldValue(k, v)}</dd></div>)}</dl>{detail && <><h3>Posizione</h3><dl className="property-list">{Object.entries(detail).filter(([, v]) => !Array.isArray(v) && typeof v !== 'object').map(([k, v]) => <div key={k}><dt>{financeFieldLabel(k)}</dt><dd>{financeFieldValue(k, v)}</dd></div>)}</dl></>}{Boolean(row.problem) && <p className="inline-error">{String(row.problem)}</p>}{canWrite && tab === 'Coda amministrativa' && <><Button variant="secondary" onClick={() => setAction(true)}>Gestisci condizione</Button>{action && <form onSubmit={e => { e.preventDefault(); void run(() => finance('admin_queue.manage', { name: row.name, priority, assignee: assignee || null, due_at: dueAt ? dueAt.replace('T', ' ') : null, defer_until: deferUntil ? deferUntil.replace('T', ' ') : null, reason }, true)) }}><Field label="Priorità" required><select value={priority} onChange={e => setPriority(Number(e.target.value))}>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}</select></Field><Field label="Assegnatario"><select value={assignee} onChange={e => setAssignee(e.target.value)}><option value="">Nessuno</option>{assignees.map(u => <option key={u} value={u}>{u}</option>)}</select></Field><Field label="Scadenza UTC"><input type="datetime-local" value={dueAt} onChange={e => setDueAt(e.target.value)} /></Field><Field label="Rinvio fino a UTC"><input type="datetime-local" value={deferUntil} onChange={e => setDeferUntil(e.target.value)} /></Field><Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required /></Field><FormError error={error} /><Button disabled={busy} type="submit">Conferma</Button></form>}</>}</div><FinanceActions row={row} tab={tab} center={center} canWrite={canWrite} accounts={accounts} suppliers={suppliers} items={items} feedback={feedback} onChange={onChange} /></Drawer>
 }
 
-export function Access({ center, feedback }: Context) {
+export function Access({ center, feedback, boot }: Context) {
   const [data, setData] = useState<Row | null>(null)
   const [form, setForm] = useState<'membership' | 'practitioner' | null>(null)
   const [user, setUser] = useState('')
   const [practitioner, setPractitioner] = useState('')
-  const [active, setActive] = useState('1')
+  const [active, setActive] = useState('')
   const [reason, setReason] = useState('')
   const [reload, setReload] = useState(0)
   const { busy, error, run } = useAction(feedback, () => { setForm(null); setReload(x => x + 1) })
   useEffect(() => {
     if (!center) return
-    let live = true
+    let live = true; setData(null)
     ops<Row>('workspace.management_context', { center }).then(r => { if (live) setData(r) }).catch(e => feedback(getError(e), true))
     return () => { live = false }
   }, [center, reload])
   const users = data?.users as Row[] ?? []
   const practitioners = data?.practitioners as Row[] ?? []
+  const memberships = data?.memberships as Row[] ?? []
+  const roleLabel: Record<string, string> = { 'CC Manager': 'Direzione', 'CC Professional': 'Professionista', 'CC Secretariat': 'Segreteria', 'CC Finance': 'Finanza', 'CC Accountant': 'Commercialista' }
+  const userRoles = (row: Row) => ((row.roles as string[] | undefined) ?? []).map(role => roleLabel[role] || role).join(', ')
+  const readableUser = (row: Row) => {
+    const name = String(row.full_name ?? '').trim()
+    const id = String(row.name ?? '')
+    const label = name && name !== id && !syntheticCode(name) ? name : id
+    return userRoles(row) ? label + ' · ' + userRoles(row) : label
+  }
+  const selectedAccount = users.find(entry => entry.name === user)
+  const currentMembership = memberships.find(entry => entry.user === user)
+  const selectedPractitioner = practitioners.find(entry => entry.name === practitioner)
+  const openForm = (next: 'membership' | 'practitioner') => {
+    setUser(''); setPractitioner(''); setActive(''); setReason(''); setForm(next)
+  }
   const submit = () => form === 'membership'
     ? call('security.lifecycle.set_membership', { user, center, active, reason }, true)
     : call('security.lifecycle.set_practitioner_state', { practitioner, active, reason }, true)
-  return <><Heading eyebrow="AMMINISTRAZIONE" title="Gestione accessi" subtitle="Utenti e appartenenze al centro. Ogni modifica passa dal servizio con audit." action={<div className="button-group"><Button variant="secondary" onClick={() => setForm('practitioner')}>Stato professionista</Button><Button onClick={() => setForm('membership')}><Plus size={17} /> Appartenenza</Button></div>} />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Appartenenze</h2><p>Stato degli utenti nel centro selezionato.</p></div></div>{!data ? <p className="panel-loading">Caricamento…</p> : <DataTable rows={data.memberships as Row[] ?? []} columns={[{ key: 'user', label: 'Utente' }, { key: 'active', label: 'Stato', render: v => <Chip tone={v ? 'good' : 'neutral'}>{v ? 'Attivo' : 'Disattivo'}</Chip> }]} />}</section>
-    {form && <Modal title={form === 'membership' ? 'Appartenenza al centro' : 'Stato professionista'} onClose={() => setForm(null)}><form onSubmit={e => { e.preventDefault(); void run(submit) }}>
-      {form === 'membership' ? <Field label="Utente" required><select value={user} onChange={e => setUser(e.target.value)} required><option value="">Seleziona</option>{users.map(u => <option key={String(u.name)} value={String(u.name)}>{String(u.full_name ?? u.name)}</option>)}</select></Field> : <Field label="Professionista" required><select value={practitioner} onChange={e => setPractitioner(e.target.value)} required><option value="">Seleziona</option>{practitioners.map(p => <option key={String(p.name)} value={String(p.name)}>{String(demoText(p.practitioner_name) ?? p.name)}</option>)}</select></Field>}
-      <Field label="Stato" required><select value={active} onChange={e => setActive(e.target.value)}><option value="1">Attivo</option><option value="0">Disattivo</option></select></Field>
-      <Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setForm(null)}>Annulla</Button><Button type="submit" disabled={busy}>Conferma</Button></div>
+  return <><Heading eyebrow="AMMINISTRAZIONE" title="Gestione accessi" subtitle="Consulta gli account autorizzati e gestisci le appartenenze con una motivazione." action={<div className="button-group"><Button variant="secondary" onClick={() => openForm('practitioner')}>Stato professionista</Button><Button onClick={() => openForm('membership')}><Plus size={17} /> Appartenenza</Button></div>} />
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Appartenenze a {centerNameFor(center, boot.centers)}</h2><p>Identità, ruolo e stato dell'account nella sede selezionata.</p></div></div>{!data ? <p className="panel-loading" role="status">Caricamento…</p> : <DataTable rows={memberships} columns={[{ key: 'user', label: 'Utente', render: value => {
+      const account = users.find(entry => entry.name === value)
+      return account ? readableUser(account) : String(value ?? 'Utente non disponibile')
+    } }, { key: 'active', label: 'Stato appartenenza', render: value => <Chip tone={Number(value) === 1 ? 'good' : 'neutral'}>{Number(value) === 1 ? 'Attivo' : 'Disattivo'}</Chip> }]} />}</section>
+    {form && <Modal title={form === 'membership' ? 'Appartenenza al centro' : 'Stato professionista'} onClose={() => setForm(null)}><form onSubmit={e => { e.preventDefault(); if (active && reason.trim() && (form === 'membership' ? user : practitioner)) void run(submit) }}>
+      <p className="scope-note">Sede interessata: <strong>{centerNameFor(center, boot.centers)}</strong>. Scegli consapevolmente il nuovo stato; la modifica viene registrata.</p>
+      {form === 'membership' ? <Field label="Utente" required><select value={user} onChange={e => { setUser(e.target.value); setActive('') }} required><option value="">Seleziona un utente</option>{users.map(u => <option key={String(u.name)} value={String(u.name)}>{readableUser(u)}</option>)}</select></Field> : <Field label="Professionista" required><select value={practitioner} onChange={e => { setPractitioner(e.target.value); setActive('') }} required><option value="">Seleziona un professionista</option>{practitioners.map(p => <option key={String(p.name)} value={String(p.name)}>{demoText(p.practitioner_name) || String(p.name)}</option>)}</select></Field>}
+      {form === 'membership' && selectedAccount && <p className="scope-note">Account: {readableUser(selectedAccount)}. Appartenenza attuale: <strong>{currentMembership ? Number(currentMembership.active) === 1 ? 'Attiva' : 'Disattiva' : 'Non presente in questa sede'}</strong>.</p>}
+      {form === 'practitioner' && selectedPractitioner && <p className="scope-note">Stato attuale del professionista: <strong>{selectedPractitioner.status === 'Active' ? 'Attivo' : 'Non attivo'}</strong>.</p>}
+      <Field label="Nuovo stato" required><select value={active} onChange={e => setActive(e.target.value)} required><option value="">Scegli lo stato da impostare</option><option value="1">Attivo</option><option value="0">Disattivo</option></select></Field>
+      {active !== '' && <p className="scope-note">{active === '0' ? 'La disattivazione impedirà le operazioni consentite tramite questa appartenenza o stato.' : 'L’attivazione rende disponibile la relativa appartenenza o stato, senza assegnare nuovi ruoli.'}</p>}
+      <Field label="Motivo della modifica" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setForm(null)}>Annulla</Button><Button type="submit" disabled={busy || !active || !reason.trim() || !(form === 'membership' ? user : practitioner)}>{busy ? 'Salvataggio…' : 'Conferma modifica'}</Button></div>
     </form></Modal>}</>
 }
 
-export function Notifications({ center }: { center: string; feedback: Feedback }) {
+const formatIsoDateIt = (iso: string) => {
+  const parts = iso.split('-')
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+  return iso
+}
+
+const formatCurrencyIt = (amount: string, curr: string) => {
+  const num = parseFloat(amount)
+  const formattedNum = isNaN(num) ? amount.replace('.', ',') : num.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const symbol = curr === 'EUR' ? '€' : curr
+  return `${formattedNum} ${symbol}`
+}
+
+const translateNotification = (msg: unknown) => {
+  const text = String(msg ?? '')
+  if (text === 'Pending sessions require daily closure; open the authorized session workspace.') {
+    return 'Ci sono sedute da chiudere. Apri l’Agenda per completare la chiusura.'
+  }
+  if (text.startsWith('Prima di una seduta successiva è richiesta la verifica del pagamento.')) {
+    return text.replace(/(\d+(?:\.\d{2})?)\s+([A-Z]{3})\s+—\s+scadenza\s+(\d{4}-\d{2}-\d{2})/g, (_m, amt, curr, dateStr) => {
+      return `${formatCurrencyIt(amt, curr)} — scadenza ${formatIsoDateIt(dateStr)}`
+    })
+  }
+  return text
+}
+
+export function Notifications({ boot, center }: Context) {
+  const personal = boot.roles.includes('CC Professional') && !boot.roles.includes('CC Manager')
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reload, setReload] = useState(0)
-  useEffect(() => { let live = true; setLoading(true); setRows([]); setError(''); call<Row[]>('frappe.client.get_list', { doctype: 'CC Notification', fields: ['name', 'message', 'state', 'creation'], limit_page_length: 100, order_by: 'creation desc' }).then(r => { if (live) { setRows(r); setLoading(false) } }).catch(e => { if (live) { setError(getError(e)); setLoading(false) } }); return () => { live = false } }, [center, reload])
-  return <><Heading eyebrow="CENTRO CHANGE" title="Notifiche" subtitle="Esiti e comunicazioni operative." /><section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Notifiche recenti</h2></div></div>{loading ? <p className="panel-loading" role="status">Caricamento notifiche…</p> : error ? <div className="notification-error" role="alert"><p>{error}</p><Button variant="secondary" onClick={() => setReload(n => n + 1)}>Riprova</Button></div> : rows.length ? <DataTable rows={rows} columns={[{ key: 'message', label: 'Messaggio' }, { key: 'state', label: 'Stato' }, dateColumn('creation', 'Data')]} /> : <Empty title="Nessuna notifica recente" detail="Le comunicazioni del centro appariranno qui." />}</section></>
+  useEffect(() => { let live = true; setLoading(true); setRows([]); setError(''); call<Row[]>('frappe.client.get_list', {
+    doctype: personal ? 'Notification Log' : 'CC Notification',
+    fields: personal ? ['name', 'subject', 'creation', 'read'] : ['name', 'message', 'state', 'creation'],
+    limit_page_length: 100, order_by: 'creation desc'
+  }).then(r => { if (live) { setRows(r); setLoading(false) } }).catch(e => { if (live) { setError(getError(e)); setLoading(false) } }); return () => { live = false } }, [center, personal, reload])
+  return <><Heading eyebrow="CENTRO CHANGE" title="Notifiche" subtitle={personal ? 'Promemoria e comunicazioni personali.' : 'Esiti e comunicazioni operative.'} /><section className={`panel${personal ? ' personal-notifications' : ''}`}><div className="panel-toolbar"><div className="panel-title"><h2>Notifiche recenti</h2></div></div>{loading ? <p className="panel-loading" role="status">Caricamento notifiche…</p> : error ? <div className="notification-error" role="alert"><p>{error}</p><Button variant="secondary" onClick={() => setReload(n => n + 1)}>Riprova</Button></div> : rows.length ? <DataTable rows={rows} columns={personal ? [{ key: 'subject', label: 'Messaggio', render: value => translateNotification(value) }, { key: 'read', label: 'Lettura', render: value => value ? 'Letta' : 'Da leggere' }, dateColumn('creation', 'Data')] : [{ key: 'message', label: 'Messaggio', render: value => translateNotification(value) }, { key: 'state', label: 'Stato', render: value => ({ Pending: 'In attesa', Sent: 'Inviata', Delivered: 'Consegnata', Failed: 'Non riuscita', Cancelled: 'Annullata' } as Record<string, string>)[String(value)] || 'Da verificare' }, dateColumn('creation', 'Data')]} /> : <Empty title="Nessuna notifica recente" detail="Le comunicazioni del centro appariranno qui." />}</section></>
 }

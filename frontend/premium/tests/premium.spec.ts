@@ -1,7 +1,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { configureDemoLabels, demoPatient, demoText } from '../src/demo_labels'
+import type { Appointment } from '../src/api'
+import { configureDemoLabels, demoPatient, demoText, syntheticCode } from '../src/demo_labels'
 import { auditActorName, economyName, practitionerNameFor } from '../src/display_names'
 import { availableUnitLabel, sessionCountLabel } from '../src/patient_packages'
+import { parseItalianDate } from '../src/ui'
 
 async function chooseCombo(scope: Page | Locator, label: string | RegExp, value: string) {
   const field = scope.getByRole('combobox', { name: label })
@@ -19,6 +21,12 @@ test('AUDIT-04 UX: pacchetto mostra il nome professionista senza codice fixture'
   const id = 'CC-HTTP-AbCd123456 a'
   expect(practitionerNameFor(id, [{ name: id, practitioner_name: id }])).toBe('Professionista di prova A')
   expect(practitionerNameFor('PR-001', [{ name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }])).toBe('Dott.ssa Rossi')
+})
+
+test('AUDIT-05: identità sintetica resta leggibile dopo modifica autorizzata del cognome', () => {
+  const id = 'CC-HTTP-a5f3ce4696 a Professionista'
+  expect(syntheticCode(id)).toBe(true)
+  expect(practitionerNameFor('PR-TEST', [{ name: 'PR-TEST', practitioner_name: id }])).toBe('Professionista di prova A')
 })
 
 test('AUDIT-03: historical state and owned synthetic audit actor stay readable', () => {
@@ -434,6 +442,10 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     if (method.endsWith('operations.workspace.bootstrap')) { if (opsAllowed) message = { ...boot, ...bootState }; else status = 403 }
     else if (method.endsWith('finance.reporting.bootstrap')) { if (financeAllowed) message = { ...financeBoot, ...financeState }; else status = 403 }
     else if (method.endsWith('operations.workspace.agenda')) message = { appointments: agendaRows ?? [{ ...appointment, ...appointmentState }], truncated: false }
+    else if (method.endsWith('operations.profiles.practitioners')) {
+      const search = (new URL(req.url()).searchParams.get('search') ?? '').toLocaleLowerCase('it-IT')
+      message = { rows: (bootState.practitioners ?? boot.practitioners).filter(row => row.practitioner_name.toLocaleLowerCase('it-IT').includes(search)), has_more: false }
+    }
     else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
     else if (method.endsWith('operations.profiles.patient_detail')) message = { name: 'PAT-001', patient_name: 'Paziente Sintetico', first_name: 'Paziente', last_name: 'Sintetico', email: 'paziente@example.invalid', modified: '2026-10-23 12:00:00' }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
@@ -445,6 +457,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     ]
     else if (method.endsWith('operations.workspace.schedules')) message = [{ name: 'SCHED-001', practitioner: 'PR-001', time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '18:00:00' }], absences: [] }]
     else if (method.endsWith('operations.reporting.summary')) message = { currencies: { EUR: { sessions: 1, performed: 0, due: 1, due_snapshot_amount: 80 } }, truncated: false }
+    else if (method.endsWith('operations.reporting.sessions')) message = { appointments: [{ ...appointment, ...appointmentState, patient_first_name: 'Paziente', patient_last_name: 'Sintetico', practitioner_name: 'Dott.ssa Rossi', cc_service_label: 'Prima visita', mode_of_payment: 'POS' }], total: 1, truncated: false }
     else if (method.endsWith('finance.reporting.summary')) message = { totals: { revenue_net: 600, collected: 400, receivable_outstanding: 200, purchase_net: 250, payable_outstanding: 80, expected_compensation: 120, unresolved_expectations: 0, sessions: 4 }, sales_invoices: [], purchase_invoices: [], scope_note: 'Dati sintetici.' }
     else if (method.endsWith('finance.patient_reporting.patient_view')) message = new URL(req.url()).searchParams.has('key')
       ? { key: 'CUS-001', customer_label: 'Soggetto sintetico', state: 'Scaduto', counts: { sessions: 1, performed: 1 }, totals: { invoiced: 80, collected: 60, outstanding: 20, overdue: 20, open_invoices: 1 }, next_due_date: today, blocked: false, deferred: true, sessions: [{ name: 'APP-001', appointment_date: today, patient_label: 'Paziente Sintetico', cc_service_label: 'Prima visita', category: 'performed' }], invoices: [{ name: 'INV-001', posting_date: today, grand_total: 80 }], payments: [{ name: 'PAY-001', posting_date: today, collected_amount: 60 }], open_invoices: [{ name: 'INV-001', outstanding_amount: 20, original_due_date: today, effective_due_date: today, overdue: true }], scope_note: 'Dati sintetici.' }
@@ -651,14 +664,17 @@ test('AUDIT-03 modifica un giorno senza cancellare le altre fasce e annulla asse
   await page.screenshot({ path: info.outputPath('agenda-disponibilita.png'), fullPage: true })
   await page.getByRole('button', { name: 'Modifica orario' }).click()
   const dialog = page.getByRole('dialog')
-  await dialog.getByLabel('Dalle').fill('10:00')
+  await expect(dialog.getByLabel('Dalle (fascia 1)')).toHaveValue('09:00')
+  await dialog.getByLabel('Dalle (fascia 1)').fill('10:00')
   await dialog.getByLabel(/^Alle/).fill('13:00')
   await dialog.getByLabel('Motivo').fill('Orario di prova')
+  await expect(dialog.getByRole('button', { name: 'Conferma' })).toBeDisabled()
+  await dialog.getByRole('checkbox', { name: /Ho verificato le fasce precedenti/ }).check()
   await dialog.getByRole('button', { name: 'Conferma' }).click()
   await expect.poll(() => writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeTruthy()
   expect(writes.find(write => write.method.endsWith('availability.set_schedule'))?.body.time_slots).toEqual([
-    { day: 'Tuesday', from_time: '14:00:00', to_time: '18:00:00' },
-    { day: 'Monday', from_time: '10:00', to_time: '13:00' }
+    { day: 'Monday', from_time: '10:00', to_time: '13:00' },
+    { day: 'Tuesday', from_time: '14:00', to_time: '18:00' }
   ])
   expect(writes.find(write => write.method.endsWith('availability.set_schedule'))?.body.expected_modified).toBe('2026-10-22 10:00:00')
   await page.getByRole('button', { name: 'Annulla assenza' }).click()
@@ -688,13 +704,98 @@ test('UAT Professionisti: navigazione, ricerca e scheda autorizzata', async ({ p
   await page.screenshot({ path: `../../docs/evidence/issue-148/uat-professionisti-${testInfo.project.name}.png`, fullPage: true })
 })
 
+test('AUDIT-05: ricerca server trova un professionista oltre il bootstrap e mostra stato e pagina vuota', async ({ page }, info) => {
+  await mockApi(page, [], true, {}, { practitioners: [boot.practitioners[0]] })
+  const searches: string[] = []
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', async route => {
+    const query = new URL(route.request().url()).searchParams.get('search') ?? ''
+    searches.push(query)
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: {
+      rows: query.toLowerCase().includes('bianchi') ? [{ name: 'PR-101', practitioner_name: 'Dott. Bianchi', first_name: 'Luca', last_name: 'Bianchi', status: 'Inactive' }] : [],
+      has_more: false,
+    } }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: {
+    name: 'PR-101', practitioner_name: 'Dott. Bianchi', first_name: 'Luca', last_name: 'Bianchi', status: 'Inactive'
+  } }) }))
+  await page.goto('./#Professionisti')
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('Bianchi')
+  await expect(page.locator('tbody tr')).toHaveCount(1)
+  await expect(page.locator('tbody tr')).toContainText('Dott. Bianchi')
+  await expect(page.locator('tbody tr')).toContainText('Non attivo')
+  await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-list-${info.project.name}.png` })
+  await page.locator('tbody tr').click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer).toContainText('Dott. Bianchi')
+  await expect(drawer).toContainText('Luca')
+  await expect(drawer).toContainText('Non attivo')
+  await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-${info.project.name}.png` })
+  await page.getByRole('dialog').getByRole('button', { name: 'Chiudi' }).click()
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('NessunNome')
+  await expect(page.getByText('Nessun risultato per questa ricerca.')).toBeVisible()
+  expect(searches).toContain('Bianchi')
+})
+
+test('AUDIT-05: pagina vecchia non mescola risultati dopo cambio ricerca', async ({ page }) => {
+  await mockApi(page, [], true, {}, { practitioners: [boot.practitioners[0]] })
+  let releasePage: (() => void) | undefined
+  let oldPageCompleted = false
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', async route => {
+    const params = new URL(route.request().url()).searchParams
+    const search = params.get('search') ?? ''
+    const offset = Number(params.get('offset') ?? 0)
+    if (offset) await new Promise<void>(resolve => { releasePage = resolve })
+    const rows = search === 'Bianchi' ? [{ name: 'PR-B', practitioner_name: 'Dott. Bianchi', status: 'Active' }]
+      : offset ? [{ name: 'PR-A2', practitioner_name: 'Dott. Arancio', status: 'Active' }]
+      : [{ name: 'PR-A1', practitioner_name: 'Dott. Alberti', status: 'Active' }]
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows, has_more: !search && !offset } }) })
+    if (offset) oldPageCompleted = true
+  })
+  await page.goto('./#Professionisti')
+  await expect(page.getByRole('button', { name: 'Carica altri' })).toBeVisible()
+  await page.getByRole('button', { name: 'Carica altri' }).click()
+  await expect.poll(() => Boolean(releasePage)).toBe(true)
+  await page.getByRole('searchbox', { name: 'Cerca professionisti' }).fill('Bianchi')
+  await expect(page.locator('tbody tr')).toContainText('Dott. Bianchi')
+  releasePage?.()
+  await expect.poll(() => oldPageCompleted).toBe(true)
+  await expect(page.locator('tbody tr')).toHaveCount(1)
+  await expect(page.locator('tbody tr')).not.toContainText('Dott. Arancio')
+})
+
+test('AUDIT-05: scheda sintetica non espone il codice tecnico come nome', async ({ page }) => {
+  await mockApi(page, [], true)
+  const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', last_name: '', status: 'Active' }
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [row], has_more: false } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: row }) }))
+  await page.goto('./#Professionisti')
+  await expect(page.locator('tbody tr')).toContainText('Professionista di prova A')
+  await page.locator('tbody tr').click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer.getByRole('heading', { name: 'Scheda professionista' })).toBeVisible()
+  await expect(drawer).toContainText('Professionista di prova A')
+  await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
+})
+
+test('AUDIT-05: selettore Report professionisti usa la stessa identità leggibile', async ({ page }) => {
+  const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', status: 'Active' }
+  await mockApi(page, [], true, {}, { practitioners: [row] })
+  await page.goto('./#Report')
+  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  const select = page.getByRole('combobox', { name: 'Professionista report' })
+  await expect(select).toContainText('Professionista di prova A')
+  await expect(select).not.toContainText('CC-HTTP-AbCd123456 a')
+})
+
 test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo', async ({ page }, testInfo) => {
   await mockApi(page, [], false, { cc_performed: 1 }, { roles: ['CC Secretariat'] })
   await page.goto('./')
   await openSection(page, 'Report')
-  await page.getByRole('button', { name: 'Report professionisti' }).click()
+  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
   await page.getByLabel('Professionista report').selectOption('PR-001')
-  await expect(page.getByText('Sedute svolte')).toBeVisible()
+  await expect(page.locator('.professional-report').getByText('Sedute svolte')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Compensi e fatture autorizzati' })).toHaveCount(0)
   await page.screenshot({ path: `../../docs/evidence/issue-148/uat-report-professionisti-${testInfo.project.name}.png`, fullPage: true })
 })
@@ -780,6 +881,22 @@ test('notifiche: caricamento, errore e riprova con stato vuoto corretto', async 
   await page.getByRole('button', { name: 'Riprova' }).click()
   await expect(page.getByText('Nessuna notifica recente')).toBeVisible()
   await expect(page.getByText('Le comunicazioni del centro appariranno qui.')).toBeVisible()
+})
+
+test('AUDIT-05: account professionista apre notifiche personali native senza coda manager', async ({ page }) => {
+  await mockApi(page, [], false, {}, { roles: ['CC Professional'] })
+  const requested: string[] = []
+  page.on('request', request => {
+    if (request.url().includes('/api/method/frappe.client.get_list'))
+      requested.push(new URL(request.url()).searchParams.get('doctype') ?? '')
+  })
+  await page.goto('./')
+  await openSection(page, 'Notifiche')
+  await expect(page.getByRole('heading', { name: 'Notifiche', exact: true })).toBeVisible()
+  await expect(page.getByText('Nessuna notifica recente')).toBeVisible()
+  expect(requested).toContain('Notification Log')
+  expect(requested).not.toContain('CC Notification')
+  await expect(page.getByRole('button', { name: 'Gestione accessi' })).toHaveCount(0)
 })
 
 test('agenda desktop: shell, calendario, dettaglio e prenotazione con CSRF', async ({ page }, testInfo) => {
@@ -1322,8 +1439,10 @@ test('gestione accessi invoca servizio membership auditato', async ({ page }) =>
   await page.getByRole('button', { name: 'Appartenenza', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Appartenenza al centro' })
   await dialog.getByRole('combobox', { name: 'Utente' }).selectOption('synthetic@example.invalid')
-  await dialog.getByRole('textbox', { name: 'Motivo' }).fill('Revisione sintetica')
-  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect(dialog.getByRole('button', { name: 'Conferma modifica' })).toBeDisabled()
+  await dialog.getByRole('combobox', { name: 'Nuovo stato' }).selectOption('0')
+  await dialog.getByRole('textbox', { name: 'Motivo della modifica' }).fill('Revisione sintetica')
+  await dialog.getByRole('button', { name: 'Conferma modifica' }).click()
   await expect.poll(() => writes.some(w => w.method.endsWith('security.lifecycle.set_membership'))).toBe(true)
   expect(writes.at(-1)?.body.center).toBe('CENTRO-A')
 })
@@ -1361,3 +1480,769 @@ test('sweep grafico delle sezioni operative e amministrative', async ({ page }, 
   }
   expect(consoleErrors).toEqual([])
 })
+
+test('AUDIT-05 MUST-FIX 1: Agenda con filtro professionisti multiplo e ricercabile', async ({ page }) => {
+  const practitioners = [
+    { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' },
+    { name: 'PR-002', practitioner_name: 'Dott. Bianchi' },
+    { name: 'PR-003', practitioner_name: 'Dott. Verdi' }
+  ]
+  await mockApi(page, [], true, {}, { practitioners })
+  await page.goto('./#Agenda')
+  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible()
+
+  const trigger = page.getByRole('button', { name: 'Filtro professionisti' })
+  await expect(trigger).toBeVisible()
+  await expect(trigger).toContainText('Tutti i professionisti (3)')
+
+  await trigger.click()
+  const popover = page.locator('.practitioner-multi-popover')
+  await expect(popover).toBeVisible()
+
+  const searchInput = popover.getByRole('textbox', { name: 'Cerca professionista' })
+  await searchInput.fill('Bianchi')
+  await expect(popover.getByRole('checkbox', { name: 'Dott. Bianchi' })).toBeVisible()
+  await expect(popover.getByRole('checkbox', { name: 'Dott. Verdi' })).toHaveCount(0)
+
+  await searchInput.clear()
+  await popover.locator('.multi-popover-item', { hasText: 'Dott.ssa Rossi' }).click()
+  await expect(popover.locator('.multi-popover-chips')).toContainText('Dott.ssa Rossi')
+
+  await popover.getByRole('button', { name: 'Tutti' }).click({ force: true })
+  await expect(popover.locator('.multi-popover-chips')).toHaveCount(0)
+})
+
+test('AUDIT-05 MUST-FIX 1b: Account Professionista non vede filtro Tutti i professionisti', async ({ page }) => {
+  const practitioner = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }
+  await mockApi(page, [], false, {}, { roles: ['CC Professional'], practitioners: [practitioner] })
+  await page.goto('./#Agenda')
+  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible()
+
+  await expect(page.getByRole('button', { name: 'Filtro professionisti' })).toHaveCount(0)
+  await expect(page.locator('.agenda-practitioner-label')).toContainText('Dott.ssa Rossi')
+})
+
+test('AUDIT-05 MUST-FIX 2: Report fail-closed senza fallback silenzioso a workspace.agenda', async ({ page }) => {
+  let agendaCalled = false
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.workspace.agenda*', route => {
+    agendaCalled = true
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: [{ name: 'LEAK-APP' }], truncated: false } }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ exc: 'InternalServerError' }) })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  await expect(page.locator('.inline-error').last()).toContainText("Operazione non riuscita")
+  expect(agendaCalled).toBe(false)
+  await expect(page.locator('.report-drilldown .button.secondary')).toHaveClass(/disabled/)
+})
+
+test('AUDIT-05 MUST-FIX 3 & 4: Report paginazione server-side e query isolata Professionisti', async ({ page }) => {
+  const sessionCalls: string[] = []
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    const url = new URL(route.request().url())
+    sessionCalls.push(url.search)
+    const pageNum = Number(url.searchParams.get('page') || '1')
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          appointments: [
+            {
+              name: `APP-PAGE-${pageNum}`,
+              appointment_date: today,
+              appointment_time: '10:00:00',
+              patient_name: `Paziente Pagina ${pageNum}`,
+              practitioner_name: 'Dott.ssa Rossi',
+              cc_service_label: 'Visita',
+              status: 'Closed',
+              cc_performed: 1,
+              cc_paid: 1,
+              cc_economic_state: 'Paid',
+              mode_of_payment: 'POS',
+              cc_price_snapshot: 80,
+              cc_currency_snapshot: 'EUR'
+            }
+          ],
+          total: 120,
+          total_pages: 3,
+          page: pageNum,
+          page_length: 50,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  const paginationBar = page.locator('.pagination-bar')
+  await expect(paginationBar).toBeVisible()
+  await expect(paginationBar).toContainText('Pagina 1 di 3 (120 sedute totali)')
+
+  await paginationBar.getByRole('button', { name: 'Successiva' }).click()
+  await expect(paginationBar).toContainText('Pagina 2 di 3 (120 sedute totali)')
+  expect(sessionCalls.some(call => call.includes('page=2'))).toBe(true)
+
+  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  await page.getByRole('combobox', { name: 'Professionista report' }).selectOption('PR-001')
+
+  await expect.poll(() => sessionCalls.some(call => call.includes('practitioner=PR-001') && call.includes('kpi=all'))).toBe(true)
+  await expect(page.locator('.professional-report')).toBeVisible()
+})
+
+test('AUDIT-05 MUST-FIX 5: Seduta futura non viene marcata come Non pagata', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          appointments: [
+            {
+              name: 'APP-FUTURE',
+              appointment_date: '2099-01-01',
+              appointment_time: '15:00:00',
+              patient_name: 'Paziente Futuro',
+              practitioner_name: 'Dott.ssa Rossi',
+              cc_service_label: 'Visita futura',
+              status: 'Open',
+              cc_performed: 0,
+              cc_paid: 0,
+              cc_economic_state: 'Due',
+              cc_classified_future: true,
+              cc_classified_to_close: false,
+              cc_classified_unpaid: false,
+              mode_of_payment: null,
+              cc_price_snapshot: 80,
+              cc_currency_snapshot: 'EUR'
+            }
+          ],
+          total: 1,
+          total_pages: 1,
+          page: 1,
+          page_length: 50,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  const row = page.locator('.report-drilldown tbody tr').first()
+  await expect(row).toContainText('In programma')
+  await expect(row).not.toContainText('Non pagata')
+})
+
+test('AUDIT-05 UAT: Riconciliazione matematica KPI=6 <-> Header (6) <-> 6 righe <-> Esclusione cancellate', async ({ page }) => {
+  await mockApi(page)
+  // Summary with 8 sessions: 6 performed unpaid, 2 cancelled
+  await page.route('**/api/method/centrochange_core.operations.reporting.summary*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          currencies: {
+            EUR: {
+              sessions: 8,
+              performed: 6,
+              future: 0,
+              to_close: 0,
+              operational_paid: 0,
+              operational_unpaid: 6,
+              cancelled: 2,
+              due: 6,
+              due_snapshot_amount: 600
+            }
+          },
+          total_appointments: 8,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  let requestedKpi = ''
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    const url = new URL(route.request().url())
+    requestedKpi = url.searchParams.get('kpi') || ''
+    if (requestedKpi === 'operational_unpaid') {
+      const unpaidRows = Array.from({ length: 6 }, (_, i) => ({
+        name: `APP-UNPAID-${i + 1}`,
+        appointment_date: '2026-09-10',
+        appointment_time: '10:00:00',
+        patient_name: `Paziente ${i + 1}`,
+        practitioner_name: 'Dott. A',
+        cc_service_label: 'Seduta psicologica',
+        status: 'Closed',
+        cc_performed: 1,
+        cc_paid: 0,
+        cc_economic_state: 'Due',
+        cc_classified_future: false,
+        cc_classified_to_close: false,
+        cc_classified_unpaid: true,
+        cc_classified_cancelled: false,
+        mode_of_payment: null,
+        cc_price_snapshot: 100,
+        cc_currency_snapshot: 'EUR'
+      }))
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: {
+            appointments: unpaidRows,
+            total: 6,
+            total_pages: 1,
+            page: 1,
+            page_length: 50,
+            truncated: false
+          }
+        })
+      })
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          appointments: [],
+          total: 0,
+          total_pages: 1,
+          page: 1,
+          page_length: 50,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  // Verify grouping titles
+  await expect(page.getByText('Sedute e appuntamenti (EUR)')).toBeVisible()
+  await expect(page.getByText('Stato pagamenti operativi')).toBeVisible()
+  await expect(page.getByText(/Valore tariffe previste: importo teorico/)).toBeVisible()
+
+  // Click on "Svolte senza pagamento" (value 6)
+  const unpaidCard = page.locator('.metric-card').filter({ hasText: 'Svolte senza pagamento' })
+  await expect(unpaidCard).toContainText('6')
+  await unpaidCard.click()
+
+  // Drilldown header must show exact count 6 and Italian label
+  const header = page.locator('.report-drilldown-header h3')
+  await expect(header).toHaveText('Dettaglio sedute — Svolte senza pagamento (6)')
+
+  // Table must contain exactly 6 rows, all with 'Da incassare' and none with 'annullata'
+  const rows = page.locator('.report-drilldown tbody tr')
+  await expect(rows).toHaveCount(6)
+  await expect(rows.first()).toContainText('Da incassare')
+  await expect(rows.first()).not.toContainText('annullata')
+  await expect(rows.first()).not.toContainText('Non pagata')
+})
+
+test('AUDIT-05 UAT: Visualizzazione neutra per seduta annullata e registrato per pagata', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          appointments: [
+            {
+              name: 'APP-CANC',
+              appointment_date: '2026-09-15',
+              appointment_time: '11:00:00',
+              patient_name: 'Paziente Annullato',
+              practitioner_name: 'Dott. A',
+              cc_service_label: 'Seduta',
+              status: 'Cancelled',
+              cc_performed: 0,
+              cc_paid: 0,
+              cc_economic_state: 'Non Due',
+              cc_classified_future: false,
+              cc_classified_to_close: false,
+              cc_classified_unpaid: false,
+              cc_classified_cancelled: true,
+              mode_of_payment: null,
+              cc_price_snapshot: 100,
+              cc_currency_snapshot: 'EUR'
+            },
+            {
+              name: 'APP-PAID',
+              appointment_date: '2026-09-16',
+              appointment_time: '12:00:00',
+              patient_name: 'Paziente Pagato',
+              practitioner_name: 'Dott. A',
+              cc_service_label: 'Seduta',
+              status: 'Closed',
+              cc_performed: 1,
+              cc_paid: 1,
+              cc_economic_state: 'Due',
+              cc_classified_future: false,
+              cc_classified_to_close: false,
+              cc_classified_unpaid: false,
+              cc_classified_cancelled: false,
+              mode_of_payment: 'POS',
+              cc_price_snapshot: 100,
+              cc_currency_snapshot: 'EUR'
+            }
+          ],
+          total: 2,
+          total_pages: 1,
+          page: 1,
+          page_length: 50,
+          truncated: false
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  const rows = page.locator('.report-drilldown tbody tr')
+  await expect(rows).toHaveCount(2)
+
+  // Cancelled session row
+  const cancRow = rows.first()
+  await expect(cancRow).toContainText('Annullata')
+  await expect(cancRow).toContainText('— (annullata)')
+  await expect(cancRow).not.toContainText('Non pagata')
+
+  // Paid session row
+  const paidRow = rows.nth(1)
+  await expect(paidRow).toContainText('Svolta')
+  await expect(paidRow).toContainText('Registrato')
+})
+
+test('AUDIT-05 UAT: Metriche ribbon Agenda coerenti con filtro professionisti e stati temporali', async ({ page }) => {
+  const p1 = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }
+  const p2 = { name: 'PR-002', practitioner_name: 'Dott. Bianchi' }
+  const tomorrowDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
+  const appointments = [
+    // 2 appointments for PR-001: 1 performed, 1 cancelled
+    { name: 'APP-1', practitioner: 'PR-001', appointment_date: today, appointment_time: '09:00:00', duration: 60, cc_performed: 1, status: 'Closed' },
+    { name: 'APP-2', practitioner: 'PR-001', appointment_date: today, appointment_time: '10:00:00', duration: 60, cc_performed: 0, status: 'Cancelled' },
+    // 2 appointments for PR-002: 1 future (scheduled tomorrow), 1 past to_close (08:00 today)
+    { name: 'APP-3', practitioner: 'PR-002', appointment_date: tomorrowDate, appointment_time: '15:00:00', duration: 60, cc_performed: 0, status: 'Scheduled' },
+    { name: 'APP-4', practitioner: 'PR-002', appointment_date: today, appointment_time: '08:00:00', duration: 60, cc_performed: 0, status: 'Scheduled' },
+  ]
+  await mockApi(page, [], false, {}, { practitioners: [p1, p2] })
+  await page.route('**/api/method/centrochange_core.operations.workspace.agenda*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: { appointments, truncated: false } })
+    })
+  })
+
+  await page.goto('./#Agenda')
+  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible()
+
+  // Initially "Tutti i professionisti" is active (both P1 and P2):
+  // Total displayed = 4
+  // Svolte = 1 (APP-1)
+  // Sedute da chiudere = 1 (APP-4 only! APP-2 is cancelled, APP-3 is future tomorrow!)
+  // Professionisti = 2
+  const metricsRibbon = page.locator('.metrics-grid').first()
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute nel periodo' })).toContainText('4')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute svolte' })).toContainText('1')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute da chiudere' })).toContainText('1')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Professionisti' })).toContainText('2')
+
+  // Now select only Dott.ssa Rossi (PR-001)
+  await page.getByRole('button', { name: 'Filtro professionisti' }).click()
+  await page.locator('.multi-popover-item', { hasText: 'Dott.ssa Rossi' }).locator('input[type="checkbox"]').click()
+  await page.keyboard.press('Escape')
+
+  // Ribbon should now update to PR-001 ONLY:
+  // Total displayed = 2 (APP-1 and APP-2)
+  // Svolte = 1
+  // Sedute da chiudere = 0 (APP-1 is performed, APP-2 is cancelled)
+  // Professionisti = 1
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute nel periodo' })).toContainText('2')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute svolte' })).toContainText('1')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Sedute da chiudere' })).toContainText('0')
+  await expect(metricsRibbon.locator('.metric-card').filter({ hasText: 'Professionisti' })).toContainText('1')
+})
+
+test('AUDIT-05 UAT: Cancellazione tardiva dovuta riconciliata in KPI, drilldown ed export', async ({ page }) => {
+  await mockApi(page)
+  const today = '2026-10-24'
+  const summary = {
+    currencies: {
+      EUR: { sessions: 1, performed: 0, cancelled: 1, future: 0, to_close: 0, operational_paid: 0, operational_unpaid: 0, due: 1, due_snapshot_amount: 80.0 }
+    },
+    practitioner: null,
+    total_appointments: 1,
+    truncated: false
+  }
+  const lateCancelledApp: Appointment = {
+    name: 'APP-LATE-1',
+    patient: 'PAT-1',
+    patient_name: 'Paziente Late',
+    practitioner: 'PRO-1',
+    practitioner_name: 'Dott.ssa Rossi',
+    cc_center: 'CENTRO-A',
+    appointment_date: today,
+    appointment_time: '10:00:00',
+    duration: 60,
+    status: 'Cancelled',
+    cc_closure_state: 'Closed',
+    cc_economic_state: 'Due',
+    cc_performed: 0,
+    cc_paid: 0,
+    cc_service_label: 'Consulenza Specialistica',
+    cc_price_snapshot: 80.0,
+    cc_currency_snapshot: 'EUR'
+  }
+
+  await page.route('**/api/method/centrochange_core.operations.reporting.summary*', route => {
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: summary }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    const url = new URL(route.request().url())
+    const kpi = url.searchParams.get('kpi')
+    if (kpi === 'due' || kpi === 'all') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: { appointments: [lateCancelledApp], total: 1, total_pages: 1 } })
+      })
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: [], total: 0, total_pages: 1 } }) })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  // Verify KPI card "Con tariffa prevista" shows 1
+  const dueCard = page.locator('.metric-card').filter({ hasText: 'Con tariffa prevista' })
+  await expect(dueCard).toContainText('1')
+  await dueCard.click()
+
+  // Drilldown header must show 1 session for "Con tariffa prevista"
+  await expect(page.locator('.report-drilldown-header h3')).toContainText('Dettaglio sedute — Con tariffa prevista')
+  await expect(page.locator('.report-drilldown-header h3')).toContainText('(1)')
+
+  // Table row must display the late cancelled session with neutral badge '— (annullata)' and tariff 80,00 €
+  const row = page.locator('.report-drilldown tbody tr').first()
+  await expect(row).toBeVisible()
+  await expect(row).toContainText('Annullata')
+  await expect(row).toContainText('— (annullata)')
+  await expect(row).toContainText('80,00 €')
+})
+
+test('AUDIT-05 UAT: Report multi-valuta con filtro e drilldown separato per valuta', async ({ page }) => {
+  await mockApi(page)
+  const today = '2026-10-24'
+  const summary = {
+    currencies: {
+      EUR: { sessions: 2, performed: 1, cancelled: 0, future: 0, to_close: 1, operational_paid: 1, operational_unpaid: 0, due: 1, due_snapshot_amount: 50.0 },
+      USD: { sessions: 3, performed: 2, cancelled: 0, future: 0, to_close: 1, operational_paid: 1, operational_unpaid: 1, due: 2, due_snapshot_amount: 140.0 }
+    },
+    practitioner: null,
+    total_appointments: 5,
+    truncated: false
+  }
+
+  const eurApps: Appointment[] = [
+    { name: 'APP-EUR-1', patient: 'PAT-1', patient_name: 'Paziente EUR', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Closed', cc_performed: 1, cc_paid: 1, cc_price_snapshot: 50.0, cc_currency_snapshot: 'EUR' },
+    { name: 'APP-EUR-2', patient: 'PAT-2', patient_name: 'Paziente EUR 2', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '10:00:00', duration: 60, status: 'Scheduled', cc_performed: 0, cc_paid: 0, cc_price_snapshot: 50.0, cc_currency_snapshot: 'EUR' }
+  ]
+  const usdApps: Appointment[] = [
+    { name: 'APP-USD-1', patient: 'PAT-3', patient_name: 'Paziente USD 1', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '11:00:00', duration: 60, status: 'Closed', cc_performed: 1, cc_paid: 1, cc_price_snapshot: 70.0, cc_currency_snapshot: 'USD' },
+    { name: 'APP-USD-2', patient: 'PAT-4', patient_name: 'Paziente USD 2', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '12:00:00', duration: 60, status: 'Closed', cc_performed: 1, cc_paid: 0, cc_price_snapshot: 70.0, cc_currency_snapshot: 'USD' },
+    { name: 'APP-USD-3', patient: 'PAT-5', patient_name: 'Paziente USD 3', practitioner: 'PRO-1', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '13:00:00', duration: 60, status: 'Scheduled', cc_performed: 0, cc_paid: 0, cc_price_snapshot: 0.0, cc_currency_snapshot: 'USD' }
+  ]
+
+  await page.route('**/api/method/centrochange_core.operations.reporting.summary*', route => {
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: summary }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    const url = new URL(route.request().url())
+    const curr = url.searchParams.get('currency')
+    if (curr === 'USD') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: usdApps, total: 3, total_pages: 1 } }) })
+    }
+    if (curr === 'EUR') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: eurApps, total: 2, total_pages: 1 } }) })
+    }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: [...eurApps, ...usdApps], total: 5, total_pages: 1 } }) })
+  })
+
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  // Two currency sections should be visible
+  await expect(page.getByText('Sedute e appuntamenti (EUR)')).toBeVisible()
+  await expect(page.getByText('Sedute e appuntamenti (USD)')).toBeVisible()
+
+  // Click on "Sedute totali" in USD section (card value 3)
+  const usdSection = page.locator('.report-currency').filter({ hasText: 'Sedute e appuntamenti (USD)' })
+  await usdSection.locator('.metric-card').filter({ hasText: 'Sedute totali' }).click()
+
+  // Drilldown header should reflect USD and (3)
+  await expect(page.locator('.report-drilldown-header h3')).toContainText('Dettaglio sedute — Tutte le sedute (USD) (3)')
+
+  // Table should show exactly 3 rows
+  await expect(page.locator('.report-drilldown tbody tr')).toHaveCount(3)
+
+  // Export link should include currency=USD
+  const exportBtn = page.locator('.report-drilldown-header a.button').filter({ hasText: 'Esporta CSV' })
+  await expect(exportBtn).toHaveAttribute('href', /currency=USD/)
+})
+
+
+
+
+test('AUDIT-05: validazione date italiane, bisestili e canoniche senza timezone', () => {
+  expect(parseItalianDate('29/02/2024')).toBe('2024-02-29')
+  expect(parseItalianDate('29/02/2025')).toBeNull()
+  expect(parseItalianDate('31/04/2026')).toBeNull()
+  expect(parseItalianDate('26/10/2026')).toBe('2026-10-26')
+  expect(parseItalianDate('2026-10-26')).toBeNull()
+})
+
+test('AUDIT-05: filtri report accettano data scritta e calendario e bloccano periodo inverso', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('./#Report')
+  const start = page.getByRole('textbox', { name: 'data iniziale (GG/MM/AAAA)' })
+  const end = page.getByRole('textbox', { name: 'data finale (GG/MM/AAAA)' })
+  await start.fill('29/02/2025')
+  await expect(page.getByText(/Periodo non valido: inserisci due date/)).toBeVisible()
+  await expect(page.locator('.heading-action a.button').first()).toHaveAttribute('aria-disabled', 'true')
+  await start.fill('28/09/2026')
+  await end.fill('04/10/2026')
+  await expect.poll(() => page.locator('.report-drilldown').count()).toBe(1)
+  await page.getByRole('button', { name: 'Apri calendario data iniziale' }).click()
+  const picker = page.getByRole('dialog', { name: 'Calendario data iniziale' })
+  await expect(picker).toBeVisible()
+  await picker.getByRole('button', { name: '28/09/2026' }).click()
+  await expect(start).toHaveValue('28/09/2026')
+  await end.fill('27/09/2026')
+  await expect(page.getByText(/Periodo non valido: inserisci due date/)).toBeVisible()
+})
+
+test('AUDIT-05: orari multipli non possono essere salvati senza revisione', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.route('**/api/method/centrochange_core.operations.workspace.schedules*', route => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify({ message: [{ name: 'SCHED-MULTI', practitioner: 'PR-001', modified: '2026-10-26 10:00:00',
+      time_slots: [
+        { day: 'Monday', from_time: '09:00:00', to_time: '12:00:00' },
+        { day: 'Monday', from_time: '14:00:00', to_time: '17:00:00' },
+        { day: 'Tuesday', from_time: '09:00:00', to_time: '18:00:00' }
+      ], absences: [] }] })
+  }))
+  await page.goto('./#Disponibilit%C3%A0')
+  await page.getByRole('button', { name: 'Modifica orario' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Modifica disponibilità' })
+  await expect(dialog.getByLabel('Dalle (fascia 1)')).toHaveValue('09:00')
+  await expect(dialog.getByLabel('Dalle (fascia 2)')).toHaveValue('14:00')
+  await expect(dialog.locator('input[type="time"]')).toHaveCount(0)
+  await dialog.getByLabel('Dalle (fascia 1)').fill('10:00')
+  await dialog.getByLabel('Motivo').fill('Rettifica prova')
+  await expect(dialog.getByRole('button', { name: 'Conferma' })).toBeDisabled()
+  expect(writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeUndefined()
+  await dialog.getByRole('checkbox', { name: /Ho verificato le fasce precedenti/ }).check()
+  await dialog.getByRole('button', { name: 'Conferma' }).click()
+  await expect.poll(() => writes.find(write => write.method.endsWith('availability.set_schedule'))).toBeTruthy()
+  const payload = writes.find(write => write.method.endsWith('availability.set_schedule'))!.body
+  expect(payload.time_slots).toEqual([
+    { day: 'Monday', from_time: '10:00', to_time: '12:00' },
+    { day: 'Monday', from_time: '14:00', to_time: '17:00' },
+    { day: 'Tuesday', from_time: '09:00', to_time: '18:00' }
+  ])
+  expect(payload.expected_modified).toBe('2026-10-26 10:00:00')
+})
+
+
+test('AUDIT-05: registro spiega Active=1 senza inventare il valore precedente', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.security.audit_view.events*', route => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify({ message: { events: [{
+      name: 'AUDIT-ACTIVE', event_type: 'CENTER_MEMBERSHIP', actor: 'direzione@example.invalid',
+      event_time: today + ' 11:30:00', reference_name: 'MEM-TEST', reason: 'Aggiornamento sintetico',
+      before_state: '{}', after_state: JSON.stringify({ Active: 1 })
+    }], has_more: false } })
+  }))
+  await page.goto('./#Registro%20modifiche')
+  await page.getByRole('row', { name: /Appartenenza al centro/ }).click()
+  const dialog = page.getByRole('dialog', { name: 'Appartenenza al centro' })
+  await expect(dialog.getByText('Stato appartenenza')).toBeVisible()
+  await expect(dialog.getByText('Prima: Non registrato')).toBeVisible()
+  await expect(dialog.getByText('Dopo: Attivo')).toBeVisible()
+})
+
+test('AUDIT-05: CSV del singolo professionista usa export del server senza prima pagina', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('./#Report')
+  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  await page.getByRole('combobox', { name: 'Professionista report' }).selectOption('PR-001')
+  const csv = page.locator('.professional-report a.button').filter({ hasText: 'Esporta CSV completo' })
+  await expect(csv).toHaveAttribute('href', /operations\.reporting\.export_csv/)
+  await expect(csv).toHaveAttribute('href', /practitioner=PR-001/)
+  await expect(csv).toHaveAttribute('aria-disabled', 'false')
+})
+
+
+test('AUDIT-05 UAT-05-31: SCHEDULE_CHANGED mostra diff vero per giorno senza mostrare giorni invariati', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.security.audit_view.events*', route => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify({ message: { events: [{
+      name: 'AUDIT-SCHED-1', event_type: 'SCHEDULE_CHANGED', actor: 'direzione@example.invalid',
+      event_time: today + ' 13:56:00', reference_name: 'CC-12507e71086733d4', reason: 'Aggiunta martedì',
+      before_state: JSON.stringify([{ day: 'Monday', from_time: '09:00:00', to_time: '12:00:00' }]),
+      after_state: JSON.stringify([
+        { day: 'Monday', doctype: 'Healthcare Schedule Time Slot', from_time: '09:00:00', to_time: '12:00:00' },
+        { day: 'Tuesday', doctype: 'Healthcare Schedule Time Slot', from_time: '09:00:00', to_time: '12:00:00' }
+      ])
+    }], has_more: false } })
+  }))
+  await page.goto('./#Registro%20modifiche')
+  await page.getByRole('row', { name: /Orario aggiornato/ }).click()
+  const dialog = page.getByRole('dialog', { name: 'Orario aggiornato' })
+  await expect(dialog.getByText('Martedì', { exact: true })).toBeVisible()
+  await expect(dialog.getByText('Prima: Nessuna fascia oraria')).toBeVisible()
+  await expect(dialog.getByText('Dopo: 09:00 – 12:00')).toBeVisible()
+  // Lunedì non deve comparire perché identico prima e dopo
+  await expect(dialog.getByText('Lunedì')).toHaveCount(0)
+  // Non deve comparire il vecchio fallback di errore
+  await expect(dialog.getByText('Dettaglio della modifica non disponibile in forma comparabile.')).toHaveCount(0)
+})
+
+
+test('AUDIT-05 UAT-05-31: SCHEDULE_CHANGED con orari identici o malformati gestiti con messaggi onesti', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.security.audit_view.events*', route => route.fulfill({
+    contentType: 'application/json', body: JSON.stringify({ message: { events: [
+      {
+        name: 'AUDIT-SCHED-IDENTICAL', event_type: 'SCHEDULE_CHANGED', actor: 'direzione@example.invalid',
+        event_time: today + ' 14:00:00', reference_name: 'CC-SAME', reason: 'Replay senza modifiche',
+        before_state: JSON.stringify([{ day: 'Monday', from_time: '09:00', to_time: '12:00' }]),
+        after_state: JSON.stringify([{ day: 'Monday', from_time: '09:00', to_time: '12:00' }])
+      },
+      {
+        name: 'AUDIT-SCHED-MALFORMED', event_type: 'SCHEDULE_CHANGED', actor: 'direzione@example.invalid',
+        event_time: today + ' 14:05:00', reference_name: 'CC-BAD', reason: 'Dati incompleti',
+        before_state: '{not valid json',
+        after_state: '{also bad'
+      }
+    ], has_more: false } })
+  }))
+  await page.goto('./#Registro%20modifiche')
+
+  // Identico
+  await page.getByRole('row', { name: /Replay senza modifiche/ }).click()
+  const dialog1 = page.getByRole('dialog', { name: 'Orario aggiornato' })
+  await expect(dialog1.getByText('Nessuna variazione di orario registrata.')).toBeVisible()
+  await page.getByRole('button', { name: 'Chiudi' }).click()
+
+  // Malformato
+  await page.getByRole('row', { name: /Dati incompleti/ }).click()
+  const dialog2 = page.getByRole('dialog', { name: 'Orario aggiornato' })
+  await expect(dialog2.getByText('Dati dell’orario non disponibili o non conformi.')).toBeVisible()
+})
+
+
+test('AUDIT-05 UAT-05-33: notifiche localizzano importi in euro e date scadenza italiane', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/frappe.client.get_list*', route => {
+    const url = new URL(route.request().url())
+    if (url.searchParams.get('doctype') === 'CC Notification') {
+      return route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: [
+            {
+              name: 'NOTIF-PAY-1',
+              message: 'Prima di una seduta successiva è richiesta la verifica del pagamento. Importi aperti: 100.00 EUR — scadenza 2026-10-15. Bonifico DEV simulato: CC SYNTHETIC BANK.',
+              state: 'Sent',
+              creation: '2026-10-15 11:08:02'
+            },
+            {
+              name: 'NOTIF-PAY-2',
+              message: 'Prima di una seduta successiva è richiesta la verifica del pagamento. Importi aperti: 50.00 EUR — scadenza 2026-09-30; 25.50 EUR — scadenza 2026-10-01. Istruzioni di pagamento DEV presso la segreteria.',
+              state: 'Sent',
+              creation: '2026-10-12 11:08:03'
+            }
+          ]
+        })
+      })
+    }
+    return route.continue()
+  })
+
+  await page.goto('./#Notifiche')
+  await expect(page.getByText('100,00 € — scadenza 15/10/2026')).toBeVisible()
+  await expect(page.getByText('Bonifico DEV simulato: CC SYNTHETIC BANK.')).toBeVisible()
+  await expect(page.getByText('50,00 € — scadenza 30/09/2026; 25,50 € — scadenza 01/10/2026')).toBeVisible()
+})
+
+
+test('AUDIT-05 UAT-05-34: seduta Auto Locked e Pending mostra Bloccata e Pagamento Da definire', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          total: 1,
+          page: 1,
+          page_length: 50,
+          total_pages: 1,
+          kpi: 'all',
+          currency: 'EUR',
+          appointments: [
+            {
+              name: 'HLC-APP-2026-00010',
+              appointment_date: '2026-10-12',
+              appointment_time: '09:00:00',
+              duration: 60,
+              patient: 'PAT-1',
+              patient_name: 'Paziente Uno',
+              practitioner: 'PRAC-1',
+              practitioner_name: 'Dott. Uno',
+              cc_service_label: 'Visita specialistica',
+              status: 'Open',
+              cc_closure_state: 'Auto Locked',
+              cc_economic_state: 'Pending',
+              cc_performed: 0,
+              cc_paid: 0,
+              cc_classified_future: false,
+              cc_classified_to_close: true,
+              cc_classified_unpaid: false,
+              cc_classified_cancelled: false,
+              cc_classified_paid: false,
+              cc_price_snapshot: 100.0,
+              cc_currency_snapshot: 'EUR'
+            }
+          ]
+        }
+      })
+    })
+  })
+
+  await page.goto('./#Report')
+  // Nella tabella di dettaglio:
+  // Stato seduta deve essere 'Bloccata'
+  const table = page.locator('.report-drilldown')
+  await expect(table.getByText('Bloccata')).toBeVisible()
+  // Pagamento operativo deve essere 'Da definire' (NON 'Da incassare')
+  await expect(table.getByText('Da definire')).toBeVisible()
+  await expect(table.getByText('Da incassare')).toHaveCount(0)
+})
+

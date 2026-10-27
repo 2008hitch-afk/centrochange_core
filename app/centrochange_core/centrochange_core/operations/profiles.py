@@ -1,7 +1,7 @@
 """Existing operational identities, scoped to an authorized center context."""
 import frappe
 from centrochange_core.scoped_api import bounded, deny_extra, manager, mutate, page
-from centrochange_core.security.guards import is_manager, patient_contexts, practitioner_for, require_center, roles
+from centrochange_core.security.guards import is_manager, patient_contexts, practitioner_for, require_center, require_operational_center, roles
 
 
 def _patient(center, doc, allow_historical=False):
@@ -17,6 +17,7 @@ def _patient(center, doc, allow_historical=False):
 
 def _practitioner(center, doc):
     require_center(center)
+    require_operational_center(center)
     if not doc.user_id or not frappe.db.exists('CC Center Membership', {'user': doc.user_id, 'center': center, 'active': 1}):
         frappe.throw('Professionista non disponibile per questo centro', frappe.PermissionError)
     if not is_manager() and (doc.name != practitioner_for() or 'CC Professional' not in roles()):
@@ -67,14 +68,39 @@ def patient_save(center, name, first_name, last_name, email, expected_version, r
 
 
 @frappe.whitelist(methods=['GET'])
-def practitioners(center, limit=50, offset=0):
+def practitioners(center, limit=50, offset=0, search=''):
     limit, offset = page(limit, offset)
     require_center(center)
+    require_operational_center(center)
+    search = bounded(search, 'Ricerca', 100, required=False)
     users = frappe.get_all('CC Center Membership', filters={'center': center, 'active': 1}, pluck='user')
     filters = {'user_id': ['in', users or ['']]}
     if not is_manager():
         filters['name'] = practitioner_for() or ''
-    rows = frappe.get_list('Healthcare Practitioner', filters=filters,
+    options = {}
+    if search:
+        # Use the exact UAT-owned manifest for display aliases, but always apply the
+        # membership / self-only / DocType predicates from this authorized query.
+        # Never alter the native Healthcare Practitioner name or search the bootstrap.
+        # The offline guarded API harness deliberately stubs a minimal Frappe
+        # module. Missing optional UAT display aliases must safely degrade to
+        # canonical search, never to unrestricted practitioner results.
+        try:
+            from centrochange_core.uat.display import _manifest
+            manifest = _manifest()
+        except ImportError:
+            manifest = None
+        alias_names = []
+        if manifest:
+            for index, name in enumerate(manifest['fixture']['practitioners'], 1):
+                if search.casefold() in f'Professionista {index}'.casefold():
+                    alias_names.append(name)
+        needle = '%' + search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+        or_filters = {field: ['like', needle] for field in ('practitioner_name', 'first_name', 'last_name', 'name')}
+        if alias_names:
+            or_filters['name'] = ['in', alias_names]
+        options = {'or_filters': or_filters}
+    rows = frappe.get_list('Healthcare Practitioner', filters=filters, **options,
                            fields=['name', 'practitioner_name', 'first_name', 'last_name', 'user_id', 'status', 'modified'],
                            order_by='practitioner_name,name', start=offset, page_length=limit + 1)
     return {'rows': rows[:limit], 'has_more': len(rows) > limit}

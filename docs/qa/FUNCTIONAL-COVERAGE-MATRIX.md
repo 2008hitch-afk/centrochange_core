@@ -1,5 +1,11 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## AUDIT-05 Professionisti — checkpoint tecnico #171 (24/10/2026)
+
+La [PR DRAFT #172](https://github.com/2008hitch-afk/centrochange_core/pull/172) verifica directory, scheda, modifica scoped e **account Professionista** secondo i due addendum Owner della [Issue #171](https://github.com/2008hitch-afk/centrochange_core/issues/171). L'oracle completo è nel [rapporto AUDIT-05](AUDIT-05-PROFESSIONALS.md). Il clone Frappe/MariaDB isolato ha provato chiusura pagata/non pagata, disponibilità propria, note riservate, reminder/lock con clock controllato, segregazione e report. La verifica dello SHA finale, la CI, la review indipendente finale e il gate DEV restano separati; nessuna accettazione Owner è implicita.
+
+Il CSV contiene sempre **110 righe**: **11 PASS, 61 PARTIAL, 27 NOT_TESTED, 11 BLOCKED**. `CC-CAP-023/024` passano da `NOT_TESTED` a `PARTIAL` per i test temporali reali sul clone, mentre l'esecuzione del scheduler nel DEV resta da dimostrare. Le altre righe mantengono lo stato precedente con evidenze più precise; i requisiti trasversali non sono promossi a PASS sulla sola prova account.
+
 ## Addendum Owner UAT — AUDIT-04 Pazienti accettato funzionalmente (24/10/2026)
 
 **Decisione Owner verificata:** «Tutto confermato procediamo». Accettazione tracciata nella [Issue #167](https://github.com/2008hitch-afk/centrochange_core/issues/167#issuecomment-6380921234), dopo walkthrough sulla **versione installata nel DEV**: PR #168 commit **applicativo** `114301effda320f1f4991e672444761d91b76bef`, immagine `sha256:c00dd69af4a0865aa37b9a5db50d0bfa739d065a0a37cad0bd076ea2cfb86091`. La CI sull'applicativo è SUCCESS; test browser/API **23 PASS, 17 SKIP previsti, 0 FAIL** sul clone Frappe/MariaDB, e smoke read-only sul DEV; backup cifrato/restore isolato/rollback readiness PASS secondo [rapporto Codex](https://github.com/2008hitch-afk/centrochange_core/issues/167#issuecomment-6380878876). L'accettazione Owner non equivale ad aver eseguito personalmente test di mutazione, segregazione API o contabilità: le prove mutative sono **PASS_ISOLATED_REAL**, non **OWNER_LIVE_WRITE_PASS**.
@@ -112,7 +118,7 @@ Questo addendum **prevale per lo stato operativo** sui checkpoint storici AUDIT-
 | 02 | Shell, navigazione, centro attivo e ricerca | `main.tsx`; shell/sidebar/header e fallback per ruolo | [#161](https://github.com/2008hitch-afk/centrochange_core/issues/161) | `QUEUED / NON AVVIATO` |
 | 03 | Agenda e prenotazioni | `views.tsx`; `operations.workspace.*`, `scheduling.booking.*` | Da creare | `QUEUED` |
 | 04 | Pazienti, storico, assegnazioni, note e pacchetti | `views.tsx`, `patient_assignments.tsx`, `patient_packages.tsx`, `note_history.tsx` | Da creare | `QUEUED` |
-| 05 | Professionisti e accessi per professionista | `views.tsx`, `professional_workflow.tsx` | Da creare | `QUEUED` |
+| 05 | Professionisti e accessi per professionista | `views.tsx`, `profiles.py`, `permissions.py`, `scoped_archive.tsx` | [#171](https://github.com/2008hitch-afk/centrochange_core/issues/171) | `ACTIVE`: offline verificato; Frappe isolato e DEV pendenti |
 | 06 | Servizi/catalogo, prezzi e disponibilità | `views.tsx`, `scoped_archive.tsx` | Da creare | `QUEUED` |
 | 07 | Chiusure seduta, cancellazioni 48h, eccezioni, notifiche | Agenda, lifecycle, Notifiche; verificare i processi anche se distribuiti in più schermate | Da creare | `QUEUED` |
 | 08 | Finanza, fatture, incassi e banca | `finance_actions.tsx`, `finance_create.tsx`, `views.tsx` | Da creare | `QUEUED` |

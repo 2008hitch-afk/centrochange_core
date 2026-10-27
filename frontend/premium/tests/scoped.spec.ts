@@ -59,6 +59,27 @@ async function openArchives(page: Page) {
   await expect(page.getByRole('heading', { name: 'Archivi' })).toBeVisible()
 }
 
+test('AUDIT-05: archivio professionisti usa alias solo in lettura, editor mantiene il dato canonico', async ({ page }, info) => {
+  await mock(page, [])
+  const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', last_name: '', status: 'Active' }
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [row], has_more: false } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: row }) }))
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Professionisti', exact: true }).click()
+  await expect(page.locator('tbody')).toContainText('Professionista di prova A')
+  await expect(page.locator('tbody')).not.toContainText('CC-HTTP-AbCd123456 a')
+  await page.locator('tbody tr').click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer.getByRole('heading', { name: 'Dettaglio' })).toBeVisible()
+  await expect(drawer.getByRole('heading', { name: 'Professionista di prova A' })).toHaveCount(1)
+  await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
+  await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-archivio-${info.project.name}.png`, fullPage: true })
+  await drawer.getByRole('button', { name: 'Modifica scheda' }).click()
+  await expect(page.getByRole('dialog', { name: 'Modifica · Professionisti' }).getByRole('textbox', { name: 'Nome *', exact: true })).toHaveValue(row.first_name)
+})
+
 test('regressioni DECISION-064: Agenda unica e intervallo pagamenti ammesso', async ({ page }) => {
   await mock(page, [])
   await page.goto('./')
