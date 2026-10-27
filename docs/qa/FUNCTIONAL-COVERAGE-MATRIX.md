@@ -3,6 +3,14 @@
 > **ATTENZIONE: NUMERAZIONE E FASE ATTIVA** — prima di leggere i vari addendum datati, aprire il [REGISTRO OPERATIVO CORRENTE](ACTIVE-GOAL-ROUTER.md). Il lavoro attuale è **AUDIT-05 Professionisti #171 (accepted scoped) + CORE #173 (fix UAT in corso)**. `AUDIT-06` è pianificato ma non autorizzato; `AUDIT-07+` non formalizzati. Il **macro `GOAL-05`** della roadmap MVP del 03/10 è una numerazione diversa. Questo file conserva **110 requisiti**, non assegna automaticamente GOAL alle righe rimaste e non sostituisce le Issue/PR live. I riepiloghi sottostanti sono snapshot cronologici; la fonte puntuale è il [CSV dello stesso commit](FUNCTIONAL-COVERAGE-DETAIL.csv).
 
 
+## DECISIONE OWNER VIGENTE — 27/10/2026: CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`
+
+Conferma formale dell'Owner [Issue #173 #6440597230](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) dopo completamento walkthrough UX e riconciliazione tecnica AGY: **«Chiudi la mia giornata» e recupero arretrati** accettati nel solo perimetro DEV `b498ea5`. Nel [CSV](FUNCTIONAL-COVERAGE-DETAIL.csv), **4 ID** mappati al percorso CORE #173 diventano `OWNER_ACCEPTED_FUNCTIONAL_LIMITED`: `CC-CAP-014` (pagamento operativo e settlement), `CC-CAP-022` (chiusura e recupero tardivo, **non tutta la riapertura**), `CC-CAP-024` (Auto Locked ore 07 con audit e recupero, **non reminder end-to-end**), `CC-ACT-004` (chiusura con Svolta/Pagata/metodo), con evidenze e lacune residue esplicite. Le altre righe, come `CC-CAP-023` reminder ore 21, `CC-CAP-025` regole disdetta 48h, `CC-CAP-029` export/stampa/email globali, rimangono nello stato precedente.
+
+**Invarianti:** 110 righe, 18 colonne, 110 ID unici; tecnici **12 PASS / 60 PARTIAL / 27 NOT_TESTED / 11 BLOCKED**; Owner **92 PENDING / 16 OWNER_ACCEPTED_FUNCTIONAL_LIMITED / 1 OWNER_ACCEPTED / 1 OWNER_APPROVED_DEV**. `OWNER_ACCEPTED_FUNCTIONAL_LIMITED` indica precisamente il sottoperimetro della nota; non trasforma tutto il requisito in PASS. Nessun merge consentito: PR #172/#175/#174 DRAFT/UNMERGED, review formalizzata ma indipendenza effettiva da attestare prima del gate merge, nessuna produzione o AUDIT-06 autorizzati. La [rotta operativa](ACTIVE-GOAL-ROUTER.md) prevale sui checkpoint storici sotto.
+
+---
+
 ## DECISIONE OWNER VIGENTE — 26/10/2026 (aggiornamento successivo al checkpoint precedente)
 
 - [AUDIT-05 #171 OWNER_ACCEPTED_SCOPED](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6427680735): accettazione limitata al perimetro Professionisti validato; nel CSV soltanto `CC-CAP-002`, `CC-EXT-004`, `CC-EXT-009`, `CC-CAP-028` ora `OWNER_ACCEPTED_FUNCTIONAL_LIMITED`. Le restanti righe trasversali restano parziali/pending.
