@@ -1,5 +1,11 @@
 # Centro Change — REGISTRO OPERATIVO VIGENTE / instradamento GOAL e AUDIT
 
+## ATTIVAZIONE OWNER AUDIT-06 — 27/10/2026 (perimetro isolato, nessun DEV)
+
+- L'Owner ha detto **«Ok procediamo»** dopo la rinumerazione consecutiva della roadmap. È aperta l'[Issue **#177 — AUDIT-06 Servizi/catalogo/prezzi/disponibilità**](https://github.com/2008hitch-afk/centrochange_core/issues/177) come unico GOAL attivo per analisi, sviluppo su branch dedicato, CI e UAT su ambiente isolato secondo SOP v1.1. **Nessuna installazione DEV, nuovo container/VPS, schema/DocPerm/ruoli, dati, merge o produzione autorizzati**. In mancanza di gate DEV esplicito, uscita `READY_FOR_DEV_GATE`, non `PASS_DEV`.
+- [**PR #176**](https://github.com/2008hitch-afk/centrochange_core/pull/176) mantiene la nuova numerazione consecutiva 01–14 (finanza 12, compensi/fiscale 13); è **DRAFT/UNMERGED**, e l'esecuzione di #177 non la autorizza al merge. Riconciliare roadmap e baseline prima di pubblicare PR di prodotto.
+- Restano veri i merge già verificati #172→#175→#174 su `main` `39be56b`; il DEV non ha automaticamente ricevuto quella HEAD. La matrice CSV 110×18 non cambia per la sola attivazione del GOAL.
+
 **Fotografia iniziale:** 26/10/2026. **Scopo:** evitare che un agente, ChatGPT o Codex riparta dalla roadmap MVP storica oppure confonda i numeri degli AUDIT funzionali con quelli dei macro-GOAL di consegna. Questo è l'**indice di ingresso alla fase corrente**; NON sostituisce prove, decisioni e gate nelle Issue collegate.
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
