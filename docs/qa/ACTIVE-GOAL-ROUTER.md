@@ -4,6 +4,14 @@
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
 
+## OWNER UAT CORE #173 — 27/10/2026: TUTTI I FIX VISIVI PASS, RESTA SOLO CONCILIAZIONE DATI / REVIEW
+
+**Nuovo screenshot Owner:** `Non svolta` selezionato sulla seduta del 26/10, testo economico leggibile e stato «Da definire» evidenziato → `UAT-173-UX-ECONOMIC-NOTE-READABILITY = PASS_OWNER_VISUAL`. Lo screenshot Owner precedente mostra calendario ottobre completamente contenuto → `UAT-173-UX-DATE-POPOVER-CLIPPED = PASS_OWNER_VISUAL_DESKTOP`. I 2 fix precedenti «frase non addebitata» e «Carta POS leggibile» hanno già PASS Owner. **Il walkthrough visivo #173 è concluso; non richiedere altri test Owner né nuovi deploy.** Fonte [Issue #173 commento #6439127526](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6439127526).
+
+**Residuo di gate tecnico, senza mutazioni:** riconciliare `20aa6b31adf0907e3dadcbf847663bd266d6b85c13fd0d79241f7aa6231de9e5` (fingerprint dopo precedente UAT/swap) con `a5d098d6c4529b3495e78eecf6e0dc70eaf70e4e1071ccb6b116cde40086f97d` (pre/post nuovo swap), identificando in sola lettura causa, schema fingerprint e righe/campi/attori/timestamp, ipotesi scheduler Auto Locked ore 07:00 NON verificata. Verificare anche l'identità e indipendenza del reviewer dichiarato sulla PR, dove non risultano review formali. Nessuna accettazione funzionale generale, merge, produzione o AUDIT-06 senza prova e successiva decisione Owner. Stato: `CORE173_UX_OWNER_VISUAL_PASS / TECHNICAL_RECONCILIATION_PENDING`, PR #175 DRAFT `b498ea5`.
+
+---
+
 ## OWNER RECHECK `b498ea5` — 27/10/2026: CALENDARIO DESKTOP PASS, NOTA ECONOMICA ANCORA DA MOSTRARE
 
 **Prove Owner:** due screenshot della modale `Chiudi la mia giornata` su DEV con immagine installata secondo AGY `b498ea5`. **Calendario 27/10:** mese, anno, griglia e comandi totalmente entro i bordi della modale, nessun taglio sinistro → `PASS_OWNER_VISUAL_CALENDAR_DESKTOP`. **Giornata 26/10:** seduta ore 09:00 e pulsanti `Svolta / Non svolta` visibili, ma **`Non svolta` non selezionato** → la nuova informativa economica non è visibile, dunque `PENDING_OWNER_VISUAL_ECONOMIC_NOTE_READABILITY`. Prossimo unico step Owner: cliccare solo `Non svolta` su 26/10, valutare font/contrasto del messaggio, fare screenshot, chiudere senza salvare. [Risultato documentato su Issue #173 #6438865876](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6438865876).
