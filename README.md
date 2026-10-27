@@ -2,6 +2,12 @@
 
 Repository tecnico della soluzione **Centro Change** costruita su Frappe Framework / ERPNext con app custom `centrochange_core` e sito web nell'ecosistema Frappe.
 
+## STATO ATTIVO PIÙ RECENTE — 27/10/2026: CORE #173 ACCETTATA NEL PERIMETRO UAT, MERGE NON AUTORIZZATO
+
+[**Decisione Owner formale #173 `OWNER_ACCEPTED_SCOPED_CORE173`**](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) sulla versione DEV `b498ea5`, dopo PASS dei test Owner e riconciliazione DB alle ore 07 del 27/10 secondo AGY. **AUDIT-05 #171** è `OWNER_ACCEPTED_SCOPED`. PR **#172, #175, #174 OPEN/DRAFT/UNMERGED**: accettazione non equivale a merge o produzione. **Prima di integrare:** dimostrare indipendenza del reviewer (la review attuale è `COMMENTED`, pubblicata dall'account `2008hitch-afk` come «QA/Security persona»), riconciliare branch/CI e chiedere autorizzazione Owner specifica. **AUDIT-06 pianificato ma non avviato.** Il registro [ACTIVE-GOAL-ROUTER.md](docs/qa/ACTIVE-GOAL-ROUTER.md) è la fonte di navigazione; le righe della «FASE ATTIVA» del 26/10 riportate qui sotto sono fotografia storica, non mandato corrente.
+
+---
+
 ## FASE ATTIVA / RIPRESA OBBLIGATORIA (26/10/2026)
 
 **PUNTO DI INGRESSO UNICO:** [REGISTRO OPERATIVO — AUDIT e CORE attivi](docs/qa/ACTIVE-GOAL-ROUTER.md). Prima di prendere decisioni, leggere questo indice e verificare live **Issue #171, #173 e PR #172, #175, #174**. Non partire dalle roadmap datate, da una vecchia chat o dal paragrafo storico sotto.
