@@ -2514,7 +2514,7 @@ test('AUDIT-06: UX-A06-04, UX-A06-08, UX-A06-09 Agenda prenotazione 24h, preview
   await expect(summaryCard).toContainText('Durata:')
   await expect(summaryCard).toContainText('Tariffa corrente di listino:')
 
-  // UX-A06-09: Select package and verify breakdown & DECISION-011 accounting note
+  // UX-A06-09: Select package and verify breakdown & accounting note
   const packageCombobox = modal.getByLabel('Pacchetto')
   await packageCombobox.click()
   const packageOption = page.getByRole('option', { name: /Pacchetto/ }).first()
@@ -2525,7 +2525,8 @@ test('AUDIT-06: UX-A06-04, UX-A06-08, UX-A06-09 Agenda prenotazione 24h, preview
     await expect(pkgBreakdown).toContainText('Unità disponibili:')
     await expect(pkgBreakdown).toContainText('Unità da riservare: 1 seduta')
     await expect(pkgBreakdown).toContainText('Disponibilità residua prevista:')
-    await expect(pkgBreakdown).toContainText('DECISION-011')
+    await expect(pkgBreakdown).toContainText('Nota contabile:')
+    await expect(pkgBreakdown).toContainText('riserva 1 seduta')
     await expect(summaryCard).toContainText('0,00')
   }
 

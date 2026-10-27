@@ -315,10 +315,10 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
         <div style={{ marginTop: 4 }}>• Unità disponibili: <strong>{packageUnitsAvailable}</strong> {packageUnitsAvailable === 1 ? 'seduta' : 'sedute'}</div>
         <div>• Unità da riservare: <strong>1</strong> seduta</div>
         <div>• Disponibilità residua prevista: <strong>{packageUnitsAfter}</strong> {packageUnitsAfter === 1 ? 'seduta' : 'sedute'}</div>
-        <div style={{ marginTop: 6, fontSize: 11, color: '#047857' }}>Nota contabile (DECISION-011): la prenotazione impegna l'unità (RESERVE). Il consumo effettivo avviene alla chiusura della seduta.</div>
+        <div style={{ marginTop: 6, fontSize: 11, color: '#047857' }}>Nota contabile: la prenotazione riserva 1 seduta dal pacchetto. Il consumo effettivo avviene alla chiusura della seduta.</div>
       </div>
     ) : (
-      <div style={{ marginTop: 4, fontSize: 12, color: '#64748b' }}>La tariffa di listino verrà registrata come snapshot economico per questa seduta (DECISION-053).</div>
+      <div style={{ marginTop: 4, fontSize: 12, color: '#64748b' }}>La tariffa di listino verrà registrata come snapshot economico per questa seduta.</div>
     )}
   </div>
   <Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} rows={3} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Annulla</Button><Button disabled={busy || !patient || !practitioner || !service} type="submit">{busy ? 'Salvataggio…' : 'Conferma prenotazione'}</Button></div></form></Modal>
