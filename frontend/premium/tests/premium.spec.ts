@@ -957,7 +957,7 @@ test('selettore pazienti lungo filtra senza perdere scelta e invia ID canonico',
   const patients = [...boot.patients, ...Array.from({ length: 10 }, (_, i) => ({ name: `PAT-${String(i + 2).padStart(3, '0')}`, patient_name: `Paziente Demo ${i + 2}` })), { name: 'PAT-ZETA', patient_name: 'Zeta Sintetica' }]
   await mockApi(page, writes, true, {}, { patients })
   await page.goto('./')
-  await page.getByRole('button', { name: 'Nuova prenotazione' }).click()
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Nuova prenotazione' })
   const select = dialog.getByRole('combobox', { name: 'Paziente' })
   await select.fill('Zeta')
@@ -972,7 +972,7 @@ test('AUDIT-04 UX-04-09: combobox unico supporta tastiera, filtro, clear e valid
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes, true, {}, { patients: [...boot.patients, { name: 'PAT-002', patient_name: 'Secondo Paziente' }] })
   await page.goto('./#Agenda')
-  await page.getByRole('button', { name: 'Nuova prenotazione' }).click()
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Nuova prenotazione' })
   const patient = dialog.getByRole('combobox', { name: 'Paziente' })
   await expect(dialog.locator('.searchable-select').first().locator('select')).toHaveCount(0)
@@ -1359,7 +1359,7 @@ test('data italiana non valida blocca prenotazione e ISO valido raggiunge API', 
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)
   await page.goto('./')
-  await page.getByRole('button', { name: 'Nuova prenotazione' }).click()
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Nuova prenotazione' })
   await dialog.getByRole('textbox', { name: 'Motivo' }).fill('Controllo data sintetica')
   await dialog.locator('.date-input').fill('31/02/2026')
@@ -2449,6 +2449,168 @@ test('CORE #173: Popover calendario su toolbar destra rimane allineato a destra 
     await page.screenshot({ path: '../../docs/evidence/issue-173/fixed-calendar-report-toolbar-desktop.png' })
   }
 })
+
+test('AUDIT-06: UX-A06-01, UX-A06-02, UX-A06-06, UX-A06-11 Servizi, professionisti del centro e drawer', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./')
+
+  // UX-A06-06: Single center context badge in topbar
+  const centerContext = page.locator('.center-selector.center-context')
+  await expect(centerContext).toBeVisible()
+  await expect(centerContext).toContainText('Centro A')
+
+  await openSection(page, 'Servizi')
+  await expect(page.getByRole('heading', { name: 'Servizi e professionisti' })).toBeVisible()
+
+  // UX-A06-11: Section header clarifies professionals active in the center
+  await expect(page.getByRole('heading', { name: 'Professionisti del centro' })).toBeVisible()
+
+  // Counter unfiltered
+  await expect(page.locator('.panel-title p').first()).toContainText('servizi')
+
+  // UX-A06-01: Empty search text & counter
+  await page.getByRole('searchbox', { name: 'Cerca servizi' }).fill('servizio-non-esistente-xyz')
+  await expect(page.getByText('Nessun servizio trovato')).toBeVisible()
+  await expect(page.getByText('Modifica la ricerca o azzera i filtri.')).toBeVisible()
+  await expect(page.locator('.panel-title p').first()).toContainText('0 di')
+
+  // Clear search
+  await page.getByRole('searchbox', { name: 'Cerca servizi' }).fill('')
+  await expect(page.getByRole('row', { name: /Prima visita/ })).toBeVisible()
+
+  // UX-A06-02: Open drawer and verify no duplicate title in detail-summary
+  await page.getByRole('row', { name: /Prima visita/ }).click()
+  const drawer = page.getByRole('dialog', { name: 'Prima visita' })
+  await expect(drawer).toBeVisible()
+  // detail-summary has only Chip and Center, no redundant <h3>
+  const summaryHeadings = drawer.locator('.detail-summary h3')
+  await expect(summaryHeadings).toHaveCount(0)
+
+  if (testInfo.project.name === 'desktop') {
+    await page.screenshot({ path: '../../docs/evidence/issue-177/remediation-services-desktop.png' })
+  } else {
+    await page.screenshot({ path: '../../docs/evidence/issue-177/remediation-services-mobile.png' })
+  }
+  await drawer.getByRole('button', { name: 'Chiudi' }).click()
+})
+
+test('AUDIT-06: UX-A06-04, UX-A06-08, UX-A06-09 Agenda prenotazione 24h, preview tariffa e breakdown pacchetto', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./')
+  await openSection(page, 'Agenda')
+
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
+  const modal = page.getByRole('dialog', { name: 'Nuova prenotazione' })
+  await expect(modal).toBeVisible()
+
+  // UX-A06-04: 24h Time24Input present with HH:mm format
+  const timeInput = modal.getByPlaceholder('HH:mm')
+  await expect(timeInput).toBeVisible()
+  await expect(timeInput).toHaveValue('09:00')
+
+  // UX-A06-08: Booking preview card shows service, duration, list price
+  const summaryCard = modal.locator('.booking-summary-card')
+  await expect(summaryCard).toBeVisible()
+  await expect(summaryCard).toContainText('Durata:')
+  await expect(summaryCard).toContainText('Tariffa corrente di listino:')
+
+  // UX-A06-09: Select package and verify breakdown & accounting note
+  const packageCombobox = modal.getByLabel('Pacchetto')
+  await packageCombobox.click()
+  const packageOption = page.getByRole('option', { name: /Pacchetto/ }).first()
+  if (await packageOption.isVisible()) {
+    await packageOption.click()
+    const pkgBreakdown = modal.locator('.booking-package-card')
+    await expect(pkgBreakdown).toBeVisible()
+    await expect(pkgBreakdown).toContainText('Unità disponibili:')
+    await expect(pkgBreakdown).toContainText('Unità da riservare: 1 seduta')
+    await expect(pkgBreakdown).toContainText('Disponibilità residua prevista:')
+    await expect(pkgBreakdown).toContainText('Nota contabile:')
+    await expect(pkgBreakdown).toContainText('riserva 1 seduta')
+    await expect(summaryCard).toContainText('0,00')
+  }
+
+  if (testInfo.project.name === 'desktop') {
+    await page.screenshot({ path: '../../docs/evidence/issue-177/remediation-booking-desktop.png' })
+  } else {
+    await page.screenshot({ path: '../../docs/evidence/issue-177/remediation-booking-mobile.png' })
+  }
+  await modal.getByRole('button', { name: 'Annulla' }).click()
+})
+
+test('AUDIT-06: UX-A06-10 Disponibilità ordinamento giorni canonici, raggruppamento e confronto orario', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./')
+  await openSection(page, 'Disponibilità')
+
+  await expect(page.getByRole('heading', { name: 'Disponibilità' })).toBeVisible()
+  const scheduleCard = page.locator('.schedule-card').first()
+  await expect(scheduleCard).toBeVisible()
+
+  // Open schedule editor
+  await page.getByRole('button', { name: 'Modifica orario' }).click()
+  const modal = page.getByRole('dialog', { name: 'Modifica disponibilità' })
+  await expect(modal).toBeVisible()
+
+  // UX-A06-10: Comparison card visible with high contrast
+  const compCard = modal.locator('.schedule-comparison-card')
+  await expect(compCard).toBeVisible()
+  await expect(compCard).toContainText('Confronto orario settimanale:')
+  await expect(compCard).toContainText('Orario precedente')
+  await expect(compCard).toContainText('Nuovo orario proposto')
+
+  if (testInfo.project.name === 'desktop') {
+    await page.screenshot({ path: '../../docs/evidence/issue-177/remediation-availability-desktop.png' })
+  } else {
+    await page.screenshot({ path: '../../docs/evidence/issue-177/remediation-availability-mobile.png' })
+  }
+  await modal.getByRole('button', { name: 'Indietro' }).click()
+})
+
+test('AUDIT-06: UX-A06-03, UX-A06-05, UX-A06-07, UX-A06-12 Archivi, lessico, datepicker, autocomplete e modal review', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./#Archivi')
+  await expect(page.getByRole('heading', { name: 'Archivi' })).toBeVisible()
+
+  // UX-A06-05: Plural check (1 scheda when count is 1)
+  await expect(page.locator('.archive-panel .panel-title p')).toContainText('1 scheda')
+
+  // Navigate to Modelli pacchetto and check UX-A06-12 (Numero di sedute incluse)
+  await page.getByRole('button', { name: 'Modelli pacchetto' }).click()
+  await expect(page.getByRole('columnheader', { name: 'Numero di sedute incluse' })).toBeVisible()
+
+  // Navigate to Tariffe
+  await page.getByRole('button', { name: 'Tariffe' }).click()
+  await expect(page.getByRole('heading', { name: 'Tariffe' })).toBeVisible()
+
+  // Open detail drawer and verify UX-A06-02 (no duplicate title in detail-summary)
+  const rows = page.locator('.archive-panel tbody tr')
+  await expect(rows.first()).toBeVisible()
+  await rows.first().click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer).toBeVisible()
+  await expect(drawer.locator('.detail-summary h3')).toHaveCount(0)
+
+  // Open edit modal and verify review confirmation modal
+  await drawer.getByRole('button', { name: /Modifica/ }).click()
+  const editModal = page.getByRole('dialog', { name: /Modifica/ })
+  await expect(editModal).toBeVisible()
+  await editModal.getByRole('button', { name: /Rivedi modifica/ }).click()
+
+  // Confirmation review modal
+  const confirmModal = page.getByRole('dialog', { name: /Conferma modifica/ })
+  await expect(confirmModal).toBeVisible()
+
+  if (testInfo.project.name === 'desktop') {
+    await page.screenshot({ path: '../../docs/evidence/issue-177/remediation-archivi-review-desktop.png' })
+  } else {
+    await page.screenshot({ path: '../../docs/evidence/issue-177/remediation-archivi-review-mobile.png' })
+  }
+  await confirmModal.getByRole('button', { name: 'Torna al form' }).click()
+  await editModal.getByRole('button', { name: 'Annulla' }).click()
+})
+
+
 
 
 

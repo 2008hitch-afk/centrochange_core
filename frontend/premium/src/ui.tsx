@@ -64,7 +64,21 @@ export function SearchableSelect({ label, options, value, onChange, required = f
       <input ref={input} id={id} role="combobox" type="text" aria-autocomplete="list" aria-expanded={open} aria-controls={open ? `${id}-list` : undefined} aria-activedescendant={open && visible[active] ? `${id}-option-${active}` : undefined} aria-invalid={invalidQuery} autoComplete="off" placeholder={empty} disabled={disabled} required={required} value={query || selected?.label || ''}
         onFocus={event => { setOpen(true); setQuery(''); setActive(options.findIndex(option => option.value === value)); event.currentTarget.select() }}
         onClick={() => { if (!open) { setQuery(''); setActive(options.findIndex(option => option.value === value)); setOpen(true) } }}
-        onChange={event => { event.currentTarget.setCustomValidity(event.target.value.trim() ? 'Seleziona una voce dall’elenco.' : ''); setInvalidQuery(false); setQuery(event.target.value); setActive(-1); setOpen(true); onChange('') }}
+        onChange={event => {
+          const queryText = event.target.value
+          setQuery(queryText)
+          setInvalidQuery(false)
+          const match = options.find(o => o.value.toLowerCase() === queryText.trim().toLowerCase() || o.label.toLowerCase() === queryText.trim().toLowerCase())
+          if (match) {
+            onChange(match.value)
+            event.currentTarget.setCustomValidity('')
+          } else {
+            onChange('')
+            event.currentTarget.setCustomValidity(queryText.trim() ? 'Seleziona una voce dall’elenco.' : '')
+          }
+          setActive(-1)
+          setOpen(true)
+        }}
         onBlur={event => { if (!root.current?.contains(event.relatedTarget as Node)) { if (query.trim() && !value) { setInvalidQuery(true); setQuery('') } setOpen(false) } }}
         onKeyDown={event => {
           if (event.key === 'ArrowDown') { event.preventDefault(); move(1) }
@@ -142,6 +156,10 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
     }
   }, [open])
   const commit = (text: string) => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text.trim())) {
+      const iso = text.trim()
+      onChange(iso); onValidityChange?.(true); return true
+    }
     const iso = parseItalianDate(text)
     if (iso) { onChange(iso); onValidityChange?.(true); return true }
     if (!required && !text.trim()) { onChange(''); onValidityChange?.(true); return true }
@@ -163,7 +181,7 @@ export function DateInput({ value, onChange, required = false, onValidityChange,
     if (open && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus() }
   }}>
     <input ref={inputRef} className="date-input" type="text" inputMode="numeric" autoComplete="off" placeholder="GG/MM/AAAA"
-      pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" title="Usa una data valida nel formato GG/MM/AAAA"
+      pattern="(?:[0-9]{2}/[0-9]{2}/[0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})" title="Usa una data valida nel formato GG/MM/AAAA"
       aria-label={calendarLabel ? calendarLabel + ' (GG/MM/AAAA)' : undefined}
       value={draft} required={required}
       onChange={event => {
@@ -229,8 +247,8 @@ export function Metric({ label, value, trend, tone = 'blue', onClick, active, cl
   const isClickable = !!onClick
   return <article className={`metric-card ${tone} ${isClickable ? 'clickable' : ''} ${active ? 'active' : ''} ${className}`.trim()} onClick={onClick} onKeyDown={e => { if (onClick && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onClick() } }} tabIndex={isClickable ? 0 : undefined} role={isClickable ? 'button' : undefined} aria-pressed={isClickable ? active : undefined}><div className="metric-top"><span>{label}</span>{trend && <span className="metric-trend">{trend.startsWith('+') ? <ArrowUpRight /> : <ArrowDownRight />}{trend}</span>}</div><strong>{value}</strong><div className="metric-rule" /></article>
 }
-export function DataTable({ rows, columns, onRow }: { rows: Row[]; columns: { key: string; label: string; render?: (value: unknown, row: Row) => React.ReactNode }[]; onRow?: (row: Row) => void }) {
-  if (!rows.length) return <Empty title="Nessun elemento" detail="Modifica i filtri o scegli un altro periodo." />
+export function DataTable({ rows, columns, onRow, emptyTitle = 'Nessun elemento', emptyDetail = 'Modifica i filtri o scegli un altro periodo.' }: { rows: Row[]; columns: { key: string; label: string; render?: (value: unknown, row: Row) => React.ReactNode }[]; onRow?: (row: Row) => void; emptyTitle?: string; emptyDetail?: string }) {
+  if (!rows.length) return <Empty title={emptyTitle} detail={emptyDetail} />
   return <div className="table-scroll"><table><thead><tr>{columns.map((c, i) => <th key={`${c.key}-${i}`} scope="col">{c.label}</th>)}</tr></thead><tbody>{rows.map((row, i) => <tr key={String(row.name ?? i)} className={onRow ? 'clickable' : ''} onClick={() => onRow?.(row)} onKeyDown={e => { if (onRow && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); onRow(row) } }} tabIndex={onRow ? 0 : undefined}>{columns.map((c, j) => <td key={`${c.key}-${j}`}>{c.render ? c.render(row[c.key], row) : demoText(row[c.key] ?? '—')}</td>)}</tr>)}</tbody></table></div>
 }
 export const dateColumn = (key: string, label: string) => ({ key, label, render: (v: unknown) => displayDate(v) })
