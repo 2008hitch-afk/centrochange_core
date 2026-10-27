@@ -1,5 +1,11 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## ATTIVAZIONE OWNER AUDIT-06 — 27/10/2026 (perimetro isolato, nessun DEV)
+
+- L'Owner ha detto **«Ok procediamo»** dopo la rinumerazione consecutiva della roadmap. È aperta l'[Issue **#177 — AUDIT-06 Servizi/catalogo/prezzi/disponibilità**](https://github.com/2008hitch-afk/centrochange_core/issues/177) come unico GOAL attivo per analisi, sviluppo su branch dedicato, CI e UAT su ambiente isolato secondo SOP v1.1. **Nessuna installazione DEV, nuovo container/VPS, schema/DocPerm/ruoli, dati, merge o produzione autorizzati**. In mancanza di gate DEV esplicito, uscita `READY_FOR_DEV_GATE`, non `PASS_DEV`.
+- [**PR #176**](https://github.com/2008hitch-afk/centrochange_core/pull/176) mantiene la nuova numerazione consecutiva 01–14 (finanza 12, compensi/fiscale 13); è **DRAFT/UNMERGED**, e l'esecuzione di #177 non la autorizza al merge. Riconciliare roadmap e baseline prima di pubblicare PR di prodotto.
+- Restano veri i merge già verificati #172→#175→#174 su `main` `39be56b`; il DEV non ha automaticamente ricevuto quella HEAD. La matrice CSV 110×18 non cambia per la sola attivazione del GOAL.
+
 > **DECISIONE OWNER VIGENTE — 27/10/2026: ROADMAP AUDIT 01–14 CON NUMERAZIONE CONSECUTIVA.** Gli AUDIT precedentemente etichettati 10, 11, 12 e 13 diventano rispettivamente 08, 09, 10 e 11; quelli finanziari precedentemente 08 e 09 diventano **12 e 13**, subito prima di **14**. Gli AUDIT 01–07 e 14 restano invariati. Fonte: [tabella canonica sezione C](#c-indice-audit--numerazione-canonica-consecutiva-01-14). I riferimenti ai vecchi numeri nei checkpoint già pubblicati sono **storici**, non nuove autorizzazioni. I 110 requisiti/18 colonne del CSV restano invariati. Nessun nuovo AUDIT, deploy DEV/prod o merge implicitamente autorizzato.
 
 ## DECISIONE OWNER — 27/10/2026: RINUMERAZIONE DELLA ROADMAP FUTURA
