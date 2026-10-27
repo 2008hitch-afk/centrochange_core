@@ -1,14 +1,21 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
-> **STATO E ORDINE OPERATIVO AGGIORNATI AL 27/10/2026:** PR #172, #175 e #174 risultano integrate su `main` (commit `39be56b99319fc7aae3a612fb9052badfe8b9880`), con issue #171 e #173 chiuse; ciò non equivale a deploy DEV/prod. Gli AUDIT futuri seguono la sequenza Owner riportata qui sotto, **senza rinumerare gli ID**. Non è autorizzato l'avvio di AUDIT-06, né di altre aree, per effetto di questo solo riordino. I checkpoint precedenti sotto restano storici. Matrice CSV: 110 requisiti, 18 colonne invariate.
+> **DECISIONE OWNER VIGENTE — 27/10/2026: ROADMAP AUDIT 01–14 CON NUMERAZIONE CONSECUTIVA.** Gli AUDIT precedentemente etichettati 10, 11, 12 e 13 diventano rispettivamente 08, 09, 10 e 11; quelli finanziari precedentemente 08 e 09 diventano **12 e 13**, subito prima di **14**. Gli AUDIT 01–07 e 14 restano invariati. Fonte: [tabella canonica sezione C](#c-indice-audit--numerazione-canonica-consecutiva-01-14). I riferimenti ai vecchi numeri nei checkpoint già pubblicati sono **storici**, non nuove autorizzazioni. I 110 requisiti/18 colonne del CSV restano invariati. Nessun nuovo AUDIT, deploy DEV/prod o merge implicitamente autorizzato.
 
-## DECISIONE OWNER — 27/10/2026: posticipare AUDIT-08 e AUDIT-09
+## DECISIONE OWNER — 27/10/2026: RINUMERAZIONE DELLA ROADMAP FUTURA
 
-L'Owner dispone **solo un riordino della roadmap**, non una rinumerazione: completare prima gli AUDIT 06, 07, 10, 11, 12 e 13; poi eseguire **AUDIT-08 Finanza/fatture/incassi/banca** e **AUDIT-09 Compensi/fatture passive/SdI/TS/coda amministrativa**; infine **AUDIT-14 UAT finale**. La sequenza integrale resta **01 → 02 → 03 → 04 → 05 → 06 → 07 → 10 → 11 → 12 → 13 → 08 → 09 → 14**.
+L'Owner ha **precisato e sostituito** la precedente istruzione di riordinare senza rinumerare: i numeri **DEVONO essere consecutivi 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12 → 13 → 14**. Finanza (ex 08) è **AUDIT-12** e Compensi/fatture passive/SdI/TS (ex 09) è **AUDIT-13**; entrambi vengono dopo Primo incontro pubblico (ora **AUDIT-11**) e prima della UAT finale (**AUDIT-14**). Tutte le altre etichette future seguono la conversione qui registrata:
 
-**Guardrail:** AUDIT-08 e -09 mantengono i propri codici e scope; gli altri AUDIT mantengono i propri codici; nessuna modifica allo stato dei 110 requisiti né ai relativi test; la sola variazione d'ordine non modifica autorizzazioni, dipendenze tecniche, priorità di sicurezza o gate DEV/merge/produzione. AUDIT-06 resta *pianificato, non avviato*. La tabella della sezione C è l'indice ordinato corrente; le sezioni datate sotto sono checkpoint storici.
+| Vecchio AUDIT (roadmap 27/10 prima della rinumerazione) | Nuovo AUDIT | Area |
+|---|---|---|
+| 10 | **08** | Report e dashboard |
+| 11 | **09** | Archivi (11 liste e 11 schede) |
+| 12 | **10** | Gestione accessi e registro modifiche |
+| 13 | **11** | Primo incontro pubblico (Guest) |
+| 08 | **12** | Finanza, fatture, incassi e banca |
+| 09 | **13** | Compensi, fatture passive, SdI/TS e coda amministrativa |
 
-
+**Regola di continuità:** il codice attuale identifica l'area nella roadmap corrente, mentre la vecchia etichetta compare soltanto per rintracciare documenti e discussioni storiche. Non rinominare Issue GitHub, report, commit, prove o GOAL già completati; non fare sostituzioni globali nei documenti cronologici. Una sola area alla volta; nuovo AUDIT-06 non autorizzato. Nessun cambiamento a requisiti, scope, test, ruoli, schema, runtime e CSV. PR #172, #175 e #174 già MERGED su `main` `39be56b`, Issue #171/#173 chiuse, nessun nuovo deploy implicito.
 
 ## CHECKPOINT STORICO PRE-MERGE — 27/10/2026: CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`
 
@@ -147,9 +154,9 @@ Questo addendum **prevale per lo stato operativo** sui checkpoint storici AUDIT-
 
 **Verifica:** i prospetti D/E sono l'indice storico, con `AUDIT` come promemoria, non l'esito aggiornato. L'esito puntuale e l'approvazione Owner sono nel CSV. `PASS` vale solo per il controllo esatto associato alla prova indicata; `PARTIAL` include codice presente ma scenario non completamente verificato; `BLOCKED` identifica anche scope formalmente rinviato. Nessun esito `OWNER_DONE` in AUDIT-00.
 
-## C. Indice AUDIT — sequenza operativa Owner del 27/10/2026 (ID stabili)
+## C. Indice AUDIT — numerazione canonica consecutiva 01–14
 
-| ID AUDIT | Interfaccia / area | Traccia React o integrazione | Issue | Stato verificato / gate |
+| AUDIT attuale | Interfaccia / area | Traccia React o integrazione | Issue | Stato verificato / gate |
 |---:|---|---|---|---|
 | 01 | Login e autenticazione | Login nativo Frappe `/login`, sessione e redirect verso `/premium`; logout in `frontend/premium/src/main.tsx` | [#158](https://github.com/2008hitch-afk/centrochange_core/issues/158) | PR #160 MERGED; issue #158 OPEN; Owner UAT limitato |
 | 02 | Shell, navigazione, centro attivo e ricerca | `main.tsx`; shell/sidebar/header e fallback per ruolo | [#161](https://github.com/2008hitch-afk/centrochange_core/issues/161) | PR #163 MERGED; issue #161 CLOSED |
@@ -157,18 +164,16 @@ Questo addendum **prevale per lo stato operativo** sui checkpoint storici AUDIT-
 | 04 | Pazienti, storico, assegnazioni, note e pacchetti | `views.tsx`, `patient_assignments.tsx`, `patient_packages.tsx`, `note_history.tsx` | [#167](https://github.com/2008hitch-afk/centrochange_core/issues/167) | PR #168/#169 MERGED; issue #167 CLOSED; Owner acceptance scoped |
 | 05 | Professionisti e accessi per professionista | `views.tsx`, `profiles.py`, `permissions.py`, `scoped_archive.tsx` | [#171](https://github.com/2008hitch-afk/centrochange_core/issues/171) | PR #172 MERGED; issue #171 CLOSED; Owner acceptance scoped |
 | 06 | Servizi/catalogo, prezzi e disponibilità | `views.tsx`, `scoped_archive.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO |
-| 07 | Chiusure seduta, cancellazioni 48h, eccezioni, notifiche | Agenda, lifecycle, Notifiche; verificare i processi anche se distribuiti in più schermate | Da creare | PIANIFICATO / NON AUTORIZZATO; perimetro CORE #173 già accettato e integrato, senza estenderlo all'intero AUDIT |
-| 10 | Report e dashboard | `views.tsx`, `finance_reports.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO |
-| 11 | Archivi 11 liste + 11 schede e master-data editing | `scoped_archive.tsx`, `master_archive.tsx`; verificare permessi e completezza reali | Da creare | PIANIFICATO / NON AUTORIZZATO |
-| 12 | Gestione accessi e registro modifiche | `views.tsx`, `audit_log.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO |
-| 13 | Primo incontro pubblico (Guest) | `/premium-primo-incontro`, `first_meeting.tsx`, `public.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO |
-| 08 | Finanza, fatture, incassi e banca | `finance_actions.tsx`, `finance_create.tsx`, `views.tsx` | Da creare | POSTICIPATO: dopo #13 e prima #14; NON AUTORIZZATO |
-| 09 | Compensi, fatture passive, SdI/TS e coda amministrativa | `finance_actions.tsx`, `finance_reports.tsx`, moduli finance | Da creare | POSTICIPATO: dopo #08 e prima #14; NON AUTORIZZATO |
-| 14 | Regressioni trasversali + UAT finale | Permessi, multi-centro, privacy, localizzazione, email/export/print, backup, performance | Da creare | UAT FINALE, DOPO #08 e #09; NON AUTORIZZATO |
+| 07 | Chiusure seduta, cancellazioni 48h, eccezioni, notifiche | Agenda, lifecycle, Notifiche; verificare i processi anche se distribuiti in più schermate | Da creare | PIANIFICATO / NON AUTORIZZATO; CORE #173 integrato in scope limitato, evitare duplicazioni |
+| 08 | Report e dashboard | `views.tsx`, `finance_reports.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO (ex 10) |
+| 09 | Archivi 11 liste + 11 schede e master-data editing | `scoped_archive.tsx`, `master_archive.tsx`; verificare permessi e completezza reali | Da creare | PIANIFICATO / NON AUTORIZZATO (ex 11) |
+| 10 | Gestione accessi e registro modifiche | `views.tsx`, `audit_log.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO (ex 12) |
+| 11 | Primo incontro pubblico (Guest) | `/premium-primo-incontro`, `first_meeting.tsx`, `public.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO (ex 13) |
+| 12 | Finanza, fatture, incassi e banca | `finance_actions.tsx`, `finance_create.tsx`, `views.tsx` | Da creare | POSTICIPATO IN FONDO / NON AUTORIZZATO (ex 08); dopo #11, prima #13 e #14 |
+| 13 | Compensi, fatture passive, SdI/TS e coda amministrativa | `finance_actions.tsx`, `finance_reports.tsx`, moduli finance | Da creare | POSTICIPATO IN FONDO / NON AUTORIZZATO (ex 09); dopo #12, prima #14 |
+| 14 | Regressioni trasversali + UAT finale | Permessi, multi-centro, privacy, localizzazione, email/export/print, backup, performance | Da creare | UAT FINALE / NON AUTORIZZATO; solo dopo #12 e #13 |
 
-**Regola:** l'ID AUDIT non coincide con la posizione nel calendario di esecuzione. L'ordine operativo approvato è **01 → 02 → 03 → 04 → 05 → 06 → 07 → 10 → 11 → 12 → 13 → 08 → 09 → 14**. In particolare, **AUDIT-08 e AUDIT-09 sono eseguiti dopo AUDIT-13 e prima di AUDIT-14**. Si mantengono gli ID, i requisiti, le dipendenze e i gate originali; nessuna modifica del CSV 110×18, nessuna autorizzazione ad avviare AUDIT-06 o successivi.
-
-Le condizioni di issue/PR e DEV vanno comunque riconciliate live prima di dichiarare nuove chiusure. Una sola area ACTIVE per volta; la verifica di regressione dei componenti condivisi resta obbligatoria.
+**Precedenza:** questa tabella è il riferimento canonico per ogni NUOVO GOAL. Il numero storico si recupera nella corrispondenza della decisione all'inizio del documento; le etichette 08/09/10/11/12/13 dei documenti PRECEDENTI la rinumerazione non identificano automaticamente la stessa area della nuova roadmap. Una sola area `ACTIVE` per volta. I requisiti funzionali e le autorizzazioni pregresse restano invariati.
 
 ## D. Matrice delle capability originali (01–40)
 
