@@ -1,5 +1,13 @@
 # AGENTS.md — Centro Change
 
+## AGGIORNAMENTO OWNER VINCOLANTE — 27/10/2026: ROADMAP AUDIT E CONSOLIDAMENTO
+
+- Verifica GitHub: PR #172, #175, #174 integrate su `main` HEAD `39be56b99319fc7aae3a612fb9052badfe8b9880`, issue #171/#173 chiuse. L'integrazione **non** ha eseguito deploy DEV/produzione; non affermare che `main` sia sul runtime. I paragrafi pre-merge seguenti sono **storici**.
+- **Ordine di esecuzione approvato dall'Owner, senza rinumerare gli AUDIT:** `01 → 02 → 03 → 04 → 05 → 06 → 07 → 10 → 11 → 12 → 13 → 08 → 09 → 14`. **AUDIT-08 e AUDIT-09 vengono DOPO AUDIT-13 e PRIMA di AUDIT-14**, mantenendo nome, identificativo, requisiti e gate. Leggere [matrice sezione C](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md) e [router](docs/qa/ACTIVE-GOAL-ROUTER.md) prima di proporre nuovi interventi. Non avviare automaticamente alcun AUDIT.
+- Questo cambiamento riguarda **esclusivamente la pianificazione**. Non toccare app, API, database, ruoli, CI, server, dataset, cron, scope commerciale o la matrice CSV 110×18 per il solo riordino. Resta obbligatorio il normale gate separato per ogni GOAL, DEV, reviewer, merge e produzione.
+
+---
+
 ## PRIORITÀ STATO OWNER PIÙ RECENTE — 27/10/2026
 
 [**CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`**](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) su DEV `b498ea5`, **AUDIT-05 #171 `OWNER_ACCEPTED_SCOPED`**. È completata l'accettazione funzionale del perimetro verificato, **non** il merge né il gestionale globale. **La prossima unità NON è automaticamente AUDIT-06**: prima serve gate di consolidamento per PR #172→#175 e docs #174, con reviewer realmente indipendente identificabile, CI coerenti, ordine PR e **nuovo permesso Owner specifico**. Le PR sono DRAFT/UNMERGED e Issue #173 OPEN. La review formale della PR #175 è `COMMENTED` dall'account GitHub `2008hitch-afk` con descrizione «QA/Security persona»: **non confonderla con una review approvativa indipendente attestata**. Non eseguire merge/produzione/nuovi deploy/nuovo GOAL su generiche dichiarazioni di accettazione. Leggere per primo il [router](docs/qa/ACTIVE-GOAL-ROUTER.md) + Issue/PR LIVE. Le sezioni storiche sotto descrivono gate precedenti e non annullano questa decisione.
