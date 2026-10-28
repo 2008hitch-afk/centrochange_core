@@ -1,8 +1,24 @@
 # Centro Change — REGISTRO OPERATIVO VIGENTE / instradamento GOAL e AUDIT
 
+## ATTIVAZIONE OWNER AUDIT-06 — 27/10/2026 (perimetro isolato, nessun DEV)
+
+- L'Owner ha detto **«Ok procediamo»** dopo la rinumerazione consecutiva della roadmap. È aperta l'[Issue **#177 — AUDIT-06 Servizi/catalogo/prezzi/disponibilità**](https://github.com/2008hitch-afk/centrochange_core/issues/177) come unico GOAL attivo per analisi, sviluppo su branch dedicato, CI e UAT su ambiente isolato secondo SOP v1.1. **Nessuna installazione DEV, nuovo container/VPS, schema/DocPerm/ruoli, dati, merge o produzione autorizzati**. In mancanza di gate DEV esplicito, uscita `READY_FOR_DEV_GATE`, non `PASS_DEV`.
+- [**PR #176**](https://github.com/2008hitch-afk/centrochange_core/pull/176) mantiene la nuova numerazione consecutiva 01–14 (finanza 12, compensi/fiscale 13); è **DRAFT/UNMERGED**, e l'esecuzione di #177 non la autorizza al merge. Riconciliare roadmap e baseline prima di pubblicare PR di prodotto.
+- Restano veri i merge già verificati #172→#175→#174 su `main` `39be56b`; il DEV non ha automaticamente ricevuto quella HEAD. La matrice CSV 110×18 non cambia per la sola attivazione del GOAL.
+
 **Fotografia iniziale:** 26/10/2026. **Scopo:** evitare che un agente, ChatGPT o Codex riparta dalla roadmap MVP storica oppure confonda i numeri degli AUDIT funzionali con quelli dei macro-GOAL di consegna. Questo è l'**indice di ingresso alla fase corrente**; NON sostituisce prove, decisioni e gate nelle Issue collegate.
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
+
+## STATO CORRENTE / DECISIONE OWNER — 27/10/2026: RINUMERAZIONE AUDIT 01–14
+
+- **Merge GitHub già verificato:** PR #172 → #175 → #174 su `main` HEAD `39be56b99319fc7aae3a612fb9052badfe8b9880`; Issue #171/#173 chiuse. [Tracker consolidamento #156](https://github.com/2008hitch-afk/centrochange_core/issues/156#issuecomment-6442719696). **MERGED ≠ DEPLOYED:** il runtime DEV noto dal rapporto esecutore resta `b498ea5`, nessun deploy effettuato con questo riordino.
+- **Ultima istruzione Owner (prevale sulla precedente sequenza 01→07→10→13→08→09→14):** rinumerare realmente gli AUDIT futuri affinché la progressione sia **01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12 → 13 → 14**.
+- **Corrispondenza incontro vecchio → nuovo:** ex AUDIT-10 Report/dashboard → **AUDIT-08**; ex 11 Archivi → **AUDIT-09**; ex 12 Gestione accessi/audit log → **AUDIT-10**; ex 13 Primo incontro pubblico → **AUDIT-11**; ex 08 Finanza/fatture/incassi/banca → **AUDIT-12**; ex 09 Compensi/fatture passive/SdI/TS/coda → **AUDIT-13**. AUDIT-01–07 e AUDIT-14 invariati.
+- **CANONE:** [matrice — sezione C](FUNCTIONAL-COVERAGE-MATRIX.md) numerata consecutivamente. Le tracce storiche (issue, report, test, vecchi snapshot, commenti) conservano la numerazione originale e sono da ricondurre con la tabella di corrispondenza, senza riscrittura retroattiva. Nessuna issue AUDIT-08–14 è autorizzata dal solo cambio di etichetta.
+- **Gate invariati:** prossimo AUDIT-06 solo pianificato/non autorizzato. Nessun AUDIT nuovo, merge, DEV/prod, credenziale, ruolo, schema o dataset autorizzato. Il CSV `FUNCTIONAL-COVERAGE-DETAIL.csv` resta di 110 requisiti × 18 colonne, non modificato. Non trasformare accettazioni parziali del CORE #173 in PASS globali. Le vecchie sezioni sottostanti restano fotografie storiche (compresi vecchi numeri e vecchi gate).
+
+---
 
 ## ULTIMO ESITO AGY E VERIFICA — 27/10/2026: SIMULAZIONE MERGE PASS, REVIEW INDIPENDENTE NON ATTESTATA
 

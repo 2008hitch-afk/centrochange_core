@@ -1,9 +1,29 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
-> **ATTENZIONE: NUMERAZIONE E FASE ATTIVA** — prima di leggere i vari addendum datati, aprire il [REGISTRO OPERATIVO CORRENTE](ACTIVE-GOAL-ROUTER.md). Il lavoro attuale è **AUDIT-05 Professionisti #171 (accepted scoped) + CORE #173 (fix UAT in corso)**. `AUDIT-06` è pianificato ma non autorizzato; `AUDIT-07+` non formalizzati. Il **macro `GOAL-05`** della roadmap MVP del 03/10 è una numerazione diversa. Questo file conserva **110 requisiti**, non assegna automaticamente GOAL alle righe rimaste e non sostituisce le Issue/PR live. I riepiloghi sottostanti sono snapshot cronologici; la fonte puntuale è il [CSV dello stesso commit](FUNCTIONAL-COVERAGE-DETAIL.csv).
+## ATTIVAZIONE OWNER AUDIT-06 — 27/10/2026 (perimetro isolato, nessun DEV)
 
+- L'Owner ha detto **«Ok procediamo»** dopo la rinumerazione consecutiva della roadmap. È aperta l'[Issue **#177 — AUDIT-06 Servizi/catalogo/prezzi/disponibilità**](https://github.com/2008hitch-afk/centrochange_core/issues/177) come unico GOAL attivo per analisi, sviluppo su branch dedicato, CI e UAT su ambiente isolato secondo SOP v1.1. **Nessuna installazione DEV, nuovo container/VPS, schema/DocPerm/ruoli, dati, merge o produzione autorizzati**. In mancanza di gate DEV esplicito, uscita `READY_FOR_DEV_GATE`, non `PASS_DEV`.
+- [**PR #176**](https://github.com/2008hitch-afk/centrochange_core/pull/176) mantiene la nuova numerazione consecutiva 01–14 (finanza 12, compensi/fiscale 13); è **DRAFT/UNMERGED**, e l'esecuzione di #177 non la autorizza al merge. Riconciliare roadmap e baseline prima di pubblicare PR di prodotto.
+- Restano veri i merge già verificati #172→#175→#174 su `main` `39be56b`; il DEV non ha automaticamente ricevuto quella HEAD. La matrice CSV 110×18 non cambia per la sola attivazione del GOAL.
 
-## DECISIONE OWNER VIGENTE — 27/10/2026: CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`
+> **DECISIONE OWNER VIGENTE — 27/10/2026: ROADMAP AUDIT 01–14 CON NUMERAZIONE CONSECUTIVA.** Gli AUDIT precedentemente etichettati 10, 11, 12 e 13 diventano rispettivamente 08, 09, 10 e 11; quelli finanziari precedentemente 08 e 09 diventano **12 e 13**, subito prima di **14**. Gli AUDIT 01–07 e 14 restano invariati. Fonte: [tabella canonica sezione C](#c-indice-audit--numerazione-canonica-consecutiva-01-14). I riferimenti ai vecchi numeri nei checkpoint già pubblicati sono **storici**, non nuove autorizzazioni. I 110 requisiti/18 colonne del CSV restano invariati. Nessun nuovo AUDIT, deploy DEV/prod o merge implicitamente autorizzato.
+
+## DECISIONE OWNER — 27/10/2026: RINUMERAZIONE DELLA ROADMAP FUTURA
+
+L'Owner ha **precisato e sostituito** la precedente istruzione di riordinare senza rinumerare: i numeri **DEVONO essere consecutivi 01 → 02 → 03 → 04 → 05 → 06 → 07 → 08 → 09 → 10 → 11 → 12 → 13 → 14**. Finanza (ex 08) è **AUDIT-12** e Compensi/fatture passive/SdI/TS (ex 09) è **AUDIT-13**; entrambi vengono dopo Primo incontro pubblico (ora **AUDIT-11**) e prima della UAT finale (**AUDIT-14**). Tutte le altre etichette future seguono la conversione qui registrata:
+
+| Vecchio AUDIT (roadmap 27/10 prima della rinumerazione) | Nuovo AUDIT | Area |
+|---|---|---|
+| 10 | **08** | Report e dashboard |
+| 11 | **09** | Archivi (11 liste e 11 schede) |
+| 12 | **10** | Gestione accessi e registro modifiche |
+| 13 | **11** | Primo incontro pubblico (Guest) |
+| 08 | **12** | Finanza, fatture, incassi e banca |
+| 09 | **13** | Compensi, fatture passive, SdI/TS e coda amministrativa |
+
+**Regola di continuità:** il codice attuale identifica l'area nella roadmap corrente, mentre la vecchia etichetta compare soltanto per rintracciare documenti e discussioni storiche. Non rinominare Issue GitHub, report, commit, prove o GOAL già completati; non fare sostituzioni globali nei documenti cronologici. Una sola area alla volta; nuovo AUDIT-06 non autorizzato. Nessun cambiamento a requisiti, scope, test, ruoli, schema, runtime e CSV. PR #172, #175 e #174 già MERGED su `main` `39be56b`, Issue #171/#173 chiuse, nessun nuovo deploy implicito.
+
+## CHECKPOINT STORICO PRE-MERGE — 27/10/2026: CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`
 
 Conferma formale dell'Owner [Issue #173 #6440597230](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) dopo completamento walkthrough UX e riconciliazione tecnica AGY: **«Chiudi la mia giornata» e recupero arretrati** accettati nel solo perimetro DEV `b498ea5`. Nel [CSV](FUNCTIONAL-COVERAGE-DETAIL.csv), **4 ID** mappati al percorso CORE #173 diventano `OWNER_ACCEPTED_FUNCTIONAL_LIMITED`: `CC-CAP-014` (pagamento operativo e settlement), `CC-CAP-022` (chiusura e recupero tardivo, **non tutta la riapertura**), `CC-CAP-024` (Auto Locked ore 07 con audit e recupero, **non reminder end-to-end**), `CC-ACT-004` (chiusura con Svolta/Pagata/metodo), con evidenze e lacune residue esplicite. Le altre righe, come `CC-CAP-023` reminder ore 21, `CC-CAP-025` regole disdetta 48h, `CC-CAP-029` export/stampa/email globali, rimangono nello stato precedente.
 
@@ -11,7 +31,7 @@ Conferma formale dell'Owner [Issue #173 #6440597230](https://github.com/2008hitc
 
 ---
 
-## DECISIONE OWNER VIGENTE — 26/10/2026 (aggiornamento successivo al checkpoint precedente)
+## CHECKPOINT STORICO — 26/10/2026
 
 - [AUDIT-05 #171 OWNER_ACCEPTED_SCOPED](https://github.com/2008hitch-afk/centrochange_core/issues/171#issuecomment-6427680735): accettazione limitata al perimetro Professionisti validato; nel CSV soltanto `CC-CAP-002`, `CC-EXT-004`, `CC-EXT-009`, `CC-CAP-028` ora `OWNER_ACCEPTED_FUNCTIONAL_LIMITED`. Le restanti righe trasversali restano parziali/pending.
 - [CORE #173 DEV_INSTALL_ALLOWED_CONDITIONAL](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6427702903): immagine esatta `cc173-day-closure:d500fff` su `d500fff45cc5ca70c5ef33575aac4e58d4fed505`, solo sei servizi applicativi DEV; vietati merge, prod, schema/DocPerm, ruoli e dati storici. **NON ancora DEV installato/OWNER_ACCEPTED CORE**. PR #175 DRAFT, #172 DRAFT, #174 docs-only DRAFT.
@@ -140,26 +160,26 @@ Questo addendum **prevale per lo stato operativo** sui checkpoint storici AUDIT-
 
 **Verifica:** i prospetti D/E sono l'indice storico, con `AUDIT` come promemoria, non l'esito aggiornato. L'esito puntuale e l'approvazione Owner sono nel CSV. `PASS` vale solo per il controllo esatto associato alla prova indicata; `PARTIAL` include codice presente ma scenario non completamente verificato; `BLOCKED` identifica anche scope formalmente rinviato. Nessun esito `OWNER_DONE` in AUDIT-00.
 
-## C. Indice aree — ordine storico proposto in AUDIT-00 (stato aggiornato nell'addendum)
+## C. Indice AUDIT — numerazione canonica consecutiva 01–14
 
-| Ordine | Interfaccia / area | Traccia React o integrazione | Issue | Stato |
+| AUDIT attuale | Interfaccia / area | Traccia React o integrazione | Issue | Stato verificato / gate |
 |---:|---|---|---|---|
-| 01 | Login e autenticazione | Login nativo Frappe `/login`, sessione e redirect verso `/premium`; logout in `frontend/premium/src/main.tsx` | [#158](https://github.com/2008hitch-afk/centrochange_core/issues/158) | `ACTIVE / PARTIAL / DEV_TECHNICAL_PASS / OWNER_UAT_PASS_LIMITED / INTEGRATION_GATE` |
-| 02 | Shell, navigazione, centro attivo e ricerca | `main.tsx`; shell/sidebar/header e fallback per ruolo | [#161](https://github.com/2008hitch-afk/centrochange_core/issues/161) | `QUEUED / NON AVVIATO` |
-| 03 | Agenda e prenotazioni | `views.tsx`; `operations.workspace.*`, `scheduling.booking.*` | Da creare | `QUEUED` |
-| 04 | Pazienti, storico, assegnazioni, note e pacchetti | `views.tsx`, `patient_assignments.tsx`, `patient_packages.tsx`, `note_history.tsx` | Da creare | `QUEUED` |
-| 05 | Professionisti e accessi per professionista | `views.tsx`, `profiles.py`, `permissions.py`, `scoped_archive.tsx` | [#171](https://github.com/2008hitch-afk/centrochange_core/issues/171) | `ACTIVE`: offline verificato; Frappe isolato e DEV pendenti |
-| 06 | Servizi/catalogo, prezzi e disponibilità | `views.tsx`, `scoped_archive.tsx` | Da creare | `QUEUED` |
-| 07 | Chiusure seduta, cancellazioni 48h, eccezioni, notifiche | Agenda, lifecycle, Notifiche; verificare i processi anche se distribuiti in più schermate | Da creare | `QUEUED` |
-| 08 | Finanza, fatture, incassi e banca | `finance_actions.tsx`, `finance_create.tsx`, `views.tsx` | Da creare | `QUEUED` |
-| 09 | Compensi, fatture passive, SdI/TS e coda amministrativa | `finance_actions.tsx`, `finance_reports.tsx`, moduli finance | Da creare | `QUEUED` |
-| 10 | Report e dashboard | `views.tsx`, `finance_reports.tsx` | Da creare | `QUEUED` |
-| 11 | Archivi 11 liste + 11 schede e master-data editing | `scoped_archive.tsx`, `master_archive.tsx`; verificare permessi e completezza reali | Da creare | `QUEUED` |
-| 12 | Gestione accessi e registro modifiche | `views.tsx`, `audit_log.tsx` | Da creare | `QUEUED` |
-| 13 | Primo incontro pubblico (Guest) | `/premium-primo-incontro`, `first_meeting.tsx`, `public.tsx` | Da creare | `QUEUED` |
-| 14 | Regressioni trasversali + UAT finale | Permessi, multi-centro, privacy, localizzazione, email/export/print, backup, performance | Da creare | `QUEUED` |
+| 01 | Login e autenticazione | Login nativo Frappe `/login`, sessione e redirect verso `/premium`; logout in `frontend/premium/src/main.tsx` | [#158](https://github.com/2008hitch-afk/centrochange_core/issues/158) | PR #160 MERGED; issue #158 OPEN; Owner UAT limitato |
+| 02 | Shell, navigazione, centro attivo e ricerca | `main.tsx`; shell/sidebar/header e fallback per ruolo | [#161](https://github.com/2008hitch-afk/centrochange_core/issues/161) | PR #163 MERGED; issue #161 CLOSED |
+| 03 | Agenda e prenotazioni | `views.tsx`; `operations.workspace.*`, `scheduling.booking.*` | [#164](https://github.com/2008hitch-afk/centrochange_core/issues/164) | PR #166 MERGED; issue #164 OPEN; Owner acceptance scoped |
+| 04 | Pazienti, storico, assegnazioni, note e pacchetti | `views.tsx`, `patient_assignments.tsx`, `patient_packages.tsx`, `note_history.tsx` | [#167](https://github.com/2008hitch-afk/centrochange_core/issues/167) | PR #168/#169 MERGED; issue #167 CLOSED; Owner acceptance scoped |
+| 05 | Professionisti e accessi per professionista | `views.tsx`, `profiles.py`, `permissions.py`, `scoped_archive.tsx` | [#171](https://github.com/2008hitch-afk/centrochange_core/issues/171) | PR #172 MERGED; issue #171 CLOSED; Owner acceptance scoped |
+| 06 | Servizi/catalogo, prezzi e disponibilità | `views.tsx`, `scoped_archive.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO |
+| 07 | Chiusure seduta, cancellazioni 48h, eccezioni, notifiche | Agenda, lifecycle, Notifiche; verificare i processi anche se distribuiti in più schermate | Da creare | PIANIFICATO / NON AUTORIZZATO; CORE #173 integrato in scope limitato, evitare duplicazioni |
+| 08 | Report e dashboard | `views.tsx`, `finance_reports.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO (ex 10) |
+| 09 | Archivi 11 liste + 11 schede e master-data editing | `scoped_archive.tsx`, `master_archive.tsx`; verificare permessi e completezza reali | Da creare | PIANIFICATO / NON AUTORIZZATO (ex 11) |
+| 10 | Gestione accessi e registro modifiche | `views.tsx`, `audit_log.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO (ex 12) |
+| 11 | Primo incontro pubblico (Guest) | `/premium-primo-incontro`, `first_meeting.tsx`, `public.tsx` | Da creare | PIANIFICATO / NON AUTORIZZATO (ex 13) |
+| 12 | Finanza, fatture, incassi e banca | `finance_actions.tsx`, `finance_create.tsx`, `views.tsx` | Da creare | POSTICIPATO IN FONDO / NON AUTORIZZATO (ex 08); dopo #11, prima #13 e #14 |
+| 13 | Compensi, fatture passive, SdI/TS e coda amministrativa | `finance_actions.tsx`, `finance_reports.tsx`, moduli finance | Da creare | POSTICIPATO IN FONDO / NON AUTORIZZATO (ex 09); dopo #12, prima #14 |
+| 14 | Regressioni trasversali + UAT finale | Permessi, multi-centro, privacy, localizzazione, email/export/print, backup, performance | Da creare | UAT FINALE / NON AUTORIZZATO; solo dopo #12 e #13 |
 
-L'ordine può essere adattato dall'Owner sulla base delle dipendenze dimostrate; **una sola area ACTIVE** alla volta. Le correzioni a componenti comuni richiedono test sulle altre aree coinvolte.
+**Precedenza:** questa tabella è il riferimento canonico per ogni NUOVO GOAL. Il numero storico si recupera nella corrispondenza della decisione all'inizio del documento; le etichette 08/09/10/11/12/13 dei documenti PRECEDENTI la rinumerazione non identificano automaticamente la stessa area della nuova roadmap. Una sola area `ACTIVE` per volta. I requisiti funzionali e le autorizzazioni pregresse restano invariati.
 
 ## D. Matrice delle capability originali (01–40)
 

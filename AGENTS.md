@@ -1,5 +1,20 @@
 # AGENTS.md — Centro Change
 
+## ATTIVAZIONE OWNER AUDIT-06 — 27/10/2026 (perimetro isolato, nessun DEV)
+
+- L'Owner ha detto **«Ok procediamo»** dopo la rinumerazione consecutiva della roadmap. È aperta l'[Issue **#177 — AUDIT-06 Servizi/catalogo/prezzi/disponibilità**](https://github.com/2008hitch-afk/centrochange_core/issues/177) come unico GOAL attivo per analisi, sviluppo su branch dedicato, CI e UAT su ambiente isolato secondo SOP v1.1. **Nessuna installazione DEV, nuovo container/VPS, schema/DocPerm/ruoli, dati, merge o produzione autorizzati**. In mancanza di gate DEV esplicito, uscita `READY_FOR_DEV_GATE`, non `PASS_DEV`.
+- [**PR #176**](https://github.com/2008hitch-afk/centrochange_core/pull/176) mantiene la nuova numerazione consecutiva 01–14 (finanza 12, compensi/fiscale 13); è **DRAFT/UNMERGED**, e l'esecuzione di #177 non la autorizza al merge. Riconciliare roadmap e baseline prima di pubblicare PR di prodotto.
+- Restano veri i merge già verificati #172→#175→#174 su `main` `39be56b`; il DEV non ha automaticamente ricevuto quella HEAD. La matrice CSV 110×18 non cambia per la sola attivazione del GOAL.
+
+## AGGIORNAMENTO OWNER VINCOLANTE — 27/10/2026: NUMERAZIONE CONSECUTIVA AUDIT
+
+- PR #172, #175, #174 sono già integrate su `main` (HEAD `39be56b99319fc7aae3a612fb9052badfe8b9880`), issue #171/#173 chiuse; **merge non significa installazione DEV/prod**. Le sezioni pre-merge seguenti rimangono solo storiche.
+- **Nuova istruzione Owner che SOSTITUISCE il precedente riordino senza rinumerazione:** AUDIT futuri numerati consecutivamente **01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14**. **Ex 10→08 (Report), ex 11→09 (Archivi), ex 12→10 (Accessi e registro), ex 13→11 (Primo incontro), ex 08→12 (Finanza), ex 09→13 (Compensi/fatture passive/SdI/TS).** I vecchi 01–07 e 14 non cambiano.
+- **Riferimenti univoci:** [matrice sezione C](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md) e [router corrente](docs/qa/ACTIVE-GOAL-ROUTER.md). Per nuovo GOAL usare i numeri CANONICI; nei report/Issue precedenti al riordino interpretare i vecchi numeri tramite la mappa, senza rinominare testimonianze già accettate o cambiare numeri Issue/PR. Nessun nuovo AUDIT avviato/autorizzato automaticamente.
+- **Scope invariato:** mantenere intatti requisiti, fonte dati, permessi, test ed evidenze. Il semplice cambio numerazione non autorizza modifiche software, DB, runtime, schemi, credenziali, DEV/prod o merge. Il CSV rimane 110 ID × 18 colonne, non modificato.
+
+---
+
 ## PRIORITÀ STATO OWNER PIÙ RECENTE — 27/10/2026
 
 [**CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`**](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) su DEV `b498ea5`, **AUDIT-05 #171 `OWNER_ACCEPTED_SCOPED`**. È completata l'accettazione funzionale del perimetro verificato, **non** il merge né il gestionale globale. **La prossima unità NON è automaticamente AUDIT-06**: prima serve gate di consolidamento per PR #172→#175 e docs #174, con reviewer realmente indipendente identificabile, CI coerenti, ordine PR e **nuovo permesso Owner specifico**. Le PR sono DRAFT/UNMERGED e Issue #173 OPEN. La review formale della PR #175 è `COMMENTED` dall'account GitHub `2008hitch-afk` con descrizione «QA/Security persona»: **non confonderla con una review approvativa indipendente attestata**. Non eseguire merge/produzione/nuovi deploy/nuovo GOAL su generiche dichiarazioni di accettazione. Leggere per primo il [router](docs/qa/ACTIVE-GOAL-ROUTER.md) + Issue/PR LIVE. Le sezioni storiche sotto descrivono gate precedenti e non annullano questa decisione.
