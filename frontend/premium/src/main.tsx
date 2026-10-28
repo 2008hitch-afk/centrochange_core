@@ -17,7 +17,11 @@ const icons: Record<View, React.ReactNode> = {
 }
 const allViews: View[] = ['Agenda', 'Pazienti', 'Professionisti', 'Servizi', 'Disponibilità', 'Report', 'Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche', 'Notifiche']
 function fromHash(): View {
-  try { const raw = decodeURIComponent(location.hash.slice(1)); return allViews.includes(raw as View) ? raw as View : 'Agenda' }
+  try {
+    const raw = decodeURIComponent(location.hash.slice(1))
+    if (raw === 'Dashboard') return 'Report'
+    return allViews.includes(raw as View) ? raw as View : 'Agenda'
+  }
   catch { return 'Agenda' }
 }
 

@@ -210,11 +210,13 @@ def _build_sql_where(center, start, end, practitioner=None, kpi='all', currency=
     elif kpi == 'future':
         clauses.append(
             "`tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 "
+            "AND `tabPatient Appointment`.`cc_closure_state` != 'Closed' "
             "AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE > %(now_ts)s)"
         )
     elif kpi == 'to_close':
         clauses.append(
             "`tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 "
+            "AND `tabPatient Appointment`.`cc_closure_state` != 'Closed' "
             "AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE <= %(now_ts)s)"
         )
     elif kpi == 'operational_paid':
@@ -352,8 +354,8 @@ def summary(center, start, end, practitioner=None):
                 COUNT(*) as sessions,
                 SUM(CASE WHEN `tabPatient Appointment`.`cc_performed` = 1 AND `tabPatient Appointment`.`status` != 'Cancelled' THEN 1 ELSE 0 END) as performed,
                 SUM(CASE WHEN `tabPatient Appointment`.`status` = 'Cancelled' THEN 1 ELSE 0 END) as cancelled,
-                SUM(CASE WHEN `tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE > %(now_ts)s) THEN 1 ELSE 0 END) as future,
-                SUM(CASE WHEN `tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE <= %(now_ts)s) THEN 1 ELSE 0 END) as to_close,
+                SUM(CASE WHEN `tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 AND `tabPatient Appointment`.`cc_closure_state` != 'Closed' AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE > %(now_ts)s) THEN 1 ELSE 0 END) as future,
+                SUM(CASE WHEN `tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_performed` = 0 AND `tabPatient Appointment`.`cc_closure_state` != 'Closed' AND (TIMESTAMP(`tabPatient Appointment`.`appointment_date`, `tabPatient Appointment`.`appointment_time`) + INTERVAL COALESCE(NULLIF(`tabPatient Appointment`.`duration`, 0), 60) MINUTE <= %(now_ts)s) THEN 1 ELSE 0 END) as to_close,
                 SUM(CASE WHEN `tabPatient Appointment`.`cc_paid` = 1 AND `tabPatient Appointment`.`status` != 'Cancelled' THEN 1 ELSE 0 END) as operational_paid,
                 SUM(CASE WHEN `tabPatient Appointment`.`cc_performed` = 1 AND `tabPatient Appointment`.`status` != 'Cancelled' AND `tabPatient Appointment`.`cc_paid` = 0 AND `tabPatient Appointment`.`cc_economic_state` NOT IN ('Non Due', 'Waived', 'Package Covered') THEN 1 ELSE 0 END) as operational_unpaid,
                 SUM(CASE WHEN `tabPatient Appointment`.`cc_economic_state` = 'Due' AND (`tabPatient Appointment`.`status` != 'Cancelled' OR `tabPatient Appointment`.`cc_late_cancellation` = 1) THEN 1 ELSE 0 END) as due,
@@ -513,7 +515,11 @@ def sessions(center, start, end, practitioner=None, kpi='all', page=1, page_leng
 
 @frappe.whitelist()
 def dashboard(center, start, end):
-    require_manager()
+    require_actor()
+    require_center(center)
+    user_roles = roles()
+    if not (is_manager() or 'CC Secretariat' in user_roles):
+        frappe.throw('Non hai accesso alla dashboard gestionale del centro.', frappe.PermissionError)
     return summary(center, start, end)
 
 
@@ -756,10 +762,17 @@ def export_csv(center, start, end, practitioner=None, kpi='all', currency=None):
 
 @frappe.whitelist()
 def print_session(appointment):
-    from centrochange_core.operations.workspace import APPOINTMENT_FIELDS, require_actor
+    from centrochange_core.operations.workspace import require_actor
+    from centrochange_core.operations.notes import require_context
     require_actor()
     doc = frappe.get_doc('Patient Appointment', appointment)
     doc.check_permission('read')
+    require_context(doc.patient, doc.cc_center)
+    user_roles = roles()
+    if 'CC Professional' in user_roles and not is_manager():
+        my_practitioner = practitioner_for(frappe.session.user)
+        if not my_practitioner or doc.practitioner != my_practitioner:
+            frappe.throw('Non sei autorizzato a stampare le sedute di un altro professionista.', frappe.PermissionError)
     import re
     def display_name(value, professional=False):
         match = re.match(r'^CC-HTTP-[A-Za-z0-9]+\s+(.+)$', value or '')
