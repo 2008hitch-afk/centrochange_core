@@ -10,14 +10,20 @@ FIELDS = ['name', 'posting_date', 'payment_type', 'party_type', 'party', 'paid_a
 
 
 @frappe.whitelist(methods=['GET'])
-def records(center, start, end, limit=50, offset=0):
+def records(center, start, end, limit=50, offset=0, search=''):
     require_finance(center)
     limit, offset = page(limit, offset)
+    search = bounded(search, 'Ricerca', 100, required=False)
     start, end = getdate(start), getdate(end)
     if end < start or end - start > timedelta(days=366):
         frappe.throw('Intervallo pagamenti non valido')
-    rows = frappe.get_list('Payment Entry', filters={'cc_center': center, 'posting_date': ['between', [start, end]]},
-                           fields=FIELDS, order_by='posting_date desc,name desc', start=offset, page_length=limit + 1)
+    filters = {'cc_center': center, 'posting_date': ['between', [start, end]]}
+    options = {}
+    if search:
+        needle = '%' + search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+        options['or_filters'] = {'party': ['like', needle], 'name': ['like', needle], 'mode_of_payment': ['like', needle]}
+    rows = frappe.get_list('Payment Entry', filters=filters,
+                           fields=FIELDS, order_by='posting_date desc,name desc', start=offset, page_length=limit + 1, **options)
     return {'rows': rows[:limit], 'has_more': len(rows) > limit}
 
 

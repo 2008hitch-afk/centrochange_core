@@ -18,13 +18,20 @@ const specs: Spec[] = [
   { kind: 'Appointment Type', label: 'Tipi seduta', group: 'Catalogo', fields: [{ key: 'appointment_type', label: 'Tipo seduta' }, { key: 'default_duration', label: 'Durata (min)', edit: true, required: true, kind: 'number' }, { key: 'cc_service_item', label: 'Articolo' }] },
   { kind: 'CC Center Service', label: 'Servizi del centro', group: 'Catalogo', fields: [{ key: 'appointment_type', label: 'Tipo seduta' }, { key: 'center', label: 'Centro' }, status] },
   { kind: 'CC Package Template', label: 'Modelli pacchetto', group: 'Catalogo', fields: [{ key: 'title', label: 'Modello', edit: true, required: true }, { key: 'service_item', label: 'Articolo' }, { key: 'units', label: 'Numero di sedute incluse', edit: true, required: true, kind: 'number' }, status] },
-  { kind: 'Sales Invoice', label: 'Fatture pazienti', group: 'Finanza', fields: [{ key: 'name', label: 'Fattura' }, { key: 'customer', label: 'Cliente' }, { key: 'posting_date', label: 'Data' }, { key: 'grand_total', label: 'Totale' }, { key: 'outstanding_amount', label: 'Residuo' }] },
-  { kind: 'Purchase Invoice', label: 'Fatture professionisti', group: 'Finanza', fields: [{ key: 'name', label: 'Fattura' }, { key: 'supplier', label: 'Fornitore' }, { key: 'posting_date', label: 'Data' }, { key: 'grand_total', label: 'Totale' }, { key: 'outstanding_amount', label: 'Residuo' }] },
-  { kind: 'Payment Entry', label: 'Pagamenti', group: 'Finanza', fields: [{ key: 'name', label: 'Pagamento' }, { key: 'party', label: 'Soggetto' }, { key: 'posting_date', label: 'Data' }, { key: 'payment_type', label: 'Tipo' }, { key: 'paid_amount', label: 'Importo' }, { key: 'unallocated_amount', label: 'Non allocato' }] },
-  { kind: 'Bank Transaction', label: 'Movimenti bancari', group: 'Finanza', fields: [{ key: 'name', label: 'Movimento' }, { key: 'date', label: 'Data' }, { key: 'reference_number', label: 'Riferimento' }, { key: 'deposit', label: 'Entrata' }, { key: 'withdrawal', label: 'Uscita' }] }
+  { kind: 'Sales Invoice', label: 'Fatture pazienti', group: 'Finanza', fields: [{ key: 'name', label: 'Fattura' }, { key: 'customer', label: 'Cliente' }, { key: 'posting_date', label: 'Data' }, { key: 'grand_total', label: 'Totale' }, { key: 'outstanding_amount', label: 'Residuo' }, { key: 'docstatus', label: 'Stato documento' }] },
+  { kind: 'Purchase Invoice', label: 'Fatture professionisti', group: 'Finanza', fields: [{ key: 'name', label: 'Fattura' }, { key: 'supplier', label: 'Fornitore' }, { key: 'posting_date', label: 'Data' }, { key: 'grand_total', label: 'Totale' }, { key: 'outstanding_amount', label: 'Residuo' }, { key: 'docstatus', label: 'Stato documento' }] },
+  { kind: 'Payment Entry', label: 'Pagamenti', group: 'Finanza', fields: [{ key: 'name', label: 'Pagamento' }, { key: 'party', label: 'Soggetto' }, { key: 'posting_date', label: 'Data' }, { key: 'payment_type', label: 'Tipo' }, { key: 'paid_amount', label: 'Importo' }, { key: 'unallocated_amount', label: 'Non allocato' }, { key: 'docstatus', label: 'Stato documento' }] },
+  { kind: 'Bank Transaction', label: 'Movimenti bancari', group: 'Finanza', fields: [{ key: 'name', label: 'Movimento' }, { key: 'date', label: 'Data' }, { key: 'reference_number', label: 'Riferimento' }, { key: 'deposit', label: 'Entrata' }, { key: 'withdrawal', label: 'Uscita' }, { key: 'unallocated_amount', label: 'Non allocato' }, { key: 'docstatus', label: 'Stato documento' }] }
 ]
 const view = (field: FieldSpec, value: unknown) => {
   if (value == null || value === '') return '—'
+  if (field.key === 'docstatus') {
+    const v = Number(value)
+    if (v === 0) return 'Bozza'
+    if (v === 1) return 'Confermata'
+    if (v === 2) return 'Annullata'
+    return String(value)
+  }
   if (/date|valid_from/.test(field.key)) return displayDate(value)
   if (/amount|total|rate|deposit|withdrawal/.test(field.key)) return money(value)
   if (field.key === 'enabled' || field.key === 'disabled') {
@@ -52,6 +59,8 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const searchGen = useRef(0)
   const [paymentStart, setPaymentStart] = useState(recentPaymentStart)
   const [paymentEnd, setPaymentEnd] = useState(romeToday())
   const [selected, setSelected] = useState<ArchiveRecord | null>(null)
@@ -67,6 +76,13 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const spec = visible.find(s => s.kind === kind) ?? visible[0]
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+    }, 200)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  useEffect(() => {
     if (!creating || !center) return
     let live = true
     listArchive(center, 'Item', 0).then(result => {
@@ -78,21 +94,69 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
     return () => { live = false }
   }, [creating, center])
 
-  async function refresh(activeKind = spec.kind) {
+  async function refresh(activeKind = spec.kind, query = debouncedSearch) {
+    const gen = ++searchGen.current
     setLoading(true); setError('')
-    try { const result = await listArchive(center, activeKind, 0, { start: paymentStart, end: paymentEnd }); setRows(result.rows); setHasMore(result.has_more) }
-    catch (cause) { setRows([]); setError(cause instanceof Error ? cause.message : 'Caricamento non riuscito.') }
-    finally { setLoading(false) }
+    try {
+      const result = await listArchive(center, activeKind, 0, { start: paymentStart, end: paymentEnd }, query)
+      if (gen === searchGen.current) {
+        setRows(result.rows)
+        setHasMore(result.has_more)
+      }
+    } catch (cause) {
+      if (gen === searchGen.current) {
+        setRows([])
+        setError(cause instanceof Error ? cause.message : 'Caricamento non riuscito.')
+      }
+    } finally {
+      if (gen === searchGen.current) setLoading(false)
+    }
   }
-  useEffect(() => { setSelected(null); setDraft(null); setSearch(''); void refresh(spec.kind) }, [center, spec.kind])
+
+  useEffect(() => {
+    setSelected(null)
+    setDraft(null)
+    void refresh(spec.kind, debouncedSearch)
+  }, [center, spec.kind, debouncedSearch, paymentStart, paymentEnd])
+
   const more = async () => {
+    const gen = searchGen.current
     setLoading(true); setError('')
-    try { const result = await listArchive(center, spec.kind, rows.length, { start: paymentStart, end: paymentEnd }); setRows(old => [...old, ...result.rows]); setHasMore(result.has_more) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Caricamento non riuscito.') }
-    finally { setLoading(false) }
+    try {
+      const result = await listArchive(center, spec.kind, rows.length, { start: paymentStart, end: paymentEnd }, debouncedSearch)
+      if (gen === searchGen.current) {
+        setRows(old => [...old, ...result.rows])
+        setHasMore(result.has_more)
+      }
+    } catch (cause) {
+      if (gen === searchGen.current) setError(cause instanceof Error ? cause.message : 'Caricamento non riuscito.')
+    } finally {
+      if (gen === searchGen.current) setLoading(false)
+    }
   }
-  const filtered = useMemo(() => rows.filter(row => Object.entries(row).map(([field, value]) => `${String(value ?? '')} ${kind === 'Patient' && ['name', 'patient_name'].includes(field) ? demoPatient(row.name, row.patient_name, row.first_name, row.last_name) : demoText(value)}`).join(' ').toLocaleLowerCase('it-IT').includes(search.toLocaleLowerCase('it-IT').trim())), [rows, search, kind])
-  const change = (next: ArchiveKind) => { setKind(next); setNotice(''); setError('') }
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return rows
+    const q = search.toLocaleLowerCase('it-IT').trim()
+    return rows.filter(row =>
+      Object.entries(row).some(([field, value]) => {
+        const str = kind === 'Patient' && ['name', 'patient_name'].includes(field)
+          ? demoPatient(row.name, row.patient_name, row.first_name, row.last_name)
+          : kind === 'Healthcare Practitioner' && field === 'practitioner_name'
+          ? practitionerName(row as Practitioner)
+          : demoText(value)
+        return String(str ?? '').toLocaleLowerCase('it-IT').includes(q)
+      })
+    )
+  }, [rows, search, kind])
+
+  const change = (next: ArchiveKind) => {
+    setKind(next)
+    setNotice('')
+    setError('')
+    setSearch('')
+    setDebouncedSearch('')
+  }
   const open = async (row: ArchiveRecord) => {
     setLoading(true); setError('')
     try { setSelected(financeKinds.includes(kind) && kind !== 'Payment Entry' ? row : await archiveDetail(center, kind, row.name)) }
@@ -120,7 +184,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
     try {
       const result = creating ? await createArchive(center, kind, draft, reason.trim(), key.current) : await saveArchive(center, kind, selected!, draft, reason.trim(), key.current)
       const current = await archiveDetail(center, kind, result.name)
-      setSelected(current); setDraft(null); setCreating(false); setNotice('Scheda salvata con successo.'); await refresh()
+      setSelected(current); setDraft(null); setCreating(false); setNotice('Scheda salvata con successo.'); await refresh(kind, debouncedSearch)
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Salvataggio non riuscito.') }
     finally { setLoading(false) }
   }
@@ -144,8 +208,8 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   return <>
     <Heading eyebrow="ARCHIVI OPERATIVI" title="Archivi" subtitle="Dati del centro, con autorizzazioni verificate dal server." />
     <div className="archive-layout"><nav className="archive-menu" aria-label="Tipi di archivio">{groups.map(group => <div key={group}><h2>{group}</h2>{visible.filter(s => s.group === group).map(s => <button key={s.kind} aria-label={s.label} className={spec.kind === s.kind ? 'active' : ''} aria-current={spec.kind === s.kind ? 'page' : undefined} onClick={() => change(s.kind)}>{s.label}</button>)}</div>)}</nav>
-      <section className="panel archive-panel"><div className="panel-toolbar"><div className="panel-title"><h2>{spec.label}</h2><p>{rows.length} {rows.length === 1 ? 'scheda' : 'schede'} · {centerNameFor(center, boot?.centers?.length ? boot.centers : financeBoot?.centers ?? [])}{hasMore ? ' · altri risultati disponibili nella ricerca dedicata' : ''}</p></div><div className="form-actions">{manager && creatableKinds.includes(kind) && <Button onClick={beginCreate}>Nuova scheda</Button>}<Button variant="secondary" onClick={() => void refresh()} disabled={loading}>Ricarica</Button></div></div>
-        <div className="archive-filters"><label className="search-inline"><Search size={17} /><input type="search" aria-label={`Cerca in ${spec.label.toLocaleLowerCase('it-IT')}`} placeholder="Filtra le schede caricate" value={search} onChange={e => setSearch(e.target.value)} /></label>{kind === 'Payment Entry' && <div className="archive-dates"><Field label="Dal"><input type="date" value={paymentStart} onChange={event => setPaymentStart(event.target.value)} /></Field><Field label="Al"><input type="date" value={paymentEnd} onChange={event => setPaymentEnd(event.target.value)} /></Field><Button variant="secondary" onClick={() => void refresh()}>Applica</Button></div>}</div>
+      <section className="panel archive-panel"><div className="panel-toolbar"><div className="panel-title"><h2>{spec.label}</h2><p>{rows.length} {rows.length === 1 ? 'scheda' : 'schede'} · {centerNameFor(center, boot?.centers?.length ? boot.centers : financeBoot?.centers ?? [])}{hasMore ? ' · altri risultati disponibili nella ricerca dedicata' : ''}</p></div><div className="form-actions">{manager && creatableKinds.includes(kind) && <Button onClick={beginCreate}>Nuova scheda</Button>}<Button variant="secondary" onClick={() => void refresh(spec.kind, debouncedSearch)} disabled={loading}>Ricarica</Button></div></div>
+        <div className="archive-filters"><label className="search-inline"><Search size={17} /><input type="search" aria-label={`Cerca in ${spec.label.toLocaleLowerCase('it-IT')}`} placeholder={`Cerca in ${spec.label.toLocaleLowerCase('it-IT')}…`} value={search} onChange={e => setSearch(e.target.value)} /></label>{kind === 'Payment Entry' && <div className="archive-dates"><Field label="Dal"><input type="date" value={paymentStart} onChange={event => setPaymentStart(event.target.value)} /></Field><Field label="Al"><input type="date" value={paymentEnd} onChange={event => setPaymentEnd(event.target.value)} /></Field><Button variant="secondary" onClick={() => void refresh(spec.kind, debouncedSearch)}>Applica</Button></div>}</div>
         {loading && <p className="panel-loading" role="status">Caricamento…</p>}{error && <p className="alert error" role="alert">{error}</p>}
         {!loading && (filtered.length ? <DataTable rows={filtered} columns={columns} onRow={row => void open(row as ArchiveRecord)} /> : <Empty title="Nessuna scheda trovata" detail="Modifica il filtro o ricarica la lista." />)}
         {hasMore && <div className="archive-more"><Button variant="secondary" onClick={() => void more()} disabled={loading}>Carica altri</Button></div>}

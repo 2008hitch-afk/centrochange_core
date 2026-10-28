@@ -25,25 +25,33 @@ def _practitioner(center, doc):
 
 
 @frappe.whitelist(methods=['GET'])
-def patients(center, limit=50, offset=0):
+def patients(center, limit=50, offset=0, search=''):
     limit, offset = page(limit, offset)
     require_center(center)
-    filters={'center':center}
+    search = bounded(search, 'Ricerca', 100, required=False)
+    filters = {'center': center}
     if not is_manager():
-        filters['active']=1
+        filters['active'] = 1
     allowed = frappe.get_all('CC Patient Assignment', filters=filters, pluck='patient')
     if not is_manager():
         allowed = list(set(allowed) & {p for p, c in patient_contexts() if c == center})
+    options = {}
+    if search:
+        needle = '%' + search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+        options['or_filters'] = {field: ['like', needle] for field in ('patient_name', 'first_name', 'last_name', 'email', 'name')}
     # Secretariat/Professional have document-scoped hooks, not a broad native list grant.
     lookup = frappe.get_list if is_manager() else frappe.get_all
     rows = lookup('Patient', filters={'name': ['in', allowed or ['']]},
-                           fields=['name', 'patient_name', 'first_name', 'last_name', 'email', 'modified'],
-                           order_by='patient_name,name', start=offset, page_length=limit + 1)
-    active=set(frappe.get_all('CC Patient Assignment',
-        filters={'center':center,'active':1,'patient':['in',[row.name for row in rows[:limit]] or ['']]},
+                  fields=['name', 'patient_name', 'first_name', 'last_name', 'email', 'modified'],
+                  order_by='patient_name,name', start=offset, page_length=limit + 1, **options)
+    row_names = [row.name if hasattr(row, 'name') else row['name'] for row in rows[:limit]]
+    active = set(frappe.get_all('CC Patient Assignment',
+        filters={'center': center, 'active': 1, 'patient': ['in', row_names or ['']]},
         pluck='patient'))
-    return {'rows':[{**row,'active_assignment':row.name in active} for row in rows[:limit]],
-            'has_more':len(rows)>limit}
+    return {'rows': [{**(row if isinstance(row, dict) else vars(row)),
+                      'active_assignment': (row.name if hasattr(row, 'name') else row['name']) in active}
+                     for row in rows[:limit]],
+            'has_more': len(rows) > limit}
 
 
 @frappe.whitelist(methods=['GET'])

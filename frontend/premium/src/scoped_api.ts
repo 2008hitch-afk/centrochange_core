@@ -18,12 +18,13 @@ export const editableKinds: ArchiveKind[] = ['Patient', 'Healthcare Practitioner
 export const financeKinds: ArchiveKind[] = ['Sales Invoice', 'Purchase Invoice', 'Payment Entry', 'Bank Transaction']
 export const creatableKinds: ArchiveKind[] = ['Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template']
 
-export async function listArchive(center: string, kind: ArchiveKind, offset = 0, interval?: { start: string; end: string }): Promise<ArchivePage> {
-  if (catalogKinds.includes(kind)) return call<ArchivePage>('catalog.records', { center, kind, limit: 100, offset })
-  if (kind === 'Patient') return ops<ArchivePage<PatientProfile>>('profiles.patients', { center, limit: 100, offset })
-  if (kind === 'Healthcare Practitioner') return ops<ArchivePage<PractitionerProfile>>('profiles.practitioners', { center, limit: 100, offset })
-  if (kind === 'Payment Entry') return finance<ArchivePage<PaymentProjection>>('payments.records', { center, start: interval?.start ?? recentPaymentStart(), end: interval?.end ?? romeToday(), limit: 100, offset })
-  const rows = await finance<ArchiveRecord[]>('reporting.records', { center, doctype: kind })
+export async function listArchive(center: string, kind: ArchiveKind, offset = 0, interval?: { start: string; end: string }, search = ''): Promise<ArchivePage> {
+  const query = search.trim()
+  if (catalogKinds.includes(kind)) return call<ArchivePage>('catalog.records', { center, kind, limit: 100, offset, search: query })
+  if (kind === 'Patient') return ops<ArchivePage<PatientProfile>>('profiles.patients', { center, limit: 100, offset, search: query })
+  if (kind === 'Healthcare Practitioner') return ops<ArchivePage<PractitionerProfile>>('profiles.practitioners', { center, limit: 100, offset, search: query })
+  if (kind === 'Payment Entry') return finance<ArchivePage<PaymentProjection>>('payments.records', { center, start: interval?.start ?? recentPaymentStart(), end: interval?.end ?? romeToday(), limit: 100, offset, search: query })
+  const rows = await finance<ArchiveRecord[]>('reporting.records', { center, doctype: kind, search: query })
   return { rows, has_more: false }
 }
 

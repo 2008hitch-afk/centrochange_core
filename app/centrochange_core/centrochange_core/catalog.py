@@ -60,10 +60,11 @@ def _enabled_snapshot(center, doc):
 
 
 @frappe.whitelist(methods=['GET'])
-def records(center, kind, limit=50, offset=0):
+def records(center, kind, limit=50, offset=0, search=''):
     if kind not in FIELDS:
         frappe.throw('Archivio non autorizzato', frappe.PermissionError)
     limit, offset = page(limit, offset)
+    search = bounded(search, 'Ricerca', 100, required=False)
     scope = _scope(center)
     if kind == 'CC Center Service':
         filters = {'center': center}
@@ -76,8 +77,21 @@ def records(center, kind, limit=50, offset=0):
                    'customer': ['is', 'not set'], 'supplier': ['is', 'not set'], 'batch_no': ['is', 'not set']}
     else:
         filters = {'service_item': ['in', scope['items'] or ['']]}
+    options = {}
+    if search:
+        needle = '%' + search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+        if kind == 'CC Center Service':
+            options['or_filters'] = {'appointment_type': ['like', needle], 'name': ['like', needle]}
+        elif kind == 'Appointment Type':
+            options['or_filters'] = {'appointment_type': ['like', needle], 'cc_service_item': ['like', needle], 'name': ['like', needle]}
+        elif kind == 'Item':
+            options['or_filters'] = {'item_name': ['like', needle], 'item_group': ['like', needle], 'name': ['like', needle]}
+        elif kind == 'Item Price':
+            options['or_filters'] = {'item_code': ['like', needle], 'name': ['like', needle]}
+        elif kind == 'CC Package Template':
+            options['or_filters'] = {'title': ['like', needle], 'service_item': ['like', needle], 'name': ['like', needle]}
     rows = frappe.get_list(kind, filters=filters, fields=FIELDS[kind], order_by='modified desc',
-                           start=offset, page_length=limit + 1)
+                           start=offset, page_length=limit + 1, **options)
     return {'rows': rows[:limit], 'has_more': len(rows) > limit}
 
 
