@@ -118,9 +118,10 @@ const USERS = {
     if (await eventItem.isVisible()) {
       await eventItem.click();
       await pageA.locator('.drawer').waitFor({ state: 'visible', timeout: 4000 });
-      const cancelBtn = pageA.locator('.action-grid button:has-text("Annulla seduta")').first();
+      const cancelBtn = pageA.locator('.action-grid button:has-text("Cancella"), .action-grid button:has-text("Annulla seduta")').first();
       if (await cancelBtn.isVisible()) {
         await cancelBtn.click();
+        await pageA.locator('.cancellation-preview-card').waitFor({ state: 'visible', timeout: 4000 });
         await pageA.waitForTimeout(500);
         await saveShot(pageA, 'dev-audit07-cancellation-desktop.png');
         await pageA.keyboard.press('Escape');
@@ -135,9 +136,10 @@ const USERS = {
     if (await eventItemMob.isVisible()) {
       await eventItemMob.click();
       await pageAMobile.locator('.drawer').waitFor({ state: 'visible', timeout: 4000 });
-      const cancelBtnMob = pageAMobile.locator('.action-grid button:has-text("Annulla seduta")').first();
+      const cancelBtnMob = pageAMobile.locator('.action-grid button:has-text("Cancella"), .action-grid button:has-text("Annulla seduta")').first();
       if (await cancelBtnMob.isVisible()) {
         await cancelBtnMob.click();
+        await pageAMobile.locator('.cancellation-preview-card').waitFor({ state: 'visible', timeout: 4000 });
         await pageAMobile.waitForTimeout(500);
         await saveShot(pageAMobile, 'dev-audit07-cancellation-mobile.png');
         await pageAMobile.keyboard.press('Escape');
@@ -202,6 +204,127 @@ const USERS = {
     await pageReportMob.waitForTimeout(1000);
     await pageReportMob.locator('.metrics-grid').first().waitFor({ state: 'visible', timeout: 5000 });
     await saveShot(pageReportMob, 'dev-audit07-report-reconciled-mobile.png');
+
+    // -------------------------------------------------------------
+    // 6. ECONOMIC WAIVER (DEROGA ECONOMICA) ON SYNTHETIC LATE CANCEL
+    // -------------------------------------------------------------
+    console.log('[DEV-UAT] 6. Economic Waiver on Synthetic Late-Cancelled Session Desktop & Mobile...');
+    const createWaiveAppCmd = `docker exec -e FRAPPE_STREAM_LOGGING=1 -w /home/frappe/frappe-bench/sites centrochange-dev-backend-1 /home/frappe/frappe-bench/env/bin/python -c '
+import frappe
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+from centrochange_core.scheduling.booking import book
+from centrochange_core.operations import lifecycle
+frappe.init("centrochange.local")
+frappe.connect()
+frappe.set_user("Administrator")
+center = frappe.get_all("Branch", filters={"cc_operational": 1}, pluck="name")[0]
+pros = frappe.get_all("Healthcare Practitioner", filters={"status": "Active"}, fields=["name", "user_id"])
+pro = pros[0].name
+patient = frappe.get_all("Patient", pluck="name")[0]
+service = frappe.get_all("CC Center Service", filters={"center": center, "enabled": 1}, pluck="appointment_type")[0]
+today_str = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d")
+app = book(patient=patient, practitioner=pro, center=center, appointment_type=service, appointment_date=today_str, appointment_time="15:30:00", request_key="dev-uat-waive-demo", reason="DEV UAT session for waiver")
+doc = frappe.get_doc("Patient Appointment", app["name"])
+frappe.flags.cc_test_clock = lifecycle.start_utc(doc) - timedelta(hours=1)
+lifecycle.cancel(doc.name, "Disdetta tardiva del paziente per prova UAT deroga")
+frappe.flags.cc_test_clock = None
+frappe.db.commit()
+print(doc.name)
+'`;
+    const devWaiveApp = execSync(createWaiveAppCmd).toString().trim();
+    console.log('[DEV-UAT] Created synthetic late-cancelled appointment for waiver:', devWaiveApp);
+
+    try {
+      // Manager navigates to Report
+      await pageReport.goto('http://centrochange.local:8082/premium#Report');
+      await pageReport.waitForLoadState('networkidle');
+      await pageReport.waitForTimeout(1000);
+
+      const kpiCanc = pageReport.locator('.metric:has-text("Sedute annullate")').first();
+      if (await kpiCanc.isVisible()) {
+        await kpiCanc.click();
+        await pageReport.waitForLoadState('networkidle');
+        await pageReport.waitForTimeout(800);
+      }
+
+      let rowDesk = pageReport.locator('.table-scroll tbody tr').filter({ hasText: '15:30' }).first();
+      if (!await rowDesk.isVisible()) rowDesk = pageReport.locator('.table-scroll tbody tr').first();
+      await rowDesk.click();
+      await pageReport.locator('.drawer').waitFor({ state: 'visible', timeout: 4000 });
+
+      const waiveBtnDesk = pageReport.locator('.action-grid button:has-text("Rinuncia economica")');
+      await waiveBtnDesk.waitFor({ state: 'visible', timeout: 5000 });
+      await waiveBtnDesk.click();
+      await pageReport.locator('.action-form textarea').waitFor({ state: 'visible', timeout: 3000 });
+      await pageReport.locator('.action-form textarea').fill('Deroga autorizzata dalla Direzione per collaudo UAT live');
+      await pageReport.waitForTimeout(400);
+
+      await saveShot(pageReport, 'dev-audit07-waiver-form-desktop.png');
+      await saveShot(pageReport, 'dev-audit07-waiver-desktop.png');
+
+      // Submit waiver
+      const confirmBtn = pageReport.locator('.action-form button[type="submit"]');
+      await confirmBtn.click();
+      await pageReport.waitForTimeout(1500);
+
+      await saveShot(pageReport, 'dev-audit07-waiver-applied-desktop.png');
+      await pageReport.keyboard.press('Escape');
+      await pageReport.waitForTimeout(500);
+
+      // Mobile waiver screenshot
+      await pageReportMob.goto('http://centrochange.local:8082/premium#Report');
+      await pageReportMob.waitForLoadState('networkidle');
+      await pageReportMob.waitForTimeout(1000);
+
+      const kpiCancMob = pageReportMob.locator('.metric:has-text("Sedute annullate")').first();
+      if (await kpiCancMob.isVisible()) {
+        await kpiCancMob.click();
+        await pageReportMob.waitForLoadState('networkidle');
+        await pageReportMob.waitForTimeout(800);
+      }
+
+      let rowMob = pageReportMob.locator('.table-scroll tbody tr').filter({ hasText: '15:30' }).first();
+      if (!await rowMob.isVisible()) rowMob = pageReportMob.locator('.table-scroll tbody tr').first();
+      await rowMob.click();
+      await pageReportMob.locator('.drawer').waitFor({ state: 'visible', timeout: 4000 });
+      await saveShot(pageReportMob, 'dev-audit07-waiver-applied-mobile.png');
+      await saveShot(pageReportMob, 'dev-audit07-waiver-mobile.png');
+      await pageReportMob.keyboard.press('Escape');
+
+      // Verify DB persistence and audit event
+      const verifyCmd = `docker exec -e FRAPPE_STREAM_LOGGING=1 -w /home/frappe/frappe-bench/sites centrochange-dev-backend-1 /home/frappe/frappe-bench/env/bin/python -c '
+import frappe
+frappe.init("centrochange.local")
+frappe.connect()
+doc = frappe.get_doc("Patient Appointment", "${devWaiveApp}")
+assert doc.cc_economic_state == "Waived", f"Expected Waived, got {doc.cc_economic_state}"
+assert doc.cc_late_cancellation == 1, "Late cancellation flag lost"
+events = frappe.get_all("CC Audit Event", filters={"event_type": "ECONOMIC_WAIVER", "reference_name": "${devWaiveApp}"})
+assert len(events) >= 1, "ECONOMIC_WAIVER audit event missing"
+print("VERIFY_WAIVER_OK")
+'`;
+      const verifyRes = execSync(verifyCmd).toString().trim();
+      console.log('[DEV-UAT] Persistence & audit verification result:', verifyRes);
+    } finally {
+      // Clean up synthetic appointment completely
+      console.log('[DEV-UAT] Cleaning up synthetic waiver appointment from DEV...');
+      const cleanupCmd = `docker exec -e FRAPPE_STREAM_LOGGING=1 -w /home/frappe/frappe-bench/sites centrochange-dev-backend-1 /home/frappe/frappe-bench/env/bin/python -c '
+import frappe
+from centrochange_core.security.audit import internal_write
+frappe.init("centrochange.local")
+frappe.connect()
+frappe.set_user("Administrator")
+with internal_write("cc_fixture_cleanup"):
+    frappe.db.delete("CC Audit Event", {"reference_name": "${devWaiveApp}"})
+    frappe.db.delete("CC Settlement", {"appointment": "${devWaiveApp}"})
+    frappe.db.delete("Patient Appointment", {"name": "${devWaiveApp}"})
+    frappe.db.commit()
+print("CLEANUP_OK")
+'`;
+      const cleanupRes = execSync(cleanupCmd).toString().trim();
+      console.log('[DEV-UAT] Cleanup result:', cleanupRes);
+    }
 
     console.log('[DEV-UAT] All screenshots captured successfully:', captured);
   } finally {

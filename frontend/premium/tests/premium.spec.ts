@@ -2207,7 +2207,7 @@ test('AUDIT-05 UAT-05-33: notifiche localizzano importi in euro e date scadenza 
 
   await page.goto('./#Notifiche')
   await expect(page.getByText('100,00 € — scadenza 15/10/2026')).toBeVisible()
-  await expect(page.getByText('Bonifico DEV simulato: CC SYNTHETIC BANK.')).toBeVisible()
+  await expect(page.getByText('Coordinate per bonifico bancario del centro.')).toBeVisible()
   await expect(page.getByText('50,00 € — scadenza 30/09/2026; 25,50 € — scadenza 01/10/2026')).toBeVisible()
 })
 

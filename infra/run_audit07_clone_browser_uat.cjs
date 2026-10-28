@@ -317,7 +317,8 @@ try:
 except Exception as e:
     print(f"ERROR:{e}")
 `;
-    runFrappe(waiveDemoScript);
+    const lateAppId = runFrappe(waiveDemoScript);
+    console.log('[BROWSER-UAT] Created late-cancelled session for waiver:', lateAppId);
 
     // Manager opens /premium#Report to inspect cancelled sessions and apply waiver
     const ctxMgrDesk = await createContext(env.manager, 1440, 900);
@@ -330,25 +331,30 @@ except Exception as e:
     const kpiCancelled = pageMgr.locator('.metric:has-text("Sedute annullate")').first();
     if (await kpiCancelled.isVisible()) {
       await kpiCancelled.click();
+      await pageMgr.waitForLoadState('networkidle');
       await pageMgr.waitForTimeout(800);
     }
 
-    // Click on the first row in report sessions table to open AppointmentDetail drawer
-    const reportRow = pageMgr.locator('.table-scroll tbody tr').first();
+    // Click on the row in report sessions table to open AppointmentDetail drawer
+    let reportRow = pageMgr.locator('.table-scroll tbody tr').filter({ hasText: '14:00' }).first();
+    if (!await reportRow.isVisible()) {
+      reportRow = pageMgr.locator('.table-scroll tbody tr').first();
+    }
     if (await reportRow.isVisible()) {
       await reportRow.click();
-      await pageMgr.locator('.drawer').waitFor({ state: 'visible', timeout: 3000 });
+      await pageMgr.locator('.drawer').waitFor({ state: 'visible', timeout: 4000 });
       // Click 'Rinuncia economica' button
       const waiveBtn = pageMgr.locator('.action-grid button:has-text("Rinuncia economica")');
-      if (await waiveBtn.isVisible()) {
-        await waiveBtn.click();
-        await pageMgr.waitForTimeout(300);
-        await saveShot(pageMgr, 'audit07-waiver-desktop.png');
-        await pageMgr.keyboard.press('Escape');
-        await pageMgr.waitForTimeout(300);
-        await pageMgr.keyboard.press('Escape');
-        await pageMgr.waitForTimeout(500);
-      }
+      await waiveBtn.waitFor({ state: 'visible', timeout: 5000 });
+      await waiveBtn.click();
+      await pageMgr.locator('.action-form textarea').waitFor({ state: 'visible', timeout: 3000 });
+      await pageMgr.locator('.action-form textarea').fill('Deroga autorizzata dalla Direzione in UAT per disdetta tardiva');
+      await pageMgr.waitForTimeout(400);
+      await saveShot(pageMgr, 'audit07-waiver-desktop.png');
+      await pageMgr.keyboard.press('Escape');
+      await pageMgr.waitForTimeout(300);
+      await pageMgr.keyboard.press('Escape');
+      await pageMgr.waitForTimeout(500);
     }
 
     // Mobile waiver screenshot
@@ -360,22 +366,27 @@ except Exception as e:
     const kpiCancelledMob = pageMgrMob.locator('.metric:has-text("Sedute annullate")').first();
     if (await kpiCancelledMob.isVisible()) {
       await kpiCancelledMob.click();
+      await pageMgrMob.waitForLoadState('networkidle');
       await pageMgrMob.waitForTimeout(800);
     }
-    const reportRowMob = pageMgrMob.locator('.table-scroll tbody tr').first();
+    let reportRowMob = pageMgrMob.locator('.table-scroll tbody tr').filter({ hasText: '14:00' }).first();
+    if (!await reportRowMob.isVisible()) {
+      reportRowMob = pageMgrMob.locator('.table-scroll tbody tr').first();
+    }
     if (await reportRowMob.isVisible()) {
       await reportRowMob.click();
-      await pageMgrMob.locator('.drawer').waitFor({ state: 'visible', timeout: 3000 });
+      await pageMgrMob.locator('.drawer').waitFor({ state: 'visible', timeout: 4000 });
       const waiveBtnMob = pageMgrMob.locator('.action-grid button:has-text("Rinuncia economica")');
-      if (await waiveBtnMob.isVisible()) {
-        await waiveBtnMob.click();
-        await pageMgrMob.waitForTimeout(300);
-        await saveShot(pageMgrMob, 'audit07-waiver-mobile.png');
-        await pageMgrMob.keyboard.press('Escape');
-        await pageMgrMob.waitForTimeout(300);
-        await pageMgrMob.keyboard.press('Escape');
-        await pageMgrMob.waitForTimeout(500);
-      }
+      await waiveBtnMob.waitFor({ state: 'visible', timeout: 5000 });
+      await waiveBtnMob.click();
+      await pageMgrMob.locator('.action-form textarea').waitFor({ state: 'visible', timeout: 3000 });
+      await pageMgrMob.locator('.action-form textarea').fill('Deroga autorizzata dalla Direzione in UAT per disdetta tardiva');
+      await pageMgrMob.waitForTimeout(400);
+      await saveShot(pageMgrMob, 'audit07-waiver-mobile.png');
+      await pageMgrMob.keyboard.press('Escape');
+      await pageMgrMob.waitForTimeout(300);
+      await pageMgrMob.keyboard.press('Escape');
+      await pageMgrMob.waitForTimeout(500);
     }
 
     // =============================================================
