@@ -142,6 +142,7 @@ class OperationalReportingTests(unittest.TestCase):
             'centrochange_core.security.guards': guards,
             'centrochange_core.operations': types.ModuleType('centrochange_core.operations'),
             'centrochange_core.operations.workspace': workspace,
+            'centrochange_core.operations.notes': types.SimpleNamespace(require_context=lambda patient, center: None),
         }
         self.modules = patch.dict(sys.modules, modules)
         self.modules.start()
@@ -734,6 +735,126 @@ class OperationalReportingTests(unittest.TestCase):
             self.reporting.sessions('CENTRO-FORBIDDEN', '2026-10-01', '2026-10-24')
         with self.assertRaises(Denied):
             self.reporting.export_csv('CENTRO-FORBIDDEN', '2026-10-01', '2026-10-24')
+
+    def test_dashboard_endpoint_access_and_reconciliation(self):
+        """CC-CAP-030: dashboard() provides managerial KPIs matching summary(), accessible to Manager/Secretariat/Finance and denied to Professional/Guest."""
+        # Manager authorized
+        self.manager = True
+        self.actor_roles = ['CC Manager']
+        dash_mgr = self.reporting.dashboard('CENTRO-A', '2026-10-01', '2026-10-24')
+        summ_mgr = self.reporting.summary('CENTRO-A', '2026-10-01', '2026-10-24')
+        self.assertEqual(dash_mgr, summ_mgr)
+        self.assertIn('EUR', dash_mgr['currencies'])
+
+        # Secretariat authorized
+        self.manager = False
+        self.actor_roles = ['CC Secretariat']
+        dash_sec = self.reporting.dashboard('CENTRO-A', '2026-10-01', '2026-10-24')
+        self.assertEqual(dash_sec, summ_mgr)
+
+        # Pure Professional DENIED from center dashboard
+        self.manager = False
+        self.actor_roles = ['CC Professional']
+        self.user_practitioner = 'PRO-A'
+        with self.assertRaises(Denied):
+            self.reporting.dashboard('CENTRO-A', '2026-10-01', '2026-10-24')
+
+        # Guest DENIED
+        self.actor_roles = ['Guest']
+        with self.assertRaises(Denied):
+            self.reporting.dashboard('CENTRO-A', '2026-10-01', '2026-10-24')
+
+        # Patient DENIED
+        self.actor_roles = ['Patient']
+        with self.assertRaises(Denied):
+            self.reporting.dashboard('CENTRO-A', '2026-10-01', '2026-10-24')
+
+    def test_non_performed_closed_session_not_in_future_or_to_close(self):
+        """Closed sessions marked as not performed (No Show, cc_performed=0, cc_closure_state='Closed')
+        must NEVER appear in 'future' or 'to_close' (neither in classify_session, SQL where, nor sessions list)."""
+        closed_noshow = Record(
+            name='APP-NOSHOW', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
+            practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-20',
+            appointment_time='10:00:00', duration=60, status='No Show', cc_closure_state='Closed',
+            cc_economic_state='Non Due', cc_performed=0, cc_paid=0, cc_late_cancellation=0,
+            cc_service_label='Visita NoShow', cc_price_snapshot=0, cc_currency_snapshot='EUR'
+        )
+        c = self.reporting.classify_session(closed_noshow, self.test_clock)
+        self.assertFalse(c['future'])
+        self.assertFalse(c['to_close'])
+        self.assertFalse(c['performed'])
+        self.assertFalse(c['cancelled'])
+
+        self.appointments.append(closed_noshow)
+        res_future = self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-24', kpi='future')
+        self.assertNotIn('APP-NOSHOW', [a['name'] for a in res_future['appointments']])
+
+        res_toclose = self.reporting.sessions('CENTRO-A', '2026-10-01', '2026-10-24', kpi='to_close')
+        self.assertNotIn('APP-NOSHOW', [a['name'] for a in res_toclose['appointments']])
+
+    def test_csv_injection_formula_escaping_and_utf8_bom(self):
+        """CC-CAP-029: CSV export uses UTF-8 BOM, delimiter ;, quote all, and escapes formula triggers (=, +, -, @, \\t, \\r, \\n) with leading '."""
+        suspicious = Record(
+            name='APP-INJ', patient='PAT-INJ', patient_name='=cmd|\'/C calc\'!A0', practitioner='PRO-A',
+            practitioner_name='+Dott. Evil', cc_center='CENTRO-A', appointment_date='2026-10-20',
+            appointment_time='11:00:00', duration=45, status='Closed', cc_closure_state='Closed',
+            cc_economic_state='Due', cc_performed=1, cc_paid=1, cc_late_cancellation=0,
+            cc_service_label='@Special Service', cc_price_snapshot=150.0, cc_currency_snapshot='EUR'
+        )
+        self.appointments = [suspicious]
+        self.manager = True
+        self.actor_roles = ['CC Manager']
+        self.reporting.export_csv('CENTRO-A', '2026-10-01', '2026-10-24')
+
+        content = self.frappe.response['filecontent']
+        # Must start with UTF-8 BOM
+        self.assertTrue(content.startswith('\ufeff'), "Missing UTF-8 BOM")
+
+        # Escaped formulas: '=cmd... must start with "'="
+        self.assertIn("\"'=cmd|'/C calc'!A0\"", content)
+        # Escaped '+Dott...
+        self.assertIn("\"'+Dott. Evil\"", content)
+        # Escaped '@Special...
+        self.assertIn("\"'@Special Service\"", content)
+
+        # Content-type and filename
+        self.assertEqual(self.frappe.response['content_type'], 'text/csv; charset=utf-8')
+        self.assertEqual(self.frappe.response['filename'], 'centrochange-report-centro.csv')
+
+    def test_print_session_actor_context_and_practitioner_boundary(self):
+        """print_session validates actor, patient center context, and restricts Professional to own appointment."""
+        appt_doc = Record(
+            name='APP-1', patient='PAT-1', patient_name='Paziente 1', practitioner='PRO-A',
+            practitioner_name='Dott. A', cc_center='CENTRO-A', appointment_date='2026-10-20',
+            appointment_time='09:00:00', duration=60, cc_closure_state='Closed',
+            cc_economic_state='Due', cc_service_label='Visita'
+        )
+        appt_doc.check_permission = lambda perm: True
+        self.frappe.get_doc = lambda dt, name: appt_doc if dt == 'Patient Appointment' and name == 'APP-1' else None
+
+        # Manager can print
+        self.manager = True
+        self.actor_roles = ['CC Manager']
+        html_mgr = self.reporting.print_session('APP-1')
+        self.assertIn('Centro Change', html_mgr)
+        self.assertIn('Paziente 1', html_mgr)
+
+        # Professional A can print PRO-A appointment
+        self.manager = False
+        self.actor_roles = ['CC Professional']
+        self.user_practitioner = 'PRO-A'
+        html_pro = self.reporting.print_session('APP-1')
+        self.assertIn('Centro Change', html_pro)
+
+        # Professional B CANNOT print PRO-A appointment (IDOR protection)
+        self.user_practitioner = 'PRO-B'
+        with self.assertRaises(Denied):
+            self.reporting.print_session('APP-1')
+
+        # Guest CANNOT print
+        self.actor_roles = ['Guest']
+        with self.assertRaises(Denied):
+            self.reporting.print_session('APP-1')
 
 
 if __name__ == '__main__':

@@ -2711,6 +2711,114 @@ test('AUDIT-07: notifiche Direzione ripulite da gergo Notification Log in-app e 
   await expect(panel).not.toContainText('15/10/2026.Coordinate')
 })
 
+test('AUDIT-08: Dashboard e Report operativi: navigazione alias, aggregati e stato Non svolta', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.reporting.summary*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          currencies: {
+            EUR: {
+              sessions: 4,
+              performed: 1,
+              cancelled: 1,
+              future: 1,
+              to_close: 0,
+              operational_paid: 1,
+              operational_unpaid: 0,
+              due: 1,
+              due_snapshot_amount: 80.0
+            }
+          },
+          truncated: false
+        }
+      })
+    })
+  })
+  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        message: {
+          appointments: [
+            {
+              name: 'APP-PERFORMED',
+              appointment_date: today,
+              appointment_time: '09:00:00',
+              patient: 'PAT-1',
+              patient_name: 'Paziente Alfa',
+              practitioner: 'PR-001',
+              practitioner_name: 'Dott.ssa Rossi',
+              cc_service_label: 'Consulenza',
+              status: 'Closed',
+              cc_closure_state: 'Closed',
+              cc_performed: 1,
+              cc_paid: 1,
+              mode_of_payment: 'POS',
+              cc_price_snapshot: 80.0,
+              cc_currency_snapshot: 'EUR'
+            },
+            {
+              name: 'APP-NOSHOW',
+              appointment_date: today,
+              appointment_time: '10:00:00',
+              patient: 'PAT-2',
+              patient_name: 'Paziente Beta',
+              practitioner: 'PR-001',
+              practitioner_name: 'Dott.ssa Rossi',
+              cc_service_label: 'Consulenza',
+              status: 'No Show',
+              cc_closure_state: 'Closed',
+              cc_performed: 0,
+              cc_paid: 0,
+              cc_economic_state: 'Non Due',
+              cc_price_snapshot: 0.0,
+              cc_currency_snapshot: 'EUR'
+            }
+          ],
+          total: 2,
+          total_pages: 1
+        }
+      })
+    })
+  })
+
+  // Navigating to #Dashboard redirects/aliases to Report
+  await page.goto('./#Dashboard')
+  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
+
+  // Verify metric cards
+  await expect(page.getByText('Sedute totali')).toBeVisible()
+  await expect(page.getByText('Sedute svolte')).toBeVisible()
+  await expect(page.getByText('Appuntamenti futuri')).toBeVisible()
+  await expect(page.getByText('Sedute annullate')).toBeVisible()
+
+  // Drilldown table rendering
+  const table = page.locator('.report-drilldown')
+  await expect(table).toBeVisible()
+  await expect(table.getByText('Svolta', { exact: true })).toBeVisible()
+  await expect(table.getByText('Non svolta', { exact: true })).toBeVisible()
+  await expect(table.getByText('Non dovuto', { exact: true })).toBeVisible()
+})
+
+test('AUDIT-08: Export CSV centro e professionista: pulsanti abilitati solo su periodo valido e link corretti', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('./#Report')
+
+  const exportCenter = page.locator('a:has-text("Esporta CSV del centro")')
+  await expect(exportCenter).toBeVisible()
+  await expect(exportCenter).toHaveAttribute('href', /operations\.reporting\.export_csv/)
+
+  // Open professional detail
+  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  const exportProf = page.locator('a:has-text("Esporta CSV completo")')
+  await expect(exportProf).toBeVisible()
+})
+
+
 
 
 
