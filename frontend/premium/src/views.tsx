@@ -3,7 +3,7 @@ import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar'
 import dayjs from 'dayjs'
 import 'dayjs/locale/it'
 import { Plus, ChevronLeft, ChevronRight, RefreshCw, Filter, Download, CalendarDays, Check, Search, ArrowRight, UserRound, Clock3 } from 'lucide-react'
-import { type Appointment, type Boot, type FinanceBoot, type Patient, type Practitioner, type ReschedulePaymentBlock, type Row, ops, finance, schedule, call, requestKey, romeToday, displayDate, money, time } from './api'
+import { type Appointment, type Boot, type FinanceBoot, type Patient, type Practitioner, type ReschedulePaymentBlock, type Row, ops, finance, schedule, call, requestKey, romeToday, displayDate, money, time, parseRomeAppointmentUtcMs, computeCancellationNotice } from './api'
 import { type Feedback, Button, Chip, DataTable, DateInput, Drawer, Empty, Field, FormError, Heading, Metric, Modal, SearchableSelect, Time24Input, dateColumn, moneyColumn, useAction } from './ui'
 import { FinanceActions } from './finance_actions'
 import { FinanceCreate } from './finance_create'
@@ -18,7 +18,7 @@ import { AppointmentTimeline } from './appointment_timeline'
 import { WeekGrid } from './week_grid'
 import { DayClosureModal } from './day_closure'
 import { demoPatient, demoText, syntheticCode } from './demo_labels'
-import { centerNameFor, closureName, economyName, paymentMethodLabel, practitionerName, practitionerNameFor } from './display_names'
+import { centerNameFor, closureName, economyName, paymentMethodLabel, practitionerName, practitionerNameFor, auditActorName } from './display_names'
 export { paymentMethodLabel }
 
 dayjs.locale('it')
@@ -272,7 +272,7 @@ export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refr
   const refresh = () => { setSelected(null); setBooking(false); setReload(x => x + 1); void refreshBoot() }
 
   return <><Heading eyebrow="IL TUO SPAZIO DI LAVORO" title="Agenda" subtitle={`${displayDate(iso(start))}${mode === 'week' ? ' – ' + displayDate(iso(end)) : ''}  ·  ${monthLabel(date)}`} action={<div className="button-group">{isProfessional && <Button variant="secondary" onClick={() => { setDayClosureInitialDate(undefined); setDayClosureOpen(true) }}><Check size={16} /> Chiudi la mia giornata</Button>}<Button onClick={() => { setBookingPractitioner(bookingPractitionerId); setBooking(true) }}><Plus size={18} /> Nuova prenotazione</Button></div>} />
-    {isProfessional && toClose > 0 && <div className="alert info" role="status" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}><span>Hai sedute da chiudere per oggi o arretrate da completare.</span><Button variant="secondary" onClick={() => { setDayClosureInitialDate(undefined); setDayClosureOpen(true) }}>Chiudi la mia giornata</Button></div>}
+    {isProfessional && toClose > 0 && <div className="alert info" role="status" style={{ marginBottom: 16 }}>Hai {toClose} {toClose === 1 ? 'seduta da chiudere' : 'sedute da chiudere'} per oggi o arretrate da completare. Usa il pulsante «Chiudi la mia giornata» in alto per procedere.</div>}
     <div className="metrics-grid"><Metric label="Sedute nel periodo" value={visitCount} tone="blue" /><Metric label="Sedute svolte" value={completed} tone="green" /><Metric label="Sedute da chiudere" value={toClose} tone="amber" /><Metric label="Professionisti" value={resources.length} tone="purple" /></div>
     <section className="panel calendar-panel"><div className="panel-toolbar"><div className="toolbar-left"><div className="segmented"><button className={mode === 'day' ? 'selected' : ''} onClick={() => setMode('day')}>Giorno</button><button className={mode === 'week' ? 'selected' : ''} onClick={() => setMode('week')}>Settimana</button></div><button className="icon-button bordered" title="Precedente" aria-label="Periodo precedente" onClick={() => step(-1)}><ChevronLeft /></button><button className="icon-button bordered" title="Successivo" aria-label="Periodo successivo" onClick={() => step(1)}><ChevronRight /></button><Button variant="secondary" onClick={() => setDate(wallDate(romeToday(), '12:00'))}>Oggi</Button><div className="calendar-popover-wrap"><Button variant="secondary" onClick={() => setCalendarOpen(open => !open)} aria-expanded={calendarOpen} aria-label="Apri calendario"><CalendarDays size={16} /> Scegli data</Button>{calendarOpen && <CalendarPopover current={date} onSelect={setDate} onClose={() => setCalendarOpen(false)} />}</div></div><div className="toolbar-right">{isProfessional ? <span className="agenda-practitioner-label">Professionista: <strong>{practitionerName(boot.practitioners[0] ?? { name: effectivePractitioners[0], practitioner_name: 'Mio profilo' } as Practitioner)}</strong></span> : <><PractitionerMultiSelect practitioners={boot.practitioners} selected={selectedPractitioners} onChange={setSelectedPractitioners} /><select aria-label="Professionista" value={selectedPractitioners.length === 1 ? selectedPractitioners[0] : isAll ? 'all' : selectedPractitioners.join(',')} onChange={e => { const val = e.target.value; setSelectedPractitioners(val === 'all' || !val ? [] : [val]) }} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0, margin: 0, padding: 0 }} tabIndex={-1}><option value="all">Tutti i professionisti</option>{boot.practitioners.map(p => <option key={p.name} value={p.name}>{practitionerName(p)}</option>)}</select></>}<button className="icon-button bordered" title="Aggiorna" aria-label="Aggiorna agenda" onClick={() => setReload(x => x + 1)}><RefreshCw /></button></div></div>
       {error && <p className="inline-error" role="alert">{error}</p>}
@@ -423,8 +423,16 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback, on
     finally { setMoveBusy(false) }
   }
   const entries = (key: string) => Array.isArray(history?.[key]) ? history[key] as Row[] : []
-  return <><Drawer title={fullName(row)} onClose={onClose}><div className="detail-summary"><Chip tone={row.status === 'Cancelled' ? 'bad' : row.cc_performed ? 'good' : 'blue'}>{row.status === 'Cancelled' ? 'Cancellata' : row.cc_performed ? 'Svolta' : 'Prenotata'}</Chip><h3>{demoText(row.cc_service_label) || 'Seduta'}</h3><p><CalendarDays size={16} /> {displayDate(row.appointment_date)} · {time(row.appointment_time)}</p><p><UserRound size={16} /> {practitionerNameFor(row.practitioner, boot.practitioners, row.practitioner_name)}</p><p><Clock3 size={16} /> {row.duration} min · {money(row.cc_price_snapshot, row.cc_currency_snapshot || 'EUR')}</p></div><div className="detail-tabs" role="tablist">{(['Seduta', 'Storico', 'Note'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div>
-    {tab === 'Seduta' && <><div className="detail-section"><h3>Stato operativo</h3><p>Chiusura: {closureName(row.cc_closure_state)}<br />Economia: {economyName(row.cc_economic_state)}</p>{row.cc_closure_state === 'Auto Locked' && !administrative && <><p className="scope-note">La chiusura della seduta è bloccata automaticamente per superamento dei termini giornalieri.</p>{onOpenDayClosure && <div style={{ marginTop: 8 }}><Button variant="secondary" onClick={() => onOpenDayClosure(row.appointment_date)}>Completa seduta arretrata</Button></div>}</>}<div className="action-grid">{actions.map(a => <Button key={a.id} variant={a.id === 'close' ? 'primary' : a.id === 'cancel' ? 'danger' : 'secondary'} onClick={() => setAction(a.id)}>{a.label}</Button>)}</div></div>{action && <form className="action-form" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{actions.find(a => a.id === action)?.label}</h3>{action === 'move' && <div className="form-grid"><Field label="Nuova data"><DateInput value={moveDate} onChange={value => { setMoveDate(value); setPaymentBlock(null) }} required /></Field><Field label="Nuova ora"><Time24Input value={moveTime} onChange={value => { setMoveTime(value); setPaymentBlock(null) }} required /></Field></div>}{action === 'close' && <><label className="checkbox-row"><input type="checkbox" checked={paid} onChange={e => { setPaid(e.target.checked); setPaymentMethod('') }} /> Pagata</label>{paid && <><Field label="Metodo di pagamento" required><select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required><option value="">Seleziona un metodo</option>{boot.payment_methods.map(p => <option key={p} value={p}>{paymentMethodLabel(p)}</option>)}</select></Field><p className="scope-note">La scelta registra il pagamento operativo, non una fattura o un incasso contabile. Se compaiono più configurazioni simili, verifica quale utilizzare prima di confermare.</p></>}</>}<Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={action === 'move' ? moveError : error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setAction(''); setPaymentBlock(null) }}>Annulla</Button><Button disabled={busy || moveBusy} type="submit">{busy || moveBusy ? 'Salvataggio…' : 'Conferma'}</Button></div></form>}</>}
+  const [cancelNowMs, setCancelNowMs] = useState(Date.now())
+  useEffect(() => {
+    if (action !== 'cancel') return
+    setCancelNowMs(Date.now())
+    const timer = setInterval(() => setCancelNowMs(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [action])
+  const { isTimely: isTimelyNotice, noticeDisplay } = computeCancellationNotice(row.appointment_date, row.appointment_time, cancelNowMs)
+  return <><Drawer title={fullName(row)} onClose={onClose}><div className="detail-summary"><Chip tone={row.status === 'Cancelled' ? 'bad' : row.cc_performed ? 'good' : 'blue'}>{row.status === 'Cancelled' ? (row.cc_late_cancellation ? 'Cancellata tardiva (< 48h)' : 'Cancellata tempestiva (≥ 48h)') : row.cc_performed ? 'Svolta' : 'Prenotata'}</Chip><h3>{demoText(row.cc_service_label) || 'Seduta'}</h3><p><CalendarDays size={16} /> {displayDate(row.appointment_date)} · {time(row.appointment_time)}</p><p><UserRound size={16} /> {practitionerNameFor(row.practitioner, boot.practitioners, row.practitioner_name)}</p><p><Clock3 size={16} /> {row.duration} min · {money(row.cc_price_snapshot, row.cc_currency_snapshot || 'EUR')}</p></div><div className="detail-tabs" role="tablist">{(['Seduta', 'Storico', 'Note'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div>
+    {tab === 'Seduta' && <><div className="detail-section"><h3>Stato operativo</h3><p>Chiusura: {closureName(row.cc_closure_state)}<br />Economia: {economyName(row.cc_economic_state)}</p>{row.status === 'Cancelled' && <p className="scope-note">{row.cc_late_cancellation ? 'Disdetta tardiva (comunicata a meno di 48 ore dalla seduta).' : 'Disdetta tempestiva (comunicata con almeno 48 ore di preavviso).'}{row.cc_economic_state === 'Waived' ? ' Applicata deroga economica autorizzata.' : ''}</p>}{row.cc_closure_state === 'Auto Locked' && !administrative && <><p className="scope-note">La chiusura della seduta è bloccata automaticamente per superamento dei termini giornalieri.</p>{onOpenDayClosure && <div style={{ marginTop: 8 }}><Button variant="secondary" onClick={() => onOpenDayClosure(row.appointment_date)}>Completa seduta arretrata</Button></div>}</>}<div className="action-grid">{actions.map(a => <Button key={a.id} variant={a.id === 'close' ? 'primary' : a.id === 'cancel' ? 'danger' : 'secondary'} onClick={() => setAction(a.id)}>{a.label}</Button>)}</div></div>{action && <form className="action-form" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{actions.find(a => a.id === action)?.label}</h3>{action === 'cancel' && <div className="cancellation-preview-card" style={{ background: 'var(--surface-sunken, #f8fafc)', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: 8, padding: 14, marginBottom: 16 }}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}><span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted, #64748b)' }}>Preavviso stimato: <strong>{noticeDisplay}</strong></span><Chip tone={isTimelyNotice ? 'good' : 'warn'}>{isTimelyNotice ? 'Disdetta tempestiva (≥ 48h)' : 'Disdetta tardiva (< 48h)'}</Chip></div><div style={{ fontSize: '0.9rem', lineHeight: 1.45, marginBottom: 8, color: 'var(--text-main, #0f172a)' }}>{isTimelyNotice ? <p style={{ margin: 0 }}><strong>Esito previsto:</strong> Cancellazione con preavviso pari o superiore a 48 ore. La seduta risulterà <strong>non dovuta</strong> e l’eventuale quota pacchetto riservata verrà rilasciata alla disponibilità del paziente.</p> : <p style={{ margin: 0 }}><strong>Esito previsto:</strong> Cancellazione con preavviso inferiore a 48 ore. La seduta verrà registrata come <strong>disdetta tardiva</strong> con tariffa a carico del paziente o consumo della quota pacchetto (importo dovuto secondo tariffa o pacchetto), salvo eventuale deroga economica motivata autorizzata da Segreteria o Direzione.</p>}</div><p className="scope-note" style={{ margin: 0, fontSize: '0.78rem' }}>Stima calcolata secondo il fuso Europe/Rome ({isTimelyNotice ? '≥ 48 ore' : '< 48 ore'}). La verifica definitiva della soglia e la registrazione della disdetta avvengono in modo atomico sul server alla conferma.</p></div>}{action === 'waive' && <p className="scope-note">La deroga economica annulla l’addebito o riaccredita l’unità al pacchetto del paziente, conservando inalterato l’evento di disdetta tardiva nel registro di audit.</p>}{action === 'move' && <div className="form-grid"><Field label="Nuova data"><DateInput value={moveDate} onChange={value => { setMoveDate(value); setPaymentBlock(null) }} required /></Field><Field label="Nuova ora"><Time24Input value={moveTime} onChange={value => { setMoveTime(value); setPaymentBlock(null) }} required /></Field></div>}{action === 'close' && <><label className="checkbox-row"><input type="checkbox" checked={paid} onChange={e => { setPaid(e.target.checked); setPaymentMethod('') }} /> Pagata</label>{paid && <><Field label="Metodo di pagamento" required><select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required><option value="">Seleziona un metodo</option>{boot.payment_methods.map(p => <option key={p} value={p}>{paymentMethodLabel(p)}</option>)}</select></Field><p className="scope-note">La scelta registra il pagamento operativo, non una fattura o un incasso contabile. Se compaiono più configurazioni simili, verifica quale utilizzare prima di confermare.</p></>}</>}<Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={action === 'move' ? moveError : error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setAction(''); setPaymentBlock(null) }}>Annulla</Button><Button disabled={busy || moveBusy} type="submit">{busy || moveBusy ? 'Salvataggio…' : 'Conferma'}</Button></div></form>}</>}
     {tab === 'Storico' && <div className="detail-section"><h3>Eventi della seduta</h3><p className="scope-note">Modifiche e motivi relativi a questa seduta. Le versioni delle note sono nella scheda Note.</p>{eventsError && <p className="inline-error" role="alert">{eventsError}</p>}{!events && !eventsError ? <p role="status">Caricamento eventi…</p> : events && <AppointmentTimeline rows={events} />}<h3>Altre sedute del paziente</h3>{!history ? <p role="status">Caricamento sedute…</p> : entries('appointments').length ? <div className="timeline">{entries('appointments').map((a, i) => <article key={i}><strong>{displayDate(a.appointment_date)} · {demoText(a.cc_service_label) || 'Seduta'}</strong><span>{closureName(a.cc_closure_state)} · {economyName(a.cc_economic_state)}</span></article>)}</div> : <Empty title="Nessun'altra seduta nel centro" />}<h3>Pacchetti</h3>{entries('packages').map((p, i) => <p key={i}>{demoText(p.label)} · Residue: {String(p.remaining)}</p>)}</div>}
     {tab === 'Note' && <div className="detail-section"><h3>Note organizzative</h3><NoteHistory rows={entries('organizational_notes')} onCorrect={n => { setNote(String(n.content ?? '')); setPrivateNote(false); setCorrects(String(n.name)) }} />{boot.roles.includes('CC Professional') && <><h3>Note riservate</h3><NoteHistory rows={entries('private_notes')} privateNotes onCorrect={n => { setNote(String(n.content ?? '')); setPrivateNote(true); setCorrects(String(n.name)) }} /></>}<form onSubmit={e => { e.preventDefault(); void run(() => ops('notes.add_note', { patient: row.patient, center, content: note, private: privateNote ? 1 : 0, corrects }, true), 'Nota registrata.').then(ok => { if (ok) { setNote(''); setCorrects(null); setHistory(null); void ops<Row>('workspace.patient_history', { patient: row.patient, center }).then(setHistory) } }) }}><Field label={corrects ? "Rettifica nota" : "Nuova nota"}><textarea required value={note} onChange={e => setNote(e.target.value)} maxLength={100000} /></Field>{boot.roles.includes('CC Professional') && <label className="checkbox-row"><input type="checkbox" checked={privateNote} onChange={e => setPrivateNote(e.target.checked)} /> Nota professionale riservata</label>}<FormError error={error} /><Button disabled={busy || !note} type="submit">{corrects ? "Registra rettifica" : "Aggiungi nota"}</Button></form></div>}
   </Drawer>{paymentBlock && <Modal title="Verifica pagamenti prima dello spostamento" onClose={() => { setPaymentBlock(null); setMoveError('') }}><p className="scope-note">La prenotazione resta invariata finché la verifica non viene completata.</p>{paymentBlock.can_override ? <form onSubmit={e => { e.preventDefault(); void authorizeAndMove() }}><p>Posizioni che impediscono lo spostamento:</p><ul className="payment-block-list">{paymentBlock.debts.map((debt, index) => <li key={`${debt.reference_doctype}:${debt.reference_name}`}><strong>{debt.reference_doctype === 'Sales Invoice' ? 'Fattura' : 'Seduta non fatturata'} {index + 1}</strong><span>{money(debt.amount, debt.currency)} · scadenza {displayDate(debt.due_date)} · {centerNameFor(debt.center, boot.centers)}</span></li>)}</ul><p className="scope-note">Debito, fatture e scadenze originarie restano conservati nello storico.</p><Field label="Motivazione della deroga" required><textarea value={overrideReason} onChange={e => setOverrideReason(e.target.value)} required maxLength={2000} /></Field><Field label="Nuova scadenza" required><DateInput value={overrideDue} onChange={setOverrideDue} required /></Field><FormError error={moveError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setPaymentBlock(null); setMoveError('') }}>Annulla</Button><Button disabled={moveBusy || !overrideReason.trim() || !overrideDue} type="submit">{moveBusy ? 'Verifica in corso…' : 'Autorizza e procedi'}</Button></div></form> : <><p role="alert">Serve una verifica dei pagamenti. Contatta la segreteria o la Direzione: il tuo ruolo non può autorizzare una deroga.</p><div className="form-actions"><Button onClick={() => setPaymentBlock(null)}>Chiudi</Button></div></>}</Modal>}</>
@@ -828,32 +836,97 @@ const formatCurrencyIt = (amount: string, curr: string) => {
   return `${formattedNum} ${symbol}`
 }
 
+export const translateRecipient = (value: unknown, boot?: Boot) => {
+  const raw = String(value ?? '').trim()
+  if (!raw || raw === '—') return '—'
+  const alias = demoText(raw)
+  if (alias && alias !== raw) return alias
+
+  if (/^cc-http-.*-pro(\d+)@/i.test(raw) || /^pro(\d+)$/i.test(raw)) {
+    const num = raw.match(/pro(\d+)/i)?.[1]
+    return `Professionista ${num}`
+  }
+  if (/^cc-http-.*-manager@/i.test(raw) || /^manager$/i.test(raw)) {
+    return 'Direzione'
+  }
+  if (/^cc-http-.*-secretariat@/i.test(raw) || /^secretariat$/i.test(raw)) {
+    return 'Segreteria'
+  }
+  if (/^cc-http-.*-([msabcft])@example\.invalid$/i.test(raw)) {
+    return auditActorName(raw)
+  }
+  if (raw === 'Administrator') return 'Amministratore'
+  if (raw === 'Guest') return 'Destinatario non disponibile'
+  if (boot?.practitioners) {
+    const p = boot.practitioners.find(pr => pr.name === raw || pr.practitioner_name === raw)
+    if (p) return practitionerName(p)
+  }
+  return raw
+}
+
+export const translateKind = (value: unknown) => {
+  const k = String(value ?? '').trim()
+  if (!k || k === '—') return '—'
+  const map: Record<string, string> = {
+    CLOSURE_REMINDER: 'Promemoria chiusura',
+    'Payment Block': 'Blocco pagamenti',
+    SYNTHETIC_QUEUE: 'Coda interna di prova',
+    LATE_RECOVERY: 'Recupero tardivo',
+    PAYMENT_REMINDER: 'Sollecito pagamento'
+  }
+  if (map[k]) return map[k]
+  return k.replace(/_/g, ' ')
+}
+
 const translateNotification = (msg: unknown) => {
-  const text = String(msg ?? '')
+  let text = String(msg ?? '')
   if (text === 'Pending sessions require daily closure; open the authorized session workspace.') {
     return 'Ci sono sedute da chiudere. Apri l’Agenda per completare la chiusura.'
   }
+  if (text === 'Synthetic pending closure') {
+    return 'Promemoria: sedute in attesa di chiusura giornaliera.'
+  }
+  if (text === 'Synthetic unavailable recipient') {
+    return 'Notifica interna: destinatario non attivo o non disponibile.'
+  }
+  if (text === 'Synthetic internal queue proof') {
+    return 'Notifica interna: accodamento in-app registrato.'
+  }
+  if (text.includes('Recipient disabled')) {
+    text = text.replace(/Recipient disabled(\s+or not found)?/gi, 'Destinatario non attivo o non disponibile')
+  }
+  if (text.includes('CC SYNTHETIC BANK')) {
+    text = text.replace(/(\s*Bonifico DEV simulato:\s*)?CC SYNTHETIC BANK\.?/gi, ' Coordinate per bonifico bancario del centro.')
+    text = text.replace(/CC SYNTHETIC BANK/gi, 'Bonifico bancario')
+  }
   if (text.startsWith('Prima di una seduta successiva è richiesta la verifica del pagamento.')) {
-    return text.replace(/(\d+(?:\.\d{2})?)\s+([A-Z]{3})\s+—\s+scadenza\s+(\d{4}-\d{2}-\d{2})/g, (_m, amt, curr, dateStr) => {
+    text = text.replace(/(\d+(?:\.\d{2})?)\s+([A-Z]{3})\s+—\s+scadenza\s+(\d{4}-\d{2}-\d{2})/g, (_m, amt, curr, dateStr) => {
       return `${formatCurrencyIt(amt, curr)} — scadenza ${formatIsoDateIt(dateStr)}`
     })
   }
+  text = text.replace(/\s{2,}/g, ' ').replace(/\.Coordinate/g, '. Coordinate').trim()
   return text
 }
 
-export function Notifications({ boot, center }: Context) {
-  const personal = boot.roles.includes('CC Professional') && !boot.roles.includes('CC Manager')
+export function Notifications({ boot, center, feedback }: Context) {
+  const isManager = boot.roles.includes('CC Manager')
+  const personal = boot.roles.includes('CC Professional') && !isManager && !boot.roles.includes('CC Secretariat')
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reload, setReload] = useState(0)
+  const [retryTarget, setRetryTarget] = useState<Row | null>(null)
+  const [retryReason, setRetryReason] = useState('')
+  const [retryBusy, setRetryBusy] = useState(false)
+  const [retryError, setRetryError] = useState('')
+
   useEffect(() => {
     let live = true
     setLoading(true)
     setRows([])
     setError('')
     const doctype = personal ? 'Notification Log' : 'CC Notification'
-    const fields = personal ? ['name', 'subject', 'creation', 'read'] : ['name', 'message', 'state', 'creation']
+    const fields = personal ? ['name', 'subject', 'creation', 'read'] : ['name', 'recipient', 'kind', 'message', 'state', 'creation']
     call<Row[]>('frappe.client.get_list', { doctype, fields, limit_page_length: 100, order_by: 'creation desc' })
       .then(r => {
         if (!live) return
@@ -867,5 +940,161 @@ export function Notifications({ boot, center }: Context) {
       })
     return () => { live = false }
   }, [center, personal, reload])
-  return <><Heading eyebrow="CENTRO CHANGE" title="Notifiche" subtitle={personal ? 'Promemoria e comunicazioni personali.' : 'Esiti e comunicazioni operative.'} /><section className={`panel${personal ? ' personal-notifications' : ''}`}><div className="panel-toolbar"><div className="panel-title"><h2>Notifiche recenti</h2></div></div>{loading ? <p className="panel-loading" role="status">Caricamento notifiche…</p> : error ? <div className="notification-error" role="alert"><p>{error}</p><Button variant="secondary" onClick={() => setReload(n => n + 1)}>Riprova</Button></div> : rows.length ? <DataTable rows={rows} columns={personal ? [{ key: 'subject', label: 'Messaggio', render: value => translateNotification(value) }, { key: 'read', label: 'Lettura', render: value => value ? 'Letta' : 'Da leggere' }, dateColumn('creation', 'Data')] : [{ key: 'message', label: 'Messaggio', render: value => translateNotification(value) }, { key: 'state', label: 'Stato', render: value => ({ Pending: 'In attesa', Sent: 'Inviata', Delivered: 'Consegnata', Failed: 'Non riuscita', Cancelled: 'Annullata' } as Record<string, string>)[String(value)] || 'Da verificare' }, dateColumn('creation', 'Data')]} /> : <Empty title="Nessuna notifica recente" detail="Le comunicazioni del centro appariranno qui." />}</section></>
+
+  const markRead = async (docname: string) => {
+    try {
+      await call('frappe.desk.doctype.notification_log.notification_log.mark_as_read', { docname }, true)
+      setReload(n => n + 1)
+      if (feedback) feedback('Notifica contrassegnata come letta.')
+    } catch (e) {
+      if (feedback) feedback(getError(e), true)
+    }
+  }
+
+  const submitRetry = async () => {
+    if (!retryTarget) return
+    setRetryBusy(true)
+    setRetryError('')
+    try {
+      await call('operations.notifications.retry', { name: retryTarget.name, reason: retryReason }, true)
+      setRetryTarget(null)
+      setRetryReason('')
+      setReload(n => n + 1)
+      if (feedback) feedback('Nuovo tentativo di invio programmato.')
+    } catch (e) {
+      setRetryError(getError(e))
+    } finally {
+      setRetryBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <Heading
+        eyebrow="CENTRO CHANGE"
+        title="Notifiche"
+        subtitle={personal ? 'Promemoria e comunicazioni personali.' : 'Esiti e comunicazioni operative.'}
+      />
+      <section className={`panel${personal ? ' personal-notifications' : ''}`}>
+        <div className="panel-toolbar">
+          <div className="panel-title">
+            <h2>{personal ? 'I tuoi promemoria' : 'Notifiche e comunicazioni interne'}</h2>
+            <p className="scope-note" style={{ margin: '4px 0 0 0' }}>
+              Le comunicazioni e i promemoria sono gestiti come avvisi interni all’applicazione; nessun fornitore email esterno è collegato.
+            </p>
+          </div>
+          <div className="toolbar-right">
+            <Button variant="secondary" onClick={() => setReload(n => n + 1)} aria-label="Aggiorna notifiche">
+              <RefreshCw size={15} /> Aggiorna
+            </Button>
+          </div>
+        </div>
+        {loading ? (
+          <p className="panel-loading" role="status">Caricamento notifiche…</p>
+        ) : error ? (
+          <div className="notification-error" role="alert">
+            <p>{error}</p>
+            <Button variant="secondary" onClick={() => setReload(n => n + 1)}>Riprova</Button>
+          </div>
+        ) : rows.length ? (
+          <DataTable
+            rows={rows}
+            columns={personal ? [
+              {
+                key: 'subject',
+                label: 'Messaggio',
+                render: (value, row) => {
+                  const text = translateNotification(value)
+                  const isClosure = text.includes('Chiudi la mia giornata') || text.includes('sedute da chiudere')
+                  return (
+                    <div>
+                      <div>{text}</div>
+                      {isClosure && (
+                        <div style={{ marginTop: 6 }}>
+                          <Button variant="ghost" onClick={() => { location.hash = '#Agenda' }}>
+                            Vai ad Agenda
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+              },
+              {
+                key: 'read',
+                label: 'Stato',
+                render: (value, row) => (
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <Chip tone={value ? 'good' : 'warn'}>{value ? 'Letta' : 'Da leggere'}</Chip>
+                    {!value && (
+                      <Button variant="ghost" onClick={() => void markRead(String(row.name))}>
+                        Segna come letta
+                      </Button>
+                    )}
+                  </div>
+                )
+              },
+              dateColumn('creation', 'Data')
+            ] : [
+              { key: 'message', label: 'Messaggio', render: value => translateNotification(value) },
+              { key: 'recipient', label: 'Destinatario', render: value => translateRecipient(value, boot) },
+              { key: 'kind', label: 'Tipo', render: value => translateKind(value) },
+              {
+                key: 'state',
+                label: 'Stato',
+                render: (value, row) => {
+                  const stateMap: Record<string, { label: string; tone: 'good' | 'warn' | 'bad' | 'blue' | 'neutral' }> = {
+                    Pending: { label: 'In coda interna', tone: 'warn' },
+                    Sent: { label: 'Registrata internamente', tone: 'blue' },
+                    Delivered: { label: 'Consegnata in-app', tone: 'good' },
+                    Failed: { label: 'Non recapitata', tone: 'bad' },
+                    Cancelled: { label: 'Annullata', tone: 'neutral' }
+                  }
+                  const item = stateMap[String(value)] || { label: String(value ?? '—'), tone: 'warn' as const }
+                  return (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <Chip tone={item.tone}>{item.label}</Chip>
+                      {isManager && row.state === 'Failed' && (
+                        <Button variant="ghost" onClick={() => { setRetryTarget(row); setRetryReason(''); setRetryError('') }}>
+                          Riprova
+                        </Button>
+                      )}
+                    </div>
+                  )
+                }
+              },
+              dateColumn('creation', 'Data')
+            ]}
+          />
+        ) : (
+          <Empty title="Nessuna notifica recente" detail="Le comunicazioni del centro appariranno qui." />
+        )}
+      </section>
+      {retryTarget && (
+        <Modal title="Nuovo tentativo notifica" onClose={() => setRetryTarget(null)}>
+          <form onSubmit={e => { e.preventDefault(); void submitRetry() }}>
+            <p><strong>Destinatario:</strong> {translateRecipient(retryTarget.recipient, boot)}</p>
+            <p><strong>Tipo:</strong> {translateKind(retryTarget.kind)}</p>
+            <p><strong>Messaggio:</strong> {translateNotification(retryTarget.message)}</p>
+            <Field label="Motivo del nuovo tentativo" required>
+              <textarea
+                value={retryReason}
+                onChange={e => setRetryReason(e.target.value)}
+                required
+                maxLength={2000}
+                rows={3}
+              />
+            </Field>
+            <FormError error={retryError} />
+            <div className="form-actions">
+              <Button type="button" variant="secondary" onClick={() => setRetryTarget(null)}>Annulla</Button>
+              <Button disabled={retryBusy || !retryReason.trim()} type="submit">
+                {retryBusy ? 'Invio…' : 'Conferma nuovo tentativo'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+    </>
+  )
 }

@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import type { Appointment } from '../src/api'
+import { type Appointment, computeCancellationNotice, parseRomeAppointmentUtcMs } from '../src/api'
 import { configureDemoLabels, demoPatient, demoText, syntheticCode } from '../src/demo_labels'
 import { auditActorName, economyName, practitionerNameFor } from '../src/display_names'
 import { availableUnitLabel, sessionCountLabel } from '../src/patient_packages'
@@ -1846,6 +1846,7 @@ test('AUDIT-05 UAT: Visualizzazione neutra per seduta annullata e registrato per
 })
 
 test('AUDIT-05 UAT: Metriche ribbon Agenda coerenti con filtro professionisti e stati temporali', async ({ page }) => {
+  await page.clock.setFixedTime(new Date(`${today}T12:00:00+02:00`))
   const p1 = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }
   const p2 = { name: 'PR-002', practitioner_name: 'Dott. Bianchi' }
   const tomorrowDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
@@ -2206,7 +2207,7 @@ test('AUDIT-05 UAT-05-33: notifiche localizzano importi in euro e date scadenza 
 
   await page.goto('./#Notifiche')
   await expect(page.getByText('100,00 € — scadenza 15/10/2026')).toBeVisible()
-  await expect(page.getByText('Bonifico DEV simulato: CC SYNTHETIC BANK.')).toBeVisible()
+  await expect(page.getByText('Coordinate per bonifico bancario del centro.')).toBeVisible()
   await expect(page.getByText('50,00 € — scadenza 30/09/2026; 25,50 € — scadenza 01/10/2026')).toBeVisible()
 })
 
@@ -2608,6 +2609,106 @@ test('AUDIT-06: UX-A06-03, UX-A06-05, UX-A06-07, UX-A06-12 Archivi, lessico, dat
   }
   await confirmModal.getByRole('button', { name: 'Torna al form' }).click()
   await editModal.getByRole('button', { name: 'Annulla' }).click()
+})
+
+test('AUDIT-07: calcolo preavviso cancellazione Europe/Rome, DST e soglie esatte 48h', () => {
+  // 1. Standard time vs DST in Europe/Rome
+  const dStandard = parseRomeAppointmentUtcMs('2026-10-30', '09:00:00')
+  expect(new Date(dStandard).toISOString()).toBe('2026-10-30T08:00:00.000Z')
+
+  // Spring transition: 28 March (UTC+1) -> 30 March (UTC+2)
+  const dSpringBefore = parseRomeAppointmentUtcMs('2026-03-28', '10:00:00')
+  expect(new Date(dSpringBefore).toISOString()).toBe('2026-03-28T09:00:00.000Z')
+  const dSpringAfter = parseRomeAppointmentUtcMs('2026-03-30', '10:00:00')
+  expect(new Date(dSpringAfter).toISOString()).toBe('2026-03-30T08:00:00.000Z')
+
+  // Autumn transition: 24 October (UTC+2) -> 26 October (UTC+1)
+  const dAutumnBefore = parseRomeAppointmentUtcMs('2026-10-24', '10:00:00')
+  expect(new Date(dAutumnBefore).toISOString()).toBe('2026-10-24T08:00:00.000Z')
+  const dAutumnAfter = parseRomeAppointmentUtcMs('2026-10-26', '10:00:00')
+  expect(new Date(dAutumnAfter).toISOString()).toBe('2026-10-26T09:00:00.000Z')
+
+  // 2. Threshold tests (172800s = 48h)
+  const appMs = parseRomeAppointmentUtcMs('2026-10-30', '10:00:00')
+
+  // 47:59:59 (172799 seconds) -> Late
+  const late = computeCancellationNotice('2026-10-30', '10:00:00', appMs - 172799 * 1000)
+  expect(late.isTimely).toBe(false)
+  expect(late.diffSeconds).toBe(172799)
+  expect(late.noticeDisplay).toBe('47 ore e 59 min')
+
+  // 48:00:00 (172800 seconds) -> Timely
+  const exact = computeCancellationNotice('2026-10-30', '10:00:00', appMs - 172800 * 1000)
+  expect(exact.isTimely).toBe(true)
+  expect(exact.diffSeconds).toBe(172800)
+  expect(exact.noticeDisplay).toBe('48 ore e 0 min')
+
+  // 48:00:01 (172801 seconds) -> Timely
+  const early = computeCancellationNotice('2026-10-30', '10:00:00', appMs - 172801 * 1000)
+  expect(early.isTimely).toBe(true)
+  expect(early.diffSeconds).toBe(172801)
+  expect(early.noticeDisplay).toBe('48 ore e 0 min')
+
+  // Past start time (<= 0)
+  const past = computeCancellationNotice('2026-10-30', '10:00:00', appMs + 1000)
+  expect(past.isTimely).toBe(false)
+  expect(past.noticeDisplay).toBe('Orario di inizio già superato')
+
+  // Less than 1 hour (< 3600s)
+  const underHour = computeCancellationNotice('2026-10-30', '10:00:00', appMs - 1800 * 1000)
+  expect(underHour.isTimely).toBe(false)
+  expect(underHour.noticeDisplay).toBe('Meno di 1 ora')
+})
+
+test('AUDIT-07: form cancellazione mostra anteprima deterministica senza gergo interno', async ({ page }) => {
+  await mockApi(page)
+  await page.goto('./')
+  await page.getByText('Paziente Sintetico').first().click()
+  const drawer = page.getByRole('dialog', { name: 'Paziente Sintetico' })
+  await expect(drawer).toBeVisible()
+
+  await drawer.getByRole('button', { name: 'Cancella' }).click()
+  const previewCard = drawer.locator('.cancellation-preview-card')
+  await expect(previewCard).toBeVisible()
+
+  await expect(previewCard).not.toContainText('(«Dovuto»)')
+  await expect(previewCard).toContainText('Stima calcolata secondo il fuso Europe/Rome')
+  await expect(previewCard).toContainText('server alla conferma')
+})
+
+test('AUDIT-07: notifiche Direzione ripulite da gergo Notification Log in-app e spaziature corrette', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/frappe.client.get_list*', async route => {
+    if (route.request().url().includes('doctype=CC+Notification')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: [
+            {
+              name: 'CC-NOTIF-001',
+              title: 'Sollecito pagamento',
+              message: 'Prima di una seduta successiva è richiesta la verifica del pagamento. 120.00 EUR — scadenza 2026-10-15. Bonifico DEV simulato: CC SYNTHETIC BANK.',
+              kind: 'PAYMENT_BLOCK',
+              state: 'Enqueued',
+              recipient: 'cc-http-uat0000001-a@example.invalid',
+              channel: 'In-App',
+              creation: '2026-10-27 10:00:00'
+            }
+          ]
+        })
+      })
+    }
+    return route.continue()
+  })
+
+  await page.goto('./#Notifiche')
+  const panel = page.locator('.panel').first()
+  await expect(panel).not.toContainText('Notification Log in-app')
+  await expect(panel).toContainText('Le comunicazioni e i promemoria sono gestiti come avvisi interni all’applicazione; nessun fornitore email esterno è collegato.')
+
+  await expect(panel).toContainText('15/10/2026. Coordinate per bonifico bancario del centro.')
+  await expect(panel).not.toContainText('15/10/2026.Coordinate')
 })
 
 

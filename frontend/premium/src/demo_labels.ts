@@ -25,7 +25,7 @@ export function configureDemoLabels(boot: Boot | null, financeBoot: FinanceBoot 
   financialLabels = financeBoot?.demo_labels ?? {}
   labels = { ...operationalLabels, ...financialLabels }
   patientNames = Object.fromEntries((boot?.patients ?? []).map(row =>
-    [row.name, patientName(row.patient_name, row.first_name, row.last_name)]).filter((row): row is [string, string] => Boolean(row[1])))
+    [row.name, patientName(row.patient_name, row.first_name, row.last_name) || operationalLabels[row.name] || '']).filter((row): row is [string, string] => Boolean(row[1])))
 }
 
 export function demoText(value: unknown): string {
@@ -59,6 +59,8 @@ function missingPatientName(identifier: string): string {
 export function demoPatient(identifier: unknown, fallback: unknown, firstName?: unknown, lastName?: unknown): string {
   const id = String(identifier ?? '').trim()
   const display = String(fallback ?? '').trim()
+  if (operationalLabels[id]) return operationalLabels[id]
+  if (operationalLabels[display]) return operationalLabels[display]
   const canonicalName = patientName('', firstName, lastName) || patientNames[id]
   if (canonicalName) return canonicalName
   const displayName = patientName(display)
