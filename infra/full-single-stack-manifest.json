@@ -1,43 +1,6 @@
 {
-  "schema": 1,
   "approved_backend_commit": "1f88207c6a71c4bf0252b912fe83313337cab16f",
-  "reviewed_backend_deltas": [
-    "centrochange_core/finance/collections.py",
-    "centrochange_core/finance/reporting.py",
-    "centrochange_core/finance/reporting_acceptance.py",
-    "centrochange_core/hooks.py",
-    "centrochange_core/operations/automation.py",
-    "centrochange_core/operations/client_landing.py",
-    "centrochange_core/operations/dev_acceptance.py",
-    "centrochange_core/operations/lifecycle.py",
-    "centrochange_core/operations/notes.py",
-    "centrochange_core/operations/packages.py",
-    "centrochange_core/operations/reporting.py",
-    "centrochange_core/operations/website_brand.py",
-    "centrochange_core/operations/workspace.py",
-    "centrochange_core/scheduling/availability.py",
-    "centrochange_core/scheduling/booking.py",
-    "centrochange_core/security/audit.py",
-    "centrochange_core/security/dev_acceptance.py",
-    "centrochange_core/security/fixture_cleanup.py",
-    "centrochange_core/security/install.py",
-    "centrochange_core/security/lifecycle.py",
-    "centrochange_core/security/permissions.py",
-    "centrochange_core/templates/cc_web_base.html",
-    "centrochange_core/translations/it.csv"
-  ],
   "base_image": "frappe/erpnext:v16.50.0@sha256:833bceb57233908cbc949d7aa533942b18e54b329d846b933b66937c62b7e4ae",
-  "upstream_versions": {
-    "frappe": "16.50.0",
-    "erpnext": "16.50.0",
-    "builder": "1.35.1",
-    "healthcare": "16.6.1"
-  },
-  "upstream_refs": {
-    "builder": "37e958bc4f801d06d0438c21b97b42c45c4eaa51",
-    "healthcare": "dda107b26e3a0fe1dbd65c7257371235de054a04"
-  },
-  "frontend_lock_sha256": "05f472ed67da6ed9a1200dcfe21c1c7b08649310dac05a9f054b7b9a520c637f",
   "files": {
     ".editorconfig": "166781bbf1b00bc87bcd6ceff068fcb83a97a1e98e3ec84dc5db311c676f6cb2",
     ".eslintrc": "fa60427672fcdad2353457550781dc1390d1a30a227096f77128d9334527269c",
@@ -240,10 +203,10 @@
     "centrochange_core/public/js/ui_v1.js": "cfa9684f2c31aee5c811101cf595a426ecd297649cc676fc98b42ab6e3522f75",
     "centrochange_core/public/js/workspace.js": "8c4f0e78598fd101dc9db39e5ea20c1a00573fb6bc78e7b6aa3e3b59ab729536",
     "centrochange_core/public/premium/app.css": "368190b883ea8a0eee096f6002fc9be586ff9456245f02c56359625cf6df8510",
-    "centrochange_core/public/premium/app.js": "e49ddf44d210f0f592505bec0d2213fe3b91ea25fb708f4a8ab9968f3bfb9988",
+    "centrochange_core/public/premium/app.js": "56e08333c5ee6b610d25517a0fd788b037c72eabcfa280bdf4bb9dbf92196f94",
     "centrochange_core/public/premium/logo.webp": "c05795b5c84a02c11df6548266ee743e6a41f4ddd04384a0faf81e31d1a5109e",
-    "centrochange_core/public/premium/public.js": "e93e0cb65e48321299428254a39a37b178b600fc35f203b3e600a6b0306af683",
-    "centrochange_core/public/premium/style-CtaevilT.js": "e0b3286f8398d11338c24e411825273228f91fdea3d079fecb21309582a9cf78",
+    "centrochange_core/public/premium/public.js": "e575b18f44594d498327b2e7e81452463493c7aac37ad44343fef1a91a8df841",
+    "centrochange_core/public/premium/style-CarsfFdU.js": "9a19814612bd414c02f6b2d8b148b834cc40a61d47a2b8c36b3987f589f28f90",
     "centrochange_core/public/vendor/MANIFEST.json": "fc060888191257b69dcb3aa1c2351591ae32bd4961b6124615d098fb49052fab",
     "centrochange_core/public/vendor/tabler-core-1.6.1/LICENSE": "4f88a82d13be3c5c63a12c5631eae914aa4381b6dc17641bf1ab85f3f8f6c8a5",
     "centrochange_core/public/vendor/tabler-core-1.6.1/package.json": "353c3653d70f5de1dc4079f772adb99c467fe48cd0a31681ec94941669c1b6ba",
@@ -326,5 +289,42 @@
     "centrochange_core/www/validazione.py": "64ce30fd39bc0f3f739fdce588092e21f91833dc0203650718bdd21278eda940",
     "license.txt": "8486a10c4393cee1c25392769ddd3b2d6c242d6ec7928e1414efff7dfb2f07ef",
     "pyproject.toml": "557fb8aa1897d04b74160fe9d668bc79f878acb2abfadd1385ea239d11156022"
+  },
+  "frontend_lock_sha256": "05f472ed67da6ed9a1200dcfe21c1c7b08649310dac05a9f054b7b9a520c637f",
+  "reviewed_backend_deltas": [
+    "centrochange_core/finance/collections.py",
+    "centrochange_core/finance/reporting.py",
+    "centrochange_core/finance/reporting_acceptance.py",
+    "centrochange_core/hooks.py",
+    "centrochange_core/operations/automation.py",
+    "centrochange_core/operations/client_landing.py",
+    "centrochange_core/operations/dev_acceptance.py",
+    "centrochange_core/operations/lifecycle.py",
+    "centrochange_core/operations/notes.py",
+    "centrochange_core/operations/packages.py",
+    "centrochange_core/operations/reporting.py",
+    "centrochange_core/operations/website_brand.py",
+    "centrochange_core/operations/workspace.py",
+    "centrochange_core/scheduling/availability.py",
+    "centrochange_core/scheduling/booking.py",
+    "centrochange_core/security/audit.py",
+    "centrochange_core/security/dev_acceptance.py",
+    "centrochange_core/security/fixture_cleanup.py",
+    "centrochange_core/security/install.py",
+    "centrochange_core/security/lifecycle.py",
+    "centrochange_core/security/permissions.py",
+    "centrochange_core/templates/cc_web_base.html",
+    "centrochange_core/translations/it.csv"
+  ],
+  "schema": 1,
+  "upstream_refs": {
+    "builder": "37e958bc4f801d06d0438c21b97b42c45c4eaa51",
+    "healthcare": "dda107b26e3a0fe1dbd65c7257371235de054a04"
+  },
+  "upstream_versions": {
+    "builder": "1.35.1",
+    "erpnext": "16.50.0",
+    "frappe": "16.50.0",
+    "healthcare": "16.6.1"
   }
 }

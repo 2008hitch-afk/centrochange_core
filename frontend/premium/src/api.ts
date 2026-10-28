@@ -69,3 +69,44 @@ export const recentPaymentStart = () => {
 export const displayDate = (value: unknown) => { const iso = String(value ?? '').slice(0, 10); return /^\d{4}-\d\d-\d\d$/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : String(value ?? '') }
 export const money = (value: unknown, currency = 'EUR') => value == null ? 'Da definire' : new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(Number(value))
 export const time = (value: unknown) => String(value ?? '').slice(0, 5)
+
+export function parseRomeAppointmentUtcMs(dateStr: string, timeStr?: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const [hh, mm, ss = 0] = (timeStr || '00:00:00').split(':').map(Number)
+  const targetUtcGuess = Date.UTC(y, m - 1, d, hh, mm, ss)
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Rome',
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric', second: 'numeric',
+    hour12: false
+  })
+  const parts = formatter.formatToParts(new Date(targetUtcGuess))
+  const p: Record<string, number> = {}
+  for (const part of parts) {
+    if (part.type !== 'literal') p[part.type] = Number(part.value)
+  }
+  const asRomeUtc = Date.UTC(p.year, p.month - 1, p.day, (p.hour || 0) % 24, p.minute || 0, p.second || 0)
+  const offsetMs = asRomeUtc - targetUtcGuess
+  return targetUtcGuess - offsetMs
+}
+
+export function computeCancellationNotice(dateStr: string, timeStr?: string, nowMs = Date.now()) {
+  const appStartUtcMs = parseRomeAppointmentUtcMs(dateStr, timeStr)
+  const diffMs = appStartUtcMs - nowMs
+  const diffSeconds = diffMs / 1000
+  // Exactly 48 hours = 172800 seconds
+  const isTimely = diffSeconds >= 172800
+  let noticeDisplay = ''
+  if (diffSeconds <= 0) {
+    noticeDisplay = 'Orario di inizio già superato'
+  } else if (diffSeconds < 3600) {
+    noticeDisplay = 'Meno di 1 ora'
+  } else {
+    const totalMinutes = Math.floor(diffSeconds / 60)
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    noticeDisplay = `${hours} ore e ${minutes} min`
+  }
+  return { diffSeconds, isTimely, noticeDisplay }
+}
+

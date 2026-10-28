@@ -212,33 +212,44 @@ const USERS = {
     const createWaiveAppCmd = `docker exec -e FRAPPE_STREAM_LOGGING=1 -w /home/frappe/frappe-bench/sites centrochange-dev-backend-1 /home/frappe/frappe-bench/env/bin/python -c '
 import frappe
 from datetime import datetime, timedelta
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 from centrochange_core.scheduling.booking import book
 from centrochange_core.operations import lifecycle
 frappe.init("centrochange.local")
 frappe.connect()
+frappe.in_test = True
+frappe.conf.cc_synthetic_dev = 1
 frappe.set_user("Administrator")
-center = frappe.get_all("Branch", filters={"cc_operational": 1}, pluck="name")[0]
-pros = frappe.get_all("Healthcare Practitioner", filters={"status": "Active"}, fields=["name", "user_id"])
-pro = pros[0].name
-patient = frappe.get_all("Patient", pluck="name")[0]
+assign = frappe.get_all("CC Patient Assignment", limit=1, fields=["patient", "practitioner", "center"])[0]
+patient = assign["patient"]
+pro = assign["practitioner"]
+center = assign["center"]
 service = frappe.get_all("CC Center Service", filters={"center": center, "enabled": 1}, pluck="appointment_type")[0]
-today_str = datetime.now(ZoneInfo("Europe/Rome")).strftime("%Y-%m-%d")
-app = book(patient=patient, practitioner=pro, center=center, appointment_type=service, appointment_date=today_str, appointment_time="15:30:00", request_key="dev-uat-waive-demo", reason="DEV UAT session for waiver")
-doc = frappe.get_doc("Patient Appointment", app["name"])
-frappe.flags.cc_test_clock = lifecycle.start_utc(doc) - timedelta(hours=1)
-lifecycle.cancel(doc.name, "Disdetta tardiva del paziente per prova UAT deroga")
-frappe.flags.cc_test_clock = None
-frappe.db.commit()
-print(doc.name)
+class MockDatetime:
+    @classmethod
+    def now(cls, tz=None):
+        return datetime(2026, 10, 28, 8, 0, 0, tzinfo=ZoneInfo("Europe/Rome"))
+    @classmethod
+    def combine(cls, *args, **kwargs):
+        return datetime.combine(*args, **kwargs)
+with patch("centrochange_core.scheduling.booking.datetime", MockDatetime):
+    app = book(patient=patient, practitioner=pro, center=center, appointment_type=service, appointment_date="2026-10-28", appointment_time="11:00:00", request_key="dev-uat-waive-demo-20261028", reason="DEV UAT session for waiver")
+    doc = frappe.get_doc("Patient Appointment", app["name"])
+    frappe.flags.cc_test_clock = lifecycle.start_utc(doc) - timedelta(hours=1)
+    lifecycle.cancel(doc.name, "Disdetta tardiva del paziente per prova UAT deroga")
+    frappe.flags.cc_test_clock = None
+    frappe.db.commit()
+    print(f"{doc.name}|11:00")
 '`;
-    const devWaiveApp = execSync(createWaiveAppCmd).toString().trim();
-    console.log('[DEV-UAT] Created synthetic late-cancelled appointment for waiver:', devWaiveApp);
+    const devWaiveRaw = execSync(createWaiveAppCmd).toString().trim();
+    const [devWaiveApp, devAppTimeShort] = devWaiveRaw.split('|');
+    console.log('[DEV-UAT] Created synthetic late-cancelled appointment for waiver:', devWaiveApp, 'at time:', devAppTimeShort);
 
     try {
-      // Manager navigates to Report
+      // Manager navigates to Report and reloads to fetch fresh synthetic appointment
       await pageReport.goto('http://centrochange.local:8082/premium#Report');
-      await pageReport.waitForLoadState('networkidle');
+      await pageReport.reload({ waitUntil: 'networkidle' });
       await pageReport.waitForTimeout(1000);
 
       const kpiCanc = pageReport.locator('.metric:has-text("Sedute annullate")').first();
@@ -248,7 +259,7 @@ print(doc.name)
         await pageReport.waitForTimeout(800);
       }
 
-      let rowDesk = pageReport.locator('.table-scroll tbody tr').filter({ hasText: '15:30' }).first();
+      let rowDesk = pageReport.locator('.table-scroll tbody tr').filter({ hasText: devAppTimeShort || '15:30' }).first();
       if (!await rowDesk.isVisible()) rowDesk = pageReport.locator('.table-scroll tbody tr').first();
       await rowDesk.click();
       await pageReport.locator('.drawer').waitFor({ state: 'visible', timeout: 4000 });
@@ -274,7 +285,7 @@ print(doc.name)
 
       // Mobile waiver screenshot
       await pageReportMob.goto('http://centrochange.local:8082/premium#Report');
-      await pageReportMob.waitForLoadState('networkidle');
+      await pageReportMob.reload({ waitUntil: 'networkidle' });
       await pageReportMob.waitForTimeout(1000);
 
       const kpiCancMob = pageReportMob.locator('.metric:has-text("Sedute annullate")').first();
@@ -284,7 +295,7 @@ print(doc.name)
         await pageReportMob.waitForTimeout(800);
       }
 
-      let rowMob = pageReportMob.locator('.table-scroll tbody tr').filter({ hasText: '15:30' }).first();
+      let rowMob = pageReportMob.locator('.table-scroll tbody tr').filter({ hasText: devAppTimeShort || '15:30' }).first();
       if (!await rowMob.isVisible()) rowMob = pageReportMob.locator('.table-scroll tbody tr').first();
       await rowMob.click();
       await pageReportMob.locator('.drawer').waitFor({ state: 'visible', timeout: 4000 });

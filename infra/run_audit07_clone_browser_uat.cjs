@@ -288,6 +288,7 @@ except Exception as e:
     const waiveDemoScript = `
 import frappe
 from datetime import datetime, timedelta
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 from centrochange_core.scheduling.booking import book
 from centrochange_core.operations import lifecycle
@@ -296,29 +297,37 @@ frappe.connect()
 frappe.in_test = True
 frappe.conf.cc_synthetic_dev = 1
 frappe.set_user("Administrator")
-today_str = datetime.now(ZoneInfo('Europe/Rome')).strftime('%Y-%m-%d')
+class MockDatetime:
+    @classmethod
+    def now(cls, tz=None):
+        return datetime(2026, 10, 28, 8, 0, 0, tzinfo=ZoneInfo("Europe/Rome"))
+    @classmethod
+    def combine(cls, *args, **kwargs):
+        return datetime.combine(*args, **kwargs)
 try:
-    app = book(
-        patient="${env.assigned_patient}",
-        practitioner="${env.assigned_practitioner}",
-        center="${env.center}",
-        appointment_type="${env.service}",
-        appointment_date=today_str,
-        appointment_time="14:00:00",
-        request_key="uat-waive-demo-today",
-        reason="UAT session for late cancel and waiver demo"
-    )
-    doc = frappe.get_doc('Patient Appointment', app['name'])
-    frappe.flags.cc_test_clock = lifecycle.start_utc(doc) - timedelta(hours=1)
-    lifecycle.cancel(doc.name, "Disdetta tardiva del paziente")
-    frappe.flags.cc_test_clock = None
-    frappe.db.commit()
-    print(doc.name)
+    with patch("centrochange_core.scheduling.booking.datetime", MockDatetime):
+        app = book(
+            patient="${env.assigned_patient}",
+            practitioner="${env.assigned_practitioner}",
+            center="${env.center}",
+            appointment_type="${env.service}",
+            appointment_date="2026-10-28",
+            appointment_time="11:00:00",
+            request_key="uat-waive-demo-20261028",
+            reason="UAT session for late cancel and waiver demo"
+        )
+        doc = frappe.get_doc('Patient Appointment', app['name'])
+        frappe.flags.cc_test_clock = lifecycle.start_utc(doc) - timedelta(hours=1)
+        lifecycle.cancel(doc.name, "Disdetta tardiva del paziente")
+        frappe.flags.cc_test_clock = None
+        frappe.db.commit()
+        print(f"{doc.name}|11:00")
 except Exception as e:
     print(f"ERROR:{e}")
 `;
-    const lateAppId = runFrappe(waiveDemoScript);
-    console.log('[BROWSER-UAT] Created late-cancelled session for waiver:', lateAppId);
+    const lateAppRaw = runFrappe(waiveDemoScript);
+    const [lateAppId, appTimeShort] = lateAppRaw.split('|');
+    console.log('[BROWSER-UAT] Created late-cancelled session for waiver:', lateAppId, 'at time:', appTimeShort);
 
     // Manager opens /premium#Report to inspect cancelled sessions and apply waiver
     const ctxMgrDesk = await createContext(env.manager, 1440, 900);
@@ -336,7 +345,7 @@ except Exception as e:
     }
 
     // Click on the row in report sessions table to open AppointmentDetail drawer
-    let reportRow = pageMgr.locator('.table-scroll tbody tr').filter({ hasText: '14:00' }).first();
+    let reportRow = pageMgr.locator('.table-scroll tbody tr').filter({ hasText: appTimeShort || '14:00' }).first();
     if (!await reportRow.isVisible()) {
       reportRow = pageMgr.locator('.table-scroll tbody tr').first();
     }
@@ -369,7 +378,7 @@ except Exception as e:
       await pageMgrMob.waitForLoadState('networkidle');
       await pageMgrMob.waitForTimeout(800);
     }
-    let reportRowMob = pageMgrMob.locator('.table-scroll tbody tr').filter({ hasText: '14:00' }).first();
+    let reportRowMob = pageMgrMob.locator('.table-scroll tbody tr').filter({ hasText: appTimeShort || '14:00' }).first();
     if (!await reportRowMob.isVisible()) {
       reportRowMob = pageMgrMob.locator('.table-scroll tbody tr').first();
     }
