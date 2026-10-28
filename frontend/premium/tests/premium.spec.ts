@@ -1846,6 +1846,7 @@ test('AUDIT-05 UAT: Visualizzazione neutra per seduta annullata e registrato per
 })
 
 test('AUDIT-05 UAT: Metriche ribbon Agenda coerenti con filtro professionisti e stati temporali', async ({ page }) => {
+  await page.clock.setFixedTime(new Date(`${today}T12:00:00+02:00`))
   const p1 = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi' }
   const p2 = { name: 'PR-002', practitioner_name: 'Dott. Bianchi' }
   const tomorrowDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10)
