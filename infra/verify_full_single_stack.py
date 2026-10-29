@@ -33,7 +33,7 @@ PREMIUM_ADDED = {
     'centrochange_core/public/premium/app.css',
     'centrochange_core/public/premium/public.js',
     'centrochange_core/public/premium/logo.webp',
-    'centrochange_core/public/premium/style-CarsfFdU.js',
+    'centrochange_core/public/premium/style-BzDtaysS.js',
     'centrochange_core/public/css/login_v1.css',
     'centrochange_core/public/js/login_v1.js',
 }
