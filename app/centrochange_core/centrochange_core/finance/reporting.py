@@ -8,7 +8,7 @@ from centrochange_core.security.guards import current_rows,is_manager,centers,ro
 from centrochange_core.finance.guards import require_finance,allowed
 from centrochange_core.finance import professional_economics,admin_queue
 from centrochange_core.operations.reporting import safe_cell
-from centrochange_core.scoped_api import bounded
+from centrochange_core.scoped_api import bounded, page
 
 
 def _interval(start,end):
@@ -134,9 +134,12 @@ def bootstrap(center=None):
 
 
 @frappe.whitelist(methods=['GET'])
-def records(center, doctype, search=''):
+def records(center, doctype, search='', limit=None, offset=0):
     require_finance(center)
     search = bounded(search, 'Ricerca', 100, required=False) if search else ''
+    paginated = limit is not None and str(limit).strip() != ''
+    if paginated:
+        limit, offset = page(limit, offset)
     allowed_types = {
         'CC Incoming Invoice': ['name', 'state', 'supplier', 'invoice_number', 'invoice_date', 'total', 'currency', 'purchase_invoice', 'problem'],
         'Sales Invoice': ['name', 'docstatus', 'posting_date', 'customer', 'grand_total', 'outstanding_amount', 'currency'],
@@ -173,6 +176,17 @@ def records(center, doctype, search=''):
                 options['or_filters'] = {'supplier': ['like', needle], 'name': ['like', needle]}
             elif doctype == 'Bank Transaction':
                 options['or_filters'] = {'reference_number': ['like', needle], 'name': ['like', needle]}
+        if paginated:
+            rows = frappe.get_list(
+                doctype,
+                filters={field: center},
+                fields=allowed_types[doctype],
+                order_by='modified desc, name desc',
+                start=offset,
+                page_length=limit + 1,
+                **options,
+            )
+            return {'rows': rows[:limit], 'has_more': len(rows) > limit}
         rows = frappe.get_list(doctype, filters={field: center}, fields=allowed_types[doctype], order_by='modified desc', page_length=501, **options)
         if len(rows) > 500:
             frappe.throw('Riduci i filtri del report: ci sono oltre 500 record.')

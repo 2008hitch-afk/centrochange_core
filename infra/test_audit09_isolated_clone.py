@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""AUDIT-09 Real Isolated Clone Verification on Frappe / MariaDB.
+"""AUDIT-09 Real Isolated Synthetic Clone Verification on Frappe / MariaDB.
 
 Guarantees:
-- Dedicated Docker network and isolated containers (cc183-clone-net, cc183-clone-db, cc183-clone-redis, cc183-clone-backend, cc183-clone-frontend).
-- Live DEV containers and volumes (centrochange-dev-*) are NEVER mutated.
-- Baseline schema and reference data cloned via read-only stream from DEV_DB.
-- All candidate app code mounted into the isolated backend and frontend.
+- Dedicated Docker network, volume, and isolated containers (cc183-clone-net, cc183-clone-sites, cc183-clone-db, cc183-clone-redis, cc183-clone-backend, cc183-clone-frontend).
+- Live DEV containers and volumes (centrochange-dev-*) are NEVER accessed, read, dumped, or mutated (zero DEV contact).
+- Standalone synthetic Frappe/MariaDB site bootstrapped from scratch via bench new-site + dev_bootstrap.setup() + uat.demo.seed().
+- All candidate app code mounted read-only into the isolated backend and frontend.
 - Scenarios validated:
-  1. CC-EXT-021: Server-side search & pagination across all 11 archives (Patient, Practitioner, Item, Item Price, Appointment Type, Center Service, Package Template, Sales Invoice, Purchase Invoice, Payment Entry, Bank Transaction).
+  1. CC-EXT-021: Server-side search & pagination across all 11 archives (Patient, Practitioner, Item, Item Price, Appointment Type, Center Service, Package Template, Sales Invoice, Purchase Invoice, Payment Entry, Bank Transaction), including >500 matching rows and pagination beyond page 1 on Sales Invoice, Purchase Invoice, and Bank Transaction.
   2. CC-EXT-008 & CC-EXT-009: Scoped updates for Patient and Practitioner with idempotency, versioning, and audit logging.
   3. CC-EXT-010: Scoped catalog creation & updates (Item Price, Appointment Type, Center Service, Package Template) and rejection of unauthorized standalone creates (CC-EXT-023).
   4. CC-EXT-011 & CC-EXT-022: Finance projections read-only enforcement, docstatus mapping (Bozza/Confermata/Annullata), 366-day limit, and allocation prohibition (CC-EXT-024).
   5. CC-EXT-012: Document print preview for Sales Invoice, Purchase Invoice, and Payment Entry.
-  6. CC-EXT-020: RBAC across 7 roles and anti-IDOR cross-center enforcement.
+  6. CC-EXT-020: RBAC across roles and anti-IDOR cross-center enforcement.
   7. Genuine headless Chromium browser UAT across archive views (Desktop & Mobile screenshots).
 """
 
@@ -29,14 +29,14 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 APP_DIR = ROOT_DIR / 'app/centrochange_core'
 
 NET_NAME = 'cc183-clone-net'
+SITES_VOLUME = 'cc183-clone-sites'
 DB_CONTAINER = 'cc183-clone-db'
 REDIS_CONTAINER = 'cc183-clone-redis'
 BACKEND_CONTAINER = 'cc183-clone-backend'
 FRONTEND_CONTAINER = 'cc183-clone-frontend'
 
-DEV_DB = 'centrochange-dev-db-1'
-DEV_BACKEND = 'centrochange-dev-backend-1'
-DEV_SITE = 'centrochange.local'
+CLONE_IMAGE = os.environ.get('CC_CLONE_IMAGE', 'cc181-audit08:2935973')
+CLONE_SITE = 'centrochange.local'
 PORT = 8099
 
 
@@ -67,60 +67,29 @@ def run_cmd(cmd, check=True, capture=True, input_str=None):
     return res.stdout if capture else ""
 
 
-def get_dev_db_credentials():
-    user = os.environ.get('CC_DEV_DB_USER')
-    password = os.environ.get('CC_DEV_DB_PASS')
-    name = os.environ.get('CC_DEV_DB_NAME')
-    if user and password:
-        return {'user': user, 'pass': password, 'name': name or user}
-
-    try:
-        raw = run_cmd(['docker', 'exec', DEV_BACKEND, 'cat', f'sites/{DEV_SITE}/site_config.json'])
-        cfg = json.loads(raw)
-        return {
-            'user': cfg.get('db_user') or cfg.get('db_name'),
-            'pass': cfg.get('db_password'),
-            'name': cfg.get('db_name'),
-        }
-    except Exception as e:
-        log(f"Error discovering DEV database credentials: {_redact(e)}")
-        raise RuntimeError("Failed to read DEV database credentials dynamically from running container")
-
-
 def cleanup():
     log("Cleaning up isolated clone resources...")
     for c in [FRONTEND_CONTAINER, BACKEND_CONTAINER, DB_CONTAINER, REDIS_CONTAINER]:
-        subprocess.run(['docker', 'rm', '-f', c], capture_output=True)
-    subprocess.run(['docker', 'network', 'rm', NET_NAME], capture_output=True)
+        if subprocess.run(['docker', 'container', 'inspect', c], capture_output=True).returncode == 0:
+            run_cmd(['docker', 'rm', '-fv', c])  # -v removes only the clone container's anonymous volumes.
+    if subprocess.run(['docker', 'volume', 'inspect', SITES_VOLUME], capture_output=True).returncode == 0:
+        run_cmd(['docker', 'volume', 'rm', SITES_VOLUME])
+    if subprocess.run(['docker', 'network', 'inspect', NET_NAME], capture_output=True).returncode == 0:
+        run_cmd(['docker', 'network', 'rm', NET_NAME])
     log("Cleanup complete.")
 
 
-def run_mariadb_sql(container, user, password, sql, db=None):
-    script = f"""cat << 'EOF' > /tmp/.client.cnf
-[client]
-user={user}
-password={password}
-EOF
-chmod 600 /tmp/.client.cnf
-mariadb --defaults-file=/tmp/.client.cnf {'`' + db + '`' if db else ''} << 'EOF'
-{sql}
-EOF
-rm -f /tmp/.client.cnf
-"""
-    run_cmd(['docker', 'exec', '-i', container, 'sh'], input_str=script)
-
-
 def setup_clone():
-    log("Setting up isolated clone environment for AUDIT-09...")
+    log("Setting up 100% standalone synthetic isolated environment for AUDIT-09 (zero DEV contact)...")
     cleanup()
 
-    dev_creds = get_dev_db_credentials()
     clone_root_pass = secrets.token_hex(16)
-    clone_db_pass = secrets.token_hex(16)
+    clone_admin_pass = secrets.token_hex(16)
 
-    # 1. Create isolated network
-    log(f"Creating isolated Docker network {NET_NAME}...")
+    # 1. Create isolated network and sites volume
+    log(f"Creating isolated Docker network {NET_NAME} and volume {SITES_VOLUME}...")
     run_cmd(['docker', 'network', 'create', NET_NAME])
+    run_cmd(['docker', 'volume', 'create', SITES_VOLUME])
 
     # 2. Start MariaDB container using ephemeral env-file
     log(f"Starting isolated MariaDB container {DB_CONTAINER}...")
@@ -138,7 +107,8 @@ def setup_clone():
             '--env-file', str(env_file),
             'mariadb:11.8.8',
             '--character-set-server=utf8mb4',
-            '--collation-server=utf8mb4_unicode_ci'
+            '--collation-server=utf8mb4_unicode_ci',
+            '--skip-character-set-client-handshake'
         ])
     finally:
         if env_file.exists():
@@ -158,125 +128,58 @@ def setup_clone():
     ready = False
     for attempt in range(60):
         time.sleep(1)
-        res = subprocess.run(['docker', 'logs', DB_CONTAINER], capture_output=True, text=True)
-        logs = res.stdout + res.stderr
-        if logs.count('ready for connections') >= 2 or ('ready for connections' in logs and 'shutdown complete' not in logs[logs.rfind('ready for connections'):]):
-            ping_res = subprocess.run(
-                ['docker', 'exec', '-i', DB_CONTAINER, 'mariadb', f'-uroot', f'-p{clone_root_pass}', '-e', 'SELECT 1'],
-                capture_output=True, text=True
-            )
-            if ping_res.returncode == 0:
-                ready = True
-                break
+        hc = subprocess.run(['docker', 'exec', DB_CONTAINER, 'healthcheck.sh', '--connect', '--innodb_initialized'], capture_output=True, text=True)
+        if hc.returncode == 0:
+            ready = True
+            break
     if not ready:
         raise RuntimeError("MariaDB failed to start in isolated clone")
 
-    # 5. Create database and user in isolated DB safely
-    log(f"Configuring database {dev_creds['name']} in isolated MariaDB...")
-    init_sql = f"""
-    CREATE DATABASE `{dev_creds['name']}`;
-    GRANT ALL PRIVILEGES ON `{dev_creds['name']}`.* TO '{dev_creds['user']}'@'%' IDENTIFIED BY '{clone_db_pass}';
-    GRANT ALL PRIVILEGES ON `{dev_creds['name']}`.* TO '{dev_creds['user']}'@'localhost' IDENTIFIED BY '{clone_db_pass}';
-    FLUSH PRIVILEGES;
-    """
-    run_mariadb_sql(DB_CONTAINER, 'root', clone_root_pass, init_sql)
-
-    # 6. Stream read-only dump from DEV into clone DB
-    log("Cloning DEV schema and baseline records into isolated clone...")
-    dump_cnf_script = f"""cat << 'EOF' > /tmp/.dump.cnf
-[client]
-user={dev_creds['user']}
-password={dev_creds['pass']}
-EOF
-chmod 600 /tmp/.dump.cnf
-"""
-    load_cnf_script = f"""cat << 'EOF' > /tmp/.load.cnf
-[client]
-user={dev_creds['user']}
-password={clone_db_pass}
-EOF
-chmod 600 /tmp/.load.cnf
-"""
-    try:
-        run_cmd(['docker', 'exec', '-i', DEV_DB, 'sh'], input_str=dump_cnf_script)
-        run_cmd(['docker', 'exec', '-i', DB_CONTAINER, 'sh'], input_str=load_cnf_script)
-
-        dump_proc = subprocess.Popen(
-            ['docker', 'exec', DEV_DB, 'mariadb-dump', '--defaults-file=/tmp/.dump.cnf', dev_creds['name']],
-            stdout=subprocess.PIPE
-        )
-        load_proc = subprocess.Popen(
-            ['docker', 'exec', '-i', DB_CONTAINER, 'mariadb', '--defaults-file=/tmp/.load.cnf', dev_creds['name']],
-            stdin=dump_proc.stdout,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        dump_proc.stdout.close()
-        out, err = load_proc.communicate()
-        if load_proc.returncode != 0:
-            raise RuntimeError(f"Database clone failed: {_redact(err.decode('utf-8'))}")
-        log("Database cloned successfully.")
-    finally:
-        subprocess.run(['docker', 'exec', DEV_DB, 'rm', '-f', '/tmp/.dump.cnf'], capture_output=True)
-        subprocess.run(['docker', 'exec', DB_CONTAINER, 'rm', '-f', '/tmp/.load.cnf'], capture_output=True)
-
-    # 7. Start isolated backend container with candidate code mounted
-    dev_image = run_cmd(['docker', 'inspect', '-f', '{{.Config.Image}}', DEV_BACKEND]).strip()
-    log(f"Starting isolated backend container {BACKEND_CONTAINER} using image {dev_image}...")
+    # 5. Start isolated backend container with candidate code mounted
+    log(f"Starting isolated backend container {BACKEND_CONTAINER} using image {CLONE_IMAGE}...")
     run_cmd([
         'docker', 'run', '-d',
         '--name', BACKEND_CONTAINER,
         '--network', NET_NAME,
+        '-v', f'{SITES_VOLUME}:/home/frappe/frappe-bench/sites',
         '-v', f'{APP_DIR}:/home/frappe/frappe-bench/apps/centrochange_core:ro',
         '-e', 'FRAPPE_STREAM_LOGGING=1',
-        dev_image,
+        CLONE_IMAGE,
         'sleep', '7200'
     ])
 
-    # 8. Copy sites from DEV backend to isolated backend
-    log("Copying sites configuration into isolated backend...")
-    copy_proc = subprocess.Popen(
-        ['docker', 'exec', DEV_BACKEND, 'tar', '-cf', '-', '-C', '/home/frappe/frappe-bench', 'sites'],
-        stdout=subprocess.PIPE
-    )
-    extract_proc = subprocess.Popen(
-        ['docker', 'exec', '-i', BACKEND_CONTAINER, 'tar', '-xf', '-', '-C', '/home/frappe/frappe-bench'],
-        stdin=copy_proc.stdout,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-    copy_proc.stdout.close()
-    out, err = extract_proc.communicate()
-    if extract_proc.returncode != 0:
-        raise RuntimeError(f"Sites copy failed: {err.decode('utf-8')}")
-
-    # 9. Reconfigure isolated backend to point to isolated db and redis
-    log("Patching site config to use isolated db and redis...")
-    patch_script = f"""
-import json
-path = '/home/frappe/frappe-bench/sites/{DEV_SITE}/site_config.json'
-with open(path) as f:
-    cfg = json.load(f)
-cfg['db_host'] = '{DB_CONTAINER}'
-cfg['db_password'] = '{clone_db_pass}'
-with open(path, 'w') as f:
-    json.dump(cfg, f, indent=2)
-
-common_path = '/home/frappe/frappe-bench/sites/common_site_config.json'
-with open(common_path) as f:
-    ccfg = json.load(f)
-ccfg['db_host'] = '{DB_CONTAINER}'
-ccfg['redis_cache'] = 'redis://{REDIS_CONTAINER}:6379'
-ccfg['redis_queue'] = 'redis://{REDIS_CONTAINER}:6379'
-ccfg['redis_socketio'] = 'redis://{REDIS_CONTAINER}:6379'
-with open(common_path, 'w') as f:
-    json.dump(ccfg, f, indent=2)
+    # 6. Bootstrap a clean synthetic site inside the isolated backend (no DEV contact)
+    log("Bootstrapping fresh synthetic Frappe site and UAT fixtures in isolated backend...")
+    bootstrap_script = f"""set -euo pipefail
+cd /home/frappe/frappe-bench
+cp -rn /home/frappe/frappe-bench/sites_init/* /home/frappe/frappe-bench/sites/ 2>/dev/null || true
+if [ ! -f sites/apps.txt ]; then
+  printf "frappe\\nerpnext\\nbuilder\\nhealthcare\\ncentrochange_core\\n" > sites/apps.txt
+fi
+if [ ! -f sites/common_site_config.json ]; then
+  echo '{{}}' > sites/common_site_config.json
+fi
+ln -sfn /home/frappe/frappe-bench/assets sites/assets
+bench set-config -g db_host {DB_CONTAINER}
+bench set-config -gp db_port 3306
+bench set-config -g redis_cache redis://{REDIS_CONTAINER}:6379
+bench set-config -g redis_queue redis://{REDIS_CONTAINER}:6379
+bench set-config -g redis_socketio redis://{REDIS_CONTAINER}:6379
+bench set-config -gp socketio_port 9000
+bench new-site {CLONE_SITE} --db-host {DB_CONTAINER} --mariadb-user-host-login-scope '%' --mariadb-root-password '{clone_root_pass}' --admin-password '{clone_admin_pass}' --install-app erpnext --install-app builder --set-default
+bench --site {CLONE_SITE} set-config cc_synthetic_dev 1
+bench --site {CLONE_SITE} set-config cc_uat_demo 1
+bench --site {CLONE_SITE} set-config cc_premium_primary 1
+bench --site {CLONE_SITE} execute centrochange_core.dev_bootstrap.setup
+bench --site {CLONE_SITE} install-app healthcare
+bench --site {CLONE_SITE} install-app centrochange_core
+bench --site {CLONE_SITE} migrate
+bench --site {CLONE_SITE} execute centrochange_core.uat.demo.seed
 """
-    run_cmd(
-        ['docker', 'exec', '-i', BACKEND_CONTAINER, 'python3', '-c', patch_script]
-    )
+    run_cmd(['docker', 'exec', '-i', BACKEND_CONTAINER, 'bash'], input_str=bootstrap_script)
+    log("Standalone synthetic Frappe site bootstrapped and seeded.")
 
-    # 10. Start gunicorn inside isolated backend container
+    # 7. Start gunicorn inside isolated backend container
     log("Starting gunicorn inside isolated backend container...")
     run_cmd([
         'docker', 'exec', '-d', '-w', '/home/frappe/frappe-bench/sites', BACKEND_CONTAINER,
@@ -288,7 +191,7 @@ with open(common_path, 'w') as f:
         'frappe.app:application'
     ])
 
-    # 11. Start isolated frontend container cc183-clone-frontend mapping host port 8099
+    # 8. Start isolated frontend container cc183-clone-frontend mapping host port 8099
     log(f"Starting isolated frontend container {FRONTEND_CONTAINER} on port {PORT}...")
     run_cmd([
         'docker', 'run', '-d',
@@ -296,20 +199,21 @@ with open(common_path, 'w') as f:
         '--network', NET_NAME,
         '-p', f'127.0.0.1:{PORT}:8080',
         '-e', f'BACKEND={BACKEND_CONTAINER}:8000',
-        '-e', f'FRAPPE_SITE_NAME_HEADER={DEV_SITE}',
+        '-e', f'FRAPPE_SITE_NAME_HEADER={CLONE_SITE}',
+        '-v', f'{SITES_VOLUME}:/home/frappe/frappe-bench/sites',
         '-v', f'{APP_DIR}:/home/frappe/frappe-bench/apps/centrochange_core:ro',
         '-v', f'{APP_DIR}/centrochange_core/public:/home/frappe/frappe-bench/assets/centrochange_core:ro',
-        dev_image,
+        CLONE_IMAGE,
         '/usr/local/bin/entrypoint.sh', 'nginx-entrypoint.sh'
     ])
 
-    # 12. Warm-up and healthcheck
+    # 9. Warm-up and healthcheck
     log(f"Waiting for isolated frontend to respond on port {PORT}...")
     ready = False
     for attempt in range(30):
         time.sleep(1)
         res = subprocess.run(
-            ['curl', '-s', '-o', '/dev/null', '-w', '%{http_code}', '-H', f'Host: {DEV_SITE}', f'http://127.0.0.1:{PORT}/login'],
+            ['curl', '-s', '-o', '/dev/null', '-w', '%{http_code}', '-H', f'Host: {CLONE_SITE}', f'http://127.0.0.1:{PORT}/login'],
             capture_output=True, text=True
         )
         if res.stdout.strip() in ('200', '302', '301'):
@@ -349,19 +253,20 @@ test_results = {}
 
 try:
     # 1. Discover operational environment
-    operational_centers = frappe.get_all('Branch', filters={'cc_operational': 1}, fields=['name', 'cc_price_list'])
+    operational_centers = frappe.get_all('Branch', filters={'cc_operational': 1}, fields=['name', 'cc_price_list'], order_by='name asc')
     if not operational_centers:
         raise RuntimeError("No operational Branch found in database")
     center = operational_centers[0].name
     price_list = operational_centers[0].cc_price_list
 
-    managers = frappe.get_all('Has Role', filters={'role': 'CC Manager', 'parenttype': 'User'}, fields=['parent'])
+    member_users = [m.user for m in frappe.get_all('CC Center Membership', filters={'center': center, 'active': 1}, fields=['user'])]
+    managers = frappe.get_all('Has Role', filters={'role': 'CC Manager', 'parenttype': 'User', 'parent': ['in', member_users]}, fields=['parent'])
     manager_user = managers[0].parent if managers else 'Administrator'
 
-    secretaries = frappe.get_all('Has Role', filters={'role': 'CC Secretariat', 'parenttype': 'User'}, fields=['parent'])
+    secretaries = frappe.get_all('Has Role', filters={'role': 'CC Secretariat', 'parenttype': 'User', 'parent': ['in', member_users]}, fields=['parent'])
     secretary_user = secretaries[0].parent if secretaries else manager_user
 
-    practitioners = frappe.get_all('Healthcare Practitioner', filters={'status': 'Active'}, fields=['name', 'user_id', 'practitioner_name'])
+    practitioners = frappe.get_all('Healthcare Practitioner', filters={'status': 'Active', 'user_id': ['in', member_users]}, fields=['name', 'user_id', 'practitioner_name'])
     prac_a = practitioners[0].name
     user_a = practitioners[0].user_id
 
@@ -378,6 +283,7 @@ try:
             'first_name': f'CC9First{i:02d}',
             'last_name': f'CC9Last{i:02d}',
             'sex': 'Other',
+            'invite_user': 0,
             'email': f'cc9_{i:02d}_{secrets.token_hex(2)}@example.com'
         })
         pdoc.insert(ignore_permissions=True)
@@ -415,7 +321,72 @@ try:
     service_search = catalog.records(center=center, kind='CC Center Service', limit=20, offset=0, search='Centro')
     assert isinstance(service_search['rows'], list)
 
-    # Verify Finance server-side searches
+    # Verify Finance server-side searches & pagination >500 rows on Sales Invoice, Purchase Invoice, Bank Transaction
+    frappe.set_user('Administrator')
+    all_branches = frappe.get_all('Branch', fields=['name'])
+    other_center = next((b.name for b in all_branches if b.name != center), 'CC-SYNTH-OTHER')
+    now_str = '2026-10-28 12:00:00'
+    for i in range(525):
+        frappe.db.sql(
+            "INSERT INTO `tabSales Invoice` (`name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`, `customer`, `posting_date`, `grand_total`, `outstanding_amount`, `currency`, `cc_center`) "
+            "VALUES (%s, %s, %s, 'Administrator', 'Administrator', 1, 0, %s, '2026-10-28', 100.0, 0.0, 'EUR', %s)",
+            (f'CC9-SINV-{i:04d}', now_str, f'2026-10-28 12:{(i // 60) % 60:02d}:{i % 60:02d}', f'CC9-CUS-{i:04d}', center)
+        )
+        frappe.db.sql(
+            "INSERT INTO `tabPurchase Invoice` (`name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`, `supplier`, `posting_date`, `grand_total`, `outstanding_amount`, `currency`, `cc_center`) "
+            "VALUES (%s, %s, %s, 'Administrator', 'Administrator', 1, 0, %s, '2026-10-28', 50.0, 0.0, 'EUR', %s)",
+            (f'CC9-PINV-{i:04d}', now_str, f'2026-10-28 12:{(i // 60) % 60:02d}:{i % 60:02d}', f'CC9-SUP-{i:04d}', center)
+        )
+        frappe.db.sql(
+            "INSERT INTO `tabBank Transaction` (`name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`, `date`, `deposit`, `withdrawal`, `unallocated_amount`, `reference_number`, `cc_center`) "
+            "VALUES (%s, %s, %s, 'Administrator', 'Administrator', 1, 0, '2026-10-28', 100.0, 0.0, 0.0, %s, %s)",
+            (f'CC9-BTX-{i:04d}', now_str, f'2026-10-28 12:{(i // 60) % 60:02d}:{i % 60:02d}', f'CC9-REF-{i:04d}', center)
+        )
+    # Cross-center rows that must never leak into `center` queries
+    frappe.db.sql(
+        "INSERT INTO `tabSales Invoice` (`name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`, `customer`, `posting_date`, `grand_total`, `outstanding_amount`, `currency`, `cc_center`) "
+        "VALUES ('CC9-SINV-OTHER', %s, %s, 'Administrator', 'Administrator', 1, 0, 'CC9-CUS-0520', '2026-10-28', 100.0, 0.0, 'EUR', %s)",
+        (now_str, now_str, other_center)
+    )
+    frappe.db.sql(
+        "INSERT INTO `tabPurchase Invoice` (`name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`, `supplier`, `posting_date`, `grand_total`, `outstanding_amount`, `currency`, `cc_center`) "
+        "VALUES ('CC9-PINV-OTHER', %s, %s, 'Administrator', 'Administrator', 1, 0, 'CC9-SUP-0520', '2026-10-28', 50.0, 0.0, 'EUR', %s)",
+        (now_str, now_str, other_center)
+    )
+    frappe.db.sql(
+        "INSERT INTO `tabBank Transaction` (`name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`, `date`, `deposit`, `withdrawal`, `unallocated_amount`, `reference_number`, `cc_center`) "
+        "VALUES ('CC9-BTX-OTHER', %s, %s, 'Administrator', 'Administrator', 1, 0, '2026-10-28', 100.0, 0.0, 0.0, 'CC9-REF-0520', %s)",
+        (now_str, now_str, other_center)
+    )
+    frappe.db.commit()
+
+    frappe.set_user(manager_user)
+    for dt, prefix in [('Sales Invoice', 'CC9-SINV-'), ('Purchase Invoice', 'CC9-PINV-'), ('Bank Transaction', 'CC9-BTX-')]:
+        # Page 1 (limit=100, offset=0) over >500 matching rows succeeds and indicates has_more=True
+        fin_p1 = reporting.records(center=center, doctype=dt, search='', limit=100, offset=0)
+        assert isinstance(fin_p1, dict), f"Expected paginated dict for {dt}, got {type(fin_p1)}"
+        assert len(fin_p1['rows']) == 100, f"Expected 100 rows on page 1 for {dt}, got {len(fin_p1['rows'])}"
+        assert fin_p1['has_more'] is True, f"Expected has_more=True on page 1 for {dt}"
+
+        # Page 6 (limit=100, offset=500) reaches rows beyond 500 and indicates has_more=False
+        fin_p6 = reporting.records(center=center, doctype=dt, search='', limit=100, offset=500)
+        assert len(fin_p6['rows']) >= 25, f"Expected >=25 rows at offset=500 for {dt}, got {len(fin_p6['rows'])}"
+        assert fin_p6['has_more'] is False, f"Expected has_more=False at offset=500 for {dt}"
+
+        # Server-side search finds record #0520 directly on page 1 and excludes cross-center record
+        fin_search = reporting.records(center=center, doctype=dt, search='0520', limit=100, offset=0)
+        assert len(fin_search['rows']) == 1, f"Expected 1 row for search='0520' on {dt}, got {len(fin_search['rows'])}"
+        assert fin_search['rows'][0]['name'] == f'{prefix}0520'
+        assert fin_search['has_more'] is False
+
+    # Clean up the 525 bulk finance rows immediately after verifying >500 pagination so legacy unpaginated checks work on baseline count
+    frappe.set_user('Administrator')
+    frappe.db.sql("DELETE FROM `tabSales Invoice` WHERE `name` LIKE 'CC9-SINV-%'")
+    frappe.db.sql("DELETE FROM `tabPurchase Invoice` WHERE `name` LIKE 'CC9-PINV-%'")
+    frappe.db.sql("DELETE FROM `tabBank Transaction` WHERE `name` LIKE 'CC9-BTX-%'")
+    frappe.db.commit()
+
+    frappe.set_user(manager_user)
     inv_search = reporting.records(center=center, doctype='Sales Invoice', search='ACC')
     assert isinstance(inv_search, list)
 
@@ -423,6 +394,40 @@ try:
     assert isinstance(pay_search['rows'], list)
 
     test_results['scenario_1_server_side_search_and_pagination'] = 'PASS'
+
+    # Eleven real list/detail contracts on the standalone synthetic Frappe site.
+    # Financial invoice/bank drawers are approved read-only projections, not
+    # complete native accounting forms.
+    frappe.set_user(manager_user)
+    verified_archives = []
+    for kind in ('Patient', 'Healthcare Practitioner', 'Item', 'Item Price',
+                 'Appointment Type', 'CC Center Service', 'CC Package Template',
+                 'Sales Invoice', 'Purchase Invoice', 'Payment Entry', 'Bank Transaction'):
+        if kind == 'Patient':
+            listing = profiles.patients(center=center, limit=50, offset=0)
+            first = listing['rows'][0]
+            detail = profiles.patient_detail(center=center, name=first['name'])
+        elif kind == 'Healthcare Practitioner':
+            listing = profiles.practitioners(center=center, limit=50, offset=0)
+            first = listing['rows'][0]
+            detail = profiles.practitioner_detail(center=center, name=first['name'])
+        elif kind in ('Item', 'Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template'):
+            listing = catalog.records(center=center, kind=kind, limit=50, offset=0)
+            first = listing['rows'][0]
+            detail = catalog.detail(center=center, kind=kind, name=first['name'])
+        elif kind == 'Payment Entry':
+            listing = payments.records(center=center, start='2026-01-01', end='2026-12-31', limit=50, offset=0)
+            first = listing['rows'][0]
+            detail = payments.detail(center=center, name=first['name'])
+        else:
+            listing = reporting.records(center=center, doctype=kind, limit=50, offset=0)
+            first = listing['rows'][0]
+            detail = first  # DECISION-063: the list row is the scoped read-only drawer projection.
+        assert isinstance(listing, dict) and isinstance(listing['rows'], list) and listing['rows'], f'{kind}: empty list'
+        assert detail and detail['name'] == first['name'], f'{kind}: wrong detail'
+        verified_archives.append(kind)
+    assert len(verified_archives) == 11
+    test_results['scenario_1b_eleven_archive_lists_and_details'] = {'status': 'PASS', 'count': len(verified_archives)}
 
     # -------------------------------------------------------------
     # Scenario 2 (CC-EXT-008, CC-EXT-009, CC-EXT-010): Scoped Updates & Creates
@@ -435,6 +440,7 @@ try:
 
     # Successful update
     new_email = f'updated_{secrets.token_hex(4)}@example.com'
+    patient_key = f'req-upd-pat-{secrets.token_hex(4)}'
     upd_res = profiles.patient_save(
         center=center,
         name=target_patient,
@@ -442,11 +448,17 @@ try:
         last_name='CC9UpdatedLast',
         email=new_email,
         expected_version=v1,
-        request_key=f'req-upd-pat-{secrets.token_hex(4)}',
+        request_key=patient_key,
         reason='AUDIT-09 Synthetic patient update'
     )
     assert upd_res['name'] == target_patient
     assert upd_res['modified'] != v1, "Version should have changed after update"
+    frappe.db.commit()
+    assert frappe.db.get_value('Patient', target_patient, 'email') == new_email, 'Patient update was not persisted'
+    replay = profiles.patient_save(center=center, name=target_patient,
+        first_name='CC9UpdatedFirst', last_name='CC9UpdatedLast', email=new_email,
+        expected_version=v1, request_key=patient_key, reason='AUDIT-09 Synthetic patient update')
+    assert replay['name'] == target_patient and replay['replay'] is True
 
     # Audit log entry created
     audit_entry = frappe.get_all('CC Audit Event', filters={'reference_name': target_patient, 'event_type': 'PREMIUM_MASTER_UPDATED'})
@@ -503,6 +515,8 @@ try:
         reason='AUDIT-09 Practitioner update'
     )
     assert upd_pro['name'] == prac_a
+    frappe.db.commit()
+    assert frappe.db.get_value('Healthcare Practitioner', prac_a, 'first_name') == 'CC9PracFirst', 'Practitioner update was not persisted'
 
     # Audit log for practitioner
     pro_audit = frappe.get_all('CC Audit Event', filters={'reference_name': prac_a, 'event_type': 'PREMIUM_MASTER_UPDATED'})
@@ -510,8 +524,9 @@ try:
 
     # 2c. Catalog creates & updates (CC-EXT-010)
     # Scoped create Item Price
-    items = frappe.get_all('Item', fields=['name'])
-    test_item = items[0].name
+    items = catalog.records(center=center, kind='Item', limit=10)['rows']
+    assert items, 'Scoped catalog has no item for authorized create tests'
+    test_item = items[0]['name']
     new_price = catalog.price_create(
         center=center,
         item_code=test_item,
@@ -521,6 +536,57 @@ try:
         reason='AUDIT-09 Price create'
     )
     assert new_price['name'] is not None
+    frappe.db.commit()
+    assert frappe.db.get_value('Item Price', new_price['name'], 'price_list_rate') == 125.00, 'Item Price create was not persisted'
+    duplicate_price_rejected = False
+    try:
+        catalog.price_create(center=center, item_code=test_item, price_list_rate=125.00, valid_from='2099-01-01',
+            request_key=f'cc9-duplicate-{secrets.token_hex(4)}', reason='Synthetic duplicate check')
+    except frappe.ValidationError:
+        duplicate_price_rejected = True
+    assert duplicate_price_rejected, 'Duplicate Item Price effective date was accepted'
+
+    # The remaining authorized editor/create contracts must save in native
+    # DocTypes and survive a transaction boundary on this disposable clone.
+    item_detail = catalog.detail(center=center, kind='Item', name=test_item)
+    item_saved = catalog.item_save(center=center, name=test_item, item_name='CC9 synthetic service',
+        expected_version=str(item_detail['modified']), request_key=f'cc9-item-{secrets.token_hex(4)}', reason='Synthetic archive edit')
+    price_detail = catalog.detail(center=center, kind='Item Price', name=new_price['name'])
+    price_saved = catalog.price_save(center=center, name=new_price['name'], price_list_rate=126.00,
+        expected_version=str(price_detail['modified']), request_key=f'cc9-price-{secrets.token_hex(4)}', reason='Synthetic archive edit')
+    service_rows = catalog.records(center=center, kind='CC Center Service', limit=10)['rows']
+    assert service_rows
+    service_detail = catalog.detail(center=center, kind='CC Center Service', name=service_rows[0]['name'])
+    service_saved = catalog.service_save(center=center, name=service_rows[0]['name'], enabled=service_detail['enabled'],
+        expected_version=str(service_detail['modified']), request_key=f'cc9-service-{secrets.token_hex(4)}', reason='Synthetic archive edit')
+    type_detail = catalog.detail(center=center, kind='Appointment Type', name=service_detail['appointment_type'])
+    type_saved = catalog.appointment_type_save(center=center, name=type_detail['name'],
+        default_duration=int(type_detail['default_duration']) + 5,
+        expected_version=str(type_detail['modified']), request_key=f'cc9-type-{secrets.token_hex(4)}', reason='Synthetic archive edit')
+    template_rows = catalog.records(center=center, kind='CC Package Template', limit=10)['rows']
+    assert template_rows
+    template_detail = catalog.detail(center=center, kind='CC Package Template', name=template_rows[0]['name'])
+    template_saved = catalog.package_template_save(center=center, name=template_detail['name'],
+        title='CC9 synthetic package', units=int(template_detail['units']) + 1, enabled=template_detail['enabled'],
+        expected_version=str(template_detail['modified']), request_key=f'cc9-template-{secrets.token_hex(4)}', reason='Synthetic archive edit')
+    frappe.db.commit()
+    assert frappe.db.get_value('Item', item_saved['name'], 'item_name') == 'CC9 synthetic service'
+    assert frappe.db.get_value('Item Price', price_saved['name'], 'price_list_rate') == 126.00
+    assert frappe.db.get_value('CC Center Service', service_saved['name'], 'enabled') == service_detail['enabled']
+    assert int(frappe.db.get_value('Appointment Type', type_saved['name'], 'default_duration')) == int(type_detail['default_duration']) + 5
+    assert frappe.db.get_value('CC Package Template', template_saved['name'], 'title') == 'CC9 synthetic package'
+
+    new_type = catalog.appointment_type_create(center=center, appointment_type='CC9 synthetic type ' + secrets.token_hex(3),
+        service_item=test_item, default_duration=45, request_key=f'cc9-new-type-{secrets.token_hex(4)}', reason='Synthetic archive create')
+    new_service = catalog.service_create(center=center, appointment_type=new_type['name'], enabled=0,
+        request_key=f'cc9-new-service-{secrets.token_hex(4)}', reason='Synthetic archive create')
+    new_template = catalog.package_template_create(center=center, title='CC9 new package', service_item=test_item,
+        units=4, enabled=0, request_key=f'cc9-new-template-{secrets.token_hex(4)}', reason='Synthetic archive create')
+    frappe.db.commit()
+    assert frappe.db.exists('Appointment Type', new_type['name'])
+    assert frappe.db.exists('CC Center Service', new_service['name'])
+    assert frappe.db.exists('CC Package Template', new_template['name'])
+    assert frappe.db.count('CC Audit Event', {'event_type': 'PREMIUM_MASTER_CREATED', 'reference_name': new_template['name']}) == 1
 
     # Standalone create Item forbidden (CC-EXT-023)
     assert not hasattr(catalog, 'item_create'), "Standalone Item create must not exist in catalog"
@@ -540,8 +606,8 @@ try:
     assert exceed_limit_raised, "Date range > 366 days did not raise ValidationError"
 
     # 3b. Read-only projection: Sales Invoice
-    invoices = reporting.records(center=center, doctype='Sales Invoice')
-    assert isinstance(invoices, list)
+    invoices = reporting.records(center=center, doctype='Sales Invoice', limit=100, offset=0)['rows']
+    assert isinstance(invoices, list) and invoices
     for row in invoices:
         assert 'docstatus' in row, "docstatus must be in Sales Invoice projection"
         assert 'customer' in row
@@ -572,25 +638,42 @@ try:
     # -------------------------------------------------------------
     # Scenario 5 (CC-EXT-020): RBAC & Anti-IDOR Cross Center
     # -------------------------------------------------------------
-    # Guest denied from archives
-    frappe.set_user('Guest')
-    guest_denied = False
-    try:
-        profiles.patients(center=center)
-    except frappe.PermissionError:
-        guest_denied = True
-    assert guest_denied, "Guest was not denied access to patients archive"
+    def denied(call, label):
+        try:
+            call()
+        except frappe.PermissionError:
+            return
+        raise AssertionError(label + ': unauthorized direct API call succeeded')
 
-    # Cross-center anti-IDOR: find non-operational or second center
+    frappe.set_user('Guest')
+    denied(lambda: profiles.patients(center=center), 'Guest Patient')
+    denied(lambda: profiles.practitioners(center=center), 'Guest Practitioner')
+    for kind in ('Item', 'Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template'):
+        denied(lambda kind=kind: catalog.records(center=center, kind=kind), 'Guest ' + kind)
+    for kind in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
+        denied(lambda kind=kind: reporting.records(center=center, doctype=kind, limit=50), 'Guest ' + kind)
+    denied(lambda: payments.records(center=center, start='2026-01-01', end='2026-12-31'), 'Guest Payment Entry')
+
+    frappe.set_user(user_a)
+    for kind in ('Item', 'Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template'):
+        denied(lambda kind=kind: catalog.records(center=center, kind=kind), 'Professional ' + kind)
+    for kind in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
+        denied(lambda kind=kind: reporting.records(center=center, doctype=kind, limit=50), 'Professional ' + kind)
+    denied(lambda: payments.records(center=center, start='2026-01-01', end='2026-12-31'), 'Professional Payment Entry')
+
+    frappe.set_user(secretary_user)
+    denied(lambda: catalog.records(center=center, kind='Item'), 'Secretariat catalog')
+    assert isinstance(reporting.records(center=center, doctype='Sales Invoice', limit=50), dict)
+
+    # Non-manager membership in center A must not authorize center B, even
+    # when the record name/search term is known to the caller.
     all_centers = frappe.get_all('Branch', fields=['name'])
     other_centers = [c.name for c in all_centers if c.name != center]
-    if other_centers:
-        other_c = other_centers[0]
-        frappe.set_user(manager_user)
-        # Attempt to access or modify records for unassigned/other center
-        # Verify center verification raises PermissionError if center is not authorized
-        # Note: manager_user has membership in `center` only
-        pass
+    assert other_centers, 'Two-center fixture missing'
+    other_c = other_centers[0]
+    denied(lambda: profiles.patients(center=other_c), 'Secretariat cross-center Patient')
+    denied(lambda: reporting.records(center=other_c, doctype='Sales Invoice', limit=50), 'Secretariat cross-center Sales Invoice')
+    denied(lambda: payments.records(center=other_c, start='2026-01-01', end='2026-12-31'), 'Secretariat cross-center Payment Entry')
 
     test_results['scenario_5_rbac_and_anti_idor'] = 'PASS'
 
@@ -636,7 +719,8 @@ except Exception as err:
 def run_browser_uat():
     log("Executing Playwright Browser UAT against isolated clone...")
     env = dict(os.environ)
-    env['NODE_PATH'] = '/tmp/cc-browser-qa/node_modules'
+    env['NODE_PATH'] = os.environ.get('NODE_PATH', str(ROOT_DIR / 'frontend/premium/node_modules'))
+    env['CC_ARTIFACT_DIR'] = os.environ.get('CC_ARTIFACT_DIR', str(ROOT_DIR / '.audit09-browser-artifacts'))
     env['CC_UAT_PORT'] = str(PORT)
     env['CC_BACKEND_CONTAINER'] = BACKEND_CONTAINER
 

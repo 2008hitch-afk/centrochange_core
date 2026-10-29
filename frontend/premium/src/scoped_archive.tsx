@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Printer, Search } from 'lucide-react'
 import { displayDate, money, recentPaymentStart, requestKey, romeToday, type Boot, type FinanceBoot, type Practitioner, type Row } from './api'
 import { archiveDetail, createArchive, creatableKinds, documentPreview, editableKinds, financeKinds, listArchive, saveArchive, type ArchiveKind, type ArchiveRecord, type PrintPreview } from './scoped_api'
@@ -54,6 +54,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const visible = specs.filter(spec => spec.group === 'Catalogo' ? manager && !!boot : financeKinds.includes(spec.kind) ? !!financeBoot : spec.kind === 'Healthcare Practitioner' ? !!boot && (manager || boot.roles.includes('CC Professional')) : !!boot)
   const [kind, setKind] = useState<ArchiveKind>(boot ? 'Patient' : 'Sales Invoice')
   const [rows, setRows] = useState<ArchiveRecord[]>([])
+  const [loadedKey, setLoadedKey] = useState('')
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -74,6 +75,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const key = useRef(requestKey())
   const frame = useRef<HTMLIFrameElement>(null)
   const spec = visible.find(s => s.kind === kind) ?? visible[0]
+  const queryKey = `${center}\u0000${spec.kind}\u0000${debouncedSearch}\u0000${paymentStart}\u0000${paymentEnd}`
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -102,10 +104,13 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
       if (gen === searchGen.current) {
         setRows(result.rows)
         setHasMore(result.has_more)
+        setLoadedKey(`${center}\u0000${activeKind}\u0000${query}\u0000${paymentStart}\u0000${paymentEnd}`)
       }
     } catch (cause) {
       if (gen === searchGen.current) {
         setRows([])
+        setHasMore(false)
+        setLoadedKey(`${center}\u0000${activeKind}\u0000${query}\u0000${paymentStart}\u0000${paymentEnd}`)
         setError(cause instanceof Error ? cause.message : 'Caricamento non riuscito.')
       }
     } finally {
@@ -135,20 +140,10 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
     }
   }
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return rows
-    const q = search.toLocaleLowerCase('it-IT').trim()
-    return rows.filter(row =>
-      Object.entries(row).some(([field, value]) => {
-        const str = kind === 'Patient' && ['name', 'patient_name'].includes(field)
-          ? demoPatient(row.name, row.patient_name, row.first_name, row.last_name)
-          : kind === 'Healthcare Practitioner' && field === 'practitioner_name'
-          ? practitionerName(row as Practitioner)
-          : demoText(value)
-        return String(str ?? '').toLocaleLowerCase('it-IT').includes(q)
-      })
-    )
-  }, [rows, search, kind])
+  // The server already applies center/role scoped search before pagination.
+  // Filtering a loaded page again would hide valid matches by code or alias.
+  const pendingQuery = loadedKey !== queryKey || search !== debouncedSearch
+  const filtered = pendingQuery ? [] : rows
 
   const change = (next: ArchiveKind) => {
     setKind(next)
@@ -210,9 +205,9 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
     <div className="archive-layout"><nav className="archive-menu" aria-label="Tipi di archivio">{groups.map(group => <div key={group}><h2>{group}</h2>{visible.filter(s => s.group === group).map(s => <button key={s.kind} aria-label={s.label} className={spec.kind === s.kind ? 'active' : ''} aria-current={spec.kind === s.kind ? 'page' : undefined} onClick={() => change(s.kind)}>{s.label}</button>)}</div>)}</nav>
       <section className="panel archive-panel"><div className="panel-toolbar"><div className="panel-title"><h2>{spec.label}</h2><p>{rows.length} {rows.length === 1 ? 'scheda' : 'schede'} · {centerNameFor(center, boot?.centers?.length ? boot.centers : financeBoot?.centers ?? [])}{hasMore ? ' · altri risultati disponibili nella ricerca dedicata' : ''}</p></div><div className="form-actions">{manager && creatableKinds.includes(kind) && <Button onClick={beginCreate}>Nuova scheda</Button>}<Button variant="secondary" onClick={() => void refresh(spec.kind, debouncedSearch)} disabled={loading}>Ricarica</Button></div></div>
         <div className="archive-filters"><label className="search-inline"><Search size={17} /><input type="search" aria-label={`Cerca in ${spec.label.toLocaleLowerCase('it-IT')}`} placeholder={`Cerca in ${spec.label.toLocaleLowerCase('it-IT')}…`} value={search} onChange={e => setSearch(e.target.value)} /></label>{kind === 'Payment Entry' && <div className="archive-dates"><Field label="Dal"><input type="date" value={paymentStart} onChange={event => setPaymentStart(event.target.value)} /></Field><Field label="Al"><input type="date" value={paymentEnd} onChange={event => setPaymentEnd(event.target.value)} /></Field><Button variant="secondary" onClick={() => void refresh(spec.kind, debouncedSearch)}>Applica</Button></div>}</div>
-        {loading && <p className="panel-loading" role="status">Caricamento…</p>}{error && <p className="alert error" role="alert">{error}</p>}
-        {!loading && (filtered.length ? <DataTable rows={filtered} columns={columns} onRow={row => void open(row as ArchiveRecord)} /> : <Empty title="Nessuna scheda trovata" detail="Modifica il filtro o ricarica la lista." />)}
-        {hasMore && <div className="archive-more"><Button variant="secondary" onClick={() => void more()} disabled={loading}>Carica altri</Button></div>}
+        {(loading || pendingQuery) && <p className="panel-loading" role="status">Caricamento…</p>}{error && <p className="alert error" role="alert">{error}</p>}
+        {!loading && !pendingQuery && (filtered.length ? <DataTable rows={filtered} columns={columns} onRow={row => void open(row as ArchiveRecord)} /> : <Empty title="Nessuna scheda trovata" detail="Modifica il filtro o ricarica la lista." />)}
+        {!pendingQuery && hasMore && <div className="archive-more"><Button variant="secondary" onClick={() => void more()} disabled={loading}>Carica altri</Button></div>}
         <p className="scope-note">Nuove schede e campi non approvati richiedono una configurazione autorizzata. Nessuna scrittura generica è disponibile.</p>
       </section></div>
     {notice && <div className="alert success archive-notice" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Chiudi avviso">×</button></div>}

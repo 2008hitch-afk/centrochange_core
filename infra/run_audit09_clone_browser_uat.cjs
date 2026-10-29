@@ -5,7 +5,7 @@ const fs = require('fs');
 const assert = require('assert');
 
 const EVIDENCE_DIR = path.resolve(__dirname, '../docs/evidence/issue-183');
-const ARTIFACT_DIR = '/home/empv26/.gemini/antigravity-cli/brain/e47cfc2a-4bab-4a41-ae20-ae6a02436fed/evidence';
+const ARTIFACT_DIR = process.env.CC_ARTIFACT_DIR || path.resolve(__dirname, '../.audit09-browser-artifacts');
 const PORT = process.env.CC_UAT_PORT || '8099';
 const BACKEND_CONTAINER = process.env.CC_BACKEND_CONTAINER || 'cc183-clone-backend';
 
@@ -45,17 +45,18 @@ import json, frappe
 frappe.init("centrochange.local", sites_path="sites")
 frappe.connect()
 
-operational_centers = frappe.get_all('Branch', filters={'cc_operational': 1}, fields=['name', 'cc_price_list'])
+operational_centers = frappe.get_all('Branch', filters={'cc_operational': 1}, fields=['name', 'cc_price_list'], order_by='name asc')
 center = operational_centers[0].name if operational_centers else ""
 price_list = operational_centers[0].cc_price_list if operational_centers else ""
 
-managers = frappe.get_all('Has Role', filters={'role': 'CC Manager', 'parenttype': 'User'}, fields=['parent'])
+member_users = [m.user for m in frappe.get_all('CC Center Membership', filters={'center': center, 'active': 1}, fields=['user'])]
+managers = frappe.get_all('Has Role', filters={'role': 'CC Manager', 'parenttype': 'User', 'parent': ['in', member_users]}, fields=['parent'])
 manager_email = managers[0].parent if managers else 'Administrator'
 
-secretaries = frappe.get_all('Has Role', filters={'role': 'CC Secretariat', 'parenttype': 'User'}, fields=['parent'])
+secretaries = frappe.get_all('Has Role', filters={'role': 'CC Secretariat', 'parenttype': 'User', 'parent': ['in', member_users]}, fields=['parent'])
 sec_email = secretaries[0].parent if secretaries else manager_email
 
-pros = frappe.get_all('Healthcare Practitioner', filters={'status': 'Active'}, fields=['name', 'user_id', 'practitioner_name'])
+pros = frappe.get_all('Healthcare Practitioner', filters={'status': 'Active', 'user_id': ['in', member_users]}, fields=['name', 'user_id', 'practitioner_name'])
 pro_emails = [p.user_id for p in pros if p.user_id]
 pro_a_email = pro_emails[0] if pro_emails else manager_email
 pro_a_name = pros[0].name if pros else ""
@@ -105,7 +106,7 @@ print(json.dumps({
     const dest = path.join(EVIDENCE_DIR, filename);
     const artDest = path.join(ARTIFACT_DIR, filename);
     await page.screenshot({ path: dest, fullPage: false });
-    fs.copyFileSync(dest, artDest);
+    if (dest !== artDest) fs.copyFileSync(dest, artDest);
     captured.push(filename);
     console.log(`[BROWSER-UAT] Saved screenshot: ${dest} & ${artDest}`);
   }
@@ -276,7 +277,34 @@ print(json.dumps({
       await context.close();
     }
 
-    console.log(`[BROWSER-UAT] Successfully completed all checks. Screenshots:`, captured);
+    // Every archive must expose a real list row and a real detail drawer, at both
+    // approved viewport sizes. A screenshot alone is never a functional PASS.
+    const archives = [
+      ['Pazienti', 'patient'], ['Professionisti', 'practitioner'],
+      ['Articoli', 'item'], ['Tariffe', 'price'], ['Tipi seduta', 'appointment-type'],
+      ['Servizi del centro', 'center-service'], ['Modelli pacchetto', 'package-template'],
+      ['Fatture pazienti', 'sales-invoice'], ['Fatture professionisti', 'purchase-invoice'],
+      ['Pagamenti', 'payment-entry'], ['Movimenti bancari', 'bank-transaction']
+    ];
+    for (const [width, height, viewport] of [[1440, 900, 'desktop'], [390, 844, 'mobile']]) {
+      const context = await createContext(env.manager, width, height);
+      const page = await context.newPage();
+      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      for (const [label, slug] of archives) {
+        await page.locator(`.archive-menu button[aria-label="${label}"]`).click();
+        await page.locator('.archive-panel tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
+        assert.strictEqual(await page.locator('.archive-panel [role="alert"]').count(), 0, `${label}: list error`);
+        await page.locator('.archive-panel tbody tr').first().click();
+        await page.locator('.drawer[role="dialog"] .property-list').waitFor({ state: 'visible', timeout: 10000 });
+        assert.ok(await page.locator('.drawer[role="dialog"] .property-list dt').count() > 0, `${label}: empty detail`);
+        await saveShot(page, `audit09-${slug}-detail-${viewport}.png`);
+        await page.locator('.drawer[role="dialog"] button[aria-label="Chiudi"]').click();
+      }
+      await context.close();
+    }
+
+    console.log(`[BROWSER-UAT] Successfully completed all 11 archive list/detail checks at desktop/mobile. Screenshots:`, captured);
   } finally {
     await browser.close();
   }

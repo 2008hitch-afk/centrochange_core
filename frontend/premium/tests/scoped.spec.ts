@@ -30,7 +30,10 @@ async function mock(page: Page, writes: Write[], role = 'CC Manager') {
     else if (method.endsWith('catalog.records') || method.endsWith('operations.profiles.patients') || method.endsWith('operations.profiles.practitioners') || method.endsWith('finance.payments.records')) {
       const kind = method.endsWith('patients') ? 'Patient' : method.endsWith('practitioners') ? 'Healthcare Practitioner' : method.endsWith('payments.records') ? 'Payment Entry' : String(args.kind)
       message = { rows: rows[kind] ?? [], has_more: false }
-    } else if (method.endsWith('finance.reporting.records')) message = rows[String(args.doctype)] ?? []
+    } else if (method.endsWith('finance.reporting.records')) {
+      const list = rows[String(args.doctype)] ?? []
+      message = args.limit !== undefined ? { rows: list, has_more: false } : list
+    }
     else if (method.endsWith('catalog.detail') || method.endsWith('operations.profiles.patient_detail') || method.endsWith('operations.profiles.practitioner_detail') || method.endsWith('finance.payments.detail')) {
       const kind = method.endsWith('patient_detail') ? 'Patient' : method.endsWith('practitioner_detail') ? 'Healthcare Practitioner' : method.endsWith('payments.detail') ? 'Payment Entry' : String(args.kind)
       message = rows[kind]?.find(row => row.name === args.name) ?? null
@@ -246,4 +249,69 @@ for (const task of [
   expect(writes).toHaveLength(1)
   expect(writes[0].method).toContain(task.method)
   expect(writes[0].body).not.toHaveProperty('customer')
+})
+
+test('API scoped: archivi finanziari paginazione server-side oltre 500 record e ricerca', async ({ page }) => {
+  const writes: Write[] = []
+  await mock(page, writes)
+  const queries: Record<string, string>[] = []
+  await page.route('**/api/method/centrochange_core.finance.reporting.records*', async route => {
+    const params = Object.fromEntries(new URL(route.request().url()).searchParams)
+    queries.push(params)
+    const offset = Number(params.offset ?? 0)
+    const search = params.search ?? ''
+    const dt = params.doctype ?? 'Sales Invoice'
+    if (search === '520') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: {
+            rows: [{ name: `${dt}-0520`, docstatus: 1, customer: 'CUS-520', supplier: 'SUP-520', reference_number: 'REF-520', posting_date: today, date: today, grand_total: 120, outstanding_amount: 0, deposit: 120, withdrawal: 0, unallocated_amount: 0 }],
+            has_more: false
+          }
+        })
+      })
+      return
+    }
+    const row = { name: `${dt}-PAGE-${offset}`, docstatus: 1, customer: 'CUS-001', supplier: 'SUP-001', reference_number: 'REF-001', posting_date: today, date: today, grand_total: 80, outstanding_amount: 0, deposit: 80, withdrawal: 0, unallocated_amount: 0 }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: { rows: [row], has_more: offset < 500 } })
+    })
+  })
+  await openArchives(page)
+  const nav = page.getByRole('navigation', { name: 'Tipi di archivio' })
+  for (const label of ['Fatture pazienti', 'Fatture professionisti', 'Movimenti bancari']) {
+    await nav.getByRole('button', { name: label, exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Carica altri' })).toBeVisible()
+    await page.getByRole('button', { name: 'Carica altri' }).click()
+    await expect(page.locator('.archive-panel tbody tr')).toHaveCount(2)
+    await page.getByLabel(`Cerca in ${label.toLocaleLowerCase('it-IT')}`).fill('520')
+    await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
+    await expect(page.locator('.archive-panel tbody tr').first()).toContainText('520')
+  }
+  expect(queries.some(q => q.doctype === 'Sales Invoice' && q.limit === '100' && Number(q.offset) > 0)).toBe(true)
+  expect(queries.some(q => q.doctype === 'Purchase Invoice' && q.limit === '100' && q.search === '520')).toBe(true)
+  expect(queries.some(q => q.doctype === 'Bank Transaction' && q.limit === '100' && q.search === '520')).toBe(true)
+})
+
+test('ricerca server-side mantiene un risultato trovato per codice anche se il nome visibile è diverso', async ({ page }) => {
+  await mock(page, [])
+  await page.route('**/api/method/centrochange_core.operations.profiles.patients*', async route => {
+    const query = new URL(route.request().url()).searchParams.get('search') ?? ''
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: {
+        rows: query === 'PAT-REMOTE-520' ? [{ name: 'PAT-REMOTE-520', patient_name: 'Mario Rossi', first_name: 'Mario', last_name: 'Rossi', modified: 'v1' }] : [],
+        has_more: false
+      } })
+    })
+  })
+  await openArchives(page)
+  await page.getByLabel('Cerca in pazienti').fill('PAT-REMOTE-520')
+  await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
+  await expect(page.locator('.archive-panel tbody tr').first()).toContainText('Mario Rossi')
 })

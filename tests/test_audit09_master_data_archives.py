@@ -81,6 +81,81 @@ class Audit09MasterDataSearchTest(ScopedApiTest):
             self.assertIn('or_filters', observed)
             self.assertEqual(observed['or_filters']['party'], ['like', '%CUS-001%'])
 
+    def test_reporting_records_paginated_and_over_500_all_three_doctypes(self):
+        from unittest.mock import patch
+        self.guards.current_rows = lambda dt, filters, fields=None: []
+        self.guards.centers = lambda: ['A']
+        self.guards.roles = lambda: ['CC Manager']
+        finance_guards = types.ModuleType('centrochange_core.finance.guards')
+        finance_guards.require_finance = lambda center: None
+        finance_guards.allowed = lambda write=False: True
+        finance_pkg = types.ModuleType('centrochange_core.finance')
+        finance_pkg.professional_economics = types.SimpleNamespace(POLICY={})
+        finance_pkg.admin_queue = types.SimpleNamespace()
+        ops_reporting = types.ModuleType('centrochange_core.operations.reporting')
+        ops_reporting.safe_cell = lambda v: str(v or '')
+
+        with patch.dict('sys.modules', {
+            'centrochange_core.finance.guards': finance_guards,
+            'centrochange_core.finance': finance_pkg,
+            'centrochange_core.operations.reporting': ops_reporting,
+        }):
+            spec = importlib.util.spec_from_file_location('centrochange_core.finance.reporting', ROOT / 'finance/reporting.py')
+            reporting = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(reporting)
+
+            for doctype, party_key in [
+                ('Sales Invoice', 'customer'),
+                ('Purchase Invoice', 'supplier'),
+                ('Bank Transaction', 'reference_number'),
+            ]:
+                dataset = [
+                    {
+                        'name': f'{doctype[:3].upper()}-{i:04d}',
+                        'docstatus': 1,
+                        party_key: f'PARTY-{i:04d}',
+                        'cc_center': 'A',
+                    }
+                    for i in range(525)
+                ]
+                observed = {}
+
+                def listing(dt, filters=None, fields=None, order_by=None, start=0, page_length=20, **kwargs):
+                    observed.clear()
+                    observed.update({'doctype': dt, 'filters': filters, 'start': start, 'page_length': page_length, **kwargs})
+                    filtered = [r for r in dataset if r['cc_center'] == filters.get('cc_center')]
+                    or_f = kwargs.get('or_filters')
+                    if or_f:
+                        needle = list(or_f.values())[0][1].strip('%')
+                        filtered = [r for r in filtered if needle in r['name'] or needle in r[party_key]]
+                    return filtered[start:start + page_length]
+
+                self.frappe.get_list = listing
+
+                # 1. Paginated page 1 (limit=100, offset=0) over 525 records succeeds without 500-row crash
+                p1 = reporting.records('A', doctype, search='', limit=100, offset=0)
+                self.assertEqual(len(p1['rows']), 100)
+                self.assertTrue(p1['has_more'])
+                self.assertEqual(observed['start'], 0)
+                self.assertEqual(observed['page_length'], 101)
+
+                # 2. Paginated page 6 (limit=100, offset=500) reaches rows 500..524 (>500 boundary)
+                p6 = reporting.records('A', doctype, search='', limit=100, offset=500)
+                self.assertEqual(len(p6['rows']), 25)
+                self.assertFalse(p6['has_more'])
+                self.assertEqual(p6['rows'][-1]['name'], f'{doctype[:3].upper()}-0524')
+
+                # 3. Server-side search finds record at index 520 directly on page 1
+                s_res = reporting.records('A', doctype, search='0520', limit=100, offset=0)
+                self.assertEqual(len(s_res['rows']), 1)
+                self.assertFalse(s_res['has_more'])
+                self.assertEqual(s_res['rows'][0]['name'], f'{doctype[:3].upper()}-0520')
+                self.assertIn('or_filters', observed)
+
+                # 4. Unpaginated legacy call (limit=None) still enforces the 500-row cap
+                with self.assertRaises(Invalid):
+                    reporting.records('A', doctype, search='')
+
 
 if __name__ == '__main__':
     unittest.main()

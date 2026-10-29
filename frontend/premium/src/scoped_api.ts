@@ -24,8 +24,8 @@ export async function listArchive(center: string, kind: ArchiveKind, offset = 0,
   if (kind === 'Patient') return ops<ArchivePage<PatientProfile>>('profiles.patients', { center, limit: 100, offset, search: query })
   if (kind === 'Healthcare Practitioner') return ops<ArchivePage<PractitionerProfile>>('profiles.practitioners', { center, limit: 100, offset, search: query })
   if (kind === 'Payment Entry') return finance<ArchivePage<PaymentProjection>>('payments.records', { center, start: interval?.start ?? recentPaymentStart(), end: interval?.end ?? romeToday(), limit: 100, offset, search: query })
-  const rows = await finance<ArchiveRecord[]>('reporting.records', { center, doctype: kind, search: query })
-  return { rows, has_more: false }
+  const res = await finance<ArchivePage | ArchiveRecord[]>('reporting.records', { center, doctype: kind, limit: 100, offset, search: query })
+  return Array.isArray(res) ? { rows: res, has_more: false } : res
 }
 
 export async function archiveDetail(center: string, kind: ArchiveKind, name: string): Promise<ArchiveRecord> {
