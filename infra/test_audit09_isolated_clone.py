@@ -425,6 +425,18 @@ try:
             detail = first  # DECISION-063: the list row is the scoped read-only drawer projection.
         assert isinstance(listing, dict) and isinstance(listing['rows'], list) and listing['rows'], f'{kind}: empty list'
         assert detail and detail['name'] == first['name'], f'{kind}: wrong detail'
+        needle = first['name']
+        if kind == 'Patient':
+            found = profiles.patients(center=center, search=needle)
+        elif kind == 'Healthcare Practitioner':
+            found = profiles.practitioners(center=center, search=needle)
+        elif kind in ('Item', 'Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template'):
+            found = catalog.records(center=center, kind=kind, search=needle)
+        elif kind == 'Payment Entry':
+            found = payments.records(center=center, start='2026-01-01', end='2026-12-31', search=needle)
+        else:
+            found = reporting.records(center=center, doctype=kind, search=needle, limit=50)
+        assert any(row['name'] == first['name'] for row in found['rows']), f'{kind}: server-side search did not find its scoped row'
         verified_archives.append(kind)
     assert len(verified_archives) == 11
     test_results['scenario_1b_eleven_archive_lists_and_details'] = {'status': 'PASS', 'count': len(verified_archives)}
