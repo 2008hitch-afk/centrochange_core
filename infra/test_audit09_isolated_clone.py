@@ -59,9 +59,9 @@ def run_cmd(cmd, check=True, capture=True, input_str=None):
     if check and res.returncode != 0:
         log(f"Command failed (code {res.returncode}): {_redact(cmd)}")
         if res.stdout:
-            log(f"STDOUT:\n{_redact(res.stdout)}")
+            log(f"STDOUT (last 12000 chars):\n{_redact(res.stdout[-12000:])}")
         if res.stderr:
-            log(f"STDERR:\n{_redact(res.stderr)}")
+            log(f"STDERR (last 12000 chars):\n{_redact(res.stderr[-12000:])}")
         safe_cmd = [_redact(c) for c in cmd] if isinstance(cmd, list) else _redact(cmd)
         raise subprocess.CalledProcessError(res.returncode, safe_cmd, output=_redact(res.stdout), stderr=_redact(res.stderr))
     return res.stdout if capture else ""
@@ -170,9 +170,9 @@ bench new-site {CLONE_SITE} --db-host {DB_CONTAINER} --mariadb-user-host-login-s
 bench --site {CLONE_SITE} set-config cc_synthetic_dev 1
 bench --site {CLONE_SITE} set-config cc_uat_demo 1
 bench --site {CLONE_SITE} set-config cc_premium_primary 1
-bench --site {CLONE_SITE} execute centrochange_core.dev_bootstrap.setup
 bench --site {CLONE_SITE} install-app healthcare
 bench --site {CLONE_SITE} install-app centrochange_core
+bench --site {CLONE_SITE} execute centrochange_core.dev_bootstrap.setup
 bench --site {CLONE_SITE} migrate
 bench --site {CLONE_SITE} execute centrochange_core.uat.demo.seed
 """
@@ -569,7 +569,8 @@ try:
     service_rows = catalog.records(center=center, kind='CC Center Service', limit=10)['rows']
     assert service_rows
     service_detail = catalog.detail(center=center, kind='CC Center Service', name=service_rows[0]['name'])
-    service_saved = catalog.service_save(center=center, name=service_rows[0]['name'], enabled=service_detail['enabled'],
+    changed_enabled = 1 - int(service_detail['enabled'])
+    service_saved = catalog.service_save(center=center, name=service_rows[0]['name'], enabled=changed_enabled,
         expected_version=str(service_detail['modified']), request_key=f'cc9-service-{secrets.token_hex(4)}', reason='Synthetic archive edit')
     type_detail = catalog.detail(center=center, kind='Appointment Type', name=service_detail['appointment_type'])
     type_saved = catalog.appointment_type_save(center=center, name=type_detail['name'],
@@ -584,7 +585,7 @@ try:
     frappe.db.commit()
     assert frappe.db.get_value('Item', item_saved['name'], 'item_name') == 'CC9 synthetic service'
     assert frappe.db.get_value('Item Price', price_saved['name'], 'price_list_rate') == 126.00
-    assert frappe.db.get_value('CC Center Service', service_saved['name'], 'enabled') == service_detail['enabled']
+    assert int(frappe.db.get_value('CC Center Service', service_saved['name'], 'enabled')) == changed_enabled
     assert int(frappe.db.get_value('Appointment Type', type_saved['name'], 'default_duration')) == int(type_detail['default_duration']) + 5
     assert frappe.db.get_value('CC Package Template', template_saved['name'], 'title') == 'CC9 synthetic package'
 
@@ -635,13 +636,15 @@ try:
     # -------------------------------------------------------------
     # Scenario 4 (CC-EXT-012): Document Print Preview
     # -------------------------------------------------------------
-    # Manager document preview
+    # Manager document preview against existing native seeded documents, not
+    # the synthetic pagination rows injected directly into the clone tables.
     import centrochange_core.finance.documents as documents
     frappe.set_user(manager_user)
-    printable_invs = [r for r in invoices if r.get('docstatus') != 2]
-    if printable_invs:
-        inv_name = printable_invs[0]['name']
-        prev = documents.preview(center=center, doctype='Sales Invoice', name=inv_name)
+    for printable in ('Sales Invoice', 'Purchase Invoice', 'Payment Entry'):
+        native_names = frappe.get_all(printable, filters={'cc_center': center,
+            'name': ['not like', 'CC9-%']}, pluck='name', limit_page_length=1)
+        assert native_names, printable + ': no native seeded document for print preview'
+        prev = documents.preview(center=center, doctype=printable, name=native_names[0])
         assert 'html' in prev, "Document preview must return HTML"
         assert len(prev['html']) > 0, "Document preview HTML must not be empty"
 
