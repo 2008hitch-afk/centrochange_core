@@ -122,6 +122,15 @@ print(json.dumps({
     }
   }
 
+  async function openArchives(page) {
+    await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
+    const centerPicker = page.locator('.center-selector select');
+    await centerPicker.waitFor({ state: 'visible', timeout: 15000 });
+    await centerPicker.selectOption(env.center);
+    await page.waitForSelector('.archive-layout', { timeout: 15000 });
+    await page.locator('.archive-panel .panel-title p').filter({ hasText: 'Centro A' }).waitFor({ state: 'visible', timeout: 15000 });
+  }
+
   try {
     // =============================================================
     // 1. PATIENTS ARCHIVE & DETAIL DRAWER (Desktop 1440x900)
@@ -130,8 +139,7 @@ print(json.dumps({
     {
       const context = await createContext(env.manager, 1440, 900);
       const page = await context.newPage();
-      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      await openArchives(page);
       await page.waitForSelector('.table-scroll', { timeout: 15000 });
       await page.waitForTimeout(500);
 
@@ -170,8 +178,7 @@ print(json.dumps({
     {
       const context = await createContext(env.manager, 1440, 900);
       const page = await context.newPage();
-      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      await openArchives(page);
       await page.locator('.archive-menu button[aria-label="Professionisti"]').click();
       await waitForList(page, 'Professionisti');
       await page.waitForTimeout(500);
@@ -187,8 +194,7 @@ print(json.dumps({
     {
       const context = await createContext(env.manager, 1440, 900);
       const page = await context.newPage();
-      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      await openArchives(page);
       await page.locator('.archive-menu button[aria-label="Servizi del centro"]').click();
       await page.waitForSelector('.table-scroll', { timeout: 15000 });
       await page.waitForTimeout(500);
@@ -204,8 +210,7 @@ print(json.dumps({
     {
       const context = await createContext(env.manager, 1440, 900);
       const page = await context.newPage();
-      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      await openArchives(page);
       await page.locator('.archive-menu button[aria-label="Tariffe"]').click();
       await page.waitForSelector('.table-scroll', { timeout: 15000 });
       await page.waitForTimeout(500);
@@ -221,8 +226,7 @@ print(json.dumps({
     {
       const context = await createContext(env.manager, 1440, 900);
       const page = await context.newPage();
-      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      await openArchives(page);
       await page.locator('.archive-menu button[aria-label="Fatture pazienti"]').click();
       await page.waitForSelector('.table-scroll', { timeout: 15000 });
       await page.waitForTimeout(500);
@@ -246,8 +250,7 @@ print(json.dumps({
     {
       const context = await createContext(env.manager, 1440, 900);
       const page = await context.newPage();
-      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      await openArchives(page);
       await page.locator('.archive-menu button[aria-label="Pagamenti"]').click();
       await page.waitForSelector('.table-scroll', { timeout: 15000 });
       await page.waitForTimeout(500);
@@ -263,8 +266,7 @@ print(json.dumps({
     {
       const context = await createContext(env.manager, 390, 844);
       const page = await context.newPage();
-      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      await openArchives(page);
       await page.waitForTimeout(500);
 
       await saveShot(page, 'audit09-pazienti-mobile.png');
@@ -278,8 +280,7 @@ print(json.dumps({
     {
       const context = await createContext(env.manager, 390, 844);
       const page = await context.newPage();
-      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      await openArchives(page);
       await page.locator('.archive-menu button[aria-label="Fatture pazienti"]').click();
       await page.waitForSelector('.table-scroll', { timeout: 15000 });
       await page.waitForTimeout(500);
@@ -300,11 +301,10 @@ print(json.dumps({
     for (const [width, height, viewport] of [[1440, 900, 'desktop'], [390, 844, 'mobile']]) {
       const context = await createContext(env.manager, width, height);
       const page = await context.newPage();
-      await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.archive-layout', { timeout: 15000 });
+      await openArchives(page);
       for (const [label, slug] of archives) {
         await page.locator(`.archive-menu button[aria-label="${label}"]`).click();
-        await page.locator('.archive-panel tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
+        await waitForList(page, label);
         assert.strictEqual(await page.locator('.archive-panel [role="alert"]').count(), 0, `${label}: list error`);
         await page.locator('.archive-panel tbody tr').first().click();
         await page.locator('.drawer[role="dialog"] .property-list').waitFor({ state: 'visible', timeout: 10000 });
