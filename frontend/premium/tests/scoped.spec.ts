@@ -15,9 +15,9 @@ async function mock(page: Page, writes: Write[], role = 'CC Manager') {
     'Appointment Type': [{ name: 'TYPE-001', appointment_type: 'Visita sintetica', default_duration: 60, cc_service_item: 'ITEM-001', modified: 'v1' }],
     'CC Center Service': [{ name: 'SERV-001', appointment_type: 'TYPE-001', center, enabled: 1, modified: 'v1' }],
     'CC Package Template': [{ name: 'PACK-001', title: 'Percorso sintetico', service_item: 'ITEM-001', units: 4, enabled: 1, modified: 'v1' }],
-    'Sales Invoice': [{ name: 'SINV-001', customer: 'CUS-001', posting_date: today, grand_total: 80, outstanding_amount: 20 }],
-    'Purchase Invoice': [{ name: 'PINV-001', supplier: 'SUP-001', posting_date: today, grand_total: 40, outstanding_amount: 10 }],
-    'Payment Entry': [{ name: 'PAY-001', party: 'CUS-001', posting_date: today, payment_type: 'Receive', paid_amount: 60, unallocated_amount: 0, modified: 'v1', references: [] }],
+    'Sales Invoice': [{ name: 'SINV-001', customer: 'CUS-001', posting_date: today, grand_total: 80, outstanding_amount: 20, docstatus: 1 }],
+    'Purchase Invoice': [{ name: 'PINV-001', supplier: 'SUP-001', posting_date: today, grand_total: 40, outstanding_amount: 10, docstatus: 1 }],
+    'Payment Entry': [{ name: 'PAY-001', party: 'CUS-001', posting_date: today, payment_type: 'Receive', paid_amount: 60, unallocated_amount: 0, docstatus: 1, modified: 'v1', references: [] }],
     'Bank Transaction': [{ name: 'BANK-001', date: today, reference_number: 'SYN-001', deposit: 60, withdrawal: 0 }]
   }
   await page.route('**/api/method/**', async route => {
@@ -38,7 +38,7 @@ async function mock(page: Page, writes: Write[], role = 'CC Manager') {
       const kind = method.endsWith('patient_detail') ? 'Patient' : method.endsWith('practitioner_detail') ? 'Healthcare Practitioner' : method.endsWith('payments.detail') ? 'Payment Entry' : String(args.kind)
       message = rows[kind]?.find(row => row.name === args.name) ?? null
       if (!message) status = 404
-    } else if (method.endsWith('finance.documents.preview')) message = { doctype: args.doctype, name: args.name, format: 'Standard', html: '<html><body><h1>Documento sintetico</h1></body></html>' }
+    } else if (method.endsWith('finance.documents.preview')) message = { doctype: args.doctype, name: args.name, format: 'Centro Change', html: '<html lang="it"><body><h1>Documento sintetico</h1></body></html>' }
     else if (request.method() === 'POST' && /catalog\.(service|item|appointment_type|price|package_template)_(save|create)|operations\.profiles\.(patient|practitioner)_save/.test(method)) {
       if (role !== 'CC Manager') status = 403
       else {
@@ -100,7 +100,26 @@ test('regressioni DECISION-064: Agenda unica e intervallo pagamenti ammesso', as
   expect(end).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   const days = (Date.parse(end + 'T00:00:00Z') - Date.parse(start + 'T00:00:00Z')) / 86_400_000
   expect(days).toBe(90)
+  await expect(page.locator('.archive-dates input').first()).toHaveValue(/^\d{2}\/\d{2}\/\d{4}$/)
   await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
+})
+
+test('AUDIT-09: fattura annullata mostra il limite di stampa senza richiedere anteprima', async ({ page }) => {
+  const writes: Write[] = []
+  await mock(page, writes)
+  await page.route('**/api/method/centrochange_core.finance.reporting.records*', route => {
+    const url = new URL(route.request().url())
+    if (url.searchParams.get('doctype') !== 'Sales Invoice') return route.fallback()
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [{ name: 'SINV-CANCELLED', customer: 'CUS-001', posting_date: today, grand_total: 100, outstanding_amount: 100, docstatus: 2 }], has_more: false } }) })
+  })
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Fatture pazienti' }).click()
+  await page.locator('.archive-panel tbody tr').first().click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer).toContainText('Questo documento è annullato')
+  await expect(drawer).toContainText('non è un importo da incassare')
+  await expect(drawer.getByRole('button', { name: 'Anteprima e stampa' })).toHaveCount(0)
+  expect(writes).toHaveLength(0)
 })
 
 test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa', async ({ page }, testInfo) => {

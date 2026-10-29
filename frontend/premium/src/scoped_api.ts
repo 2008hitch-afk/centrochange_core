@@ -59,4 +59,4 @@ export async function createArchive(center: string, kind: ArchiveKind, draft: Ro
 }
 
 export const documentPreview = (center: string, doctype: 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry', name: string) =>
-  finance<PrintPreview>('documents.preview', { center, doctype, name, print_format: 'Standard' })
+  finance<PrintPreview>('documents.preview', { center, doctype, name, print_format: 'Centro Change' })

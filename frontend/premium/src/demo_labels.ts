@@ -59,9 +59,11 @@ function missingPatientName(identifier: string): string {
 export function demoPatient(identifier: unknown, fallback: unknown, firstName?: unknown, lastName?: unknown): string {
   const id = String(identifier ?? '').trim()
   const display = String(fallback ?? '').trim()
+  const currentName = patientName('', firstName, lastName) || patientName(display)
+  if (currentName) return currentName
   if (operationalLabels[id]) return operationalLabels[id]
   if (operationalLabels[display]) return operationalLabels[display]
-  const canonicalName = patientName('', firstName, lastName) || patientNames[id]
+  const canonicalName = patientNames[id]
   if (canonicalName) return canonicalName
   const displayName = patientName(display)
   if (displayName) return displayName

@@ -641,12 +641,16 @@ try:
     import centrochange_core.finance.documents as documents
     frappe.set_user(manager_user)
     for printable in ('Sales Invoice', 'Purchase Invoice', 'Payment Entry'):
-        native_names = frappe.get_all(printable, filters={'cc_center': center,
+        native_names = frappe.get_all(printable, filters={'cc_center': center, 'docstatus': 1,
             'name': ['not like', 'CC9-%']}, pluck='name', limit_page_length=1)
         assert native_names, printable + ': no native seeded document for print preview'
         prev = documents.preview(center=center, doctype=printable, name=native_names[0])
         assert 'html' in prev, "Document preview must return HTML"
         assert len(prev['html']) > 0, "Document preview HTML must not be empty"
+        assert prev['format'] == 'Centro Change'
+        assert '<html lang="it">' in prev['html']
+        assert 'Data' in prev['html'] and 'Confermato' in prev['html']
+        assert 'cc_center' not in prev['html'] and 'request_key' not in prev['html']
 
     test_results['scenario_4_document_print_preview'] = 'PASS'
 

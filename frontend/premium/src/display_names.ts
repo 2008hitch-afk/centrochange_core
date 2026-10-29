@@ -19,6 +19,11 @@ export function centerNameFor(identifier: string, centers: Center[]): string {
 }
 
 export function practitionerName(practitioner: Practitioner): string {
+  const first = String(practitioner.first_name ?? '').trim()
+  const last = String(practitioner.last_name ?? '').trim()
+  if (first && !syntheticCode(first)) return [first, last].filter(Boolean).join(' ')
+  const current = String(practitioner.practitioner_name ?? '').trim()
+  if (current && !syntheticCode(current)) return current
   const alias = demoText(practitioner.name)
   if (alias !== practitioner.name) return alias
   const display = demoText(String(practitioner.practitioner_name ?? '').trim())

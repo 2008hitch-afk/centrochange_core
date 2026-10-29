@@ -17,7 +17,7 @@ const labels: Record<string, string> = {
   reference_label: 'Fonte', reference_name: 'Riferimento', reference_number: 'Riferimento',
   replay: 'Richiesta ripetuta', resolved_at: 'Risolta il', retryable: 'Ripetibile',
   rule: 'Regola', state: 'Stato', status: 'Stato', supplier: 'Fornitore',
-  total: 'Totale', unallocated_amount: 'Non allocato', unresolved_count: 'Da verificare',
+  total: 'Totale', unallocated_amount: 'Importo non attribuito', unresolved_count: 'Da verificare',
   withdrawal: 'Uscita'
 }
 

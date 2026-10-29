@@ -82,6 +82,7 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe.session = types.SimpleNamespace(user='manager@example.invalid')
         self.frappe.local = types.SimpleNamespace(request=None)
         self.frappe.db = self.db
+        self.frappe.conf = {'cc_synthetic_dev': 0, 'cc_uat_demo': 0}
         self.frappe.throw = lambda message, exc=Invalid: (_ for _ in ()).throw(exc(message))
         self.frappe.get_doc = lambda doctype, name=None, **kwargs: self.db.doc if not isinstance(doctype, dict) else FakeDoc(doctype['doctype'], 'DRAFT', **{k: v for k, v in doctype.items() if k != 'doctype'})
         self.frappe.parse_json = json.loads
@@ -230,9 +231,18 @@ class ScopedApiTest(unittest.TestCase):
             spec = importlib.util.spec_from_file_location('centrochange_core.finance.documents', ROOT / 'finance/documents.py')
             documents = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(documents)
-            self.assertIn('Prova sintetica', documents.preview('A', 'Payment Entry', 'PAY-A')['html'])
+            preview = documents.preview('A', 'Payment Entry', 'PAY-A')
+            self.assertEqual(preview['format'], 'Centro Change')
+            self.assertIn('Pagamento', preview['html'])
+            self.assertIn('50,00 EUR', preview['html'])
+            self.assertIn('21/10/2026', preview['html'])
+            self.assertNotIn('mode_of_payment', preview['html'])
             with self.assertRaises(Denied):
                 documents.preview('A', 'Payment Entry', 'PAY-A', 'Formato non approvato')
+            self.db.doc.fields['docstatus'] = 2
+            with self.assertRaises(Denied):
+                documents.preview('A', 'Payment Entry', 'PAY-A')
+            self.db.doc.fields['docstatus'] = 1
             self.db.doc.fields['references'] = [types.SimpleNamespace(reference_doctype='Sales Invoice', reference_name='INV-B', allocated_amount=50)]
             original_get_doc = self.frappe.get_doc
             self.frappe.get_doc = lambda doctype, name=None, **kwargs: FakeDoc('Sales Invoice', 'INV-B', cc_center='B') if doctype == 'Sales Invoice' else original_get_doc(doctype, name, **kwargs)
