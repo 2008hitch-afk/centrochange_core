@@ -80,7 +80,7 @@ test('AUDIT-05: archivio professionisti usa alias solo in lettura, editor mantie
   await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
   await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-archivio-${info.project.name}.png`, fullPage: true })
   await drawer.getByRole('button', { name: 'Modifica scheda' }).click()
-  await expect(page.getByRole('dialog', { name: 'Modifica · Professionisti' }).getByRole('textbox', { name: 'Nome *', exact: true })).toHaveValue(row.first_name)
+  await expect(page.getByRole('dialog', { name: 'Modifica · Professionisti' }).getByRole('textbox', { name: 'Nome registrato *', exact: true })).toHaveValue(row.first_name)
 })
 
 test('regressioni DECISION-064: Agenda unica e intervallo pagamenti ammesso', async ({ page }) => {
