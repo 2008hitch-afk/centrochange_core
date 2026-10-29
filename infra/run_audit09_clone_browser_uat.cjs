@@ -111,6 +111,17 @@ print(json.dumps({
     console.log(`[BROWSER-UAT] Saved screenshot: ${dest} & ${artDest}`);
   }
 
+  async function waitForList(page, label) {
+    try {
+      await page.locator('.archive-panel tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
+    } catch (error) {
+      const panel = await page.locator('.archive-panel').innerText().catch(() => '<archive panel absent>');
+      console.error(`[BROWSER-UAT] ${label}: list did not render at ${page.url()}: ${panel.slice(0, 2000)}`);
+      await saveShot(page, `audit09-failure-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`);
+      throw error;
+    }
+  }
+
   try {
     // =============================================================
     // 1. PATIENTS ARCHIVE & DETAIL DRAWER (Desktop 1440x900)
@@ -162,7 +173,7 @@ print(json.dumps({
       await page.goto(`http://centrochange.local:${PORT}/premium#Archivi`, { waitUntil: 'networkidle' });
       await page.waitForSelector('.archive-layout', { timeout: 15000 });
       await page.locator('.archive-menu button[aria-label="Professionisti"]').click();
-      await page.waitForSelector('.table-scroll', { timeout: 15000 });
+      await waitForList(page, 'Professionisti');
       await page.waitForTimeout(500);
 
       await saveShot(page, 'audit09-professionisti-list-desktop.png');

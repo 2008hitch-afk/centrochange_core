@@ -61,5 +61,6 @@ jobs:
         with:
           name: audit09-isolated-browser-${{ github.sha }}
           path: .audit09-browser-artifacts/
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 7
