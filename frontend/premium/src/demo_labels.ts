@@ -44,7 +44,7 @@ const technicalPatientValue = (value: string) =>
 function patientName(display: unknown, firstName?: unknown, lastName?: unknown): string {
   const first = String(firstName ?? '').trim()
   const last = String(lastName ?? '').trim()
-  if (first && last && !technicalPatientValue(first) && !technicalPatientValue(last)) return `${first} ${last}`
+  if (first && !technicalPatientValue(first) && (!last || !technicalPatientValue(last))) return [first, last].filter(Boolean).join(' ')
   const name = String(display ?? '').trim()
   return technicalPatientValue(name) ? '' : name
 }
