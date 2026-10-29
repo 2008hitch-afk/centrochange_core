@@ -669,12 +669,29 @@ try:
         denied(lambda kind=kind: reporting.records(center=center, doctype=kind, limit=50), 'Guest ' + kind)
     denied(lambda: payments.records(center=center, start='2026-01-01', end='2026-12-31'), 'Guest Payment Entry')
 
-    frappe.set_user(user_a)
-    for kind in ('Item', 'Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template'):
-        denied(lambda kind=kind: catalog.records(center=center, kind=kind), 'Professional ' + kind)
-    for kind in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
-        denied(lambda kind=kind: reporting.records(center=center, doctype=kind, limit=50), 'Professional ' + kind)
-    denied(lambda: payments.records(center=center, start='2026-01-01', end='2026-12-31'), 'Professional Payment Entry')
+    professional_users = frappe.get_all('Has Role', filters={'role': 'CC Professional',
+        'parenttype': 'User', 'parent': ['in', member_users]}, pluck='parent')
+    assert len(professional_users) == 3, 'Three professional identities missing from clone'
+    for professional_user in professional_users:
+        frappe.set_user(professional_user)
+        own_practitioner = frappe.db.get_value('Healthcare Practitioner', {'user_id': professional_user}, 'name')
+        own_rows = profiles.practitioners(center=center)['rows']
+        assert all(row['name'] == own_practitioner for row in own_rows), 'Professional saw another practitioner'
+        assert isinstance(profiles.patients(center=center)['rows'], list)
+        for kind in ('Item', 'Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template'):
+            denied(lambda kind=kind: catalog.records(center=center, kind=kind), 'Professional ' + kind)
+        for kind in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
+            denied(lambda kind=kind: reporting.records(center=center, doctype=kind, limit=50), 'Professional ' + kind)
+        denied(lambda: payments.records(center=center, start='2026-01-01', end='2026-12-31'), 'Professional Payment Entry')
+
+    for finance_role in ('CC Finance', 'CC Accountant'):
+        finance_users = frappe.get_all('Has Role', filters={'role': finance_role,
+            'parenttype': 'User', 'parent': ['in', member_users]}, pluck='parent')
+        assert len(finance_users) == 1, finance_role + ': identity missing from clone'
+        frappe.set_user(finance_users[0])
+        assert isinstance(reporting.records(center=center, doctype='Sales Invoice', limit=50), dict)
+        assert isinstance(payments.records(center=center, start='2026-01-01', end='2026-12-31'), dict)
+        denied(lambda: catalog.records(center=center, kind='Item'), finance_role + ' catalog')
 
     frappe.set_user(secretary_user)
     denied(lambda: catalog.records(center=center, kind='Item'), 'Secretariat catalog')
