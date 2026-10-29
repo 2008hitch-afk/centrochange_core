@@ -48,6 +48,19 @@ const view = (field: FieldSpec, value: unknown) => {
   return demoText(value)
 }
 
+// Only the archive editor reconciles an exact UAT alias with the saved Frappe
+// fields. Other surfaces retain their existing presentation contract.
+const archivePatientName = (row: Row) => {
+  const first = String(row.first_name ?? '').trim(), last = String(row.last_name ?? '').trim()
+  if (syntheticCode(row.patient_name) && first && !syntheticCode(first)) return [first, last].filter(Boolean).join(' ')
+  return demoPatient(row.name, row.patient_name, row.first_name, row.last_name)
+}
+const archivePractitionerName = (row: Practitioner) => {
+  const first = String(row.first_name ?? '').trim(), last = String(row.last_name ?? '').trim()
+  if (syntheticCode(row.practitioner_name) && first && !syntheticCode(first)) return [first, last].filter(Boolean).join(' ')
+  return practitionerName(row)
+}
+
 /** Live candidate: reads only approved projections; writes only manager-scoped existing records. */
 export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null; financeBoot: FinanceBoot | null; center: string }) {
   const manager = !!boot?.roles.includes('CC Manager') || !!financeBoot?.is_manager
@@ -192,11 +205,11 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   }
   const formFields: FieldSpec[] = creating ? spec.fields.filter(field => field.edit || (kind === 'Item Price' && ['item_code', 'valid_from'].includes(field.key)) || (kind === 'Appointment Type' && ['appointment_type', 'cc_service_item'].includes(field.key)) || (kind === 'CC Center Service' && field.key === 'appointment_type') || (kind === 'CC Package Template' && field.key === 'service_item')).map(field => ({ ...field, required: true })) : spec.fields.filter(field => field.edit)
   const columns: { key: string; label: string; render: (value: unknown, row: Row) => React.ReactNode }[] = kind === 'Healthcare Practitioner'
-    ? [{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => practitionerName(row as Practitioner) },
+    ? [{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => archivePractitionerName(row as Practitioner) },
       { key: 'status', label: 'Stato', render: value => value === 'Active' ? 'Attivo' : 'Non attivo' }]
-    : [spec.fields[0], ...spec.fields.slice(1, 3)].map(field => ({ key: field.key, label: field.label, render: (value: unknown, row: Row) => kind === 'Patient' && field.key === 'patient_name' ? demoPatient(row.name, value, row.first_name, row.last_name) : view(field, value) }))
+    : [spec.fields[0], ...spec.fields.slice(1, 3)].map(field => ({ key: field.key, label: field.label, render: (value: unknown, row: Row) => kind === 'Patient' && field.key === 'patient_name' ? archivePatientName(row) : view(field, value) }))
   columns.push({ key: 'name', label: 'Scheda', render: () => <ArrowRight size={16} aria-hidden="true" /> })
-  const selectedTitle = selected ? kind === 'Patient' ? demoPatient(selected.name, selected.patient_name, selected.first_name, selected.last_name) : kind === 'Healthcare Practitioner' ? practitionerName(selected as Practitioner) : demoText(selected[spec.fields[0].key] || selected.name) : ''
+  const selectedTitle = selected ? kind === 'Patient' ? archivePatientName(selected) : kind === 'Healthcare Practitioner' ? archivePractitionerName(selected as Practitioner) : demoText(selected[spec.fields[0].key] || selected.name) : ''
   const editableNameKey = kind === 'Patient' || kind === 'Healthcare Practitioner' ? 'first_name' : kind === 'Item' ? 'item_name' : kind === 'CC Package Template' ? 'title' : ''
   const displayDiffersFromStored = !!selected && !!editableNameKey && !!draft && !creating && selectedTitle !== String(selected[editableNameKey] ?? '').trim()
   const canPrint = !!selected && Number(selected.docstatus) === 1
@@ -216,7 +229,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
     {notice && <div className="alert success archive-notice" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Chiudi avviso">×</button></div>}
     {selected && <Drawer title={selectedTitle} compact onClose={() => { setSelected(null); setDraft(null) }}>
       <div className="detail-section"><h3>{kind === 'Patient' ? 'Anagrafica' : 'Dettaglio'}</h3>
-        <dl className="property-list">{detailFields.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{kind === 'Patient' && field.key === 'patient_name' ? demoPatient(selected.name, selected[field.key], selected.first_name, selected.last_name) : kind === 'Healthcare Practitioner' && field.key === 'practitioner_name' ? practitionerName(selected as Practitioner) : kind === 'Healthcare Practitioner' && field.key === 'status' ? selected.status === 'Active' ? 'Attivo' : 'Non attivo' : view(field, selected[field.key])}</dd></div>)}</dl>
+        <dl className="property-list">{detailFields.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{kind === 'Patient' && field.key === 'patient_name' ? archivePatientName(selected) : kind === 'Healthcare Practitioner' && field.key === 'practitioner_name' ? archivePractitionerName(selected as Practitioner) : kind === 'Healthcare Practitioner' && field.key === 'status' ? selected.status === 'Active' ? 'Attivo' : 'Non attivo' : view(field, selected[field.key])}</dd></div>)}</dl>
         {kind === 'Payment Entry' && Array.isArray(selected.references) && <p>{selected.references.length} {selected.references.length === 1 ? 'documento collegato' : 'documenti collegati'}.</p>}
         {kind === 'Sales Invoice' && Number(selected.docstatus) === 2 && <p className="scope-note">Il residuo mostrato appartiene al documento annullato: non è un importo da incassare.</p>}
         {['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && !canPrint && <p className="scope-note">L’anteprima è disponibile solo per documenti confermati. Questo documento {Number(selected.docstatus) === 2 ? 'è annullato' : 'è in bozza'}.</p>}

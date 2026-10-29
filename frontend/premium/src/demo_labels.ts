@@ -44,7 +44,7 @@ const technicalPatientValue = (value: string) =>
 function patientName(display: unknown, firstName?: unknown, lastName?: unknown): string {
   const first = String(firstName ?? '').trim()
   const last = String(lastName ?? '').trim()
-  if (first && !technicalPatientValue(first) && (!last || !technicalPatientValue(last))) return [first, last].filter(Boolean).join(' ')
+  if (first && last && !technicalPatientValue(first) && !technicalPatientValue(last)) return `${first} ${last}`
   const name = String(display ?? '').trim()
   return technicalPatientValue(name) ? '' : name
 }
@@ -59,11 +59,9 @@ function missingPatientName(identifier: string): string {
 export function demoPatient(identifier: unknown, fallback: unknown, firstName?: unknown, lastName?: unknown): string {
   const id = String(identifier ?? '').trim()
   const display = String(fallback ?? '').trim()
-  const currentName = patientName('', firstName, lastName) || patientName(display)
-  if (currentName) return currentName
   if (operationalLabels[id]) return operationalLabels[id]
   if (operationalLabels[display]) return operationalLabels[display]
-  const canonicalName = patientNames[id]
+  const canonicalName = patientName('', firstName, lastName) || patientNames[id]
   if (canonicalName) return canonicalName
   const displayName = patientName(display)
   if (displayName) return displayName
