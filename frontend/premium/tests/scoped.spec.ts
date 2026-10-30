@@ -114,7 +114,8 @@ test('AUDIT-09: fattura annullata mostra il limite di stampa senza richiedere an
   await page.route('**/api/method/centrochange_core.finance.reporting.records*', route => {
     const url = new URL(route.request().url())
     if (url.searchParams.get('doctype') !== 'Sales Invoice') return route.fallback()
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [{ name: 'SINV-CANCELLED', customer: 'CUS-001', posting_date: today, grand_total: 100, outstanding_amount: 100, docstatus: 2 }], has_more: false } }) })
+    // List is stale: the authoritative detail has since been cancelled.
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [{ name: 'SINV-CANCELLED', customer: 'CUS-001', posting_date: today, grand_total: 100, outstanding_amount: 100, docstatus: 1 }], has_more: false } }) })
   })
   await page.route('**/api/method/centrochange_core.finance.documents.detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { doctype: 'Sales Invoice', name: 'SINV-CANCELLED', party: 'Cliente sintetico', docstatus: 2, currency: 'EUR', can_print: false, items: [{ item_name: 'Visita', description: 'Visita', qty: 1, rate: 100, amount: 100 }], taxes: [] } }) }))
   await openArchives(page)
