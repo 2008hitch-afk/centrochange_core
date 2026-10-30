@@ -16,30 +16,30 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: 10c2c87cb45f79f404aa88c3654fbed2ff02696c
+          ref: 22b5c99d5b6f6a6def9f9c3881c99ee93d281dc2
           fetch-depth: 0
           persist-credentials: false
       - name: Verify pinned source
         run: |
-          test "$(git rev-parse HEAD)" = 10c2c87cb45f79f404aa88c3654fbed2ff02696c
+          test "$(git rev-parse HEAD)" = 22b5c99d5b6f6a6def9f9c3881c99ee93d281dc2
           test -z "$(git status --porcelain)"
           python3 infra/verify_full_single_stack.py --source
       - name: Build immutable candidate on ephemeral runner
-        run: docker build --progress=plain -f infra/Dockerfile.single-stack-full --build-arg SINGLE_STACK_SOURCE_SHA=10c2c87cb45f79f404aa88c3654fbed2ff02696c -t cc183-audit09:10c2c87 .
+        run: docker build --progress=plain -f infra/Dockerfile.single-stack-full --build-arg SINGLE_STACK_SOURCE_SHA=22b5c99d5b6f6a6def9f9c3881c99ee93d281dc2 -t cc183-audit09:22b5c99 .
       - name: Attest identity, assets and export
         run: |
-          test "$(docker image inspect cc183-audit09:10c2c87 --format '{{ index .Config.Labels "centrochange.source" }}')" = 10c2c87cb45f79f404aa88c3654fbed2ff02696c
-          docker run --rm --entrypoint sh cc183-audit09:10c2c87 -c 'test -s /home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/public/premium/app.js && test -s /home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/public/premium/app.css'
-          docker image inspect cc183-audit09:10c2c87 --format '{{.Id}} {{.Size}} {{ index .Config.Labels "centrochange.source" }}' > image-identity.txt
-          docker save cc183-audit09:10c2c87 | gzip -1 > cc183-audit09-10c2c87.docker.tar.gz
-          sha256sum cc183-audit09-10c2c87.docker.tar.gz > package.sha256
-          gzip -t cc183-audit09-10c2c87.docker.tar.gz
-          ls -lh cc183-audit09-10c2c87.docker.tar.gz
+          test "$(docker image inspect cc183-audit09:22b5c99 --format '{{ index .Config.Labels "centrochange.source" }}')" = 22b5c99d5b6f6a6def9f9c3881c99ee93d281dc2
+          docker run --rm --entrypoint sh cc183-audit09:22b5c99 -c 'test -s /home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/public/premium/app.js && test -s /home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/public/premium/app.css'
+          docker image inspect cc183-audit09:22b5c99 --format '{{.Id}} {{.Size}} {{ index .Config.Labels "centrochange.source" }}' > image-identity.txt
+          docker save cc183-audit09:22b5c99 | gzip -1 > cc183-audit09-22b5c99.docker.tar.gz
+          sha256sum cc183-audit09-22b5c99.docker.tar.gz > package.sha256
+          gzip -t cc183-audit09-22b5c99.docker.tar.gz
+          ls -lh cc183-audit09-22b5c99.docker.tar.gz
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: cc183-audit09-image-10c2c87
+          name: cc183-audit09-image-22b5c99
           path: |
-            cc183-audit09-10c2c87.docker.tar.gz
+            cc183-audit09-22b5c99.docker.tar.gz
             package.sha256
             image-identity.txt
           compression-level: 0
