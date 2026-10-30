@@ -81,6 +81,9 @@ def _safe_text(value):
     plain = unescape(re.sub(r'<[^>]*>', ' ', str(value or '')))
     if frappe.conf.get('cc_synthetic_dev') == 1 and frappe.conf.get('cc_uat_demo') == 1:
         plain = re.sub(r'\b(?:CC-HTTP-[\w-]+|CC-MVP-POS-[\w-]+|SYNTHETIC-[\w-]+)\b', '', plain, flags=re.I)
+        plain = re.sub(r'^\s*SYNTHETIC DEV tax input only\s*$', '', plain, flags=re.I)
+        if plain.strip().casefold() == 'session':
+            return 'Seduta'
     return re.sub(r'\s+', ' ', plain).strip()
 
 

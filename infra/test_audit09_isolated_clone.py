@@ -698,7 +698,8 @@ try:
     for kind in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
         denied(lambda kind=kind: reporting.records(center=center, doctype=kind, limit=50), 'Guest ' + kind)
     denied(lambda: payments.records(center=center, start='2026-01-01', end='2026-12-31'), 'Guest Payment Entry')
-    denied(lambda: documents.detail(center=center, doctype='Sales Invoice', name=native_documents['Sales Invoice']), 'Guest document detail')
+    for kind, name in native_documents.items():
+        denied(lambda kind=kind, name=name: documents.detail(center=center, doctype=kind, name=name), 'Guest document detail ' + kind)
 
     professional_users = frappe.get_all('Has Role', filters={'role': 'CC Professional',
         'parenttype': 'User', 'parent': ['in', member_users]}, pluck='parent')
@@ -714,7 +715,8 @@ try:
         for kind in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
             denied(lambda kind=kind: reporting.records(center=center, doctype=kind, limit=50), 'Professional ' + kind)
         denied(lambda: payments.records(center=center, start='2026-01-01', end='2026-12-31'), 'Professional Payment Entry')
-        denied(lambda: documents.detail(center=center, doctype='Sales Invoice', name=native_documents['Sales Invoice']), 'Professional document detail')
+        for kind, name in native_documents.items():
+            denied(lambda kind=kind, name=name: documents.detail(center=center, doctype=kind, name=name), 'Professional document detail ' + kind)
 
     for finance_role in ('CC Finance', 'CC Accountant'):
         finance_users = frappe.get_all('Has Role', filters={'role': finance_role,
@@ -723,12 +725,20 @@ try:
         frappe.set_user(finance_users[0])
         assert isinstance(reporting.records(center=center, doctype='Sales Invoice', limit=50), dict)
         assert isinstance(payments.records(center=center, start='2026-01-01', end='2026-12-31'), dict)
-        assert documents.detail(center=center, doctype='Sales Invoice', name=native_documents['Sales Invoice'])['name'] == native_documents['Sales Invoice']
+        for kind, name in native_documents.items():
+            detail = documents.detail(center=center, doctype=kind, name=name)
+            assert detail['name'] == name
+            if detail['can_print']:
+                assert documents.preview(center=center, doctype=kind, name=name)['html']
+            else:
+                denied(lambda kind=kind, name=name: documents.preview(center=center, doctype=kind, name=name), finance_role + ' print ' + kind)
         denied(lambda: catalog.records(center=center, kind='Item'), finance_role + ' catalog')
 
     frappe.set_user(secretary_user)
     denied(lambda: catalog.records(center=center, kind='Item'), 'Secretariat catalog')
     assert isinstance(reporting.records(center=center, doctype='Sales Invoice', limit=50), dict)
+    for kind, name in native_documents.items():
+        assert documents.detail(center=center, doctype=kind, name=name)['name'] == name
 
     # Non-manager membership in center A must not authorize center B, even
     # when the record name/search term is known to the caller.

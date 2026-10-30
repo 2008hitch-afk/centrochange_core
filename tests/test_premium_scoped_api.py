@@ -295,6 +295,11 @@ class ScopedApiTest(unittest.TestCase):
             self.assertIn('Servizio &amp; assistenza', html)
             self.assertNotIn('Cliente <prova>', html)
             self.assertIn('10%', html)
+            self.frappe.conf.update({'cc_synthetic_dev': 1, 'cc_uat_demo': 1})
+            self.assertEqual(documents._safe_text('CC-HTTP-UAT0000001 Session'), 'Seduta')
+            self.assertEqual(documents._safe_text('SYNTHETIC DEV tax input only'), '')
+            self.frappe.conf.update({'cc_synthetic_dev': 0, 'cc_uat_demo': 0})
+            self.assertEqual(documents._safe_text('Session'), 'Session')
             self.db.doc.fields['docstatus'] = 2
             self.assertEqual(documents.detail('A', 'Sales Invoice', 'INV-A')['items'][0]['amount'], 72)
             with self.assertRaises(Denied):
@@ -361,6 +366,18 @@ class ScopedApiTest(unittest.TestCase):
         with self.assertRaises(Denied):
             profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-PRO', 'motivo')
         self.assertEqual(self.db.doc.writes, 0)
+
+    def test_profile_optional_nulls_are_preserved(self):
+        spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
+        profiles = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(profiles)
+        self.db.doc = FakeDoc('Patient', 'PAT-A', first_name='Persona', last_name=None, email=None)
+        profiles.patient_save('A', 'PAT-A', 'Nuovo', None, None, 'v1', 'K-NULL', 'motivo')
+        self.assertIsNone(self.db.doc.get('last_name'))
+        self.assertIsNone(self.db.doc.get('email'))
+        self.db.doc = FakeDoc('Healthcare Practitioner', 'PRO-A', user_id='pro@example.invalid', first_name='Persona', last_name=None)
+        profiles.practitioner_save('A', 'PRO-A', 'Nuovo', None, 'v1', 'K-NULL-PRO', 'motivo')
+        self.assertIsNone(self.db.doc.get('last_name'))
 
     def test_practitioner_search_is_server_scoped_and_bounded(self):
         spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')

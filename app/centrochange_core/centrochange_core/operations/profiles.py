@@ -66,11 +66,11 @@ def patient_detail(center, name):
 @frappe.whitelist(methods=['POST'])
 def patient_save(center, name, first_name, last_name, email, expected_version, request_key, reason, **extra):
     deny_extra(extra)
-    email = bounded(email, 'Email', 140, required=False).lower()
+    email = bounded(email, 'Email', 140, required=False).lower() if email is not None else None
     if email and not frappe.utils.validate_email_address(email):
         frappe.throw('Email non valida')
     return mutate('patient', center, 'Patient', name,
-                  {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False), 'email': email},
+                  {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False) if last_name is not None else None, 'email': email},
                   ('first_name', 'last_name', 'email'), expected_version, request_key, reason,
                   lambda doc: _patient(center, doc))
 
@@ -126,6 +126,6 @@ def practitioner_detail(center, name):
 def practitioner_save(center, name, first_name, last_name, expected_version, request_key, reason, **extra):
     deny_extra(extra)
     return mutate('practitioner', center, 'Healthcare Practitioner', name,
-                  {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False)},
+                  {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False) if last_name is not None else None},
                   ('first_name', 'last_name'), expected_version, request_key, reason,
                   lambda doc: _practitioner(center, doc))
