@@ -690,6 +690,16 @@ try:
     except frappe.PermissionError:
         pass
 
+    draft_names = frappe.get_all('Sales Invoice', filters={'cc_center': center, 'docstatus': 0}, pluck='name', limit_page_length=1)
+    assert draft_names, 'Synthetic draft invoice missing'
+    draft = documents.detail(center=center, doctype='Sales Invoice', name=draft_names[0])
+    assert draft['docstatus'] == 0 and not draft['can_print']
+    try:
+        documents.preview(center=center, doctype='Sales Invoice', name=draft_names[0])
+        raise AssertionError('Draft document printed')
+    except frappe.PermissionError:
+        pass
+
     test_results['scenario_4_document_print_preview'] = 'PASS'
 
     # -------------------------------------------------------------
