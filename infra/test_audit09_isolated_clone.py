@@ -677,9 +677,10 @@ try:
     cancelled_name = 'CC9-SINV-CANCELLED-UAT'
     native_sales = frappe.get_doc('Sales Invoice', native_documents['Sales Invoice'])
     frappe.db.sql("INSERT INTO `tabSales Invoice` (`name`, `creation`, `modified`, `modified_by`, `owner`, `docstatus`, `idx`, `customer`, `posting_date`, `grand_total`, `outstanding_amount`, `currency`, `cc_center`) VALUES (%s, NOW(), NOW(), 'Administrator', 'Administrator', 2, 0, %s, %s, %s, %s, %s, %s)",
-                  (cancelled_name, native_sales.customer, native_sales.posting_date, native_sales.grand_total, native_sales.outstanding_amount, native_sales.currency, center))
+                  (cancelled_name, 'CC-MVP-POS-SYNTHETIC-UNKNOWN', native_sales.posting_date, native_sales.grand_total, native_sales.outstanding_amount, native_sales.currency, center))
     cancelled = documents.detail(center=center, doctype='Sales Invoice', name=cancelled_name)
     assert cancelled['docstatus'] == 2 and not cancelled['can_print']
+    assert cancelled['party'] == 'Cliente del documento'
     cancelled_rows = reporting.records(center=center, doctype='Sales Invoice', search=cancelled_name, limit=50)['rows']
     assert len(cancelled_rows) == 1 and cancelled_rows[0]['party_label'] == cancelled['party']
     try:
