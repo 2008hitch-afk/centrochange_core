@@ -14,7 +14,7 @@ export type ArchivePage<T extends ArchiveRecord = ArchiveRecord> = { rows: T[]; 
 export type PrintPreview = { doctype: string; name: string; format: string; html: string }
 export type FinanceDocument = ArchiveRecord & {
   doctype: 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry'; docstatus: number; posting_date?: string;
-  party: string; currency?: string; paid_currency?: string; received_currency?: string; party_currency?: string; can_print: boolean; due_date?: string;
+  party: string; center?: string; currency?: string; paid_currency?: string; received_currency?: string; party_currency?: string; can_print: boolean; due_date?: string;
   status?: string; address?: string; tax_id?: string; company_address?: string; company_tax_id?: string;
   items?: { description: string; item_name: string; qty?: number; uom?: string; rate?: number; discount_percentage?: number; discount_amount?: number; amount?: number }[];
   taxes?: { description: string; rate?: number; tax_amount?: number }[];

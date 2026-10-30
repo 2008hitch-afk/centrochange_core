@@ -387,6 +387,15 @@ print(json.dumps({
         await saveShot(page, `audit09-final-${cancelled ? 'cancelled' : 'confirmed'}-${viewport}.png`);
         await drawer.getByRole('button', { name: 'Chiudi' }).click();
       }
+      for (const area of ['Agenda', 'Report', 'Finanza']) {
+        const menu = page.getByRole('button', { name: 'Apri menu' });
+        if (await menu.isVisible()) await menu.click();
+        await page.locator('.sidebar').getByRole('button', { name: area, exact: true }).click();
+        await page.getByRole('heading', { name: area, exact: true }).waitFor({ state: 'visible' });
+        await page.waitForTimeout(500);
+        assert.strictEqual(await page.locator('main [role="alert"]').count(), 0, `${area}: error`);
+        await saveShot(page, `audit09-final-smoke-${area.toLowerCase()}-${viewport}.png`);
+      }
       await context.close();
     }
 

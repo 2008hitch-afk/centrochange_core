@@ -85,7 +85,7 @@ def _safe_text(value):
 
 
 def _projection(doc, center):
-    data = {'doctype': doc.doctype, 'name': doc.name, 'docstatus': doc.docstatus,
+    data = {'doctype': doc.doctype, 'name': doc.name, 'docstatus': doc.docstatus, 'center': _safe_text(center),
             'posting_date': str(doc.posting_date) if doc.get('posting_date') else None,
             'party': _party(doc), 'currency': doc.get('currency'),
             'can_print': bool(doc.docstatus == 1 and doc.has_permission('print'))}
@@ -146,7 +146,7 @@ def _html(data):
     def amount(label, value, unit=currency):
         return pair(label, _money(value, unit)) if value is not None else ''
 
-    meta = pair('Numero', data['name']) + pair('Data documento', _date(data['posting_date'])) + pair('Soggetto', data['party'])
+    meta = pair('Numero', data['name']) + pair('Data documento', _date(data['posting_date'])) + pair('Soggetto', data['party']) + pair('Sede', data['center'])
     if data['doctype'] != 'Payment Entry':
         meta += pair('Scadenza', _date(data['due_date'])) + pair('Indirizzo', data['address']) + pair('Identificativo fiscale', data['tax_id']) + pair('Indirizzo azienda', data['company_address']) + pair('Identificativo fiscale azienda', data['company_tax_id'])
         rows = ''.join('<tr><td>' + escape(row['item_name'] or row['description']) + ('<br>' + escape(row['description']) if row['description'] and row['description'] != row['item_name'] else '') + '</td><td>' + escape(_number(row['qty'])) + '</td><td>' + escape(row['uom'] or '') + '</td><td>' + (escape(_money(row['rate'], currency)) if row['rate'] is not None else '') + '</td><td>' + (' · '.join(([escape(_number(row['discount_percentage'])) + '%'] if row['discount_percentage'] else []) + ([escape(_money(row['discount_amount'], currency)) + ' per unità'] if row['discount_amount'] else []))) + '</td><td>' + (escape(_money(row['amount'], currency)) if row['amount'] is not None else '') + '</td></tr>' for row in data['items'])
