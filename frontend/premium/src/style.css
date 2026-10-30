@@ -38,7 +38,7 @@
   .personal-notifications .table-scroll td:nth-child(2)::before{content:'Lettura: ';font-weight:700}
   .personal-notifications .table-scroll td:nth-child(3)::before{content:'Data: ';font-weight:700}
 }
-.document-preview{width:100%;min-height:60vh;border:1px solid var(--border,#d8e2dd);border-radius:12px;background:#fff}
+.document-preview-modal{width:min(900px,100%)}.document-preview-scroll{max-width:100%;overflow-x:auto;border:1px solid var(--border,#d8e2dd);border-radius:12px;background:#fff}.document-preview{display:block;width:794px;min-width:794px;min-height:60vh;border:0;background:#fff}
 .archive-dates{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-top:12px}.archive-dates .field{min-width:140px}.archive-more{padding:16px 20px;text-align:center}
 .archive-display-context{padding:10px 12px;border:1px solid #d7e7f6;background:#f5faff;border-radius:8px;color:#334b65}
 .drawer-backdrop.compact{align-items:start}

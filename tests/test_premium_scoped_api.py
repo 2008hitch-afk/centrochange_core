@@ -234,7 +234,8 @@ class ScopedApiTest(unittest.TestCase):
         self.db.doc = FakeDoc('Payment Entry', 'PAY-A', cc_center='A', references=[], posting_date='2026-10-21',
                               payment_type='Receive', party_type='Customer', party='C-1', paid_amount=50,
                               received_amount=50, unallocated_amount=0, mode_of_payment='Contanti', docstatus=1,
-                              paid_from_account_currency='EUR', paid_to_account_currency='EUR')
+                              paid_from_account_currency='EUR', paid_to_account_currency='EUR',
+                              reference_no='CC-HTTP-UAT0000001 <rif>&')
         with patch.dict(sys.modules, {'frappe.utils': utils, 'centrochange_core.finance': types.ModuleType('centrochange_core.finance'),
                                       'centrochange_core.finance.guards': guards}):
             self.frappe.utils = utils
@@ -256,6 +257,9 @@ class ScopedApiTest(unittest.TestCase):
             self.assertIn('Pagamento', preview['html'])
             self.assertIn('50,00 EUR', preview['html'])
             self.assertIn('21/10/2026', preview['html'])
+            self.assertEqual(documents.detail('A', 'Payment Entry', 'PAY-A')['reference_no'], 'CC-HTTP-UAT0000001 <rif>&')
+            self.assertIn('Riferimento operazione', preview['html'])
+            self.assertIn('CC-HTTP-UAT0000001 &lt;rif&gt;&amp;', preview['html'])
             self.assertNotIn('mode_of_payment', preview['html'])
             self.db.doc.fields['paid_from_account_currency'] = 'USD'
             mixed = documents.preview('A', 'Payment Entry', 'PAY-A')['html']

@@ -665,6 +665,7 @@ try:
         else:
             assert projected['paid_currency'] == native.paid_from_account_currency
             assert projected['received_currency'] == native.paid_to_account_currency
+            assert projected['reference_no'] == str(native.reference_no or '')
         prev = documents.preview(center=center, doctype=printable, name=native_names[0])
         assert 'html' in prev, "Document preview must return HTML"
         assert len(prev['html']) > 0, "Document preview HTML must not be empty"

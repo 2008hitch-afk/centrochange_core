@@ -62,6 +62,7 @@ pro_a_email = pro_emails[0] if pro_emails else manager_email
 pro_a_name = pros[0].name if pros else ""
 confirmed_invoice = frappe.get_all('Sales Invoice', filters={'cc_center': center, 'docstatus': 1, 'name': ['not like', 'CC9-%']}, pluck='name', limit_page_length=1)[0]
 cancelled_invoice = frappe.get_all('Sales Invoice', filters={'cc_center': center, 'docstatus': 2, 'name': ['like', 'CC9-%']}, pluck='name', limit_page_length=1)[0]
+confirmed_purchase = frappe.get_all('Purchase Invoice', filters={'cc_center': center, 'docstatus': 1, 'name': ['not like', 'CC9-%']}, pluck='name', limit_page_length=1)[0]
 
 print(json.dumps({
     "center": center,
@@ -71,7 +72,8 @@ print(json.dumps({
     "pro_a": pro_a_email,
     "pro_a_name": pro_a_name,
     "confirmed_invoice": confirmed_invoice,
-    "cancelled_invoice": cancelled_invoice
+    "cancelled_invoice": cancelled_invoice,
+    "confirmed_purchase": confirmed_purchase
 }))
 `;
   return JSON.parse(runFrappe(code));
@@ -113,6 +115,54 @@ print(json.dumps({
     if (dest !== artDest) fs.copyFileSync(dest, artDest);
     captured.push(filename);
     console.log(`[BROWSER-UAT] Saved screenshot: ${dest} & ${artDest}`);
+  }
+
+  async function checkPrint(page, viewport, kind) {
+    const preview = page.locator('iframe.document-preview');
+    await preview.waitFor();
+    const html = await preview.getAttribute('srcdoc');
+    assert.ok(html.includes('Righe del documento') && html.includes('Importi'));
+    const metrics = await preview.evaluate(frame => {
+      const d = frame.contentDocument, table = d.querySelector('table.lines');
+      const root = d.documentElement, cells = [...table.querySelectorAll('thead th')];
+      const clip = frame.parentElement;
+      return { frame: frame.clientWidth, document: root.clientWidth, scroll: root.scrollWidth,
+        headers: cells.length, right: Math.max(...cells.map(c => c.getBoundingClientRect().right)),
+        outerWidth: clip.clientWidth, outerScroll: clip.scrollWidth };
+    });
+    assert.strictEqual(metrics.headers, 6);
+    assert.ok(metrics.frame >= 790 && metrics.scroll <= metrics.document + 1 && metrics.right <= metrics.document + 1,
+      `${kind} ${viewport}: preview columns clipped: ${JSON.stringify(metrics)}`);
+    if (viewport === 'mobile') {
+      assert.ok(metrics.outerScroll > metrics.outerWidth, 'Mobile preview must be horizontally scrollable');
+      await page.locator('.document-preview-scroll').evaluate(el => { el.scrollLeft = el.scrollWidth; });
+      assert.ok(await page.locator('.document-preview-scroll').evaluate(el => el.scrollLeft > 0), 'Mobile scroll failed');
+    }
+    await saveShot(page, `audit09-a4-preview-${kind}-${viewport}.png`);
+    const printPage = await browser.newPage({ viewport: { width: 688, height: 1000 } });
+    try {
+      await printPage.setContent(html, { waitUntil: 'load' });
+      await printPage.emulateMedia({ media: 'print' });
+      const layout = await printPage.locator('table.lines').evaluate(table => {
+        const r = table.getBoundingClientRect(); return { right: r.right, width: document.documentElement.clientWidth, headers: table.querySelectorAll('th').length };
+      });
+      assert.strictEqual(layout.headers, 6); assert.ok(layout.right <= layout.width + 1, 'A4 print table overflows');
+      const pdf = await printPage.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true });
+      assert.ok(pdf.subarray(0, 5).toString() === '%PDF-');
+      const box = pdf.toString('latin1').match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/);
+      assert.ok(box && Math.abs(Number(box[1]) - 595) < 2 && Math.abs(Number(box[2]) - 842) < 2, 'PDF page is not A4');
+      fs.writeFileSync(path.join(ARTIFACT_DIR, `audit09-a4-${kind}-${viewport}.pdf`), pdf);
+      // Stress the same server-rendered template with repeated synthetic rows;
+      // this exercises pagination without changing any Frappe document.
+      await printPage.locator('table.lines tbody').evaluate(body => {
+        const first = body.querySelector('tr'); for (let i = 0; i < 80; i++) body.append(first.cloneNode(true));
+      });
+      const multi = await printPage.pdf({ format: 'A4', printBackground: true, preferCSSPageSize: true });
+      const pages = (multi.toString('latin1').match(/\/Type\s*\/Page\b/g) || []).length;
+      assert.ok(pages > 1, `Expected multipage PDF, got ${pages}`);
+      fs.writeFileSync(path.join(ARTIFACT_DIR, `audit09-a4-${kind}-${viewport}-multipage.pdf`), multi);
+      console.log('[PRINT-UAT]', kind, viewport, JSON.stringify(metrics), 'multipage PDF pages', pages);
+    } finally { await printPage.close(); }
   }
 
   async function waitForList(page, label) {
@@ -385,16 +435,23 @@ print(json.dumps({
           assert.ok((await drawer.innerText()).includes('non è un importo da incassare'));
         } else {
           await drawer.getByRole('button', { name: 'Anteprima e stampa' }).click();
-          const preview = page.locator('iframe.document-preview');
-          await preview.waitFor();
-          const html = await preview.getAttribute('srcdoc');
-          assert.ok(html.includes('Righe del documento') && html.includes('Importi'));
-          await saveShot(page, `audit09-final-print-${viewport}.png`);
+          await checkPrint(page, viewport, 'sales');
           await page.getByRole('dialog', { name: /Anteprima/ }).getByRole('button', { name: 'Chiudi' }).first().click();
         }
         await saveShot(page, `audit09-final-${cancelled ? 'cancelled' : 'confirmed'}-${viewport}.png`);
         await drawer.getByRole('button', { name: 'Chiudi' }).click();
       }
+      await page.locator('.archive-menu button[aria-label="Fatture professionisti"]').click();
+      await page.locator('.archive-panel input[type="search"]').fill(env.confirmed_purchase);
+      await page.locator('.archive-panel tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
+      const purchaseResponse = page.waitForResponse(r => r.url().includes('finance.documents.detail') && new URL(r.url()).searchParams.get('name') === env.confirmed_purchase);
+      await page.locator('.archive-panel tbody tr').first().click();
+      assert.strictEqual((await (await purchaseResponse).json()).message.name, env.confirmed_purchase);
+      const purchaseDrawer = page.locator('.drawer[role="dialog"]');
+      await purchaseDrawer.getByRole('button', { name: 'Anteprima e stampa' }).click();
+      await checkPrint(page, viewport, 'purchase');
+      await page.getByRole('dialog', { name: /Anteprima/ }).getByRole('button', { name: 'Chiudi' }).first().click();
+      await purchaseDrawer.getByRole('button', { name: 'Chiudi' }).click();
       for (const area of ['Agenda', 'Report', 'Finanza']) {
         const menu = page.getByRole('button', { name: 'Apri menu' });
         if (await menu.isVisible()) await menu.click();

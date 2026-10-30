@@ -17,7 +17,7 @@ async function mock(page: Page, writes: Write[], role = 'CC Manager') {
     'CC Package Template': [{ name: 'PACK-001', title: 'Percorso sintetico', service_item: 'ITEM-001', units: 4, enabled: 1, modified: 'v1' }],
     'Sales Invoice': [{ name: 'SINV-001', customer: 'CUS-001', party_label: 'Soggetto sintetico', posting_date: today, grand_total: 80, outstanding_amount: 20, docstatus: 1 }],
     'Purchase Invoice': [{ name: 'PINV-001', supplier: 'SUP-001', party_label: 'Soggetto sintetico', posting_date: today, grand_total: 40, outstanding_amount: 10, docstatus: 1 }],
-    'Payment Entry': [{ name: 'PAY-001', party: 'CUS-001', party_label: 'Soggetto sintetico', posting_date: today, payment_type: 'Receive', paid_amount: 60, unallocated_amount: 0, docstatus: 1, modified: 'v1', references: [] }],
+    'Payment Entry': [{ name: 'PAY-001', party: 'CUS-001', party_label: 'Soggetto sintetico', posting_date: today, payment_type: 'Receive', paid_amount: 60, unallocated_amount: 0, docstatus: 1, modified: 'v1', references: [], reference_no: 'CC-HTTP-UAT0000001-ref' }],
     'Bank Transaction': [{ name: 'BANK-001', date: today, reference_number: 'SYN-001', deposit: 60, withdrawal: 0 }]
   }
   await page.route('**/api/method/**', async route => {
@@ -147,6 +147,27 @@ test('AUDIT-09: fattura annullata mostra il limite di stampa senza richiedere an
   await expect(drawer).toContainText('non è un importo da incassare')
   await expect(drawer.getByRole('button', { name: 'Anteprima e stampa' })).toHaveCount(0)
   expect(writes).toHaveLength(0)
+})
+
+test('anteprima scorrevole e riferimento operazione integro', async ({ page }) => {
+  await mock(page, [])
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Fatture pazienti' }).click()
+  await page.locator('.archive-panel tbody tr').first().click()
+  await page.getByRole('button', { name: 'Anteprima e stampa' }).click()
+  const region = page.getByRole('region', { name: 'Anteprima documento scorrevole' })
+  await expect(region).toBeVisible()
+  await expect(region.locator('iframe')).toHaveJSProperty('clientWidth', 794)
+  if ((page.viewportSize()?.width ?? 1440) < 760) {
+    await region.evaluate(el => { el.scrollLeft = el.scrollWidth })
+    expect(await region.evaluate(el => el.scrollLeft)).toBeGreaterThan(0)
+  }
+  await page.getByRole('dialog', { name: /Anteprima/ }).getByRole('button', { name: 'Chiudi' }).first().click()
+  await page.locator('.drawer[role="dialog"]').getByRole('button', { name: 'Chiudi' }).click()
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Pagamenti' }).click()
+  await page.locator('.archive-panel tbody tr').first().click()
+  await expect(page.locator('.drawer[role="dialog"]')).toContainText('Riferimento operazione')
+  await expect(page.locator('.drawer[role="dialog"]')).toContainText('CC-HTTP-UAT0000001-ref')
 })
 
 test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa', async ({ page }, testInfo) => {

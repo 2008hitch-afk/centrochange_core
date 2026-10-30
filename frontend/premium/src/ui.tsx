@@ -33,9 +33,9 @@ function useDialogFocus(onClose: () => void) {
   }, [])
   return ref
 }
-export function Modal({ title, children, onClose, footer }: { title: string; children: React.ReactNode; onClose: () => void; footer?: React.ReactNode }) {
+export function Modal({ title, children, onClose, footer, className = '' }: { title: string; children: React.ReactNode; onClose: () => void; footer?: React.ReactNode; className?: string }) {
   const ref = useDialogFocus(onClose)
-  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}><section ref={ref} className="modal" role="dialog" aria-modal="true" aria-label={title}><header className="modal-head"><div><span className="eyebrow">CENTRO CHANGE</span><h2>{title}</h2></div><button className="icon-button" onClick={onClose} aria-label="Chiudi"><X /></button></header><div className="modal-body">{children}</div>{footer && <footer className="modal-foot">{footer}</footer>}</section></div>
+  return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}><section ref={ref} className={`modal ${className}`} role="dialog" aria-modal="true" aria-label={title}><header className="modal-head"><div><span className="eyebrow">CENTRO CHANGE</span><h2>{title}</h2></div><button className="icon-button" onClick={onClose} aria-label="Chiudi"><X /></button></header><div className="modal-body">{children}</div>{footer && <footer className="modal-foot">{footer}</footer>}</section></div>
 }
 export function Drawer({ title, children, onClose, compact = false }: { title: string; children: React.ReactNode; onClose: () => void; compact?: boolean }) {
   const ref = useDialogFocus(onClose)

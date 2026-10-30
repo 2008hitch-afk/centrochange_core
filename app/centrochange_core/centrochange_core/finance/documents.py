@@ -133,7 +133,7 @@ def _projection(doc, center):
         party_currency = paid_currency if doc.get('payment_type') == 'Receive' else received_currency if doc.get('payment_type') == 'Pay' else None
         data.update({'payment_type': doc.get('payment_type'), 'mode_of_payment': _safe_text(doc.get('mode_of_payment')),
                      'paid_currency': paid_currency, 'received_currency': received_currency, 'party_currency': party_currency,
-                     'reference_no': _safe_text(doc.get('reference_no')),
+                     'reference_no': str(doc.get('reference_no') or ''),
                      'reference_date': str(doc.get('reference_date')) if doc.get('reference_date') else None,
                      'paid_amount': doc.get('paid_amount'), 'received_amount': doc.get('received_amount'),
                      'unallocated_amount': doc.get('unallocated_amount'), 'references': []})
@@ -171,7 +171,7 @@ def _html(data):
         body += '<h2>Importi</h2><dl class="totals">' + amount('Imponibile', data['net_total']) + amount('Sconto aggiuntivo', data['discount_amount']) + taxes + amount('Imposte e oneri', data['total_taxes_and_charges']) + amount('Totale', data['grand_total']) + amount('Residuo', data['outstanding_amount'], data['party_currency']) + '</dl>'
     else:
         direction = {'Receive': 'Incasso', 'Pay': 'Pagamento', 'Internal Transfer': 'Trasferimento interno'}.get(data['payment_type'], '')
-        meta += pair('Operazione', direction) + pair('Metodo', data['mode_of_payment']) + pair('Riferimento', data['reference_no']) + pair('Data riferimento', _date(data['reference_date']))
+        meta += pair('Operazione', direction) + pair('Metodo', data['mode_of_payment']) + pair('Riferimento operazione', data['reference_no']) + pair('Data riferimento', _date(data['reference_date']))
         body = '<h2>Importi</h2><dl class="totals">' + amount('Importo pagato', data['paid_amount'], data['paid_currency']) + amount('Importo ricevuto', data['received_amount'], data['received_currency']) + amount('Non attribuito', data['unallocated_amount'], data['party_currency']) + '</dl>'
         if data['references']:
             refs = ''.join('<tr><td>' + escape(row['name']) + '</td><td>' + escape(_money(row['allocated_amount'], data['party_currency'])) + '</td></tr>' for row in data['references'])
