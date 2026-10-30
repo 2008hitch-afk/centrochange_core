@@ -359,6 +359,9 @@ print(json.dumps({
           if (!r.ok) throw new Error('Detail verification failed'); return (await r.json()).message;
         }, { method: detailMethod, center: env.center, name: original.name, kind: label === 'Articoli' ? 'Item' : label === 'Modelli pacchetto' ? 'CC Package Template' : '' });
         assert.strictEqual(verify[field], original[field], `${label}: restoration failed`);
+        for (const [key, value] of Object.entries(original)) {
+          if (key !== 'modified') assert.deepStrictEqual(verify[key], value, `${label}: field ${key} changed after restoration`);
+        }
         await drawer.getByRole('button', { name: 'Chiudi' }).click();
       }
       await page.locator('.archive-menu button[aria-label="Fatture pazienti"]').click();
@@ -372,6 +375,7 @@ print(json.dumps({
         const drawer = page.locator('.drawer[role="dialog"]');
         await drawer.getByRole('heading', { name: 'Documento completo' }).waitFor();
         await drawer.getByRole('heading', { name: 'Servizi e articoli' }).waitFor();
+        assert.ok((await drawer.innerText()).includes(id), 'Numero documento assente dal dettaglio');
         if (cancelled) {
           assert.strictEqual(await drawer.getByRole('button', { name: 'Anteprima e stampa' }).count(), 0);
           assert.ok((await drawer.innerText()).includes('non è un importo da incassare'));

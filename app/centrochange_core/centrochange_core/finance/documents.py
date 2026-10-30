@@ -168,7 +168,7 @@ h2{{font-size:11pt;margin:7mm 0 2mm}}dl{{display:grid;grid-template-columns:1fr 
 table{{width:100%;border-collapse:collapse;margin-top:2mm}}th,td{{padding:2mm 1mm;border-bottom:1px solid #dce4ed;text-align:left;vertical-align:top}}th{{color:#526277}}.lines th:nth-child(n+2),.lines td:nth-child(n+2){{text-align:right}}
 tr,.pair{{break-inside:avoid}}thead{{display:table-header-group}}footer{{margin-top:7mm;border-top:1px solid #dce4ed;padding-top:3mm;font-size:8pt;color:#526277}}@media print{{body{{print-color-adjust:exact}}}}
 </style></head><body><main><header><div class="brand">CENTRO CHANGE</div><h1>{title}</h1><div class="number">Documento {number} · Confermato</div></header>
-<dl>{meta}</dl>{body}<footer>Documento contabile consultabile. Le intestazioni con data e URL sono impostazioni del browser: disattivale nel dialogo di stampa.</footer></main></body></html>'''
+<dl>{meta}</dl>{body}<footer>Documento contabile di consultazione.</footer></main></body></html>'''
 
 
 @frappe.whitelist(methods=['GET'])

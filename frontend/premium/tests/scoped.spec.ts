@@ -66,6 +66,20 @@ async function openArchives(page: Page) {
   await expect(page.getByRole('heading', { name: 'Archivi' })).toBeVisible()
 }
 
+test('anagrafica sintetica: il nome in elenco e dettaglio non diventa alias cliente', async ({ page }) => {
+  await mock(page, [])
+  const row = { name: 'PAT-SYNTH', patient_name: 'CC-HTTP-AbCd123456 Beta', first_name: 'CC-HTTP-AbCd123456 Beta', last_name: '', email: '', modified: 'v1' }
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, demo_labels: { [row.first_name]: 'Cliente 3' } } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.patients*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [row], has_more: false } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: row }) }))
+  await openArchives(page)
+  const list = page.locator('.archive-panel tbody')
+  await expect(list).toContainText('Dato di prova BETA')
+  await expect(list).not.toContainText('Cliente 3')
+  await list.locator('tr').first().click()
+  await expect(page.locator('.drawer')).toContainText('Dato di prova BETA')
+})
+
 test('AUDIT-05: archivio professionisti usa alias solo in lettura, editor mantiene il dato canonico', async ({ page }, info) => {
   await mock(page, [])
   const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', last_name: '', status: 'Active' }
@@ -123,6 +137,8 @@ test('AUDIT-09: fattura annullata mostra il limite di stampa senza richiedere an
   await page.locator('.archive-panel tbody tr').first().click()
   const drawer = page.getByRole('dialog')
   await expect(drawer).toContainText('Questo documento è annullato')
+  await expect(drawer).toContainText('Numero documento')
+  await expect(drawer).toContainText('SINV-CANCELLED')
   await expect(drawer).toContainText('non è un importo da incassare')
   await expect(drawer.getByRole('button', { name: 'Anteprima e stampa' })).toHaveCount(0)
   expect(writes).toHaveLength(0)
