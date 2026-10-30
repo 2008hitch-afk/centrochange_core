@@ -311,7 +311,7 @@ print(json.dumps({
         await waitForList(page, label);
         assert.strictEqual(await page.locator('.archive-panel [role="alert"]').count(), 0, `${label}: list error`);
         await page.locator('.archive-panel tbody tr').first().click();
-        await page.locator('.drawer[role="dialog"] .property-list').waitFor({ state: 'visible', timeout: 10000 });
+        await page.locator('.drawer[role="dialog"] .property-list').first().waitFor({ state: 'visible', timeout: 10000 });
         assert.ok(await page.locator('.drawer[role="dialog"] .property-list dt').count() > 0, `${label}: empty detail`);
         await saveShot(page, `audit09-${slug}-detail-${viewport}.png`);
         await page.locator('.drawer[role="dialog"] button[aria-label="Chiudi"]').click();
