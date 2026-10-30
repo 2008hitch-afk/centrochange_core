@@ -3,13 +3,32 @@ from datetime import date
 import importlib.util
 import types
 import unittest
-from tests.test_premium_scoped_api import ScopedApiTest, FakeDoc, Denied, Invalid, ROOT
+from tests.test_premium_scoped_api import ScopedApiTest, FakeDoc, FakeRow, Denied, Invalid, ROOT
 
 
 class Audit09MasterDataSearchTest(ScopedApiTest):
     def setUp(self):
         super().setUp()
         self.db.get_value = lambda dt, name, field: 'Listino A' if field == 'cc_price_list' else 'Valore'
+
+    def test_finance_party_projection_is_consistent_and_does_not_invent_names(self):
+        aliases = {'Customer': {'C-OWNED': 'Cliente 1'}, 'Supplier': {'S-OWNED': 'Professionista 1'}}
+        cases = [
+            ('Sales Invoice', {'customer': 'C-OWNED', 'customer_name': 'CC-HTTP-TEST'}, 'Cliente 1'),
+            ('Sales Invoice', {'customer': 'CC-MVP-POS-x', 'customer_name': 'CC-MVP-POS-x'}, 'Cliente del documento'),
+            ('Sales Invoice', {'customer': 'C-REAL', 'customer_name': 'Nome reale'}, 'Nome reale'),
+            ('Purchase Invoice', {'supplier': 'S-OWNED', 'supplier_name': 'CC-HTTP-TEST'}, 'Professionista 1'),
+            ('Purchase Invoice', {'supplier': 'S-REAL', 'supplier_name': 'Fornitore reale'}, 'Fornitore reale'),
+            ('Payment Entry', {'party_type': 'Customer', 'party': 'C-OWNED'}, 'Cliente 1'),
+            ('Payment Entry', {'party_type': 'Supplier', 'party': 'S-OWNED'}, 'Professionista 1'),
+            ('Payment Entry', {'payment_type': 'Internal Transfer'}, ''),
+        ]
+        for doctype, row, expected in cases:
+            with self.subTest(doctype=doctype, row=row):
+                self.assertEqual(self.documents._party_values(doctype, row, aliases), expected)
+                doc = FakeDoc(doctype, 'D-1', **row)
+                with unittest.mock.patch.object(self.documents, '_party_aliases', return_value=aliases):
+                    self.assertEqual(self.documents._party(doc), expected)
 
     def test_patients_server_side_search_and_bounding(self):
         spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
@@ -72,12 +91,13 @@ class Audit09MasterDataSearchTest(ScopedApiTest):
             observed = {}
             def listing(doctype, **kwargs):
                 observed.update(kwargs)
-                return [types.SimpleNamespace(name='PAY-A', posting_date='2026-10-28', payment_type='Receive', party_type='Customer', party='CUS-001', paid_amount=100, received_amount=100, unallocated_amount=0, mode_of_payment='Bonifico', docstatus=1, modified='v1')]
+                return [FakeRow(name='PAY-A', posting_date='2026-10-28', payment_type='Receive', party_type='Customer', party='CUS-001', paid_amount=100, received_amount=100, unallocated_amount=0, mode_of_payment='Bonifico', docstatus=1, modified='v1')]
 
             self.frappe.get_list = listing
 
             result = payments.records('A', '2026-01-01', '2026-12-31', 50, 0, search='CUS-001')
             self.assertEqual(len(result['rows']), 1)
+            self.assertEqual(result['rows'][0]['party_label'], 'CUS-001')
             self.assertIn('or_filters', observed)
             self.assertEqual(observed['or_filters']['party'], ['like', '%CUS-001%'])
 

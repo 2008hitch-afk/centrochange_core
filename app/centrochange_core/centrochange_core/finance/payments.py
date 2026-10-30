@@ -5,7 +5,7 @@ from frappe.utils import getdate
 from centrochange_core.finance.guards import require_finance
 from centrochange_core.scoped_api import bounded, page
 
-FIELDS = ['name', 'posting_date', 'payment_type', 'party_type', 'party', 'paid_amount',
+FIELDS = ['name', 'posting_date', 'payment_type', 'party_type', 'party', 'party_name', 'paid_amount',
           'received_amount', 'unallocated_amount', 'mode_of_payment', 'docstatus', 'modified']
 
 
@@ -24,6 +24,10 @@ def records(center, start, end, limit=50, offset=0, search=''):
         options['or_filters'] = {'party': ['like', needle], 'name': ['like', needle], 'mode_of_payment': ['like', needle]}
     rows = frappe.get_list('Payment Entry', filters=filters,
                            fields=FIELDS, order_by='posting_date desc,name desc', start=offset, page_length=limit + 1, **options)
+    from centrochange_core.finance.documents import _party_aliases, _party_values
+    aliases = _party_aliases()
+    for row in rows[:limit]:
+        row['party_label'] = _party_values('Payment Entry', row, aliases)
     return {'rows': rows[:limit], 'has_more': len(rows) > limit}
 
 
@@ -44,5 +48,6 @@ def detail(center, name):
         invoice.check_permission('read')
         refs.append({'doctype': row.reference_doctype, 'name': row.reference_name,
                      'allocated_amount': row.allocated_amount})
-    return {**{field: doc.get(field) for field in FIELDS}, 'references': refs,
+    from centrochange_core.finance.documents import _party
+    return {**{field: doc.get(field) for field in FIELDS}, 'party_label': _party(doc), 'references': refs,
             'references_truncated': len(doc.references) > 100}

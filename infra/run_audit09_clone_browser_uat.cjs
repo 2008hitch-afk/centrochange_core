@@ -371,9 +371,13 @@ print(json.dumps({
         await page.locator('.archive-panel tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
         const response = page.waitForResponse(r => r.url().includes('finance.documents.detail') && new URL(r.url()).searchParams.get('name') === id);
         await page.locator('.archive-panel tbody tr').first().click();
-        assert.strictEqual((await (await response).json()).message.name, id);
+        const document = (await (await response).json()).message;
+        assert.strictEqual(document.name, id);
+        const listParty = (await page.locator('.archive-panel tbody tr').first().locator('td').nth(1).innerText()).trim();
+        assert.strictEqual(listParty, document.party || '—', 'Elenco e documento hanno soggetti diversi');
         const drawer = page.locator('.drawer[role="dialog"]');
         await drawer.getByRole('heading', { name: 'Documento completo' }).waitFor();
+        if (document.party) assert.strictEqual(await drawer.getByText(document.party, { exact: true }).count(), 2, 'Riepilogo e documento hanno soggetti diversi');
         await drawer.getByRole('heading', { name: 'Servizi e articoli' }).waitFor();
         assert.ok((await drawer.innerText()).includes(id), 'Numero documento assente dal dettaglio');
         if (cancelled) {

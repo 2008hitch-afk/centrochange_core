@@ -18,9 +18,9 @@ const specs: Spec[] = [
   { kind: 'Appointment Type', label: 'Tipi seduta', group: 'Catalogo', fields: [{ key: 'appointment_type', label: 'Tipo seduta' }, { key: 'default_duration', label: 'Durata (min)', edit: true, required: true, kind: 'number' }, { key: 'cc_service_item', label: 'Articolo' }] },
   { kind: 'CC Center Service', label: 'Servizi del centro', group: 'Catalogo', fields: [{ key: 'appointment_type', label: 'Tipo seduta' }, { key: 'center', label: 'Centro' }, status] },
   { kind: 'CC Package Template', label: 'Modelli pacchetto', group: 'Catalogo', fields: [{ key: 'title', label: 'Modello', edit: true, required: true }, { key: 'service_item', label: 'Articolo' }, { key: 'units', label: 'Numero di sedute incluse', edit: true, required: true, kind: 'number' }, status] },
-  { kind: 'Sales Invoice', label: 'Fatture pazienti', group: 'Finanza', fields: [{ key: 'name', label: 'Fattura' }, { key: 'customer', label: 'Cliente' }, { key: 'posting_date', label: 'Data' }, { key: 'grand_total', label: 'Totale' }, { key: 'outstanding_amount', label: 'Residuo' }, { key: 'docstatus', label: 'Stato documento' }] },
-  { kind: 'Purchase Invoice', label: 'Fatture professionisti', group: 'Finanza', fields: [{ key: 'name', label: 'Fattura' }, { key: 'supplier', label: 'Fornitore' }, { key: 'posting_date', label: 'Data' }, { key: 'grand_total', label: 'Totale' }, { key: 'outstanding_amount', label: 'Residuo' }, { key: 'docstatus', label: 'Stato documento' }] },
-  { kind: 'Payment Entry', label: 'Pagamenti', group: 'Finanza', fields: [{ key: 'name', label: 'Pagamento' }, { key: 'party', label: 'Soggetto' }, { key: 'posting_date', label: 'Data' }, { key: 'payment_type', label: 'Tipo' }, { key: 'paid_amount', label: 'Importo' }, { key: 'unallocated_amount', label: 'Importo non attribuito' }, { key: 'docstatus', label: 'Stato documento' }] },
+  { kind: 'Sales Invoice', label: 'Fatture pazienti', group: 'Finanza', fields: [{ key: 'name', label: 'Fattura' }, { key: 'party_label', label: 'Cliente' }, { key: 'posting_date', label: 'Data' }, { key: 'grand_total', label: 'Totale' }, { key: 'outstanding_amount', label: 'Residuo' }, { key: 'docstatus', label: 'Stato documento' }] },
+  { kind: 'Purchase Invoice', label: 'Fatture professionisti', group: 'Finanza', fields: [{ key: 'name', label: 'Fattura' }, { key: 'party_label', label: 'Fornitore' }, { key: 'posting_date', label: 'Data' }, { key: 'grand_total', label: 'Totale' }, { key: 'outstanding_amount', label: 'Residuo' }, { key: 'docstatus', label: 'Stato documento' }] },
+  { kind: 'Payment Entry', label: 'Pagamenti', group: 'Finanza', fields: [{ key: 'name', label: 'Pagamento' }, { key: 'party_label', label: 'Soggetto' }, { key: 'posting_date', label: 'Data' }, { key: 'payment_type', label: 'Tipo' }, { key: 'paid_amount', label: 'Importo' }, { key: 'unallocated_amount', label: 'Importo non attribuito' }, { key: 'docstatus', label: 'Stato documento' }] },
   { kind: 'Bank Transaction', label: 'Movimenti bancari', group: 'Finanza', fields: [{ key: 'name', label: 'Movimento' }, { key: 'date', label: 'Data' }, { key: 'reference_number', label: 'Riferimento' }, { key: 'deposit', label: 'Entrata' }, { key: 'withdrawal', label: 'Uscita' }, { key: 'unallocated_amount', label: 'Importo non attribuito' }, { key: 'docstatus', label: 'Stato documento' }] }
 ]
 const view = (field: FieldSpec, value: unknown) => {
@@ -186,7 +186,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
         const result = await documentDetail(center, kind, row.name)
         if (gen !== detailGen.current) return
         setDocument(result)
-        setSelected({ ...row, ...result })
+        setSelected({ ...row, ...result, party_label: result.party })
       } else { const result = financeKinds.includes(kind) ? row : await archiveDetail(center, kind, row.name); if (gen !== detailGen.current) return; setDocument(null); setSelected(result) }
     }
     catch (cause) { if (gen === detailGen.current) setError(cause instanceof Error ? cause.message : 'Dettaglio non disponibile.') }

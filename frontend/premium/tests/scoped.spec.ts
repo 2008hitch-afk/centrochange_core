@@ -15,9 +15,9 @@ async function mock(page: Page, writes: Write[], role = 'CC Manager') {
     'Appointment Type': [{ name: 'TYPE-001', appointment_type: 'Visita sintetica', default_duration: 60, cc_service_item: 'ITEM-001', modified: 'v1' }],
     'CC Center Service': [{ name: 'SERV-001', appointment_type: 'TYPE-001', center, enabled: 1, modified: 'v1' }],
     'CC Package Template': [{ name: 'PACK-001', title: 'Percorso sintetico', service_item: 'ITEM-001', units: 4, enabled: 1, modified: 'v1' }],
-    'Sales Invoice': [{ name: 'SINV-001', customer: 'CUS-001', posting_date: today, grand_total: 80, outstanding_amount: 20, docstatus: 1 }],
-    'Purchase Invoice': [{ name: 'PINV-001', supplier: 'SUP-001', posting_date: today, grand_total: 40, outstanding_amount: 10, docstatus: 1 }],
-    'Payment Entry': [{ name: 'PAY-001', party: 'CUS-001', posting_date: today, payment_type: 'Receive', paid_amount: 60, unallocated_amount: 0, docstatus: 1, modified: 'v1', references: [] }],
+    'Sales Invoice': [{ name: 'SINV-001', customer: 'CUS-001', party_label: 'Soggetto sintetico', posting_date: today, grand_total: 80, outstanding_amount: 20, docstatus: 1 }],
+    'Purchase Invoice': [{ name: 'PINV-001', supplier: 'SUP-001', party_label: 'Soggetto sintetico', posting_date: today, grand_total: 40, outstanding_amount: 10, docstatus: 1 }],
+    'Payment Entry': [{ name: 'PAY-001', party: 'CUS-001', party_label: 'Soggetto sintetico', posting_date: today, payment_type: 'Receive', paid_amount: 60, unallocated_amount: 0, docstatus: 1, modified: 'v1', references: [] }],
     'Bank Transaction': [{ name: 'BANK-001', date: today, reference_number: 'SYN-001', deposit: 60, withdrawal: 0 }]
   }
   await page.route('**/api/method/**', async route => {
@@ -129,16 +129,21 @@ test('AUDIT-09: fattura annullata mostra il limite di stampa senza richiedere an
     const url = new URL(route.request().url())
     if (url.searchParams.get('doctype') !== 'Sales Invoice') return route.fallback()
     // List is stale: the authoritative detail has since been cancelled.
-    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [{ name: 'SINV-CANCELLED', customer: 'CUS-001', posting_date: today, grand_total: 100, outstanding_amount: 100, docstatus: 1 }], has_more: false } }) })
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [{ name: 'SINV-CANCELLED', customer: 'CC-MVP-POS-TEST', party_label: 'Cliente precedente', posting_date: today, grand_total: 100, outstanding_amount: 100, docstatus: 1 }], has_more: false } }) })
   })
   await page.route('**/api/method/centrochange_core.finance.documents.detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { doctype: 'Sales Invoice', name: 'SINV-CANCELLED', party: 'Cliente sintetico', docstatus: 2, currency: 'EUR', can_print: false, items: [{ item_name: 'Visita', description: 'Visita', qty: 1, rate: 100, amount: 100 }], taxes: [] } }) }))
   await openArchives(page)
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Fatture pazienti' }).click()
+  await expect(page.locator('.archive-panel tbody tr').first()).toContainText('Cliente precedente')
+  await expect(page.locator('.archive-panel tbody tr').first()).not.toContainText('CC-MVP-POS-TEST')
   await page.locator('.archive-panel tbody tr').first().click()
   const drawer = page.getByRole('dialog')
   await expect(drawer).toContainText('Questo documento è annullato')
   await expect(drawer).toContainText('Numero documento')
   await expect(drawer).toContainText('SINV-CANCELLED')
+  await expect(drawer).not.toContainText('Cliente precedente')
+  await expect(drawer).not.toContainText('CC-MVP-POS-TEST')
+  await expect(drawer.getByText('Cliente sintetico', { exact: true })).toHaveCount(2)
   await expect(drawer).toContainText('non è un importo da incassare')
   await expect(drawer.getByRole('button', { name: 'Anteprima e stampa' })).toHaveCount(0)
   expect(writes).toHaveLength(0)

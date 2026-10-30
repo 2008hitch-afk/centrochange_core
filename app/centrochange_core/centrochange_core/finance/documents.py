@@ -26,29 +26,42 @@ def _number(value):
     return str(value).replace('.', ',') if value is not None else ''
 
 
-def _party(doc):
-    """Use an existing, exact UAT alias when present; never print fixture IDs."""
-    kind = 'Customer' if doc.doctype == 'Sales Invoice' or doc.get('party_type') == 'Customer' else 'Supplier'
-    identifier = doc.get('customer') if doc.doctype == 'Sales Invoice' else doc.get('supplier') if doc.doctype == 'Purchase Invoice' else doc.get('party')
-    if doc.doctype == 'Payment Entry' and not identifier and not doc.get('party_name'):
-        return ''
+def _party_aliases():
+    """Resolve only aliases from the exact authorized synthetic manifest."""
+    aliases = {'Customer': {}, 'Supplier': {}}
     if frappe.conf.get('cc_synthetic_dev') == 1 and frappe.conf.get('cc_uat_demo') == 1:
         from centrochange_core.uat.display import _manifest
         manifest = _manifest()
         if manifest:
-            if kind == 'Customer':
-                owners = [frappe.db.get_value('Patient', name, 'customer') for name in manifest['fixture']['patients']]
-                if identifier in owners:
-                    return f'Cliente {owners.index(identifier) + 1}'
-            else:
-                owners = [frappe.db.get_value('Healthcare Practitioner', name, 'supplier') for name in manifest['fixture']['practitioners']]
-                if identifier in owners:
-                    return f'Professionista {owners.index(identifier) + 1}'
+            for kind, doctype, field, key, label in (
+                ('Customer', 'Patient', 'customer', 'patients', 'Cliente'),
+                ('Supplier', 'Healthcare Practitioner', 'supplier', 'practitioners', 'Professionista'),
+            ):
+                for index, name in enumerate(manifest['fixture'][key], 1):
+                    identifier = frappe.db.get_value(doctype, name, field)
+                    if identifier:
+                        aliases[kind].setdefault(identifier, f'{label} {index}')
+    return aliases
+
+
+def _party_values(doctype, doc, aliases=None):
+    """Project the document's own party fields without expanding its access scope."""
+    kind = 'Customer' if doctype == 'Sales Invoice' or doc.get('party_type') == 'Customer' else 'Supplier'
+    identifier = doc.get('customer') if doctype == 'Sales Invoice' else doc.get('supplier') if doctype == 'Purchase Invoice' else doc.get('party')
+    if doctype == 'Payment Entry' and not identifier and not doc.get('party_name'):
+        return ''
+    label = (aliases if aliases is not None else _party_aliases())[kind].get(identifier)
+    if label:
+        return label
     display = (doc.get('customer_name') if kind == 'Customer' else doc.get('supplier_name')) or doc.get('party_name')
     display = str(display or identifier or '').strip()
     if display.startswith(('CC-HTTP-', 'CC-MVP-POS-', 'SYNTHETIC-')):
         return 'Cliente del documento' if kind == 'Customer' else 'Professionista del documento'
     return display or ('Cliente del documento' if kind == 'Customer' else 'Professionista del documento')
+
+
+def _party(doc):
+    return _party_values(doc.doctype, doc)
 
 
 def _document(center, doctype, name):

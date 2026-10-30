@@ -19,6 +19,10 @@ class Invalid(Exception):
     pass
 
 
+class FakeRow(dict):
+    __getattr__ = dict.__getitem__
+
+
 class FakeDoc:
     def __init__(self, doctype='Item', name='ITEM-A', **fields):
         self.doctype, self.name, self.modified = doctype, name, 'v1'
@@ -90,7 +94,7 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe.get_doc = lambda doctype, name=None, **kwargs: self.db.doc if not isinstance(doctype, dict) else FakeDoc(doctype['doctype'], 'DRAFT', **{k: v for k, v in doctype.items() if k != 'doctype'})
         self.frappe.parse_json = json.loads
         self.frappe.whitelist = lambda **kwargs: lambda fn: fn
-        self.frappe.get_list = lambda doctype, **kwargs: [types.SimpleNamespace(name='PAY-A', cc_center='A')]
+        self.frappe.get_list = lambda doctype, **kwargs: [FakeRow(name='PAY-A', cc_center='A')]
         self.frappe.get_print = lambda *args, **kwargs: '<html><body>Prova sintetica</body></html>'
         self.frappe.utils = types.SimpleNamespace(validate_email_address=lambda value: '@' in value)
         self.audit = types.ModuleType('centrochange_core.security.audit')
@@ -117,8 +121,19 @@ class ScopedApiTest(unittest.TestCase):
         self.api = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = self.api
         spec.loader.exec_module(self.api)
+        finance_guards = types.ModuleType('centrochange_core.finance.guards')
+        finance_guards.require_finance = lambda center: self.guards.require_center(center)
+        utils = types.ModuleType('frappe.utils')
+        utils.getdate = lambda value: date.fromisoformat(value) if isinstance(value, str) else value
+        self.extra_modules = patch.dict(sys.modules, {'centrochange_core.finance.guards': finance_guards, 'frappe.utils': utils})
+        self.extra_modules.start()
+        spec = importlib.util.spec_from_file_location('centrochange_core.finance.documents', ROOT / 'finance/documents.py')
+        self.documents = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = self.documents
+        spec.loader.exec_module(self.documents)
 
     def tearDown(self):
+        self.extra_modules.stop()
         self.modules.stop()
         sys.modules.pop('centrochange_core.scoped_api', None)
 

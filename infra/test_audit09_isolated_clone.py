@@ -649,6 +649,14 @@ try:
         native = frappe.get_doc(printable, native_names[0])
         projected = documents.detail(center=center, doctype=printable, name=native.name)
         assert projected['name'] == native.name and projected['docstatus'] == 1
+        if printable == 'Payment Entry':
+            listed = payments.records(center=center, start=str(native.posting_date), end=str(native.posting_date), search=native.name)['rows']
+            payment_detail = payments.detail(center=center, name=native.name)
+            assert payment_detail['party_label'] == projected['party']
+        else:
+            listed = reporting.records(center=center, doctype=printable, search=native.name, limit=50)['rows']
+        row = next(row for row in listed if row['name'] == native.name)
+        assert row['party_label'] == projected['party'], printable + ': list/detail party mismatch'
         if printable != 'Payment Entry':
             assert len(projected['items']) == len(native.items)
             assert projected['grand_total'] == native.grand_total
@@ -672,6 +680,8 @@ try:
                   (cancelled_name, native_sales.customer, native_sales.posting_date, native_sales.grand_total, native_sales.outstanding_amount, native_sales.currency, center))
     cancelled = documents.detail(center=center, doctype='Sales Invoice', name=cancelled_name)
     assert cancelled['docstatus'] == 2 and not cancelled['can_print']
+    cancelled_rows = reporting.records(center=center, doctype='Sales Invoice', search=cancelled_name, limit=50)['rows']
+    assert len(cancelled_rows) == 1 and cancelled_rows[0]['party_label'] == cancelled['party']
     try:
         documents.preview(center=center, doctype='Sales Invoice', name=cancelled_name)
         raise AssertionError('Cancelled document printed')

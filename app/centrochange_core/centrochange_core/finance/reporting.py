@@ -142,8 +142,8 @@ def records(center, doctype, search='', limit=None, offset=0):
         limit, offset = page(limit, offset)
     allowed_types = {
         'CC Incoming Invoice': ['name', 'state', 'supplier', 'invoice_number', 'invoice_date', 'total', 'currency', 'purchase_invoice', 'problem'],
-        'Sales Invoice': ['name', 'docstatus', 'posting_date', 'customer', 'grand_total', 'outstanding_amount', 'currency'],
-        'Purchase Invoice': ['name', 'docstatus', 'posting_date', 'supplier', 'grand_total', 'outstanding_amount', 'currency', 'cc_incoming_source'],
+        'Sales Invoice': ['name', 'docstatus', 'posting_date', 'customer', 'customer_name', 'grand_total', 'outstanding_amount', 'currency'],
+        'Purchase Invoice': ['name', 'docstatus', 'posting_date', 'supplier', 'supplier_name', 'grand_total', 'outstanding_amount', 'currency', 'cc_incoming_source'],
         'Bank Transaction': ['name', 'docstatus', 'date', 'deposit', 'withdrawal', 'unallocated_amount', 'reference_number'],
         'CC Economic Source Link': ['name', 'appointment', 'session_date', 'practitioner', 'patient', 'price', 'currency', 'performed', 'economic_state'],
         'CC Professional Expectation': ['name', 'appointment', 'practitioner', 'state', 'amount', 'amount_known', 'problem', 'rule']
@@ -167,6 +167,13 @@ def records(center, doctype, search='', limit=None, offset=0):
             result = [r for r in result if any(q in str(v).casefold() for v in r.values())]
         return result
     if doctype in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
+        def project(rows):
+            if doctype in ('Sales Invoice', 'Purchase Invoice'):
+                from centrochange_core.finance.documents import _party_aliases, _party_values
+                aliases = _party_aliases()
+                for row in rows:
+                    row['party_label'] = _party_values(doctype, row, aliases)
+            return rows
         options = {}
         if search:
             needle = '%' + search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
@@ -186,11 +193,11 @@ def records(center, doctype, search='', limit=None, offset=0):
                 page_length=limit + 1,
                 **options,
             )
-            return {'rows': rows[:limit], 'has_more': len(rows) > limit}
+            return {'rows': project(rows[:limit]), 'has_more': len(rows) > limit}
         rows = frappe.get_list(doctype, filters={field: center}, fields=allowed_types[doctype], order_by='modified desc', page_length=501, **options)
         if len(rows) > 500:
             frappe.throw('Riduci i filtri del report: ci sono oltre 500 record.')
-        return rows
+        return project(rows)
     return _bounded(doctype, {field: center}, allowed_types[doctype])
 
 
