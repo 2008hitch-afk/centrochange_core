@@ -22,6 +22,10 @@ def _money(value, currency=None):
     return f'{integer.replace(",", ".")},{decimals}' + (f' {currency}' if currency else '')
 
 
+def _number(value):
+    return str(value).replace('.', ',') if value is not None else ''
+
+
 def _party(doc):
     """Use an existing, exact UAT alias when present; never print fixture IDs."""
     kind = 'Customer' if doc.doctype == 'Sales Invoice' or doc.get('party_type') == 'Customer' else 'Supplier'
@@ -92,7 +96,7 @@ def _projection(doc, center):
                      'company_address': _safe_text(doc.get('company_address_display')), 'company_tax_id': _safe_text(doc.get('company_tax_id')),
                      'items': [{'description': _safe_text(row.get('description') or row.get('item_name')),
                                 'item_name': _safe_text(row.get('item_name')),
-                                'qty': row.get('qty'), 'uom': _safe_text(row.get('uom')),
+                                'qty': row.get('qty'), 'uom': {'Nos': 'unità', 'Services': 'servizi'}.get(row.get('uom'), _safe_text(row.get('uom'))),
                                 'rate': row.get('rate'), 'discount_percentage': row.get('discount_percentage'),
                                 'discount_amount': row.get('discount_amount'), 'amount': row.get('amount')}
                                for row in doc.get('items') or []],
@@ -145,7 +149,7 @@ def _html(data):
     meta = pair('Numero', data['name']) + pair('Data documento', _date(data['posting_date'])) + pair('Soggetto', data['party'])
     if data['doctype'] != 'Payment Entry':
         meta += pair('Scadenza', _date(data['due_date'])) + pair('Indirizzo', data['address']) + pair('Identificativo fiscale', data['tax_id']) + pair('Indirizzo azienda', data['company_address']) + pair('Identificativo fiscale azienda', data['company_tax_id'])
-        rows = ''.join('<tr><td>' + escape(row['item_name'] or row['description']) + ('<br>' + escape(row['description']) if row['description'] and row['description'] != row['item_name'] else '') + '</td><td>' + escape(str(row['qty'] if row['qty'] is not None else '')) + '</td><td>' + escape(row['uom'] or '') + '</td><td>' + (escape(_money(row['rate'], currency)) if row['rate'] is not None else '') + '</td><td>' + (' · '.join(([escape(str(row['discount_percentage'])) + '%'] if row['discount_percentage'] else []) + ([escape(_money(row['discount_amount'], currency)) + ' per unità'] if row['discount_amount'] else []))) + '</td><td>' + (escape(_money(row['amount'], currency)) if row['amount'] is not None else '') + '</td></tr>' for row in data['items'])
+        rows = ''.join('<tr><td>' + escape(row['item_name'] or row['description']) + ('<br>' + escape(row['description']) if row['description'] and row['description'] != row['item_name'] else '') + '</td><td>' + escape(_number(row['qty'])) + '</td><td>' + escape(row['uom'] or '') + '</td><td>' + (escape(_money(row['rate'], currency)) if row['rate'] is not None else '') + '</td><td>' + (' · '.join(([escape(_number(row['discount_percentage'])) + '%'] if row['discount_percentage'] else []) + ([escape(_money(row['discount_amount'], currency)) + ' per unità'] if row['discount_amount'] else []))) + '</td><td>' + (escape(_money(row['amount'], currency)) if row['amount'] is not None else '') + '</td></tr>' for row in data['items'])
         body = '<h2>Righe del documento</h2><table class="lines"><thead><tr><th>Servizio o articolo</th><th>Qtà</th><th>Unità</th><th>Prezzo</th><th>Sconto</th><th>Importo</th></tr></thead><tbody>' + (rows or '<tr><td colspan="6">Nessuna riga presente</td></tr>') + '</tbody></table>'
         taxes = ''.join(pair(row['description'] or 'Imposta', _money(row['tax_amount'], currency)) for row in data['taxes'] if row['tax_amount'] is not None)
         body += '<h2>Importi</h2><dl class="totals">' + amount('Imponibile', data['net_total']) + amount('Sconto aggiuntivo', data['discount_amount']) + taxes + amount('Imposte e oneri', data['total_taxes_and_charges']) + amount('Totale', data['grand_total']) + amount('Residuo', data['outstanding_amount'], data['party_currency']) + '</dl>'

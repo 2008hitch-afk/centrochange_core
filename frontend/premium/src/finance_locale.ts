@@ -24,6 +24,8 @@ const labels: Record<string, string> = {
 const values: Record<string, string> = {
   Receive: 'Incasso', Pay: 'Pagamento', 'Internal Transfer': 'Giroconto',
   Draft: 'Bozza', Submitted: 'Confermato', Cancelled: 'Annullato',
+  Return: 'Nota di credito o debito', 'Credit Note Issued': 'Nota di credito emessa', 'Debit Note Issued': 'Nota di debito emessa',
+  'Unpaid and Discounted': 'Non pagata con sconto', 'Partly Paid and Discounted': 'Pagata in parte con sconto', 'Overdue and Discounted': 'Scaduta con sconto',
   Paid: 'Pagata', Unpaid: 'Da pagare', 'Partly Paid': 'Pagata in parte',
   Overdue: 'Scaduta', Open: 'Aperta', Closed: 'Chiusa',
   Pending: 'In attesa', Resolved: 'Risolta', Error: 'Errore',
