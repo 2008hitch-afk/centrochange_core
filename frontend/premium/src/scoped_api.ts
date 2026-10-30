@@ -12,6 +12,18 @@ export type PackageTemplate = ArchiveRecord & { title: string; service_item: str
 export type PaymentProjection = ArchiveRecord & { posting_date: string; payment_type: 'Receive' | 'Pay' | 'Internal Transfer'; party_type: string; party: string; paid_amount: number; received_amount: number; unallocated_amount: number; docstatus: number; references?: { doctype: 'Sales Invoice' | 'Purchase Invoice'; name: string; allocated_amount: number }[] }
 export type ArchivePage<T extends ArchiveRecord = ArchiveRecord> = { rows: T[]; has_more: boolean }
 export type PrintPreview = { doctype: string; name: string; format: string; html: string }
+export type FinanceDocument = ArchiveRecord & {
+  doctype: 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry'; docstatus: number; posting_date?: string;
+  party: string; currency?: string; paid_currency?: string; received_currency?: string; party_currency?: string; can_print: boolean; due_date?: string;
+  status?: string; address?: string; tax_id?: string; company_address?: string; company_tax_id?: string;
+  items?: { description: string; item_name: string; qty?: number; uom?: string; rate?: number; discount_percentage?: number; discount_amount?: number; amount?: number }[];
+  taxes?: { description: string; rate?: number; tax_amount?: number }[];
+  net_total?: number; total_taxes_and_charges?: number; discount_amount?: number; additional_discount_percentage?: number;
+  grand_total?: number; outstanding_amount?: number; links?: { kind: string; doctype: string; name: string }[];
+  payment_type?: string; mode_of_payment?: string; reference_no?: string; reference_date?: string;
+  paid_amount?: number; received_amount?: number; unallocated_amount?: number;
+  references?: { doctype: string; name: string; allocated_amount: number }[]
+}
 
 const catalogKinds: ArchiveKind[] = ['Item', 'Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template']
 export const editableKinds: ArchiveKind[] = ['Patient', 'Healthcare Practitioner', ...catalogKinds]
@@ -60,3 +72,6 @@ export async function createArchive(center: string, kind: ArchiveKind, draft: Ro
 
 export const documentPreview = (center: string, doctype: 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry', name: string) =>
   finance<PrintPreview>('documents.preview', { center, doctype, name, print_format: 'Centro Change' })
+
+export const documentDetail = (center: string, doctype: 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry', name: string) =>
+  finance<FinanceDocument>('documents.detail', { center, doctype, name })

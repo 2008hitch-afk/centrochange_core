@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Printer, Search } from 'lucide-react'
 import { displayDate, money, recentPaymentStart, requestKey, romeToday, type Boot, type FinanceBoot, type Practitioner, type Row } from './api'
-import { archiveDetail, createArchive, creatableKinds, documentPreview, editableKinds, financeKinds, listArchive, saveArchive, type ArchiveKind, type ArchiveRecord, type PrintPreview } from './scoped_api'
+import { archiveDetail, createArchive, creatableKinds, documentDetail, documentPreview, editableKinds, financeKinds, listArchive, saveArchive, type ArchiveKind, type ArchiveRecord, type FinanceDocument, type PrintPreview } from './scoped_api'
 import { Button, DataTable, DateInput, Drawer, Empty, Field, FormError, Heading, Modal, SearchableSelect } from './ui'
 import { financeFieldValue } from './finance_locale'
-import { demoPatient, demoText, syntheticCode } from './demo_labels'
+import { demoPatient, demoText, syntheticCode, syntheticLetter } from './demo_labels'
 import { centerNameFor, practitionerName } from './display_names'
 
 type FieldSpec = { key: string; label: string; edit?: boolean; required?: boolean; kind?: 'text' | 'number' | 'email' | 'select'; values?: { value: string; label: string }[] }
@@ -52,13 +52,21 @@ const view = (field: FieldSpec, value: unknown) => {
 // fields. Other surfaces retain their existing presentation contract.
 const archivePatientName = (row: Row) => {
   const first = String(row.first_name ?? '').trim(), last = String(row.last_name ?? '').trim()
-  if (syntheticCode(row.patient_name) && first && !syntheticCode(first)) return [first, last].filter(Boolean).join(' ')
+  if (first && !syntheticCode(first)) return [first, last].filter(Boolean).join(' ')
+  if (syntheticCode(first)) return `Paziente di prova ${syntheticLetter(first) ?? ''}`.trim()
   return demoPatient(row.name, row.patient_name, row.first_name, row.last_name)
 }
 const archivePractitionerName = (row: Practitioner) => {
   const first = String(row.first_name ?? '').trim(), last = String(row.last_name ?? '').trim()
-  if (syntheticCode(row.practitioner_name) && first && !syntheticCode(first)) return [first, last].filter(Boolean).join(' ')
+  if (first && !syntheticCode(first)) return [first, last].filter(Boolean).join(' ')
+  if (syntheticCode(first)) return `Professionista di prova ${syntheticLetter(first) ?? ''}`.trim()
   return practitionerName(row)
+}
+const archiveCatalogName = (kind: ArchiveKind, row: Row) => {
+  const field = kind === 'Item' ? 'item_name' : kind === 'CC Package Template' ? 'title' : ''
+  const value = String(row[field] ?? row.name ?? '')
+  if (field && syntheticCode(value)) return `${kind === 'Item' ? 'Articolo' : 'Pacchetto'} di prova ${syntheticLetter(value) ?? ''}`.trim()
+  return field ? value : demoText(value)
 }
 
 /** Live candidate: reads only approved projections; writes only manager-scoped existing records. */
@@ -75,9 +83,11 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const searchGen = useRef(0)
+  const detailGen = useRef(0)
   const [paymentStart, setPaymentStart] = useState(recentPaymentStart)
   const [paymentEnd, setPaymentEnd] = useState(romeToday())
   const [selected, setSelected] = useState<ArchiveRecord | null>(null)
+  const [document, setDocument] = useState<FinanceDocument | null>(null)
   const [draft, setDraft] = useState<Row | null>(null)
   const [creating, setCreating] = useState(false)
   const [reason, setReason] = useState('')
@@ -132,7 +142,10 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   }
 
   useEffect(() => {
+    detailGen.current++
     setSelected(null)
+    setDocument(null)
+    setPreview(null)
     setDraft(null)
     void refresh(spec.kind, debouncedSearch)
   }, [center, spec.kind, debouncedSearch, paymentStart, paymentEnd])
@@ -166,12 +179,20 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
     setDebouncedSearch('')
   }
   const open = async (row: ArchiveRecord) => {
+    const gen = ++detailGen.current
     setLoading(true); setError('')
-    try { setSelected(financeKinds.includes(kind) && kind !== 'Payment Entry' ? row : await archiveDetail(center, kind, row.name)) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Dettaglio non disponibile.') }
-    finally { setLoading(false) }
+    try {
+      if (kind === 'Sales Invoice' || kind === 'Purchase Invoice' || kind === 'Payment Entry') {
+        const result = await documentDetail(center, kind, row.name)
+        if (gen !== detailGen.current) return
+        setDocument(result)
+        setSelected(row)
+      } else { const result = financeKinds.includes(kind) ? row : await archiveDetail(center, kind, row.name); if (gen !== detailGen.current) return; setDocument(null); setSelected(result) }
+    }
+    catch (cause) { if (gen === detailGen.current) setError(cause instanceof Error ? cause.message : 'Dettaglio non disponibile.') }
+    finally { if (gen === detailGen.current) setLoading(false) }
   }
-  const edit = () => { if (!selected) return; setCreating(false); setDraft({ ...selected }); setReason(''); key.current = requestKey(); setConfirm(false); setError('') }
+  const edit = () => { if (!selected) return; setCreating(false); const nameField = kind === 'Patient' || kind === 'Healthcare Practitioner' ? 'first_name' : kind === 'Item' ? 'item_name' : kind === 'CC Package Template' ? 'title' : ''; setDraft({ ...selected, ...(nameField && syntheticCode(selected[nameField]) ? { [nameField]: '' } : {}) }); setReason(''); key.current = requestKey(); setConfirm(false); setError('') }
   const beginCreate = () => { setCreating(true); setSelected(null); setDraft({ enabled: 1, valid_from: romeToday() }); setReason(''); key.current = requestKey(); setError('') }
   const update = (field: string, value: string) => { setDraft(old => ({ ...old, [field]: value })); key.current = requestKey() }
   const validate = () => {
@@ -198,21 +219,23 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   }
   const print = async () => {
     if (!selected || !['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind)) return
+    const gen = detailGen.current
     setLoading(true); setError('')
-    try { setPreview(await documentPreview(center, kind as 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry', selected.name)) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Anteprima non disponibile.') }
-    finally { setLoading(false) }
+    try { const result = await documentPreview(center, kind as 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry', selected.name); if (gen === detailGen.current) setPreview(result) }
+    catch (cause) { if (gen === detailGen.current) setError(cause instanceof Error ? cause.message : 'Anteprima non disponibile.') }
+    finally { if (gen === detailGen.current) setLoading(false) }
   }
   const formFields: FieldSpec[] = creating ? spec.fields.filter(field => field.edit || (kind === 'Item Price' && ['item_code', 'valid_from'].includes(field.key)) || (kind === 'Appointment Type' && ['appointment_type', 'cc_service_item'].includes(field.key)) || (kind === 'CC Center Service' && field.key === 'appointment_type') || (kind === 'CC Package Template' && field.key === 'service_item')).map(field => ({ ...field, required: true })) : spec.fields.filter(field => field.edit)
   const columns: { key: string; label: string; render: (value: unknown, row: Row) => React.ReactNode }[] = kind === 'Healthcare Practitioner'
     ? [{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => archivePractitionerName(row as Practitioner) },
       { key: 'status', label: 'Stato', render: value => value === 'Active' ? 'Attivo' : 'Non attivo' }]
-    : [spec.fields[0], ...spec.fields.slice(1, 3)].map(field => ({ key: field.key, label: field.label, render: (value: unknown, row: Row) => kind === 'Patient' && field.key === 'patient_name' ? archivePatientName(row) : view(field, value) }))
+    : [spec.fields[0], ...spec.fields.slice(1, 3)].map(field => ({ key: field.key, label: field.label, render: (value: unknown, row: Row) => kind === 'Patient' && field.key === 'patient_name' ? archivePatientName(row) : (kind === 'Item' && field.key === 'item_name') || (kind === 'CC Package Template' && field.key === 'title') ? archiveCatalogName(kind, row) : view(field, value) }))
   columns.push({ key: 'name', label: 'Scheda', render: () => <ArrowRight size={16} aria-hidden="true" /> })
-  const selectedTitle = selected ? kind === 'Patient' ? archivePatientName(selected) : kind === 'Healthcare Practitioner' ? archivePractitionerName(selected as Practitioner) : demoText(selected[spec.fields[0].key] || selected.name) : ''
+  const selectedTitle = selected ? kind === 'Patient' ? archivePatientName(selected) : kind === 'Healthcare Practitioner' ? archivePractitionerName(selected as Practitioner) : kind === 'Item' || kind === 'CC Package Template' ? archiveCatalogName(kind, selected) : demoText(selected[spec.fields[0].key] || selected.name) : ''
   const editableNameKey = kind === 'Patient' || kind === 'Healthcare Practitioner' ? 'first_name' : kind === 'Item' ? 'item_name' : kind === 'CC Package Template' ? 'title' : ''
   const displayDiffersFromStored = !!selected && !!editableNameKey && !!draft && !creating && selectedTitle !== String(selected[editableNameKey] ?? '').trim()
-  const canPrint = !!selected && Number(selected.docstatus) === 1
+  const canPrint = !!document?.can_print
+  const documentMoney = (value: unknown, unit?: string) => value == null ? '—' : unit ? money(value, unit) : `${new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value))} (valuta non indicata)`
   const detailFields = kind === 'Healthcare Practitioner' && selected && syntheticCode(selected.first_name)
     ? [{ key: 'practitioner_name', label: 'Identità' }, { key: 'status', label: 'Stato' }] : spec.fields
   const groups = ['Anagrafiche', 'Catalogo', 'Finanza'].filter(group => visible.some(s => s.group === group))
@@ -227,16 +250,18 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
         <p className="scope-note">Seleziona una scheda per consultarne i dettagli.</p>
       </section></div>
     {notice && <div className="alert success archive-notice" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Chiudi avviso">×</button></div>}
-    {selected && <Drawer title={selectedTitle} compact onClose={() => { setSelected(null); setDraft(null) }}>
+    {selected && <Drawer title={selectedTitle} compact onClose={() => { detailGen.current++; setSelected(null); setDocument(null); setDraft(null) }}>
       <div className="detail-section"><h3>{kind === 'Patient' ? 'Anagrafica' : 'Dettaglio'}</h3>
-        <dl className="property-list">{detailFields.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{kind === 'Patient' && field.key === 'patient_name' ? archivePatientName(selected) : kind === 'Healthcare Practitioner' && field.key === 'practitioner_name' ? archivePractitionerName(selected as Practitioner) : kind === 'Healthcare Practitioner' && field.key === 'status' ? selected.status === 'Active' ? 'Attivo' : 'Non attivo' : view(field, selected[field.key])}</dd></div>)}</dl>
+        <dl className="property-list">{detailFields.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{document && ['grand_total', 'outstanding_amount', 'paid_amount', 'unallocated_amount'].includes(field.key) ? documentMoney(selected[field.key], field.key === 'outstanding_amount' || field.key === 'unallocated_amount' ? document.party_currency : field.key === 'paid_amount' ? document.paid_currency : document.currency) : kind === 'Patient' && field.key === 'patient_name' ? archivePatientName(selected) : kind === 'Healthcare Practitioner' && field.key === 'practitioner_name' ? archivePractitionerName(selected as Practitioner) : kind === 'Healthcare Practitioner' && field.key === 'status' ? selected.status === 'Active' ? 'Attivo' : 'Non attivo' : ((kind === 'Item' && field.key === 'item_name') || (kind === 'CC Package Template' && field.key === 'title')) ? archiveCatalogName(kind, selected) : view(field, selected[field.key])}</dd></div>)}</dl>
+        {document && <section className="detail-section"><h3>Documento completo</h3><dl className="property-list"><div><dt>Soggetto</dt><dd>{document.party}</dd></div>{document.status && <div><dt>Stato contabile</dt><dd>{financeFieldValue('status', document.status)}</dd></div>}{document.address && <div><dt>Indirizzo</dt><dd>{document.address}</dd></div>}{document.tax_id && <div><dt>Identificativo fiscale</dt><dd>{document.tax_id}</dd></div>}{document.company_address && <div><dt>Indirizzo azienda</dt><dd>{document.company_address}</dd></div>}{document.company_tax_id && <div><dt>Identificativo fiscale azienda</dt><dd>{document.company_tax_id}</dd></div>}{document.due_date && <div><dt>Scadenza</dt><dd>{displayDate(document.due_date)}</dd></div>}{document.mode_of_payment && <div><dt>Metodo</dt><dd>{document.mode_of_payment}</dd></div>}{document.reference_no && <div><dt>Riferimento</dt><dd>{document.reference_no}</dd></div>}{document.reference_date && <div><dt>Data riferimento</dt><dd>{displayDate(document.reference_date)}</dd></div>}{document.payment_type && <div><dt>Operazione</dt><dd>{financeFieldValue('payment_type', document.payment_type)}</dd></div>}{(['net_total', 'discount_amount', 'total_taxes_and_charges', 'grand_total', 'outstanding_amount', 'paid_amount', 'received_amount', 'unallocated_amount'] as const).map(key => document[key] != null && <div key={key}><dt>{({ net_total: 'Imponibile', discount_amount: 'Sconto', total_taxes_and_charges: 'Imposte e oneri', grand_total: 'Totale', outstanding_amount: 'Residuo', paid_amount: 'Importo pagato', received_amount: 'Importo ricevuto', unallocated_amount: 'Non attribuito' })[key]}</dt><dd>{documentMoney(document[key], key === 'paid_amount' ? document.paid_currency : key === 'received_amount' ? document.received_currency : key === 'unallocated_amount' || key === 'outstanding_amount' ? document.party_currency : document.currency)}</dd></div>)}</dl>{document.items && <><h3>Servizi e articoli</h3>{document.items.length ? document.items.map((item, i) => <div className="archive-display-context" key={i}><strong>{item.item_name || item.description}</strong><p>{item.description}</p><p>Quantità: {item.qty} {item.uom} · Prezzo: {documentMoney(item.rate, document.currency)} · Importo: {documentMoney(item.amount, document.currency)}</p>{!!item.discount_percentage && <p>Sconto: {item.discount_percentage}%</p>}{!!item.discount_amount && <p>Sconto per unità: {documentMoney(item.discount_amount, document.currency)}</p>}</div>) : <p>Nessuna riga presente.</p>}</>}{document.taxes?.map((tax, i) => <p key={i}>{tax.description || 'Imposta'}: {documentMoney(tax.tax_amount, document.currency)}</p>)}{document.references?.map((ref, i) => <p key={i}>Documento collegato: {ref.name} · {documentMoney(ref.allocated_amount, document.party_currency)}</p>)}{document.links?.map((link, i) => <p key={i}>Documento collegato: {link.name}</p>)}</section>}
         {kind === 'Payment Entry' && Array.isArray(selected.references) && <p>{selected.references.length} {selected.references.length === 1 ? 'documento collegato' : 'documenti collegati'}.</p>}
         {kind === 'Sales Invoice' && Number(selected.docstatus) === 2 && <p className="scope-note">Il residuo mostrato appartiene al documento annullato: non è un importo da incassare.</p>}
-        {['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && !canPrint && <p className="scope-note">L’anteprima è disponibile solo per documenti confermati. Questo documento {Number(selected.docstatus) === 2 ? 'è annullato' : 'è in bozza'}.</p>}
+        {kind === 'Purchase Invoice' && Number(selected.docstatus) === 2 && <p className="scope-note">Il residuo mostrato appartiene al documento annullato: non è un importo da pagare.</p>}
+        {['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && !canPrint && <p className="scope-note">{Number(selected.docstatus) === 2 ? 'Questo documento è annullato e non è disponibile per la stampa.' : Number(selected.docstatus) === 0 ? 'Questo documento è in bozza e non è disponibile per la stampa.' : 'Non hai il permesso di stampare questo documento.'}</p>}
         <div className="form-actions">{manager && editableKinds.includes(kind) && <Button onClick={edit}>Modifica scheda</Button>}{['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && canPrint && <Button variant="secondary" onClick={() => void print()}><Printer size={16} /> Anteprima e stampa</Button>}</div>
       </div>
     </Drawer>}
-    {draft && !confirm && <Modal title={`${creating ? 'Nuova scheda' : 'Modifica'} · ${spec.label}`} onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); const issue = validate(); if (issue) setError(issue); else { setError(''); setConfirm(true) } }}><p>Modifica i dati della scheda e indica il motivo: l’operazione sarà registrata.</p>{displayDiffersFromStored && <p className="archive-display-context">Nella lista: <strong>{selectedTitle}</strong>. I campi sotto mostrano i dati registrati per questa stessa scheda.</p>}<div className="form-grid">{formFields.map(field => {
+    {draft && !confirm && <Modal title={`${creating ? 'Nuova scheda' : 'Modifica'} · ${spec.label}`} onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); const issue = validate(); if (issue) setError(issue); else { setError(''); setConfirm(true) } }}><p>Modifica i dati della scheda e indica il motivo: l’operazione sarà registrata.</p>{displayDiffersFromStored && <p className="archive-display-context">Scheda selezionata: <strong>{selectedTitle}</strong>. Le modifiche riguardano solo questa scheda.</p>}{selected && <details><summary>Identificativo della scheda</summary><p>{selected.name}</p></details>}<div className="form-grid">{formFields.map(field => {
       if (field.key === 'valid_from') {
         return <Field key={field.key} label={field.label} required={field.required}><DateInput value={String(draft[field.key] ?? '')} onChange={value => update(field.key, value)} required={field.required} /></Field>
       }
@@ -249,7 +274,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
       if (field.kind === 'select') {
         return <Field key={field.key} label={field.label} required={field.required}><select value={String(draft[field.key] ?? '')} onChange={event => update(field.key, event.target.value)}>{field.values?.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select></Field>
       }
-      return <Field key={field.key} label={displayDiffersFromStored && field.key === editableNameKey ? `${field.label} registrato` : field.label} required={field.required}><input type={field.kind ?? 'text'} required={field.required} min={field.kind === 'number' ? 0 : undefined} step={field.kind === 'number' ? 'any' : undefined} value={String(draft[field.key] ?? '')} onChange={event => update(field.key, event.target.value)} /></Field>
+      return <Field key={field.key} label={field.label} required={field.required}>{field.key === editableNameKey && selected && syntheticCode(selected[field.key]) && <span>Il nome registrato è un codice di prova. Inserisci il nome leggibile da salvare per questa scheda.</span>}<input type={field.kind ?? 'text'} required={field.required} min={field.kind === 'number' ? 0 : undefined} step={field.kind === 'number' ? 'any' : undefined} value={String(draft[field.key] ?? '')} onChange={event => update(field.key, event.target.value)} /></Field>
     })}</div><Field label="Motivo della modifica" required><input value={reason} maxLength={500} onChange={event => { setReason(event.target.value); key.current = requestKey() }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit">{creating ? 'Rivedi dati' : 'Rivedi modifica'}</Button></div></form></Modal>}
     {confirm && <Modal title={creating ? `Conferma creazione · ${spec.label}` : `Conferma modifica · ${spec.label}`} onClose={() => setConfirm(false)}>
       <div className="review-diff-container">
@@ -274,7 +299,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
             {formFields.filter(f => creating || String(draft?.[f.key] ?? '') !== String(selected?.[f.key] ?? '')).map(f => (
               <tr key={f.key}>
                 <td><strong>{f.label}</strong></td>
-                {!creating && <td>{view(f, selected?.[f.key])}</td>}
+                {!creating && <td>{syntheticCode(selected?.[f.key]) ? 'Dato di prova registrato' : view(f, selected?.[f.key])}</td>}
                 <td style={{ color: !creating ? '#15803d' : undefined, fontWeight: 600 }}>{view(f, draft?.[f.key])}</td>
               </tr>
             ))}

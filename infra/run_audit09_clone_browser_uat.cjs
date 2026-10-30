@@ -60,6 +60,8 @@ pros = frappe.get_all('Healthcare Practitioner', filters={'status': 'Active', 'u
 pro_emails = [p.user_id for p in pros if p.user_id]
 pro_a_email = pro_emails[0] if pro_emails else manager_email
 pro_a_name = pros[0].name if pros else ""
+confirmed_invoice = frappe.get_all('Sales Invoice', filters={'cc_center': center, 'docstatus': 1, 'name': ['not like', 'CC9-%']}, pluck='name', limit_page_length=1)[0]
+cancelled_invoice = frappe.get_all('Sales Invoice', filters={'cc_center': center, 'docstatus': 2, 'name': ['like', 'CC9-%']}, pluck='name', limit_page_length=1)[0]
 
 print(json.dumps({
     "center": center,
@@ -67,7 +69,9 @@ print(json.dumps({
     "manager": manager_email,
     "secretary": sec_email,
     "pro_a": pro_a_email,
-    "pro_a_name": pro_a_name
+    "pro_a_name": pro_a_name,
+    "confirmed_invoice": confirmed_invoice,
+    "cancelled_invoice": cancelled_invoice
 }))
 `;
   return JSON.parse(runFrappe(code));
@@ -311,6 +315,77 @@ print(json.dumps({
         assert.ok(await page.locator('.drawer[role="dialog"] .property-list dt').count() > 0, `${label}: empty detail`);
         await saveShot(page, `audit09-${slug}-detail-${viewport}.png`);
         await page.locator('.drawer[role="dialog"] button[aria-label="Chiudi"]').click();
+      }
+      // Change and restore only synthetic clone records. Compare the canonical ID
+      // and the saved field through the real detail and mutation HTTP responses.
+      for (const [label, fieldLabel, field, detailMethod, saveMethod] of [
+        ['Pazienti', 'Nome', 'first_name', 'operations.profiles.patient_detail', 'operations.profiles.patient_save'],
+        ['Professionisti', 'Nome', 'first_name', 'operations.profiles.practitioner_detail', 'operations.profiles.practitioner_save'],
+        ['Articoli', 'Articolo', 'item_name', 'catalog.detail', 'catalog.item_save'],
+        ['Modelli pacchetto', 'Modello', 'title', 'catalog.detail', 'catalog.package_template_save']
+      ]) {
+        await page.locator(`.archive-menu button[aria-label="${label}"]`).click();
+        await waitForList(page, label);
+        const detailResponse = page.waitForResponse(r => r.url().includes(detailMethod) && r.ok());
+        await page.locator('.archive-panel tbody tr').first().click();
+        const original = (await (await detailResponse).json()).message;
+        const drawer = page.locator('.drawer[role="dialog"]');
+        await drawer.getByRole('button', { name: 'Modifica scheda' }).click();
+        const change = async value => {
+          const form = page.getByRole('dialog', { name: /Modifica/ });
+          await form.getByLabel(fieldLabel).first().fill(value);
+          await form.getByLabel('Motivo della modifica').fill('Prova sintetica reversibile');
+          await form.getByRole('button', { name: 'Rivedi modifica' }).click();
+          const save = page.waitForResponse(r => r.url().includes(saveMethod) && r.request().method() === 'POST');
+          const updated = page.waitForResponse(r => r.url().includes(detailMethod) && new URL(r.url()).searchParams.get('name') === original.name && r.ok());
+          await page.getByRole('button', { name: 'Conferma salvataggio' }).click();
+          const response = await save;
+          assert.ok(response.ok(), `${label}: HTTP ${response.status()}`);
+          const posted = response.request().postDataJSON();
+          assert.strictEqual(posted.name, original.name, `${label}: wrong canonical record`);
+          assert.strictEqual(posted[field], value, `${label}: wrong value`);
+          assert.strictEqual((await (await updated).json()).message[field], value, `${label}: saved field differs`);
+          await page.getByText('Scheda salvata con successo.').waitFor();
+        };
+        const changed = `Prova reversibile ${viewport} ${label}`;
+        await change(changed);
+        assert.ok((await drawer.innerText()).includes(changed), `${label}: saved name missing`);
+        await saveShot(page, `audit09-final-edit-${label.toLowerCase().replaceAll(' ', '-')}-${viewport}.png`);
+        await drawer.getByRole('button', { name: 'Modifica scheda' }).click();
+        await change(String(original[field]));
+        const verify = await page.evaluate(async ({ method, center, name, kind }) => {
+          const args = new URLSearchParams({ center, name }); if (kind) args.set('kind', kind);
+          const r = await fetch('/api/method/centrochange_core.' + method + '?' + args);
+          if (!r.ok) throw new Error('Detail verification failed'); return (await r.json()).message;
+        }, { method: detailMethod, center: env.center, name: original.name, kind: label === 'Articoli' ? 'Item' : label === 'Modelli pacchetto' ? 'CC Package Template' : '' });
+        assert.strictEqual(verify[field], original[field], `${label}: restoration failed`);
+        await drawer.getByRole('button', { name: 'Chiudi' }).click();
+      }
+      await page.locator('.archive-menu button[aria-label="Fatture pazienti"]').click();
+      for (const [id, cancelled] of [[env.confirmed_invoice, false], [env.cancelled_invoice, true]]) {
+        const search = page.getByRole('searchbox', { name: 'Cerca in fatture pazienti' });
+        await search.fill(id);
+        await page.locator('.archive-panel tbody tr').first().waitFor({ state: 'visible', timeout: 15000 });
+        const response = page.waitForResponse(r => r.url().includes('finance.documents.detail') && new URL(r.url()).searchParams.get('name') === id);
+        await page.locator('.archive-panel tbody tr').first().click();
+        assert.strictEqual((await (await response).json()).message.name, id);
+        const drawer = page.locator('.drawer[role="dialog"]');
+        await drawer.getByRole('heading', { name: 'Documento completo' }).waitFor();
+        await drawer.getByRole('heading', { name: 'Servizi e articoli' }).waitFor();
+        if (cancelled) {
+          assert.strictEqual(await drawer.getByRole('button', { name: 'Anteprima e stampa' }).count(), 0);
+          assert.ok((await drawer.innerText()).includes('non è un importo da incassare'));
+        } else {
+          await drawer.getByRole('button', { name: 'Anteprima e stampa' }).click();
+          const preview = page.locator('iframe.document-preview');
+          await preview.waitFor();
+          const html = await preview.getAttribute('srcdoc');
+          assert.ok(html.includes('Righe del documento') && html.includes('Importi'));
+          await saveShot(page, `audit09-final-print-${viewport}.png`);
+          await page.getByRole('dialog', { name: /Anteprima/ }).getByRole('button', { name: 'Chiudi' }).first().click();
+        }
+        await saveShot(page, `audit09-final-${cancelled ? 'cancelled' : 'confirmed'}-${viewport}.png`);
+        await drawer.getByRole('button', { name: 'Chiudi' }).click();
       }
       await context.close();
     }

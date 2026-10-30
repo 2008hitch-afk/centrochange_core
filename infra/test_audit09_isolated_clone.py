@@ -640,10 +640,23 @@ try:
     # the synthetic pagination rows injected directly into the clone tables.
     import centrochange_core.finance.documents as documents
     frappe.set_user(manager_user)
+    native_documents = {}
     for printable in ('Sales Invoice', 'Purchase Invoice', 'Payment Entry'):
         native_names = frappe.get_all(printable, filters={'cc_center': center, 'docstatus': 1,
             'name': ['not like', 'CC9-%']}, pluck='name', limit_page_length=1)
         assert native_names, printable + ': no native seeded document for print preview'
+        native_documents[printable] = native_names[0]
+        native = frappe.get_doc(printable, native_names[0])
+        projected = documents.detail(center=center, doctype=printable, name=native.name)
+        assert projected['name'] == native.name and projected['docstatus'] == 1
+        if printable != 'Payment Entry':
+            assert len(projected['items']) == len(native.items)
+            assert projected['grand_total'] == native.grand_total
+            assert projected['outstanding_amount'] == native.outstanding_amount
+            assert len(projected['taxes']) == len(native.taxes)
+        else:
+            assert projected['paid_currency'] == native.paid_from_account_currency
+            assert projected['received_currency'] == native.paid_to_account_currency
         prev = documents.preview(center=center, doctype=printable, name=native_names[0])
         assert 'html' in prev, "Document preview must return HTML"
         assert len(prev['html']) > 0, "Document preview HTML must not be empty"
@@ -651,6 +664,17 @@ try:
         assert '<html lang="it">' in prev['html']
         assert 'Data' in prev['html'] and 'Confermato' in prev['html']
         assert 'cc_center' not in prev['html'] and 'request_key' not in prev['html']
+
+    # A cancelled synthetic pagination record remains readable but cannot print.
+    cancelled_name = frappe.get_all('Sales Invoice', filters={'cc_center': center, 'name': ['like', 'CC9-%']}, pluck='name', limit_page_length=1)[0]
+    frappe.db.set_value('Sales Invoice', cancelled_name, 'docstatus', 2)
+    cancelled = documents.detail(center=center, doctype='Sales Invoice', name=cancelled_name)
+    assert cancelled['docstatus'] == 2 and not cancelled['can_print']
+    try:
+        documents.preview(center=center, doctype='Sales Invoice', name=cancelled_name)
+        raise AssertionError('Cancelled document printed')
+    except frappe.PermissionError:
+        pass
 
     test_results['scenario_4_document_print_preview'] = 'PASS'
 
@@ -672,6 +696,7 @@ try:
     for kind in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
         denied(lambda kind=kind: reporting.records(center=center, doctype=kind, limit=50), 'Guest ' + kind)
     denied(lambda: payments.records(center=center, start='2026-01-01', end='2026-12-31'), 'Guest Payment Entry')
+    denied(lambda: documents.detail(center=center, doctype='Sales Invoice', name=native_documents['Sales Invoice']), 'Guest document detail')
 
     professional_users = frappe.get_all('Has Role', filters={'role': 'CC Professional',
         'parenttype': 'User', 'parent': ['in', member_users]}, pluck='parent')
@@ -687,6 +712,7 @@ try:
         for kind in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
             denied(lambda kind=kind: reporting.records(center=center, doctype=kind, limit=50), 'Professional ' + kind)
         denied(lambda: payments.records(center=center, start='2026-01-01', end='2026-12-31'), 'Professional Payment Entry')
+        denied(lambda: documents.detail(center=center, doctype='Sales Invoice', name=native_documents['Sales Invoice']), 'Professional document detail')
 
     for finance_role in ('CC Finance', 'CC Accountant'):
         finance_users = frappe.get_all('Has Role', filters={'role': finance_role,
@@ -695,6 +721,7 @@ try:
         frappe.set_user(finance_users[0])
         assert isinstance(reporting.records(center=center, doctype='Sales Invoice', limit=50), dict)
         assert isinstance(payments.records(center=center, start='2026-01-01', end='2026-12-31'), dict)
+        assert documents.detail(center=center, doctype='Sales Invoice', name=native_documents['Sales Invoice'])['name'] == native_documents['Sales Invoice']
         denied(lambda: catalog.records(center=center, kind='Item'), finance_role + ' catalog')
 
     frappe.set_user(secretary_user)
@@ -710,6 +737,7 @@ try:
     denied(lambda: profiles.patients(center=other_c), 'Secretariat cross-center Patient')
     denied(lambda: reporting.records(center=other_c, doctype='Sales Invoice', limit=50), 'Secretariat cross-center Sales Invoice')
     denied(lambda: payments.records(center=other_c, start='2026-01-01', end='2026-12-31'), 'Secretariat cross-center Payment Entry')
+    denied(lambda: documents.detail(center=other_c, doctype='Sales Invoice', name=native_documents['Sales Invoice']), 'Secretariat cross-center document detail')
 
     test_results['scenario_5_rbac_and_anti_idor'] = 'PASS'
 

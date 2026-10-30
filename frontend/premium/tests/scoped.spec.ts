@@ -38,6 +38,10 @@ async function mock(page: Page, writes: Write[], role = 'CC Manager') {
       const kind = method.endsWith('patient_detail') ? 'Patient' : method.endsWith('practitioner_detail') ? 'Healthcare Practitioner' : method.endsWith('payments.detail') ? 'Payment Entry' : String(args.kind)
       message = rows[kind]?.find(row => row.name === args.name) ?? null
       if (!message) status = 404
+    } else if (method.endsWith('finance.documents.detail')) {
+      const row = rows[String(args.doctype)]?.find(entry => entry.name === args.name)
+      message = row ? { ...row, doctype: args.doctype, party: 'Soggetto sintetico', currency: 'EUR', can_print: row.docstatus === 1, items: [], taxes: [], references: [] } : null
+      if (!message) status = 404
     } else if (method.endsWith('finance.documents.preview')) message = { doctype: args.doctype, name: args.name, format: 'Centro Change', html: '<html lang="it"><body><h1>Documento sintetico</h1></body></html>' }
     else if (request.method() === 'POST' && /catalog\.(service|item|appointment_type|price|package_template)_(save|create)|operations\.profiles\.(patient|practitioner)_save/.test(method)) {
       if (role !== 'CC Manager') status = 403
@@ -78,9 +82,9 @@ test('AUDIT-05: archivio professionisti usa alias solo in lettura, editor mantie
   await expect(drawer.getByRole('heading', { name: 'Dettaglio' })).toBeVisible()
   await expect(drawer.getByRole('heading', { name: 'Professionista di prova A' })).toHaveCount(1)
   await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
-  await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-archivio-${info.project.name}.png`, fullPage: true })
+  await page.screenshot({ path: info.outputPath(`professionisti-archivio-${info.project.name}.png`), fullPage: true })
   await drawer.getByRole('button', { name: 'Modifica scheda' }).click()
-  await expect(page.getByRole('dialog', { name: 'Modifica · Professionisti' }).getByRole('textbox', { name: 'Nome registrato *', exact: true })).toHaveValue(row.first_name)
+  await expect(page.getByRole('dialog', { name: 'Modifica · Professionisti' }).getByRole('textbox', { name: /^Nome/ })).toHaveValue('')
 })
 
 test('regressioni DECISION-064: Agenda unica e intervallo pagamenti ammesso', async ({ page }) => {
@@ -112,6 +116,7 @@ test('AUDIT-09: fattura annullata mostra il limite di stampa senza richiedere an
     if (url.searchParams.get('doctype') !== 'Sales Invoice') return route.fallback()
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [{ name: 'SINV-CANCELLED', customer: 'CUS-001', posting_date: today, grand_total: 100, outstanding_amount: 100, docstatus: 2 }], has_more: false } }) })
   })
+  await page.route('**/api/method/centrochange_core.finance.documents.detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { doctype: 'Sales Invoice', name: 'SINV-CANCELLED', party: 'Cliente sintetico', docstatus: 2, currency: 'EUR', can_print: false, items: [{ item_name: 'Visita', description: 'Visita', qty: 1, rate: 100, amount: 100 }], taxes: [] } }) }))
   await openArchives(page)
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Fatture pazienti' }).click()
   await page.locator('.archive-panel tbody tr').first().click()
@@ -140,7 +145,7 @@ test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa
       await expect(page.getByTitle('Documento PAY-001')).toHaveAttribute('data-printed', 'yes')
       await page.getByRole('dialog', { name: /Anteprima/ }).getByRole('button', { name: 'Chiudi' }).first().click()
     }
-    await page.screenshot({ path: `../../docs/evidence/issue-148/scoped-${name.toLowerCase().replaceAll(' ', '-')}-${testInfo.project.name}.png`, fullPage: true })
+    await page.screenshot({ path: testInfo.outputPath(`scoped-${name.toLowerCase().replaceAll(' ', '-')}-${testInfo.project.name}.png`), fullPage: true })
     await page.getByRole('dialog').getByRole('button', { name: 'Chiudi' }).click()
   }
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Articoli' }).click()
@@ -268,6 +273,12 @@ for (const task of [
   expect(writes).toHaveLength(1)
   expect(writes[0].method).toContain(task.method)
   expect(writes[0].body).not.toHaveProperty('customer')
+  if (['Pazienti', 'Professionisti', 'Modelli pacchetto'].includes(task.section)) {
+    await expect(page.locator('.archive-panel tbody tr').first()).toContainText(task.value)
+    await expect(page.locator('.drawer[role="dialog"]')).toContainText(task.value)
+    await page.getByRole('button', { name: 'Modifica scheda' }).click()
+    await expect(page.getByRole('dialog', { name: /Modifica/ }).getByLabel(task.field).first()).toHaveValue(task.value)
+  }
 })
 
 test('API scoped: archivi finanziari paginazione server-side oltre 500 record e ricerca', async ({ page }) => {
