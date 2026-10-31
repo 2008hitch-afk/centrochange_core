@@ -797,7 +797,7 @@ export function Access({ center, feedback, boot }: Context) {
   const readableUser = (row: Row) => {
     const name = String(row.full_name ?? '').trim()
     const id = String(row.name ?? '')
-    const label = name && name !== id && !syntheticCode(name) ? name : id
+    const label = name && name !== id && !syntheticCode(name) ? name : auditActorName(id)
     return userRoles(row) ? label + ' · ' + userRoles(row) : label
   }
   const selectedAccount = users.find(entry => entry.name === user)
