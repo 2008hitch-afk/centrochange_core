@@ -5,12 +5,19 @@ const crypto = require('crypto')
 const fs = require('fs')
 const path = require('path')
 const assert = require('assert')
-const { classifyFailure, isPremiumPath } = require('./audit10_failure_diagnostics.cjs')
+const { classifyFailure, isPremiumPath, resolveTarget } = require('./audit10_failure_diagnostics.cjs')
+const target = resolveTarget(process.env)
+process.umask(0o077)
 const out = process.env.CC_ARTIFACT_DIR
-fs.mkdirSync(out, { recursive: true })
-const base = 'http://centrochange.local:8099'
+fs.mkdirSync(out, { recursive: true, mode: 0o700 })
+if (target.mode === 'staging') {
+  if (fs.statSync(out).mode & 0o077) throw new Error('Staging evidence directory must be private')
+  const actual = execFileSync('docker', ['inspect', '--format', '{{index .Config.Labels "centrochange.source"}}', target.backend], { encoding: 'utf8' }).trim()
+  if (actual !== target.expectedSha) throw new Error('Running staging image does not match the explicitly supplied SHA')
+}
+const base = target.base
 function py(code, data = {}) {
-  return execFileSync('docker', ['exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1', '-w', '/home/frappe/frappe-bench', 'cc183-clone-backend', 'env/bin/python', '-c', code], { input: JSON.stringify(data), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim()
+  return execFileSync('docker', ['exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1', '-w', '/home/frappe/frappe-bench', target.backend, 'env/bin/python', '-c', code], { input: JSON.stringify(data), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim()
 }
 const discover = `import frappe,json,sys
 from centrochange_core.uat.demo import read
@@ -26,7 +33,10 @@ d=json.load(sys.stdin);frappe.init('centrochange.local',sites_path='sites');frap
 try:
  assert frappe.conf.get('cc_synthetic_dev')==1 and frappe.conf.get('cc_uat_demo')==1
  f=read()['fixture'];assert d['center']==f['centers'][1] and d['manager']==f['users']['m']['name']
- frappe.set_user(d['manager']);set_operational(d['center'],0,'AUDIT10-HARNESS synthetic inactive center');frappe.db.commit();print('PASS')
+ frappe.set_user(d['manager'])
+ if d['mode']=='clone':set_operational(d['center'],0,'AUDIT10-HARNESS synthetic inactive center');frappe.db.commit()
+ else:assert d['mode']=='staging' and frappe.db.get_value('Branch',d['center'],'cc_operational')==0
+ print('PASS')
 finally:frappe.destroy()`
 const setup = `import json,sys,frappe
 from frappe.utils.password import update_password
@@ -84,7 +94,7 @@ try:
  print(json.dumps({'digest':digest,'audit_names':names,'new_audit_count':len(audit)-len(rows['CC Audit Event'])}))
 finally:frappe.destroy()`
 const cfg = JSON.parse(py(discover))
-assert.strictEqual(py(initInactive, { center: cfg.b, manager: cfg.manager.name }), 'PASS')
+assert.strictEqual(py(initInactive, { center: cfg.b, manager: cfg.manager.name, mode: target.mode }), 'PASS')
 const initial = JSON.parse(py(snapshot))
 let retainedAuditTotal = 0
 async function login(page, user, password) {
@@ -185,6 +195,6 @@ async function round(browser, width, iteration) {
 }
 ;(async () => {
   const browser = await chromium.launch({ headless: true, args: ['--host-resolver-rules=MAP centrochange.local 127.0.0.1', '--no-proxy-server'] })
-  try { for (const width of [1440, 390]) for (const iteration of [1, 2]) await round(browser, width, iteration) }
+  try { for (const width of [1440, 390]) for (const iteration of (target.mode === 'clone' ? [1, 2] : [1])) await round(browser, width, iteration) }
   finally { await browser.close() }
 })().catch(error => { console.error(String(error.message).split('\n')[0]); process.exit(1) })
