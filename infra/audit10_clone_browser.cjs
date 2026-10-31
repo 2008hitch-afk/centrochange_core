@@ -8,7 +8,7 @@ frappe.init('centrochange.local',sites_path='sites');frappe.connect()
 c=frappe.get_all('Branch',filters={'cc_operational':1},pluck='name',order_by='name',limit_page_length=1)[0]
 u=frappe.get_all('CC Center Membership',filters={'center':c,'active':1},pluck='user',limit_page_length=0)
 def who(role):return frappe.get_all('Has Role',filters={'role':role,'parent':['in',u]},pluck='parent',limit_page_length=1)[0]
-m=who('CC Manager');p=who('CC Professional');pr=frappe.get_all('Healthcare Practitioner',filters={'user_id':p,'status':'Active'},pluck='name',limit_page_length=1)[0]
+m=who('CC Manager');ps=frappe.get_all('Has Role',filters={'role':'CC Professional','parent':['in',u]},pluck='parent',limit_page_length=0);rec=frappe.get_all('Healthcare Practitioner',filters={'user_id':['in',ps],'status':'Active'},fields=['name','user_id'],limit_page_length=1)[0];p=rec.user_id;pr=rec.name
 print(json.dumps({'center':c,'manager':m,'professional':p,'practitioner':pr}))`;
 const env=JSON.parse(frappe(discover));
 function sid(user){return frappe(`import frappe\nfrom werkzeug.test import EnvironBuilder\nfrom frappe.sessions import Session\nfrappe.init('centrochange.local',sites_path='sites');frappe.connect();frappe.request=EnvironBuilder().get_request()\nSession(user=${JSON.stringify(user)}).start();print(frappe.session.sid)`)}

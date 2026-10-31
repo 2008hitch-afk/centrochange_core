@@ -22,6 +22,8 @@ def lock():
 
 def _active_value(value):
 	"""Reject malformed states instead of coercing them into a revocation."""
+	if isinstance(value, bool):
+		return int(value)
 	if str(value).strip() not in ("0", "1"):
 		frappe.throw("Lo stato richiesto non è valido.")
 	return int(str(value).strip())

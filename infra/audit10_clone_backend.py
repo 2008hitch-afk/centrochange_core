@@ -15,8 +15,10 @@ try:
         assert roles, role
         return roles[0]
     manager = principal('CC Manager')
-    professional = principal('CC Professional')
-    practitioner = frappe.get_all('Healthcare Practitioner', filters={'user_id': professional, 'status': 'Active'}, pluck='name', limit_page_length=1)[0]
+    professional_users = frappe.get_all('Has Role', filters={'role': 'CC Professional', 'parent': ['in', users]}, pluck='parent', limit_page_length=0)
+    practitioners = frappe.get_all('Healthcare Practitioner', filters={'user_id': ['in', professional_users], 'status': 'Active'}, fields=['name', 'user_id'], limit_page_length=1)
+    assert practitioners, 'No active synthetic professional with an account'
+    practitioner, professional = practitioners[0].name, practitioners[0].user_id
     membership = frappe.db.get_value('CC Center Membership', {'center': center, 'user': professional}, 'name')
     assert membership
     def denied(fn):
