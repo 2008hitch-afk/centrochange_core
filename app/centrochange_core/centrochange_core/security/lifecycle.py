@@ -20,6 +20,13 @@ def lock():
 		frappe.throw("Un account anonimo o disattivato non può modificare gli accessi.", frappe.PermissionError)
 
 
+def _active_value(value):
+	"""Reject malformed states instead of coercing them into a revocation."""
+	if str(value).strip() not in ("0", "1"):
+		frappe.throw("Lo stato richiesto non è valido.")
+	return int(str(value).strip())
+
+
 def reconcile_user(user):
 	"""Rebuild only managed Patient shares and Practitioner permissions for one principal."""
 	lock()
@@ -59,7 +66,7 @@ def reconcile_patient(patient):
 def set_membership(user, center, active, reason):
 	lock()
 	require_manager()
-	active = int(frappe.utils.cint(active))
+	active = _active_value(active)
 	if active not in (0, 1) or user in ("Guest", "Administrator"):
 		frappe.throw("L’appartenenza operativa alla sede non è valida.")
 	name = frappe.db.get_value("CC Center Membership", {"user": user, "center": center}, for_update=True)
@@ -129,7 +136,7 @@ def set_practitioner_state(practitioner, active, reason):
 	lock()
 	require_manager()
 	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
-	active = int(frappe.utils.cint(active))
+	active = _active_value(active)
 	if active not in (0, 1) or doc.user_id in (None, "", "Guest", "Administrator"):
 		frappe.throw("Serve un account operativo valido e collegato.")
 	user = frappe.get_doc("User", doc.user_id, for_update=True)

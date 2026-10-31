@@ -779,12 +779,14 @@ export function Access({ center, feedback, boot }: Context) {
   const [practitioner, setPractitioner] = useState('')
   const [active, setActive] = useState('')
   const [reason, setReason] = useState('')
+  const [confirmAccess, setConfirmAccess] = useState(false)
+  const [loadError, setLoadError] = useState('')
   const [reload, setReload] = useState(0)
   const { busy, error, run } = useAction(feedback, () => { setForm(null); setReload(x => x + 1) })
   useEffect(() => {
     if (!center) return
-    let live = true; setData(null)
-    ops<Row>('workspace.management_context', { center }).then(r => { if (live) setData(r) }).catch(e => feedback(getError(e), true))
+    let live = true; setData(null); setLoadError('')
+    ops<Row>('workspace.management_context', { center }).then(r => { if (live) setData(r) }).catch(e => { if (live) { const message = getError(e); setLoadError(message); feedback(message, true) } })
     return () => { live = false }
   }, [center, reload])
   const users = data?.users as Row[] ?? []
@@ -802,24 +804,25 @@ export function Access({ center, feedback, boot }: Context) {
   const currentMembership = memberships.find(entry => entry.user === user)
   const selectedPractitioner = practitioners.find(entry => entry.name === practitioner)
   const openForm = (next: 'membership' | 'practitioner') => {
-    setUser(''); setPractitioner(''); setActive(''); setReason(''); setForm(next)
+    setUser(''); setPractitioner(''); setActive(''); setReason(''); setConfirmAccess(false); setForm(next)
   }
   const submit = () => form === 'membership'
     ? call('security.lifecycle.set_membership', { user, center, active, reason }, true)
     : call('security.lifecycle.set_practitioner_state', { practitioner, active, reason }, true)
   return <><Heading eyebrow="AMMINISTRAZIONE" title="Gestione accessi" subtitle="Consulta gli account autorizzati e gestisci le appartenenze con una motivazione." action={<div className="button-group"><Button variant="secondary" onClick={() => openForm('practitioner')}>Stato professionista</Button><Button onClick={() => openForm('membership')}><Plus size={17} /> Appartenenza</Button></div>} />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Appartenenze a {centerNameFor(center, boot.centers)}</h2><p>Identità, ruolo e stato dell'account nella sede selezionata.</p></div></div>{!data ? <p className="panel-loading" role="status">Caricamento…</p> : <DataTable rows={memberships} columns={[{ key: 'user', label: 'Utente', render: value => {
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Appartenenze a {centerNameFor(center, boot.centers)}</h2><p>Identità, ruolo e stato dell'account nella sede selezionata.</p></div></div>{loadError ? <p className="inline-error" role="alert">{loadError}</p> : !data ? <p className="panel-loading" role="status">Caricamento…</p> : <DataTable rows={memberships} columns={[{ key: 'user', label: 'Utente', render: value => {
       const account = users.find(entry => entry.name === value)
       return account ? readableUser(account) : String(value ?? 'Utente non disponibile')
     } }, { key: 'active', label: 'Stato appartenenza', render: value => <Chip tone={Number(value) === 1 ? 'good' : 'neutral'}>{Number(value) === 1 ? 'Attivo' : 'Disattivo'}</Chip> }]} />}</section>
-    {form && <Modal title={form === 'membership' ? 'Appartenenza al centro' : 'Stato professionista'} onClose={() => setForm(null)}><form onSubmit={e => { e.preventDefault(); if (active && reason.trim() && (form === 'membership' ? user : practitioner)) void run(submit) }}>
-      <p className="scope-note">Sede interessata: <strong>{centerNameFor(center, boot.centers)}</strong>. Scegli consapevolmente il nuovo stato; la modifica viene registrata.</p>
+    {form && <Modal title={form === 'membership' ? 'Appartenenza al centro' : 'Stato professionista'} onClose={() => setForm(null)}><form onSubmit={e => { e.preventDefault(); if (active && reason.trim() && (form === 'membership' ? user : practitioner)) { if (confirmAccess) void run(submit); else setConfirmAccess(true) } }}>
+      <p className="scope-note">{form === 'membership' ? <>Sede interessata: <strong>{centerNameFor(center, boot.centers)}</strong>.</> : 'Lo stato modifica anche l’accesso dell’account del professionista, in tutte le sedi.'} La modifica viene registrata.</p>
+      {confirmAccess ? <><p>Conferma: <strong>{form === 'membership' && selectedAccount ? readableUser(selectedAccount) : selectedPractitioner ? demoText(selectedPractitioner.practitioner_name) || String(selectedPractitioner.name) : '—'}</strong> · {active === '1' ? 'Attivo' : 'Disattivo'}.</p><p>Motivo: {reason}</p></> : <>
       {form === 'membership' ? <Field label="Utente" required><select value={user} onChange={e => { setUser(e.target.value); setActive('') }} required><option value="">Seleziona un utente</option>{users.map(u => <option key={String(u.name)} value={String(u.name)}>{readableUser(u)}</option>)}</select></Field> : <Field label="Professionista" required><select value={practitioner} onChange={e => { setPractitioner(e.target.value); setActive('') }} required><option value="">Seleziona un professionista</option>{practitioners.map(p => <option key={String(p.name)} value={String(p.name)}>{demoText(p.practitioner_name) || String(p.name)}</option>)}</select></Field>}
       {form === 'membership' && selectedAccount && <p className="scope-note">Account: {readableUser(selectedAccount)}. Appartenenza attuale: <strong>{currentMembership ? Number(currentMembership.active) === 1 ? 'Attiva' : 'Disattiva' : 'Non presente in questa sede'}</strong>.</p>}
       {form === 'practitioner' && selectedPractitioner && <p className="scope-note">Stato attuale del professionista: <strong>{selectedPractitioner.status === 'Active' ? 'Attivo' : 'Non attivo'}</strong>.</p>}
       <Field label="Nuovo stato" required><select value={active} onChange={e => setActive(e.target.value)} required><option value="">Scegli lo stato da impostare</option><option value="1">Attivo</option><option value="0">Disattivo</option></select></Field>
       {active !== '' && <p className="scope-note">{active === '0' ? 'La disattivazione impedirà le operazioni consentite tramite questa appartenenza o stato.' : 'L’attivazione rende disponibile la relativa appartenenza o stato, senza assegnare nuovi ruoli.'}</p>}
-      <Field label="Motivo della modifica" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setForm(null)}>Annulla</Button><Button type="submit" disabled={busy || !active || !reason.trim() || !(form === 'membership' ? user : practitioner)}>{busy ? 'Salvataggio…' : 'Conferma modifica'}</Button></div>
+      <Field label="Motivo della modifica" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field></>}<FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => confirmAccess ? setConfirmAccess(false) : setForm(null)}>{confirmAccess ? 'Indietro' : 'Annulla'}</Button><Button type="submit" disabled={busy || !active || !reason.trim() || !(form === 'membership' ? user : practitioner)}>{busy ? 'Salvataggio…' : confirmAccess ? 'Conferma modifica' : 'Rivedi modifica'}</Button></div>
     </form></Modal>}</>
 }
 
