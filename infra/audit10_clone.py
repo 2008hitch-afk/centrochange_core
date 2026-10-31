@@ -15,6 +15,7 @@ try:
     print('AUDIT10_BACKEND', json.dumps(result), flush=True)
     env = dict(os.environ, NODE_PATH=str(root / 'frontend/premium/node_modules'), CC_ARTIFACT_DIR=os.environ.get('CC_ARTIFACT_DIR', str(root / '.audit10-artifacts')))
     subprocess.run(['node', str(root / 'infra/audit10_clone_browser.cjs')], env=env, check=True)
+    assert not result['inactive_center_expands_historical_access'], 'SECURITY: new membership in inactive center expanded historical patient access'
     print('AUDIT10_ISOLATED_TESTS_PASS', flush=True)
 finally:
     clone.cleanup()

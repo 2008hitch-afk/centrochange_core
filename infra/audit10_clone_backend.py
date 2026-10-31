@@ -3,7 +3,8 @@ import json
 import frappe
 from centrochange_core.security import lifecycle, audit_view
 from centrochange_core.operations import workspace
-from centrochange_core.security.guards import require_center
+from centrochange_core.security.guards import require_center, patient_names
+from centrochange_core.security.center_state import set_operational
 
 frappe.init('centrochange.local', sites_path='sites')
 frappe.connect()
@@ -32,6 +33,7 @@ try:
     assert workspace.management_context(center)['memberships']
     denied(lambda: frappe.get_list('CC Private Note', pluck='name', limit_page_length=1))
     notes = audit_view.events(frappe.utils.nowdate(), frappe.utils.nowdate(), event_type='PRIVATE_NOTE_CREATED')['events']
+    assert notes, 'The synthetic private-note audit fixture is missing'
     assert all('SYNTHETIC PRIVATE BODY' not in json.dumps(row, default=str) for row in notes)
     before = frappe.db.get_value('CC Center Membership', membership, 'active')
     assert before == 1
@@ -74,10 +76,24 @@ try:
     other_centers = frappe.get_all('Branch', filters={'cc_operational': 1, 'name': ['!=', center]}, pluck='name', limit_page_length=0)
     assert other_centers
     denied(lambda: require_center(other_centers[0]))
+    # A new membership for an inactive center must not silently expand historical scope.
+    other = other_centers[0]
+    target = frappe.get_all('CC Patient Assignment', filters={'center': other, 'active': 1}, pluck='patient', limit_page_length=1)[0]
+    secretary = principal('CC Secretariat')
+    frappe.db.savepoint('inactive_center_test')
+    frappe.set_user(manager)
+    set_operational(other, 0, 'Synthetic inactive-center test')
+    frappe.set_user(secretary)
+    before_scope = set(patient_names())
+    frappe.set_user(manager)
+    lifecycle.set_membership(secretary, other, 1, 'Synthetic inactive-center test')
+    frappe.set_user(secretary)
+    expanded = target not in before_scope and target in set(patient_names())
+    frappe.db.rollback(save_point='inactive_center_test')
     frappe.set_user('Guest')
     denied(lambda: workspace.management_context(center))
     denied(lambda: audit_view.events('2000-01-01', '2000-12-31'))
-    print(json.dumps({'status': 'PASS', 'checks': ['real roles and manager-only APIs', 'invalid state', 'membership revoke/reactivate', 'practitioner state', 'audit append-only', 'savepoint rollback']}))
+    print(json.dumps({'status': 'PASS', 'inactive_center_expands_historical_access': expanded, 'checks': ['real roles and manager-only APIs', 'invalid state', 'membership revoke/reactivate', 'practitioner state', 'audit append-only', 'savepoint rollback']}))
 finally:
     frappe.db.rollback()
     frappe.destroy()
