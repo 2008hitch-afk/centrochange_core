@@ -89,6 +89,7 @@ try:
         denied(lambda: workspace.management_context(center))
         denied(lambda: audit_view.events('2000-01-01', '2000-12-31'))
         denied(lambda: lifecycle.set_membership(professional, center, 0, 'Denied synthetic test'))
+        denied(lambda: lifecycle.set_practitioner_state(practitioner, 0, 'Denied synthetic test'))
     frappe.set_user(professional)
     other_centers = frappe.get_all('Branch', filters={'cc_operational': 1, 'name': ['!=', center]}, pluck='name', limit_page_length=0)
     assert other_centers
@@ -123,6 +124,8 @@ try:
     frappe.set_user('Guest')
     denied(lambda: workspace.management_context(center))
     denied(lambda: audit_view.events('2000-01-01', '2000-12-31'))
+    denied(lambda: lifecycle.set_membership(professional, center, 0, 'Guest denied synthetic test'))
+    denied(lambda: lifecycle.set_practitioner_state(practitioner, 0, 'Guest denied synthetic test'))
     print(json.dumps({'status': 'PASS', 'inactive_center_expands_historical_access': expanded, 'checks': ['real roles and manager-only APIs', 'invalid state', 'membership revoke/reactivate', 'practitioner state', 'audit append-only', 'savepoint rollback']}))
 finally:
     frappe.db.rollback()
