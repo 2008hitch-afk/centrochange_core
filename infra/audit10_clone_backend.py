@@ -3,6 +3,7 @@ import json
 import frappe
 from centrochange_core.security import lifecycle, audit_view
 from centrochange_core.operations import workspace
+from centrochange_core.security.guards import require_center
 
 frappe.init('centrochange.local', sites_path='sites')
 frappe.connect()
@@ -29,6 +30,9 @@ try:
         raise AssertionError('Unauthorized call succeeded')
     frappe.set_user(manager)
     assert workspace.management_context(center)['memberships']
+    denied(lambda: frappe.get_list('CC Private Note', pluck='name', limit_page_length=1))
+    notes = audit_view.events(frappe.utils.nowdate(), frappe.utils.nowdate(), event_type='PRIVATE_NOTE_CREATED')['events']
+    assert all('SYNTHETIC PRIVATE BODY' not in json.dumps(row, default=str) for row in notes)
     before = frappe.db.get_value('CC Center Membership', membership, 'active')
     assert before == 1
     frappe.db.savepoint('audit10')
@@ -44,6 +48,7 @@ try:
     assert frappe.db.get_value('CC Center Membership', membership, 'active') == 0
     lifecycle.set_membership(professional, center, 1, 'Synthetic access test')
     assert frappe.db.get_value('CC Center Membership', membership, 'active') == 1
+    lifecycle.set_membership(professional, center, 1, 'Synthetic access test')
     lifecycle.set_practitioner_state(practitioner, 0, 'Synthetic state test')
     assert frappe.db.get_value('User', professional, 'enabled') == 0
     lifecycle.set_practitioner_state(practitioner, 1, 'Synthetic state test')
@@ -54,6 +59,7 @@ try:
     original = frappe.get_doc('CC Audit Event', events[0].name)
     denied(lambda: original.check_permission('write'))
     denied(lambda: original.check_permission('delete'))
+    denied(lambda: frappe.get_doc({'doctype': 'CC Audit Event', 'event_type': 'ARBITRARY', 'reason': 'Synthetic unauthorized insertion'}).insert())
     assert audit_view.events('2000-01-01', '2000-12-31')['events'] == []
     frappe.db.rollback(save_point='audit10')
     assert frappe.db.get_value('CC Center Membership', membership, 'active') == before
@@ -64,6 +70,10 @@ try:
         denied(lambda: workspace.management_context(center))
         denied(lambda: audit_view.events('2000-01-01', '2000-12-31'))
         denied(lambda: lifecycle.set_membership(professional, center, 0, 'Denied synthetic test'))
+    frappe.set_user(professional)
+    other_centers = frappe.get_all('Branch', filters={'cc_operational': 1, 'name': ['!=', center]}, pluck='name', limit_page_length=0)
+    assert other_centers
+    denied(lambda: require_center(other_centers[0]))
     frappe.set_user('Guest')
     denied(lambda: workspace.management_context(center))
     denied(lambda: audit_view.events('2000-01-01', '2000-12-31'))
