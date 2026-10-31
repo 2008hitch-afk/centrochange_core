@@ -23,7 +23,7 @@ class AccessStateTest(unittest.TestCase):
         audit.append = audit.internal_write = lambda *args, **kwargs: None
         audit.atomic = lambda fn: fn
         guards = types.ModuleType('centrochange_core.security.guards')
-        for name in ('centers', 'enabled', 'is_manager', 'patient_names', 'require_center', 'require_manager', 'require_operations', 'current_rows', 'roles'):
+        for name in ('centers', 'enabled', 'is_manager', 'patient_names', 'require_center', 'require_manager', 'require_operations', 'require_operational_center', 'current_rows', 'roles'):
             setattr(guards, name, lambda *args, **kwargs: None)
         modules = {'frappe': frappe, 'frappe.share': share, 'frappe.permissions': permissions,
                    'centrochange_core.security.audit': audit, 'centrochange_core.security.guards': guards}

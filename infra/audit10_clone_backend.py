@@ -23,6 +23,8 @@ try:
     practitioner, professional = practitioners[0].name, practitioners[0].user_id
     membership = frappe.db.get_value('CC Center Membership', {'center': center, 'user': professional}, 'name')
     assert membership
+    fingerprint_types = ('CC Center Membership', 'CC Audit Event', 'DocShare', 'User Permission', 'Has Role')
+    fingerprint = {doctype: frappe.db.count(doctype) for doctype in fingerprint_types}
     def denied(fn):
         try:
             fn()
@@ -66,6 +68,21 @@ try:
     frappe.db.rollback(save_point='audit10')
     assert frappe.db.get_value('CC Center Membership', membership, 'active') == before
     assert not frappe.get_all('CC Audit Event', filters={'reason': 'Synthetic access test'}, limit_page_length=1)
+    # A dual-role synthetic practitioner cannot disable their own active account.
+    frappe.db.savepoint('self_lockout')
+    frappe.set_user('Administrator')
+    dual = frappe.get_doc('User', professional)
+    dual.append('roles', {'role': 'CC Manager'})
+    dual.save(ignore_permissions=True)
+    frappe.set_user(professional)
+    try:
+        lifecycle.set_practitioner_state(practitioner, 0, 'Synthetic self-lockout test')
+    except (frappe.PermissionError, frappe.ValidationError):
+        pass
+    else:
+        raise AssertionError('Self-lockout succeeded')
+    assert frappe.db.get_value('User', professional, 'enabled') == 1
+    frappe.db.rollback(save_point='self_lockout')
     for role in ('CC Professional', 'CC Secretariat', 'CC Finance', 'CC Accountant'):
         user = principal(role)
         frappe.set_user(user)
@@ -82,17 +99,27 @@ try:
     secretary = principal('CC Secretariat')
     frappe.db.savepoint('inactive_center_test')
     frappe.set_user(manager)
+    lifecycle.set_membership(secretary, other, 1, 'Synthetic historical access')
     set_operational(other, 0, 'Synthetic inactive-center test')
     frappe.set_user(secretary)
     before_scope = set(patient_names())
+    assert target in before_scope, 'Existing historical scope must remain available'
     frappe.set_user(manager)
-    try:
-        lifecycle.set_membership(secretary, other, 1, 'Synthetic inactive-center test')
-    except frappe.PermissionError:
-        pass
+    lifecycle.set_membership(secretary, other, 1, 'Synthetic no-op')
+    assert not frappe.get_all('CC Audit Event', filters={'reason': 'Synthetic no-op'}, limit_page_length=1)
+    lifecycle.set_membership(secretary, other, 0, 'Synthetic revoke inactive center')
     frappe.set_user(secretary)
-    expanded = target not in before_scope and target in set(patient_names())
+    assert target not in set(patient_names()), 'Revocation did not remove historical scope'
+    frappe.set_user(manager)
+    denied(lambda: lifecycle.set_membership(secretary, other, 1, 'Synthetic denied reactivation'))
+    denied(lambda: lifecycle.set_membership(professional, other, 1, 'Synthetic denied new membership'))
+    denied(lambda: lifecycle.set_membership(professional, 'CC-UNKNOWN-CENTER', 1, 'Synthetic denied unknown center'))
+    assert not frappe.db.exists('CC Center Membership', {'user': professional, 'center': other})
+    assert not frappe.get_all('CC Audit Event', filters={'reason': ['in', ['Synthetic denied reactivation', 'Synthetic denied new membership']]}, limit_page_length=1)
+    frappe.set_user(secretary)
+    expanded = target in set(patient_names())
     frappe.db.rollback(save_point='inactive_center_test')
+    assert fingerprint == {doctype: frappe.db.count(doctype) for doctype in fingerprint_types}, 'Synthetic test left unexpected records'
     frappe.set_user('Guest')
     denied(lambda: workspace.management_context(center))
     denied(lambda: audit_view.events('2000-01-01', '2000-12-31'))

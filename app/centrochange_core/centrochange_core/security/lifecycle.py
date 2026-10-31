@@ -6,7 +6,7 @@ from frappe.permissions import add_user_permission, remove_user_permission
 
 from centrochange_core.security.audit import append, atomic, internal_write
 from centrochange_core.security.guards import (
-	centers, enabled, is_manager, patient_names, require_center, require_manager, require_operations, current_rows, roles,
+	centers, enabled, is_manager, patient_names, require_center, require_manager, require_operations, require_operational_center, current_rows, roles,
 )
 
 
@@ -78,6 +78,8 @@ def set_membership(user, center, active, reason):
 	before = {"active": doc.active} if name else None
 	if name and int(doc.active) == active:
 		return {"name": name, "active": active}
+	if active:
+		require_operational_center(center)
 	with internal_write("cc_permission_write"):
 		doc.active = active
 		doc.save(ignore_permissions=True)
