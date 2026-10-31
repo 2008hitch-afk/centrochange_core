@@ -16,7 +16,7 @@ const managerSid=sid(env.manager),proSid=sid(env.professional);
 (async()=>{const b=await chromium.launch({headless:true,args:['--host-resolver-rules=MAP centrochange.local 127.0.0.1','--no-proxy-server']});try{
  for(const [width,tag] of [[1440,'desktop'],[390,'mobile']]){
   const ctx=await b.newContext({viewport:{width,height:900},locale:'it-IT',timezoneId:'Europe/Rome'});await ctx.addCookies([{name:'sid',value:managerSid,domain:'centrochange.local',path:'/'}]);const p=await ctx.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
-  await p.goto('http://centrochange.local:8099/premium#Gestione%20accessi',{waitUntil:'networkidle'});await p.getByRole('heading',{name:'Gestione accessi'}).waitFor();await p.locator('.panel tbody tr').first().waitFor();
+  await p.goto('http://centrochange.local:8099/premium#Gestione%20accessi',{waitUntil:'networkidle'});await p.getByRole('heading',{name:'Gestione accessi'}).waitFor();const centerSelector=p.getByLabel('Centro',{exact:true});if(await centerSelector.count())await centerSelector.selectOption(env.center);try{await p.locator('.panel tbody tr').first().waitFor()}catch(e){await p.screenshot({path:path.join(out,`access-error-${tag}.png`)});console.error('ACCESS_PAGE',await p.locator('main').innerText());throw e}
   await p.screenshot({path:path.join(out,`access-${tag}.png`)});
   for(const value of ['0','1']){
    await p.getByRole('button',{name:'Appartenenza',exact:true}).click();const dialog=p.getByRole('dialog',{name:'Appartenenza al centro'});
