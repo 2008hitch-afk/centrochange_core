@@ -77,8 +77,8 @@ try:
     assert other_centers
     denied(lambda: require_center(other_centers[0]))
     # A new membership for an inactive center must not silently expand historical scope.
-    other = other_centers[0]
-    target = frappe.get_all('CC Patient Assignment', filters={'center': other, 'active': 1}, pluck='patient', limit_page_length=1)[0]
+    cross = frappe.get_all('CC Patient Assignment', filters={'center': ['!=', center], 'active': 1}, fields=['center', 'patient'], limit_page_length=1)[0]
+    other, target = cross.center, cross.patient
     secretary = principal('CC Secretariat')
     frappe.db.savepoint('inactive_center_test')
     frappe.set_user(manager)
@@ -86,7 +86,10 @@ try:
     frappe.set_user(secretary)
     before_scope = set(patient_names())
     frappe.set_user(manager)
-    lifecycle.set_membership(secretary, other, 1, 'Synthetic inactive-center test')
+    try:
+        lifecycle.set_membership(secretary, other, 1, 'Synthetic inactive-center test')
+    except frappe.PermissionError:
+        pass
     frappe.set_user(secretary)
     expanded = target not in before_scope and target in set(patient_names())
     frappe.db.rollback(save_point='inactive_center_test')
