@@ -6,7 +6,7 @@ from frappe.permissions import add_user_permission, remove_user_permission
 
 from centrochange_core.security.audit import append, atomic, internal_write
 from centrochange_core.security.guards import (
-	centers, enabled, is_manager, patient_names, require_center, require_manager, require_operations, current_rows, roles,
+	centers, enabled, is_manager, patient_names, require_center, require_manager, require_operations, require_operational_center, current_rows, roles,
 )
 
 
@@ -18,6 +18,15 @@ def lock():
 	# Current read after acquiring the serialization row, including waiting requests.
 	if frappe.session.user == "Guest" or not frappe.db.get_value("User", frappe.session.user, "enabled", for_update=True):
 		frappe.throw("Un account anonimo o disattivato non può modificare gli accessi.", frappe.PermissionError)
+
+
+def _active_value(value):
+	"""Reject malformed states instead of coercing them into a revocation."""
+	if isinstance(value, bool):
+		return int(value)
+	if str(value).strip() not in ("0", "1"):
+		frappe.throw("Lo stato richiesto non è valido.")
+	return int(str(value).strip())
 
 
 def reconcile_user(user):
@@ -59,7 +68,7 @@ def reconcile_patient(patient):
 def set_membership(user, center, active, reason):
 	lock()
 	require_manager()
-	active = int(frappe.utils.cint(active))
+	active = _active_value(active)
 	if active not in (0, 1) or user in ("Guest", "Administrator"):
 		frappe.throw("L’appartenenza operativa alla sede non è valida.")
 	name = frappe.db.get_value("CC Center Membership", {"user": user, "center": center}, for_update=True)
@@ -69,6 +78,8 @@ def set_membership(user, center, active, reason):
 	before = {"active": doc.active} if name else None
 	if name and int(doc.active) == active:
 		return {"name": name, "active": active}
+	if active:
+		require_operational_center(center)
 	with internal_write("cc_permission_write"):
 		doc.active = active
 		doc.save(ignore_permissions=True)
@@ -129,7 +140,7 @@ def set_practitioner_state(practitioner, active, reason):
 	lock()
 	require_manager()
 	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
-	active = int(frappe.utils.cint(active))
+	active = _active_value(active)
 	if active not in (0, 1) or doc.user_id in (None, "", "Guest", "Administrator"):
 		frappe.throw("Serve un account operativo valido e collegato.")
 	user = frappe.get_doc("User", doc.user_id, for_update=True)
