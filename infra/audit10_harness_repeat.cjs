@@ -67,8 +67,25 @@ try:
  print(json.dumps({'status':'PASS','retained_test_audit':len(events),'event_names':[x.name for x in events],'contacts_removed':len(contacts),'retained_system_history':history}))
 except:frappe.db.rollback();raise
 finally:frappe.destroy()`
+const snapshot = `import json,sys,hashlib,frappe
+d=json.load(sys.stdin);frappe.init('centrochange.local',sites_path='sites');frappe.connect()
+try:
+ assert frappe.conf.get('cc_synthetic_dev')==1 and frappe.conf.get('cc_uat_demo')==1
+ tracked=['User','Has Role','User Permission','DocShare','CC Center Membership','Branch','Healthcare Practitioner','Patient','CC Patient Assignment','Contact','Contact Email','Notification Settings','DefaultValue']
+ rows={dt:frappe.get_all(dt,fields=['*'],order_by='name',limit_page_length=0) for dt in tracked}
+ for row in rows['User']:
+  for key in ('last_login','last_active','last_ip'):row.pop(key,None)
+ rows['__Auth']=frappe.db.sql('SELECT * FROM __Auth ORDER BY doctype,name,fieldname',as_list=True)
+ audit=frappe.get_all('CC Audit Event',fields=['*'],order_by='name',limit_page_length=0)
+ names=d.get('audit_names');names=[x.name for x in audit] if names is None else names
+ rows['CC Audit Event']=[x for x in audit if x.name in set(names)]
+ digest=hashlib.sha256(json.dumps(rows,sort_keys=True,default=str,separators=(',',':')).encode()).hexdigest()
+ print(json.dumps({'digest':digest,'audit_names':names,'new_audit_count':len(audit)-len(rows['CC Audit Event'])}))
+finally:frappe.destroy()`
 const cfg = JSON.parse(py(discover))
 assert.strictEqual(py(initInactive, { center: cfg.b, manager: cfg.manager.name }), 'PASS')
+const initial = JSON.parse(py(snapshot))
+let retainedAuditTotal = 0
 async function login(page, user, password) {
   await page.goto(base + '/login?redirect-to=/premium', { waitUntil: 'domcontentloaded' })
   await page.locator('#login_email').fill(user)
@@ -149,7 +166,11 @@ async function round(browser, width, iteration) {
     if (proCtx) await proCtx.close(); if (managerCtx) await managerCtx.close()
     try {
       const result = JSON.parse(py(cleanup, { user, tag, center: cfg.a }))
-      fs.writeFileSync(inventory, JSON.stringify({ user, tag, status: result.status, retained_test_audit: result.retained_test_audit, event_names: result.event_names, contacts_removed: result.contacts_removed, retained_system_history: result.retained_system_history }))
+      const after = JSON.parse(py(snapshot, { audit_names: initial.audit_names }))
+      assert.strictEqual(after.digest, initial.digest, 'Preexisting data changed during synthetic fixture test')
+      assert.strictEqual(after.new_audit_count, retainedAuditTotal + result.retained_test_audit, 'Unexpected audit events appeared during fixture test')
+      retainedAuditTotal += result.retained_test_audit
+      fs.writeFileSync(inventory, JSON.stringify({ user, tag, status: result.status, preexisting_digest: after.digest, retained_test_audit: result.retained_test_audit, event_names: result.event_names, contacts_removed: result.contacts_removed, retained_system_history: result.retained_system_history }))
       if (completed) assert.strictEqual(result.retained_test_audit, 3)
       console.log('AUDIT10_FIXTURE_CLEANUP', label, result.status, 'retained_test_audit=' + result.retained_test_audit)
     } catch (error) { console.error('HARNESS_FAILURE fixture-cleanup'); failure = failure || error }
