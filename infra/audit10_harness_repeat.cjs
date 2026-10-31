@@ -101,6 +101,7 @@ async function round(browser, width, iteration) {
     page = await managerCtx.newPage()
     page.on('pageerror', () => faults.push({ type: 'pageerror', status: 0 }))
     page.on('response', r => { if (r.status() >= 500) faults.push({ type: 'http', status: r.status(), path: new URL(r.url()).pathname.startsWith('/api/method/') ? new URL(r.url()).pathname : '/redacted' }) })
+    page.on('requestfailed', r => { if (r.failure()?.errorText === 'net::ERR_ABORTED') return; const url = new URL(r.url()); faults.push({ type: 'network', status: 0, path: url.pathname.startsWith('/api/method/') ? url.pathname : '/redacted' }) })
     stage = 'authentication'; await login(page, cfg.manager.name, cfg.manager.password)
     stage = 'access-ui'; await page.goto(base + '/premium#Gestione%20accessi', { waitUntil: 'networkidle' })
     await page.getByRole('heading', { name: 'Gestione accessi', exact: true }).waitFor()
