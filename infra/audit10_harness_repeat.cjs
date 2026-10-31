@@ -110,7 +110,7 @@ async function round(browser, width, iteration) {
   const id = crypto.randomBytes(8).toString('hex'), user = `audit10-test-${id}@example.invalid`, tag = `AUDIT10-TEST-${id}`, password = crypto.randomBytes(24).toString('base64url')
   const label = `repeat-${width}-${iteration}`, inventory = path.join(out, label + '-inventory.json')
   fs.writeFileSync(inventory, JSON.stringify({ tag, status: 'PLANNED' }))
-  let managerCtx, proCtx, page, diagnosticPage, stage = 'setup', failure, completed = false
+  let managerCtx, proCtx, page, diagnosticPage, stage = 'setup', failure, completed = false, diagnosed = false
   const faults = [], navigation = []
   const track = p => {
     p.on('pageerror', () => faults.push({ type: 'pageerror', status: 0 }))
@@ -162,11 +162,11 @@ async function round(browser, width, iteration) {
       assert.strictEqual(scopes[0].status, 200); assert.strictEqual(scopes[1].status, 403)
       const ids = scopes[0].body.message.patients.map(x => x.name); assert(ids.includes(cfg.patients[0])); assert(!ids.includes(cfg.patients[1]))
       await patientPage.screenshot({ path: path.join(out, label + '-patients.png'), mask: [patientPage.locator('tbody')] })
-    } catch (error) { await diagnose(patientPage, label, stage, error, faults, navigation); diagnosticPage = null; throw error } finally { await existing.close() }
+    } catch (error) { await diagnose(patientPage, label, stage, error, faults, navigation); diagnosed = true; diagnosticPage = null; throw error } finally { await existing.close() }
     diagnosticPage = page
     assert(!faults.length, 'Unexpected browser/server errors')
     completed = true
-  } catch (error) { failure = error; if (diagnosticPage) await diagnose(diagnosticPage, label, stage, error, faults, navigation); else console.error('HARNESS_FAILURE', stage) }
+  } catch (error) { failure = error; if (diagnosticPage) await diagnose(diagnosticPage, label, stage, error, faults, navigation); else if (!diagnosed) console.error('HARNESS_FAILURE', stage) }
   finally {
     if (proCtx) await proCtx.close(); if (managerCtx) await managerCtx.close()
     try {
