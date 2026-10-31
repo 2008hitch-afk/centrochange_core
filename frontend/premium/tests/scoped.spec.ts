@@ -15,9 +15,9 @@ async function mock(page: Page, writes: Write[], role = 'CC Manager') {
     'Appointment Type': [{ name: 'TYPE-001', appointment_type: 'Visita sintetica', default_duration: 60, cc_service_item: 'ITEM-001', modified: 'v1' }],
     'CC Center Service': [{ name: 'SERV-001', appointment_type: 'TYPE-001', center, enabled: 1, modified: 'v1' }],
     'CC Package Template': [{ name: 'PACK-001', title: 'Percorso sintetico', service_item: 'ITEM-001', units: 4, enabled: 1, modified: 'v1' }],
-    'Sales Invoice': [{ name: 'SINV-001', customer: 'CUS-001', posting_date: today, grand_total: 80, outstanding_amount: 20 }],
-    'Purchase Invoice': [{ name: 'PINV-001', supplier: 'SUP-001', posting_date: today, grand_total: 40, outstanding_amount: 10 }],
-    'Payment Entry': [{ name: 'PAY-001', party: 'CUS-001', posting_date: today, payment_type: 'Receive', paid_amount: 60, unallocated_amount: 0, modified: 'v1', references: [] }],
+    'Sales Invoice': [{ name: 'SINV-001', customer: 'CUS-001', party_label: 'Soggetto sintetico', posting_date: today, grand_total: 80, outstanding_amount: 20, docstatus: 1 }],
+    'Purchase Invoice': [{ name: 'PINV-001', supplier: 'SUP-001', party_label: 'Soggetto sintetico', posting_date: today, grand_total: 40, outstanding_amount: 10, docstatus: 1 }],
+    'Payment Entry': [{ name: 'PAY-001', party: 'CUS-001', party_label: 'Soggetto sintetico', posting_date: today, payment_type: 'Receive', paid_amount: 60, unallocated_amount: 0, docstatus: 1, modified: 'v1', references: [], reference_no: 'CC-HTTP-UAT0000001-ref' }],
     'Bank Transaction': [{ name: 'BANK-001', date: today, reference_number: 'SYN-001', deposit: 60, withdrawal: 0 }]
   }
   await page.route('**/api/method/**', async route => {
@@ -30,12 +30,19 @@ async function mock(page: Page, writes: Write[], role = 'CC Manager') {
     else if (method.endsWith('catalog.records') || method.endsWith('operations.profiles.patients') || method.endsWith('operations.profiles.practitioners') || method.endsWith('finance.payments.records')) {
       const kind = method.endsWith('patients') ? 'Patient' : method.endsWith('practitioners') ? 'Healthcare Practitioner' : method.endsWith('payments.records') ? 'Payment Entry' : String(args.kind)
       message = { rows: rows[kind] ?? [], has_more: false }
-    } else if (method.endsWith('finance.reporting.records')) message = rows[String(args.doctype)] ?? []
+    } else if (method.endsWith('finance.reporting.records')) {
+      const list = rows[String(args.doctype)] ?? []
+      message = args.limit !== undefined ? { rows: list, has_more: false } : list
+    }
     else if (method.endsWith('catalog.detail') || method.endsWith('operations.profiles.patient_detail') || method.endsWith('operations.profiles.practitioner_detail') || method.endsWith('finance.payments.detail')) {
       const kind = method.endsWith('patient_detail') ? 'Patient' : method.endsWith('practitioner_detail') ? 'Healthcare Practitioner' : method.endsWith('payments.detail') ? 'Payment Entry' : String(args.kind)
       message = rows[kind]?.find(row => row.name === args.name) ?? null
       if (!message) status = 404
-    } else if (method.endsWith('finance.documents.preview')) message = { doctype: args.doctype, name: args.name, format: 'Standard', html: '<html><body><h1>Documento sintetico</h1></body></html>' }
+    } else if (method.endsWith('finance.documents.detail')) {
+      const row = rows[String(args.doctype)]?.find(entry => entry.name === args.name)
+      message = row ? { ...row, doctype: args.doctype, party: 'Soggetto sintetico', currency: 'EUR', can_print: row.docstatus === 1, items: [], taxes: [], references: [] } : null
+      if (!message) status = 404
+    } else if (method.endsWith('finance.documents.preview')) message = { doctype: args.doctype, name: args.name, format: 'Centro Change', html: '<html lang="it"><body><h1>Documento sintetico</h1></body></html>' }
     else if (request.method() === 'POST' && /catalog\.(service|item|appointment_type|price|package_template)_(save|create)|operations\.profiles\.(patient|practitioner)_save/.test(method)) {
       if (role !== 'CC Manager') status = 403
       else {
@@ -59,6 +66,20 @@ async function openArchives(page: Page) {
   await expect(page.getByRole('heading', { name: 'Archivi' })).toBeVisible()
 }
 
+test('anagrafica sintetica: il nome in elenco e dettaglio non diventa alias cliente', async ({ page }) => {
+  await mock(page, [])
+  const row = { name: 'PAT-SYNTH', patient_name: 'CC-HTTP-AbCd123456 Beta', first_name: 'CC-HTTP-AbCd123456 Beta', last_name: '', email: '', modified: 'v1' }
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, demo_labels: { [row.first_name]: 'Cliente 3' } } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.patients*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [row], has_more: false } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: row }) }))
+  await openArchives(page)
+  const list = page.locator('.archive-panel tbody')
+  await expect(list).toContainText('Dato di prova BETA')
+  await expect(list).not.toContainText('Cliente 3')
+  await list.locator('tr').first().click()
+  await expect(page.locator('.drawer')).toContainText('Dato di prova BETA')
+})
+
 test('AUDIT-05: archivio professionisti usa alias solo in lettura, editor mantiene il dato canonico', async ({ page }, info) => {
   await mock(page, [])
   const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', last_name: '', status: 'Active' }
@@ -75,9 +96,9 @@ test('AUDIT-05: archivio professionisti usa alias solo in lettura, editor mantie
   await expect(drawer.getByRole('heading', { name: 'Dettaglio' })).toBeVisible()
   await expect(drawer.getByRole('heading', { name: 'Professionista di prova A' })).toHaveCount(1)
   await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
-  await page.screenshot({ path: `../../docs/evidence/issue-171/professionisti-archivio-${info.project.name}.png`, fullPage: true })
+  await page.screenshot({ path: info.outputPath(`professionisti-archivio-${info.project.name}.png`), fullPage: true })
   await drawer.getByRole('button', { name: 'Modifica scheda' }).click()
-  await expect(page.getByRole('dialog', { name: 'Modifica · Professionisti' }).getByRole('textbox', { name: 'Nome *', exact: true })).toHaveValue(row.first_name)
+  await expect(page.getByRole('dialog', { name: 'Modifica · Professionisti' }).getByRole('textbox', { name: /^Nome/ })).toHaveValue('')
 })
 
 test('regressioni DECISION-064: Agenda unica e intervallo pagamenti ammesso', async ({ page }) => {
@@ -97,7 +118,56 @@ test('regressioni DECISION-064: Agenda unica e intervallo pagamenti ammesso', as
   expect(end).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   const days = (Date.parse(end + 'T00:00:00Z') - Date.parse(start + 'T00:00:00Z')) / 86_400_000
   expect(days).toBe(90)
+  await expect(page.locator('.archive-dates input').first()).toHaveValue(/^\d{2}\/\d{2}\/\d{4}$/)
   await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
+})
+
+test('AUDIT-09: fattura annullata mostra il limite di stampa senza richiedere anteprima', async ({ page }) => {
+  const writes: Write[] = []
+  await mock(page, writes)
+  await page.route('**/api/method/centrochange_core.finance.reporting.records*', route => {
+    const url = new URL(route.request().url())
+    if (url.searchParams.get('doctype') !== 'Sales Invoice') return route.fallback()
+    // List is stale: the authoritative detail has since been cancelled.
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [{ name: 'SINV-CANCELLED', customer: 'CC-MVP-POS-TEST', party_label: 'Cliente precedente', posting_date: today, grand_total: 100, outstanding_amount: 100, docstatus: 1 }], has_more: false } }) })
+  })
+  await page.route('**/api/method/centrochange_core.finance.documents.detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { doctype: 'Sales Invoice', name: 'SINV-CANCELLED', party: 'Cliente sintetico', docstatus: 2, currency: 'EUR', can_print: false, items: [{ item_name: 'Visita', description: 'Visita', qty: 1, rate: 100, amount: 100 }], taxes: [] } }) }))
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Fatture pazienti' }).click()
+  await expect(page.locator('.archive-panel tbody tr').first()).toContainText('Cliente precedente')
+  await expect(page.locator('.archive-panel tbody tr').first()).not.toContainText('CC-MVP-POS-TEST')
+  await page.locator('.archive-panel tbody tr').first().click()
+  const drawer = page.getByRole('dialog')
+  await expect(drawer).toContainText('Questo documento è annullato')
+  await expect(drawer).toContainText('Numero documento')
+  await expect(drawer).toContainText('SINV-CANCELLED')
+  await expect(drawer).not.toContainText('Cliente precedente')
+  await expect(drawer).not.toContainText('CC-MVP-POS-TEST')
+  await expect(drawer.getByText('Cliente sintetico', { exact: true })).toHaveCount(2)
+  await expect(drawer).toContainText('non è un importo da incassare')
+  await expect(drawer.getByRole('button', { name: 'Anteprima e stampa' })).toHaveCount(0)
+  expect(writes).toHaveLength(0)
+})
+
+test('anteprima scorrevole e riferimento operazione integro', async ({ page }) => {
+  await mock(page, [])
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Fatture pazienti' }).click()
+  await page.locator('.archive-panel tbody tr').first().click()
+  await page.getByRole('button', { name: 'Anteprima e stampa' }).click()
+  const region = page.getByRole('region', { name: 'Anteprima documento scorrevole' })
+  await expect(region).toBeVisible()
+  await expect(region.locator('iframe')).toHaveJSProperty('clientWidth', 794)
+  if ((page.viewportSize()?.width ?? 1440) < 760) {
+    await region.evaluate(el => { el.scrollLeft = el.scrollWidth })
+    expect(await region.evaluate(el => el.scrollLeft)).toBeGreaterThan(0)
+  }
+  await page.getByRole('dialog', { name: /Anteprima/ }).getByRole('button', { name: 'Chiudi' }).first().click()
+  await page.locator('.drawer[role="dialog"]').getByRole('button', { name: 'Chiudi' }).click()
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Pagamenti' }).click()
+  await page.locator('.archive-panel tbody tr').first().click()
+  await expect(page.locator('.drawer[role="dialog"]')).toContainText('Riferimento operazione')
+  await expect(page.locator('.drawer[role="dialog"]')).toContainText('CC-HTTP-UAT0000001-ref')
 })
 
 test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa', async ({ page }, testInfo) => {
@@ -118,7 +188,7 @@ test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa
       await expect(page.getByTitle('Documento PAY-001')).toHaveAttribute('data-printed', 'yes')
       await page.getByRole('dialog', { name: /Anteprima/ }).getByRole('button', { name: 'Chiudi' }).first().click()
     }
-    await page.screenshot({ path: `../../docs/evidence/issue-148/scoped-${name.toLowerCase().replaceAll(' ', '-')}-${testInfo.project.name}.png`, fullPage: true })
+    await page.screenshot({ path: testInfo.outputPath(`scoped-${name.toLowerCase().replaceAll(' ', '-')}-${testInfo.project.name}.png`), fullPage: true })
     await page.getByRole('dialog').getByRole('button', { name: 'Chiudi' }).click()
   }
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Articoli' }).click()
@@ -246,4 +316,75 @@ for (const task of [
   expect(writes).toHaveLength(1)
   expect(writes[0].method).toContain(task.method)
   expect(writes[0].body).not.toHaveProperty('customer')
+  if (['Pazienti', 'Professionisti', 'Modelli pacchetto'].includes(task.section)) {
+    await expect(page.locator('.archive-panel tbody tr').first()).toContainText(task.value)
+    await expect(page.locator('.drawer[role="dialog"]')).toContainText(task.value)
+    await page.getByRole('button', { name: 'Modifica scheda' }).click()
+    await expect(page.getByRole('dialog', { name: /Modifica/ }).getByLabel(task.field).first()).toHaveValue(task.value)
+  }
+})
+
+test('API scoped: archivi finanziari paginazione server-side oltre 500 record e ricerca', async ({ page }) => {
+  const writes: Write[] = []
+  await mock(page, writes)
+  const queries: Record<string, string>[] = []
+  await page.route('**/api/method/centrochange_core.finance.reporting.records*', async route => {
+    const params = Object.fromEntries(new URL(route.request().url()).searchParams)
+    queries.push(params)
+    const offset = Number(params.offset ?? 0)
+    const search = params.search ?? ''
+    const dt = params.doctype ?? 'Sales Invoice'
+    if (search === '520') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          message: {
+            rows: [{ name: `${dt}-0520`, docstatus: 1, customer: 'CUS-520', supplier: 'SUP-520', reference_number: 'REF-520', posting_date: today, date: today, grand_total: 120, outstanding_amount: 0, deposit: 120, withdrawal: 0, unallocated_amount: 0 }],
+            has_more: false
+          }
+        })
+      })
+      return
+    }
+    const row = { name: `${dt}-PAGE-${offset}`, docstatus: 1, customer: 'CUS-001', supplier: 'SUP-001', reference_number: 'REF-001', posting_date: today, date: today, grand_total: 80, outstanding_amount: 0, deposit: 80, withdrawal: 0, unallocated_amount: 0 }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: { rows: [row], has_more: offset < 500 } })
+    })
+  })
+  await openArchives(page)
+  const nav = page.getByRole('navigation', { name: 'Tipi di archivio' })
+  for (const label of ['Fatture pazienti', 'Fatture professionisti', 'Movimenti bancari']) {
+    await nav.getByRole('button', { name: label, exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Carica altri' })).toBeVisible()
+    await page.getByRole('button', { name: 'Carica altri' }).click()
+    await expect(page.locator('.archive-panel tbody tr')).toHaveCount(2)
+    await page.getByLabel(`Cerca in ${label.toLocaleLowerCase('it-IT')}`).fill('520')
+    await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
+    await expect(page.locator('.archive-panel tbody tr').first()).toContainText('520')
+  }
+  expect(queries.some(q => q.doctype === 'Sales Invoice' && q.limit === '100' && Number(q.offset) > 0)).toBe(true)
+  expect(queries.some(q => q.doctype === 'Purchase Invoice' && q.limit === '100' && q.search === '520')).toBe(true)
+  expect(queries.some(q => q.doctype === 'Bank Transaction' && q.limit === '100' && q.search === '520')).toBe(true)
+})
+
+test('ricerca server-side mantiene un risultato trovato per codice anche se il nome visibile è diverso', async ({ page }) => {
+  await mock(page, [])
+  await page.route('**/api/method/centrochange_core.operations.profiles.patients*', async route => {
+    const query = new URL(route.request().url()).searchParams.get('search') ?? ''
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: {
+        rows: query === 'PAT-REMOTE-520' ? [{ name: 'PAT-REMOTE-520', patient_name: 'Mario Rossi', first_name: 'Mario', last_name: 'Rossi', modified: 'v1' }] : [],
+        has_more: false
+      } })
+    })
+  })
+  await openArchives(page)
+  await page.getByLabel('Cerca in pazienti').fill('PAT-REMOTE-520')
+  await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
+  await expect(page.locator('.archive-panel tbody tr').first()).toContainText('Mario Rossi')
 })

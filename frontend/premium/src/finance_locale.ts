@@ -17,13 +17,15 @@ const labels: Record<string, string> = {
   reference_label: 'Fonte', reference_name: 'Riferimento', reference_number: 'Riferimento',
   replay: 'Richiesta ripetuta', resolved_at: 'Risolta il', retryable: 'Ripetibile',
   rule: 'Regola', state: 'Stato', status: 'Stato', supplier: 'Fornitore',
-  total: 'Totale', unallocated_amount: 'Non allocato', unresolved_count: 'Da verificare',
+  total: 'Totale', unallocated_amount: 'Importo non attribuito', unresolved_count: 'Da verificare',
   withdrawal: 'Uscita'
 }
 
 const values: Record<string, string> = {
   Receive: 'Incasso', Pay: 'Pagamento', 'Internal Transfer': 'Giroconto',
   Draft: 'Bozza', Submitted: 'Confermato', Cancelled: 'Annullato',
+  Return: 'Nota di credito o debito', 'Credit Note Issued': 'Nota di credito emessa', 'Debit Note Issued': 'Nota di debito emessa',
+  'Unpaid and Discounted': 'Non pagata con sconto', 'Partly Paid and Discounted': 'Pagata in parte con sconto', 'Overdue and Discounted': 'Scaduta con sconto',
   Paid: 'Pagata', Unpaid: 'Da pagare', 'Partly Paid': 'Pagata in parte',
   Overdue: 'Scaduta', Open: 'Aperta', Closed: 'Chiusa',
   Pending: 'In attesa', Resolved: 'Risolta', Error: 'Errore',

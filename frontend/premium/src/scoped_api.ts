@@ -12,19 +12,32 @@ export type PackageTemplate = ArchiveRecord & { title: string; service_item: str
 export type PaymentProjection = ArchiveRecord & { posting_date: string; payment_type: 'Receive' | 'Pay' | 'Internal Transfer'; party_type: string; party: string; paid_amount: number; received_amount: number; unallocated_amount: number; docstatus: number; references?: { doctype: 'Sales Invoice' | 'Purchase Invoice'; name: string; allocated_amount: number }[] }
 export type ArchivePage<T extends ArchiveRecord = ArchiveRecord> = { rows: T[]; has_more: boolean }
 export type PrintPreview = { doctype: string; name: string; format: string; html: string }
+export type FinanceDocument = ArchiveRecord & {
+  doctype: 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry'; docstatus: number; posting_date?: string;
+  party: string; center?: string; currency?: string; paid_currency?: string; received_currency?: string; party_currency?: string; can_print: boolean; due_date?: string;
+  status?: string; address?: string; tax_id?: string; company_address?: string; company_tax_id?: string;
+  items?: { description: string; item_name: string; qty?: number; uom?: string; rate?: number; discount_percentage?: number; discount_amount?: number; amount?: number }[];
+  taxes?: { description: string; rate?: number; tax_amount?: number }[];
+  net_total?: number; total_taxes_and_charges?: number; discount_amount?: number; additional_discount_percentage?: number;
+  grand_total?: number; outstanding_amount?: number; links?: { kind: string; doctype: string; name: string }[];
+  payment_type?: string; mode_of_payment?: string; reference_no?: string; reference_date?: string;
+  paid_amount?: number; received_amount?: number; unallocated_amount?: number;
+  references?: { doctype: string; name: string; allocated_amount: number }[]
+}
 
 const catalogKinds: ArchiveKind[] = ['Item', 'Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template']
 export const editableKinds: ArchiveKind[] = ['Patient', 'Healthcare Practitioner', ...catalogKinds]
 export const financeKinds: ArchiveKind[] = ['Sales Invoice', 'Purchase Invoice', 'Payment Entry', 'Bank Transaction']
 export const creatableKinds: ArchiveKind[] = ['Item Price', 'Appointment Type', 'CC Center Service', 'CC Package Template']
 
-export async function listArchive(center: string, kind: ArchiveKind, offset = 0, interval?: { start: string; end: string }): Promise<ArchivePage> {
-  if (catalogKinds.includes(kind)) return call<ArchivePage>('catalog.records', { center, kind, limit: 100, offset })
-  if (kind === 'Patient') return ops<ArchivePage<PatientProfile>>('profiles.patients', { center, limit: 100, offset })
-  if (kind === 'Healthcare Practitioner') return ops<ArchivePage<PractitionerProfile>>('profiles.practitioners', { center, limit: 100, offset })
-  if (kind === 'Payment Entry') return finance<ArchivePage<PaymentProjection>>('payments.records', { center, start: interval?.start ?? recentPaymentStart(), end: interval?.end ?? romeToday(), limit: 100, offset })
-  const rows = await finance<ArchiveRecord[]>('reporting.records', { center, doctype: kind })
-  return { rows, has_more: false }
+export async function listArchive(center: string, kind: ArchiveKind, offset = 0, interval?: { start: string; end: string }, search = ''): Promise<ArchivePage> {
+  const query = search.trim()
+  if (catalogKinds.includes(kind)) return call<ArchivePage>('catalog.records', { center, kind, limit: 100, offset, search: query })
+  if (kind === 'Patient') return ops<ArchivePage<PatientProfile>>('profiles.patients', { center, limit: 100, offset, search: query })
+  if (kind === 'Healthcare Practitioner') return ops<ArchivePage<PractitionerProfile>>('profiles.practitioners', { center, limit: 100, offset, search: query })
+  if (kind === 'Payment Entry') return finance<ArchivePage<PaymentProjection>>('payments.records', { center, start: interval?.start ?? recentPaymentStart(), end: interval?.end ?? romeToday(), limit: 100, offset, search: query })
+  const res = await finance<ArchivePage | ArchiveRecord[]>('reporting.records', { center, doctype: kind, limit: 100, offset, search: query })
+  return Array.isArray(res) ? { rows: res, has_more: false } : res
 }
 
 export async function archiveDetail(center: string, kind: ArchiveKind, name: string): Promise<ArchiveRecord> {
@@ -38,8 +51,8 @@ export async function archiveDetail(center: string, kind: ArchiveKind, name: str
 export async function saveArchive(center: string, kind: ArchiveKind, record: ArchiveRecord, draft: Row, reason: string, key = requestKey()) {
   if (!record.modified) throw new Error('Versione della scheda assente. Ricarica la pagina.')
   const base = { center, name: record.name, expected_version: record.modified, request_key: key, reason }
-  if (kind === 'Patient') return ops<ArchiveRecord>('profiles.patient_save', { ...base, first_name: draft.first_name, last_name: draft.last_name ?? '', email: draft.email ?? '' }, true)
-  if (kind === 'Healthcare Practitioner') return ops<ArchiveRecord>('profiles.practitioner_save', { ...base, first_name: draft.first_name, last_name: draft.last_name ?? '' }, true)
+  if (kind === 'Patient') return ops<ArchiveRecord>('profiles.patient_save', { ...base, first_name: draft.first_name, last_name: draft.last_name ?? null, email: draft.email ?? null }, true)
+  if (kind === 'Healthcare Practitioner') return ops<ArchiveRecord>('profiles.practitioner_save', { ...base, first_name: draft.first_name, last_name: draft.last_name ?? null }, true)
   if (kind === 'Item') return call<ArchiveRecord>('catalog.item_save', { ...base, item_name: draft.item_name }, true)
   if (kind === 'Item Price') return call<ArchiveRecord>('catalog.price_save', { ...base, price_list_rate: draft.price_list_rate }, true)
   if (kind === 'Appointment Type') return call<ArchiveRecord>('catalog.appointment_type_save', { ...base, default_duration: draft.default_duration }, true)
@@ -58,4 +71,7 @@ export async function createArchive(center: string, kind: ArchiveKind, draft: Ro
 }
 
 export const documentPreview = (center: string, doctype: 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry', name: string) =>
-  finance<PrintPreview>('documents.preview', { center, doctype, name, print_format: 'Standard' })
+  finance<PrintPreview>('documents.preview', { center, doctype, name, print_format: 'Centro Change' })
+
+export const documentDetail = (center: string, doctype: 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry', name: string) =>
+  finance<FinanceDocument>('documents.detail', { center, doctype, name })

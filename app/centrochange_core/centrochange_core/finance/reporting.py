@@ -8,6 +8,7 @@ from centrochange_core.security.guards import current_rows,is_manager,centers,ro
 from centrochange_core.finance.guards import require_finance,allowed
 from centrochange_core.finance import professional_economics,admin_queue
 from centrochange_core.operations.reporting import safe_cell
+from centrochange_core.scoped_api import bounded, page
 
 
 def _interval(start,end):
@@ -133,28 +134,71 @@ def bootstrap(center=None):
 
 
 @frappe.whitelist(methods=['GET'])
-def records(center,doctype):
+def records(center, doctype, search='', limit=None, offset=0):
     require_finance(center)
-    allowed_types={'CC Incoming Invoice':['name','state','supplier','invoice_number','invoice_date','total','currency','purchase_invoice','problem'],
-        'Sales Invoice':['name','docstatus','posting_date','customer','grand_total','outstanding_amount','currency'],
-        'Purchase Invoice':['name','docstatus','posting_date','supplier','grand_total','outstanding_amount','currency','cc_incoming_source'],
-        'Bank Transaction':['name','docstatus','date','deposit','withdrawal','unallocated_amount','reference_number'],
-        'CC Economic Source Link':['name','appointment','session_date','practitioner','patient','price','currency','performed','economic_state'],
-        'CC Professional Expectation':['name','appointment','practitioner','state','amount','amount_known','problem','rule']}
-    if doctype not in allowed_types:frappe.throw('Il tipo di documento richiesto non è supportato.')
-    field='center' if doctype.startswith('CC ') else 'cc_center'
-    if doctype=='CC Professional Expectation':
-        latest=professional_economics.latest_expectations(center)
-        if len(latest)>500:frappe.throw('Riduci i filtri del report: ci sono oltre 500 record.')
-        result=[]
+    search = bounded(search, 'Ricerca', 100, required=False) if search else ''
+    paginated = limit is not None and str(limit).strip() != ''
+    if paginated:
+        limit, offset = page(limit, offset)
+    allowed_types = {
+        'CC Incoming Invoice': ['name', 'state', 'supplier', 'invoice_number', 'invoice_date', 'total', 'currency', 'purchase_invoice', 'problem'],
+        'Sales Invoice': ['name', 'docstatus', 'posting_date', 'customer', 'customer_name', 'grand_total', 'outstanding_amount', 'currency'],
+        'Purchase Invoice': ['name', 'docstatus', 'posting_date', 'supplier', 'supplier_name', 'grand_total', 'outstanding_amount', 'currency', 'cc_incoming_source'],
+        'Bank Transaction': ['name', 'docstatus', 'date', 'deposit', 'withdrawal', 'unallocated_amount', 'reference_number'],
+        'CC Economic Source Link': ['name', 'appointment', 'session_date', 'practitioner', 'patient', 'price', 'currency', 'performed', 'economic_state'],
+        'CC Professional Expectation': ['name', 'appointment', 'practitioner', 'state', 'amount', 'amount_known', 'problem', 'rule']
+    }
+    if doctype not in allowed_types:
+        frappe.throw('Il tipo di documento richiesto non è supportato.')
+    field = 'center' if doctype.startswith('CC ') else 'cc_center'
+    if doctype == 'CC Professional Expectation':
+        latest = professional_economics.latest_expectations(center)
+        if len(latest) > 500:
+            frappe.throw('Riduci i filtri del report: ci sono oltre 500 record.')
+        result = []
         for r in latest.values():
-            row={k:r.get(k) for k in allowed_types[doctype]}
-            source=frappe.db.get_value('CC Economic Source Link',r.source,['customer','center','session_date'],as_dict=True)
-            if source and source.center==center:
-                row['appointment_label']=str(source.session_date)+' · '+(frappe.db.get_value('Customer',source.customer,'customer_name') or source.customer)
+            row = {k: r.get(k) for k in allowed_types[doctype]}
+            source = frappe.db.get_value('CC Economic Source Link', r.source, ['customer', 'center', 'session_date'], as_dict=True)
+            if source and source.center == center:
+                row['appointment_label'] = str(source.session_date) + ' · ' + (frappe.db.get_value('Customer', source.customer, 'customer_name') or source.customer)
             result.append(row)
+        if search:
+            q = search.casefold()
+            result = [r for r in result if any(q in str(v).casefold() for v in r.values())]
         return result
-    return _bounded(doctype,{field:center},allowed_types[doctype])
+    if doctype in ('Sales Invoice', 'Purchase Invoice', 'Bank Transaction'):
+        def project(rows):
+            if doctype in ('Sales Invoice', 'Purchase Invoice'):
+                from centrochange_core.finance.documents import _party_aliases, _party_values
+                aliases = _party_aliases()
+                for row in rows:
+                    row['party_label'] = _party_values(doctype, row, aliases)
+            return rows
+        options = {}
+        if search:
+            needle = '%' + search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_') + '%'
+            if doctype == 'Sales Invoice':
+                options['or_filters'] = {'customer': ['like', needle], 'name': ['like', needle]}
+            elif doctype == 'Purchase Invoice':
+                options['or_filters'] = {'supplier': ['like', needle], 'name': ['like', needle]}
+            elif doctype == 'Bank Transaction':
+                options['or_filters'] = {'reference_number': ['like', needle], 'name': ['like', needle]}
+        if paginated:
+            rows = frappe.get_list(
+                doctype,
+                filters={field: center},
+                fields=allowed_types[doctype],
+                order_by='modified desc, name desc',
+                start=offset,
+                page_length=limit + 1,
+                **options,
+            )
+            return {'rows': project(rows[:limit]), 'has_more': len(rows) > limit}
+        rows = frappe.get_list(doctype, filters={field: center}, fields=allowed_types[doctype], order_by='modified desc', page_length=501, **options)
+        if len(rows) > 500:
+            frappe.throw('Riduci i filtri del report: ci sono oltre 500 record.')
+        return project(rows)
+    return _bounded(doctype, {field: center}, allowed_types[doctype])
 
 
 @frappe.whitelist(methods=['GET'])

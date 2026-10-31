@@ -1,5 +1,9 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## AUDIT-09 #183 — remediation post walkthrough, candidata PR #184
+
+Il mandato Owner [#6504114595](https://github.com/2008hitch-afk/centrochange_core/issues/183#issuecomment-6504114595) autorizza correzioni di presentazione e test, non l'installazione della nuova HEAD. I rilievi [#6504016954](https://github.com/2008hitch-afk/centrochange_core/issues/183#issuecomment-6504016954) mappano a `CC-EXT-007..012`, `CC-EXT-021..022`: alias UAT solo visuali con ID canonici nei salvataggi; stampa italiana compatta di Sales/Purchase Invoice e Payment Entry solo confermati, con permessi native `read` e `print` e centro esatto; documenti annullati leggibili ma non stampabili secondo il gate Frappe. I filtri Pagamenti usano date `gg/mm/aaaa` indipendenti dal browser. Le prove sulla nuova HEAD vanno riportate nella Issue #183; gli stati tecnici/Owner nel CSV non avanzano per il solo sviluppo. La scheda contabile completa e le funzionalità fiscali restano fuori dal perimetro Archivi.
+
 > **ATTENZIONE: NUMERAZIONE E FASE ATTIVA** — prima di leggere i vari addendum datati, aprire il [REGISTRO OPERATIVO CORRENTE](ACTIVE-GOAL-ROUTER.md). Il lavoro attuale è **AUDIT-05 Professionisti #171 (accepted scoped) + CORE #173 (fix UAT in corso)**. `AUDIT-06` è pianificato ma non autorizzato; `AUDIT-07+` non formalizzati. Il **macro `GOAL-05`** della roadmap MVP del 03/10 è una numerazione diversa. Questo file conserva **110 requisiti**, non assegna automaticamente GOAL alle righe rimaste e non sostituisce le Issue/PR live. I riepiloghi sottostanti sono snapshot cronologici; la fonte puntuale è il [CSV dello stesso commit](FUNCTIONAL-COVERAGE-DETAIL.csv).
 
 

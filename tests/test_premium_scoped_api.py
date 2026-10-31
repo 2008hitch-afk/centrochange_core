@@ -19,6 +19,10 @@ class Invalid(Exception):
     pass
 
 
+class FakeRow(dict):
+    __getattr__ = dict.__getitem__
+
+
 class FakeDoc:
     def __init__(self, doctype='Item', name='ITEM-A', **fields):
         self.doctype, self.name, self.modified = doctype, name, 'v1'
@@ -38,8 +42,11 @@ class FakeDoc:
         self.fields[field] = value
 
     def check_permission(self, permission):
-        if permission not in self.permissions:
+        if not self.has_permission(permission):
             raise Denied(permission)
+
+    def has_permission(self, permission):
+        return permission in self.permissions
 
     def save(self):
         self.writes += 1
@@ -82,11 +89,12 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe.session = types.SimpleNamespace(user='manager@example.invalid')
         self.frappe.local = types.SimpleNamespace(request=None)
         self.frappe.db = self.db
+        self.frappe.conf = {'cc_synthetic_dev': 0, 'cc_uat_demo': 0}
         self.frappe.throw = lambda message, exc=Invalid: (_ for _ in ()).throw(exc(message))
         self.frappe.get_doc = lambda doctype, name=None, **kwargs: self.db.doc if not isinstance(doctype, dict) else FakeDoc(doctype['doctype'], 'DRAFT', **{k: v for k, v in doctype.items() if k != 'doctype'})
         self.frappe.parse_json = json.loads
         self.frappe.whitelist = lambda **kwargs: lambda fn: fn
-        self.frappe.get_list = lambda doctype, **kwargs: [types.SimpleNamespace(name='PAY-A', cc_center='A')]
+        self.frappe.get_list = lambda doctype, **kwargs: [FakeRow(name='PAY-A', cc_center='A')]
         self.frappe.get_print = lambda *args, **kwargs: '<html><body>Prova sintetica</body></html>'
         self.frappe.utils = types.SimpleNamespace(validate_email_address=lambda value: '@' in value)
         self.audit = types.ModuleType('centrochange_core.security.audit')
@@ -113,8 +121,19 @@ class ScopedApiTest(unittest.TestCase):
         self.api = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = self.api
         spec.loader.exec_module(self.api)
+        finance_guards = types.ModuleType('centrochange_core.finance.guards')
+        finance_guards.require_finance = lambda center: self.guards.require_center(center)
+        utils = types.ModuleType('frappe.utils')
+        utils.getdate = lambda value: date.fromisoformat(value) if isinstance(value, str) else value
+        self.extra_modules = patch.dict(sys.modules, {'centrochange_core.finance.guards': finance_guards, 'frappe.utils': utils})
+        self.extra_modules.start()
+        spec = importlib.util.spec_from_file_location('centrochange_core.finance.documents', ROOT / 'finance/documents.py')
+        self.documents = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = self.documents
+        spec.loader.exec_module(self.documents)
 
     def tearDown(self):
+        self.extra_modules.stop()
         self.modules.stop()
         sys.modules.pop('centrochange_core.scoped_api', None)
 
@@ -214,7 +233,9 @@ class ScopedApiTest(unittest.TestCase):
         guards.require_finance = lambda center: None if center == 'A' and self.role_allowed else self.frappe.throw('finanza negata', Denied)
         self.db.doc = FakeDoc('Payment Entry', 'PAY-A', cc_center='A', references=[], posting_date='2026-10-21',
                               payment_type='Receive', party_type='Customer', party='C-1', paid_amount=50,
-                              received_amount=50, unallocated_amount=0, mode_of_payment='Contanti', docstatus=1)
+                              received_amount=50, unallocated_amount=0, mode_of_payment='Contanti', docstatus=1,
+                              paid_from_account_currency='EUR', paid_to_account_currency='EUR',
+                              reference_no='CC-HTTP-UAT0000001 <rif>&')
         with patch.dict(sys.modules, {'frappe.utils': utils, 'centrochange_core.finance': types.ModuleType('centrochange_core.finance'),
                                       'centrochange_core.finance.guards': guards}):
             self.frappe.utils = utils
@@ -230,9 +251,27 @@ class ScopedApiTest(unittest.TestCase):
             spec = importlib.util.spec_from_file_location('centrochange_core.finance.documents', ROOT / 'finance/documents.py')
             documents = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(documents)
-            self.assertIn('Prova sintetica', documents.preview('A', 'Payment Entry', 'PAY-A')['html'])
+            preview = documents.preview('A', 'Payment Entry', 'PAY-A')
+            self.assertTrue(documents.detail('A', 'Payment Entry', 'PAY-A')['can_print'])
+            self.assertEqual(preview['format'], 'Centro Change')
+            self.assertIn('Pagamento', preview['html'])
+            self.assertIn('50,00 EUR', preview['html'])
+            self.assertIn('21/10/2026', preview['html'])
+            self.assertEqual(documents.detail('A', 'Payment Entry', 'PAY-A')['reference_no'], 'CC-HTTP-UAT0000001 <rif>&')
+            self.assertIn('Riferimento operazione', preview['html'])
+            self.assertIn('CC-HTTP-UAT0000001 &lt;rif&gt;&amp;', preview['html'])
+            self.assertNotIn('mode_of_payment', preview['html'])
+            self.db.doc.fields['paid_from_account_currency'] = 'USD'
+            mixed = documents.preview('A', 'Payment Entry', 'PAY-A')['html']
+            self.assertIn('50,00 USD', mixed)
+            self.assertIn('50,00 EUR', mixed)
             with self.assertRaises(Denied):
                 documents.preview('A', 'Payment Entry', 'PAY-A', 'Formato non approvato')
+            self.db.doc.fields['docstatus'] = 2
+            self.assertFalse(documents.detail('A', 'Payment Entry', 'PAY-A')['can_print'])
+            with self.assertRaises(Denied):
+                documents.preview('A', 'Payment Entry', 'PAY-A')
+            self.db.doc.fields['docstatus'] = 1
             self.db.doc.fields['references'] = [types.SimpleNamespace(reference_doctype='Sales Invoice', reference_name='INV-B', allocated_amount=50)]
             original_get_doc = self.frappe.get_doc
             self.frappe.get_doc = lambda doctype, name=None, **kwargs: FakeDoc('Sales Invoice', 'INV-B', cc_center='B') if doctype == 'Sales Invoice' else original_get_doc(doctype, name, **kwargs)
@@ -241,14 +280,52 @@ class ScopedApiTest(unittest.TestCase):
             self.frappe.get_doc = original_get_doc
             self.db.doc.fields['references'] = []
             self.db.doc.permissions.remove('print')
+            self.assertFalse(documents.detail('A', 'Payment Entry', 'PAY-A')['can_print'])
             with self.assertRaises(Denied):
                 documents.preview('A', 'Payment Entry', 'PAY-A')
+            self.db.doc.permissions.remove('read')
+            with self.assertRaises(Denied):
+                documents.detail('A', 'Payment Entry', 'PAY-A')
+            self.db.doc.permissions.add('read')
             self.db.doc.permissions.add('print')
             self.db.doc.fields['cc_center'] = 'B'
             with self.assertRaises(Denied):
                 documents.preview('A', 'Payment Entry', 'PAY-A')
             with self.assertRaises(Denied):
                 documents.preview('A', 'Patient', 'PAY-A')
+
+    def test_finance_document_invoice_read_print_and_escape(self):
+        utils = types.ModuleType('frappe.utils')
+        utils.getdate = lambda value: date.fromisoformat(value)
+        guards = types.ModuleType('centrochange_core.finance.guards')
+        guards.require_finance = lambda center: None if center == 'A' and self.role_allowed else self.frappe.throw('finanza negata', Denied)
+        item = FakeDoc('Sales Invoice Item', 'I', item_name='Visita <x>', description='Servizio &amp; assistenza', qty=2, uom='ora', rate=40, discount_percentage=10, discount_amount=4, amount=72)
+        tax = FakeDoc('Sales Taxes and Charges', 'T', description='IVA', rate=22, tax_amount=15.84)
+        self.db.doc = FakeDoc('Sales Invoice', 'INV-A', cc_center='A', docstatus=1, posting_date='2026-10-21', due_date='2026-11-01', customer='C-1', customer_name='Cliente <prova>', currency='EUR', items=[item], taxes=[tax], net_total=72, total_taxes_and_charges=15.84, discount_amount=0, grand_total=87.84, outstanding_amount=87.84)
+        with patch.dict(sys.modules, {'frappe.utils': utils, 'centrochange_core.finance': types.ModuleType('centrochange_core.finance'), 'centrochange_core.finance.guards': guards}):
+            spec = importlib.util.spec_from_file_location('centrochange_core.finance.documents', ROOT / 'finance/documents.py')
+            documents = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(documents)
+            detail = documents.detail('A', 'Sales Invoice', 'INV-A')
+            self.assertEqual(detail['items'][0]['qty'], 2)
+            self.assertEqual(detail['taxes'][0]['tax_amount'], 15.84)
+            html = documents.preview('A', 'Sales Invoice', 'INV-A')['html']
+            self.assertIn('87,84 EUR', html)
+            self.assertIn('Servizio &amp; assistenza', html)
+            self.assertNotIn('Cliente <prova>', html)
+            self.assertIn('10%', html)
+            self.frappe.conf.update({'cc_synthetic_dev': 1, 'cc_uat_demo': 1})
+            self.assertEqual(documents._safe_text('CC-HTTP-UAT0000001 Session'), 'Seduta')
+            self.assertEqual(documents._safe_text('SYNTHETIC DEV tax input only'), '')
+            self.frappe.conf.update({'cc_synthetic_dev': 0, 'cc_uat_demo': 0})
+            self.assertEqual(documents._safe_text('Session'), 'Session')
+            self.db.doc.fields['docstatus'] = 2
+            self.assertEqual(documents.detail('A', 'Sales Invoice', 'INV-A')['items'][0]['amount'], 72)
+            with self.assertRaises(Denied):
+                documents.preview('A', 'Sales Invoice', 'INV-A')
+            self.role_allowed = False
+            with self.assertRaises(Denied):
+                documents.detail('A', 'Sales Invoice', 'INV-A')
 
     def test_catalog_service_write_and_cross_center_denial(self):
         spec = importlib.util.spec_from_file_location('centrochange_core.catalog', ROOT / 'catalog.py')
@@ -308,6 +385,18 @@ class ScopedApiTest(unittest.TestCase):
         with self.assertRaises(Denied):
             profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-PRO', 'motivo')
         self.assertEqual(self.db.doc.writes, 0)
+
+    def test_profile_optional_nulls_are_preserved(self):
+        spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
+        profiles = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(profiles)
+        self.db.doc = FakeDoc('Patient', 'PAT-A', first_name='Persona', last_name=None, email=None)
+        profiles.patient_save('A', 'PAT-A', 'Nuovo', None, None, 'v1', 'K-NULL', 'motivo')
+        self.assertIsNone(self.db.doc.get('last_name'))
+        self.assertIsNone(self.db.doc.get('email'))
+        self.db.doc = FakeDoc('Healthcare Practitioner', 'PRO-A', user_id='pro@example.invalid', first_name='Persona', last_name=None)
+        profiles.practitioner_save('A', 'PRO-A', 'Nuovo', None, 'v1', 'K-NULL-PRO', 'motivo')
+        self.assertIsNone(self.db.doc.get('last_name'))
 
     def test_practitioner_search_is_server_scoped_and_bounded(self):
         spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
