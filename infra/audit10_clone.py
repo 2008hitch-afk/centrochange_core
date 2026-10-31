@@ -7,6 +7,7 @@ import test_audit09_isolated_clone as clone
 
 root = Path(__file__).resolve().parent.parent
 try:
+    subprocess.run(['node', '--test', str(root / 'infra/audit10_failure_diagnostics.test.cjs')], check=True)
     clone.setup_clone()
     source = (root / 'infra/audit10_clone_backend.py').read_text()
     out = clone.run_cmd(['docker', 'exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1', '-w', '/home/frappe/frappe-bench', clone.BACKEND_CONTAINER, 'env/bin/python', '-'], input_str=source)

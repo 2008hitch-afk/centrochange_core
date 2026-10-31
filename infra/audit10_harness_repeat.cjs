@@ -5,6 +5,7 @@ const crypto = require('crypto')
 const fs = require('fs')
 const path = require('path')
 const assert = require('assert')
+const { classifyFailure, isPremiumPath } = require('./audit10_failure_diagnostics.cjs')
 const out = process.env.CC_ARTIFACT_DIR
 fs.mkdirSync(out, { recursive: true })
 const base = 'http://centrochange.local:8099'
@@ -91,17 +92,16 @@ async function login(page, user, password) {
   await page.locator('#login_email').fill(user)
   await page.locator('#login_password').fill(password)
   await page.locator('.form-login button[type=submit]').click()
-  await page.waitForURL(url => url.pathname === '/premium', { timeout: 30000 })
+  await page.waitForURL(isPremiumPath, { timeout: 30000 })
   const identity = await page.evaluate(async () => { const r = await fetch('/api/method/frappe.auth.get_logged_user'); return { status: r.status, body: await r.json() } })
-  assert.strictEqual(identity.status, 200)
-  assert.strictEqual(identity.body.message, user)
+  if (identity.status !== 200 || identity.body.message !== user) { const error = new Error('Authenticated session identity mismatch'); error.failureKind = 'AUTH_FAILURE'; throw error }
   await page.getByRole('heading', { name: 'Agenda', exact: true }).waitFor()
 }
-async function diagnose(page, label, stage, error, faults) {
+async function diagnose(page, label, stage, error, faults, navigation) {
   let pathname = 'unavailable'
   try { pathname = new URL(page.url()).pathname } catch {}
-  const kind = faults.some(x => x.status >= 500 || x.type === 'pageerror' || x.type === 'unexpected_status') ? 'APP_FAILURE' : stage === 'authentication' ? 'AUTH_FAILURE' : 'HARNESS_FAILURE'
-  const data = { classification: kind, stage, pathname, message: String(error.message).split('\n')[0], network: faults }
+  const kind = classifyFailure(error, faults)
+  const data = { classification: kind, stage, pathname, message: String(error.message).split('\n')[0], navigation, network: faults }
   fs.writeFileSync(path.join(out, label + '-failure.json'), JSON.stringify(data, null, 2))
   try { await page.screenshot({ path: path.join(out, label + '-failure.png'), mask: [page.locator('input'), page.locator('textarea'), page.locator('tbody'), page.locator('[role=dialog]')] }) } catch {}
   console.error(kind, stage, pathname)
@@ -110,15 +110,17 @@ async function round(browser, width, iteration) {
   const id = crypto.randomBytes(8).toString('hex'), user = `audit10-test-${id}@example.invalid`, tag = `AUDIT10-TEST-${id}`, password = crypto.randomBytes(24).toString('base64url')
   const label = `repeat-${width}-${iteration}`, inventory = path.join(out, label + '-inventory.json')
   fs.writeFileSync(inventory, JSON.stringify({ tag, status: 'PLANNED' }))
-  let managerCtx, proCtx, page, stage = 'setup', failure, completed = false
-  const faults = []
+  let managerCtx, proCtx, page, diagnosticPage, stage = 'setup', failure, completed = false
+  const faults = [], navigation = []
+  const track = p => {
+    p.on('pageerror', () => faults.push({ type: 'pageerror', status: 0 }))
+    p.on('response', r => { const u = new URL(r.url()); const safe = ['/login', '/premium'].includes(u.pathname) ? u.pathname : '/redacted'; if (r.request().isNavigationRequest()) navigation.push({ path: safe, status: r.status() }); if (r.status() >= 500) faults.push({ type: 'http', status: r.status(), path: u.pathname.startsWith('/api/method/') ? u.pathname : '/redacted' }); else if (stage === 'authentication' && [401, 403].includes(r.status()) && ['/api/method/login', '/api/method/frappe.auth.get_logged_user'].includes(u.pathname)) faults.push({ type: 'auth_denied', status: r.status(), path: '/api/method/redacted' }) })
+    p.on('requestfailed', r => { if (r.failure()?.errorText === 'net::ERR_ABORTED') return; const u = new URL(r.url()); faults.push({ type: 'network', status: 0, path: u.pathname.startsWith('/api/method/') ? u.pathname : '/redacted' }) })
+  }
   try {
     py(setup, { user, tag, password, center: cfg.a })
     managerCtx = await browser.newContext({ viewport: { width, height: 900 }, locale: 'it-IT' })
-    page = await managerCtx.newPage()
-    page.on('pageerror', () => faults.push({ type: 'pageerror', status: 0 }))
-    page.on('response', r => { if (r.status() >= 500) faults.push({ type: 'http', status: r.status(), path: new URL(r.url()).pathname.startsWith('/api/method/') ? new URL(r.url()).pathname : '/redacted' }) })
-    page.on('requestfailed', r => { if (r.failure()?.errorText === 'net::ERR_ABORTED') return; const url = new URL(r.url()); faults.push({ type: 'network', status: 0, path: url.pathname.startsWith('/api/method/') ? url.pathname : '/redacted' }) })
+    page = await managerCtx.newPage(); diagnosticPage = page; track(page)
     stage = 'authentication'; await login(page, cfg.manager.name, cfg.manager.password)
     stage = 'access-ui'; await page.goto(base + '/premium#Gestione%20accessi', { waitUntil: 'networkidle' })
     await page.getByRole('heading', { name: 'Gestione accessi', exact: true }).waitFor()
@@ -126,18 +128,20 @@ async function round(browser, width, iteration) {
     await page.getByRole('heading', { name: 'Gestione accessi', exact: true }).waitFor()
     let proPage
     for (const active of ['1', '0', '1']) {
+      stage = 'access-ui'; diagnosticPage = page
       await page.getByRole('button', { name: 'Appartenenza', exact: true }).click()
       const d = page.getByRole('dialog', { name: 'Appartenenza al centro', exact: true })
       await d.getByLabel('Utente').selectOption(user); await d.getByLabel('Nuovo stato').selectOption(active)
       await d.getByLabel('Motivo della modifica').fill(tag); await d.getByRole('button', { name: 'Rivedi modifica', exact: true }).click()
       const response = page.waitForResponse(r => r.url().includes('security.lifecycle.set_membership') && r.request().method() === 'POST')
       await d.getByRole('button', { name: 'Conferma modifica', exact: true }).click(); const saved = await response; if (!saved.ok()) faults.push({ type: 'unexpected_status', status: saved.status(), path: '/api/method/security.lifecycle.set_membership' }); assert(saved.ok()); await d.waitFor({ state: 'hidden' })
-      if (!proCtx) { stage = 'authentication'; proCtx = await browser.newContext({ viewport: { width, height: 900 }, locale: 'it-IT' }); proPage = await proCtx.newPage(); await login(proPage, user, password); stage = 'session-scope' }
+      if (!proCtx) { stage = 'authentication'; proCtx = await browser.newContext({ viewport: { width, height: 900 }, locale: 'it-IT' }); proPage = await proCtx.newPage(); diagnosticPage = proPage; track(proPage); await login(proPage, user, password); stage = 'session-scope' }
+      stage = 'session-scope'; diagnosticPage = proPage
       const status = await proPage.evaluate(async c => (await fetch('/api/method/centrochange_core.operations.workspace.patient_search?center=' + encodeURIComponent(c) + '&query=')).status, cfg.a)
       if (status !== (active === '0' ? 403 : 200)) faults.push({ type: 'unexpected_status', status, path: '/api/method/operations.workspace.patient_search' })
       assert.strictEqual(status, active === '0' ? 403 : 200)
     }
-    stage = 'security-and-audit'
+    stage = 'security-and-audit'; diagnosticPage = page
     const negative = await page.evaluate(async ({ user, center, tag }) => { const token = document.querySelector('meta[name="csrf-token"]').content; return (await fetch('/api/method/centrochange_core.security.lifecycle.set_membership', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Frappe-CSRF-Token': token }, body: new URLSearchParams({ user, center, active: '1', reason: tag }) })).status }, { user, center: cfg.b, tag })
     if (negative !== 403) faults.push({ type: 'unexpected_status', status: negative, path: '/api/method/security.lifecycle.set_membership' })
     assert.strictEqual(negative, 403)
@@ -149,19 +153,20 @@ async function round(browser, width, iteration) {
     assert((await detail.innerText()).includes('Prima:') && (await detail.innerText()).includes('Dopo:'))
     await page.screenshot({ path: path.join(out, label + '-audit.png'), mask: [page.locator('tbody'), detail] })
     stage = 'professional-patients'
-    const existing = await browser.newContext({ viewport: { width, height: 900 }, locale: 'it-IT' }); const patientPage = await existing.newPage()
+    const existing = await browser.newContext({ viewport: { width, height: 900 }, locale: 'it-IT' }); const patientPage = await existing.newPage(); diagnosticPage = patientPage; track(patientPage)
     try {
-      await login(patientPage, cfg.professional.name, cfg.professional.password)
+      stage = 'authentication'; await login(patientPage, cfg.professional.name, cfg.professional.password); stage = 'professional-patients'
       await patientPage.goto(base + '/premium#Pazienti', { waitUntil: 'networkidle' })
       await patientPage.getByRole('heading', { name: 'Pazienti', exact: true }).waitFor()
       const scopes = await patientPage.evaluate(async ({ center, other }) => { const get = async c => { const r = await fetch('/api/method/centrochange_core.operations.workspace.patient_search?center=' + encodeURIComponent(c) + '&query='); return { status: r.status, body: await r.json() } }; return [await get(center), await get(other)] }, { center: cfg.a, other: cfg.b })
       assert.strictEqual(scopes[0].status, 200); assert.strictEqual(scopes[1].status, 403)
       const ids = scopes[0].body.message.patients.map(x => x.name); assert(ids.includes(cfg.patients[0])); assert(!ids.includes(cfg.patients[1]))
       await patientPage.screenshot({ path: path.join(out, label + '-patients.png'), mask: [patientPage.locator('tbody')] })
-    } finally { await existing.close() }
+    } catch (error) { await diagnose(patientPage, label, stage, error, faults, navigation); diagnosticPage = null; throw error } finally { await existing.close() }
+    diagnosticPage = page
     assert(!faults.length, 'Unexpected browser/server errors')
     completed = true
-  } catch (error) { failure = error; if (page) await diagnose(page, label, stage, error, faults); else console.error('HARNESS_FAILURE', stage) }
+  } catch (error) { failure = error; if (diagnosticPage) await diagnose(diagnosticPage, label, stage, error, faults, navigation); else console.error('HARNESS_FAILURE', stage) }
   finally {
     if (proCtx) await proCtx.close(); if (managerCtx) await managerCtx.close()
     try {
