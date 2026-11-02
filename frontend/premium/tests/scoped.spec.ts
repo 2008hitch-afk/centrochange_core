@@ -421,6 +421,7 @@ test('GOAL-75: accessi usa ricerca e conferma esplicita della disattivazione glo
   const statusCell = page.locator('.access-memberships tbody tr').first().locator('td').last()
   await statusCell.scrollIntoViewIfNeeded()
   await expect(statusCell).toBeInViewport({ ratio: 1 })
+  expect(await page.locator('.access-memberships .table-scroll').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
   await page.getByRole('button', { name: 'Stato professionista' }).click()
   const dialog = page.getByRole('dialog', { name: 'Stato professionista' })
   await dialog.getByRole('combobox', { name: 'Professionista' }).fill('Sintetico')
