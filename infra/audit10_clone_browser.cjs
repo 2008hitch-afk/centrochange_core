@@ -30,7 +30,7 @@ const managerSid=sid(env.manager);let proSid=sid(env.professional);
    await nav.getByRole('button',{name:label,exact:true}).click();await p.getByRole('heading',{name:label,exact:true}).last().waitFor();await p.locator('.panel-loading').waitFor({state:'hidden'});const rows=p.locator('.archive-panel tbody tr');const count=await rows.count();
    if(count){await rows.first().click();await p.locator('.archive-detail-page').waitFor();assert.strictEqual(await p.getByRole('dialog').count(),0,`overlap ${label}`);await p.screenshot({path:path.join(out,`archive-${label.replaceAll(' ','-')}-${tag}.png`)});await p.getByRole('button',{name:'Torna agli archivi'}).click()}
    else console.log('GOAL75_CLONE_ARCHIVE_EMPTY',tag,label);
-   console.log('GOAL75_CLONE_ARCHIVE_READ_PASS',tag,label,count);
+   console.log(count ? 'GOAL75_CLONE_ARCHIVE_DETAIL_PASS' : 'GOAL75_CLONE_ARCHIVE_LIST_EMPTY',tag,label,count);
   }
   await nav.getByRole('button',{name:'Professionisti',exact:true}).click();await p.locator('.archive-panel tbody tr').first().click();await p.getByRole('button',{name:'Modifica scheda'}).click();await p.locator('.archive-edit h2').waitFor();assert.strictEqual(await p.getByRole('dialog').count(),0);await p.screenshot({path:path.join(out,`archive-practitioner-edit-${tag}.png`)});
   if(tag==='desktop'){

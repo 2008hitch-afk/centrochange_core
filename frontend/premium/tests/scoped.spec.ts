@@ -549,3 +549,45 @@ test('GOAL75: movimento bancario deep link usa la proiezione autorizzata anche o
   await expect(page.getByRole('alert')).toContainText('Scheda non disponibile')
   await expect(page.locator('.archive-detail-page')).toHaveCount(0)
 })
+
+test('GOAL75: focus torna al comando dopo annullamento creazione e conferma', async ({ page }) => {
+  await mock(page, [])
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Modelli pacchetto' }).click()
+  const create = page.getByRole('button', { name: 'Nuova scheda' })
+  await create.click()
+  await expect(page.locator('.archive-edit h2')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(create).toBeFocused()
+  await page.locator('.archive-panel tbody tr').first().click()
+  await page.getByRole('button', { name: 'Modifica scheda' }).click()
+  await page.locator('.archive-edit').getByLabel('Modello').fill('Modificato')
+  await page.locator('.archive-edit').getByLabel('Motivo').fill('Prova')
+  await page.getByRole('button', { name: 'Rivedi modifica' }).click()
+  await expect(page.locator('.archive-review h2')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.archive-edit h2')).toBeFocused()
+})
+
+test('GOAL75: collegamento anagrafico conserva la sede scelta', async ({ page }) => {
+  await mock(page, [])
+  const centers = [boot.centers[0], { name: 'CENTRO-B', branch: 'Centro B' }]
+  const detailCenters: string[] = []
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => {
+    const selected = new URL(route.request().url()).searchParams.get('center') || center
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, centers, center: selected } }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route => {
+    detailCenters.push(new URL(route.request().url()).searchParams.get('center') || '')
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { name: 'PR-001', practitioner_name: 'Professionista Sintetico', first_name: 'Professionista', last_name: 'Sintetico', status: 'Active', modified: 'v1' } }) })
+  })
+  await page.goto('./?center=CENTRO-B&practitioner=PR-001#Professionisti')
+  await page.getByRole('link', { name: 'Modifica professionista negli Archivi' }).click()
+  await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
+  expect(new URL(page.url()).searchParams.get('center')).toBe('CENTRO-B')
+  expect(detailCenters.length).toBeGreaterThanOrEqual(2)
+  expect(detailCenters.every(value => value === 'CENTRO-B')).toBe(true)
+  await page.reload()
+  await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
+  expect(detailCenters.every(value => value === 'CENTRO-B')).toBe(true)
+})
