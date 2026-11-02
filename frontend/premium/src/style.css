@@ -205,3 +205,4 @@
 .review-diff-table th, .review-diff-table td { padding: 6px 10px; border: 1px solid #e2e8f0; text-align: left; }
 .review-diff-table th { background: #f1f5f9; color: #475569; font-weight: 600; }
 
+.access-memberships .table-scroll table{white-space:normal;table-layout:fixed}.access-memberships .table-scroll th:first-child{width:65%}.access-memberships .table-scroll :is(th,td){overflow-wrap:anywhere}@media(max-width:600px){.access-memberships .table-scroll :is(th,td){padding:12px 10px}}
