@@ -103,6 +103,8 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const frame = useRef<HTMLIFrameElement>(null)
   const listScroll = useRef(0)
   const detailHeading = useRef<HTMLHeadingElement>(null)
+  const editorHeading = useRef<HTMLHeadingElement>(null)
+  const wasEditing = useRef(false)
   const spec = visible.find(s => s.kind === kind) ?? visible[0]
   const queryKey = `${center}\u0000${spec.kind}\u0000${debouncedSearch}\u0000${paymentStart}\u0000${paymentEnd}`
 
@@ -196,7 +198,23 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
         if (gen !== detailGen.current) return
         setDocument(result)
         setSelected({ ...row, ...result, party_label: result.party })
-      } else { const result = financeKinds.includes(kind) ? row : await archiveDetail(center, kind, row.name); if (gen !== detailGen.current) return; setDocument(null); setSelected(result) }
+      } else {
+        let result: ArchiveRecord
+        if (kind === 'Bank Transaction' && Object.keys(row).length === 1) {
+          let offset = 0, found: ArchiveRecord | undefined
+          do {
+            const page = await listArchive(center, kind, offset, undefined, row.name)
+            found = page.rows.find(item => item.name === row.name)
+            if (found || !page.has_more) break
+            offset += page.rows.length
+            if (!page.rows.length) throw new Error('Risultati dell’archivio non disponibili.')
+          } while (true)
+          if (!found) throw new Error('Scheda non disponibile nel centro selezionato.')
+          result = found
+        } else result = financeKinds.includes(kind) ? row : await archiveDetail(center, kind, row.name)
+        if (gen !== detailGen.current) return
+        setDocument(null); setSelected(result)
+      }
       opened = true
     }
     catch (cause) { if (gen === detailGen.current) setError(cause instanceof Error ? cause.message : 'Dettaglio non disponibile.') }
@@ -213,10 +231,14 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
     void open({ name: id } as ArchiveRecord, false)
   }, [center, manager, kind])
   useEffect(() => { if (selected) { window.scrollTo(0, 0); detailHeading.current?.focus() } }, [selected?.name])
+  useEffect(() => {
+    if (draft || confirm) { wasEditing.current = true; editorHeading.current?.focus() }
+    else if (wasEditing.current) { wasEditing.current = false; window.document.querySelector<HTMLButtonElement>('[data-archive-edit]')?.focus({ preventScroll: true }) }
+  }, [!!draft, confirm])
   const closeDetail = () => {
     detailGen.current++; setSelected(null); setDocument(null); setDraft(null); setConfirm(false)
     const url = new URL(location.href); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); history.replaceState(null, '', url)
-    requestAnimationFrame(() => window.scrollTo(0, listScroll.current))
+    requestAnimationFrame(() => { window.scrollTo(0, listScroll.current); window.document.querySelector<HTMLInputElement>('.archive-filters input[type=search]')?.focus({ preventScroll: true }) })
   }
   useEffect(() => {
     const onBack = () => {
@@ -304,10 +326,10 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
         {kind === 'Sales Invoice' && Number(selected.docstatus) === 2 && <p className="scope-note">Il residuo mostrato appartiene al documento annullato: non è un importo da incassare.</p>}
         {kind === 'Purchase Invoice' && Number(selected.docstatus) === 2 && <p className="scope-note">Il residuo mostrato appartiene al documento annullato: non è un importo da pagare.</p>}
         {['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && !canPrint && <p className="scope-note">{Number(selected.docstatus) === 2 ? 'Questo documento è annullato e non è disponibile per la stampa.' : Number(selected.docstatus) === 0 ? 'Questo documento è in bozza e non è disponibile per la stampa.' : 'Non hai il permesso di stampare questo documento.'}</p>}
-        <div className="form-actions">{manager && !draft && editableKinds.includes(kind) && <Button onClick={edit}>Modifica scheda</Button>}{['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && canPrint && <Button variant="secondary" onClick={() => void print()}><Printer size={16} /> Anteprima e stampa</Button>}</div>
+        <div className="form-actions">{manager && !draft && editableKinds.includes(kind) && <Button data-archive-edit onClick={edit}>Modifica scheda</Button>}{['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && canPrint && <Button variant="secondary" onClick={() => void print()}><Printer size={16} /> Anteprima e stampa</Button>}</div>
       </div>
     </>}
-    {draft && !confirm && <section className="detail-section archive-edit" aria-label={creating ? "Nuova scheda" : "Modifica scheda"}><h2>{creating ? 'Nuova scheda' : 'Modifica scheda'} · {spec.label}</h2><form onSubmit={event => { event.preventDefault(); const issue = validate(); if (issue) setError(issue); else { setError(''); setConfirm(true) } }}><p>Modifica i dati della scheda e indica il motivo: l’operazione sarà registrata.</p>{displayDiffersFromStored && <p className="archive-display-context">Scheda selezionata: <strong>{selectedTitle}</strong>. Le modifiche riguardano solo questa scheda.</p>}{selected && <details><summary>Identificativo della scheda</summary><p>{selected.name}</p></details>}<div className="form-grid">{formFields.map(field => {
+    {draft && !confirm && <section className="detail-section archive-edit" aria-label={creating ? "Nuova scheda" : "Modifica scheda"}><h2 ref={editorHeading} tabIndex={-1}>{creating ? 'Nuova scheda' : 'Modifica scheda'} · {spec.label}</h2><form onSubmit={event => { event.preventDefault(); const issue = validate(); if (issue) setError(issue); else { setError(''); setConfirm(true) } }}><p>Modifica i dati della scheda e indica il motivo: l’operazione sarà registrata.</p>{displayDiffersFromStored && <p className="archive-display-context">Scheda selezionata: <strong>{selectedTitle}</strong>. Le modifiche riguardano solo questa scheda.</p>}{selected && <details><summary>Identificativo della scheda</summary><p>{selected.name}</p></details>}<div className="form-grid">{formFields.map(field => {
       if (field.key === 'valid_from') {
         return <Field key={field.key} label={field.label} required={field.required}><DateInput value={String(draft[field.key] ?? '')} onChange={value => update(field.key, value)} required={field.required} /></Field>
       }
@@ -322,7 +344,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
       }
       return <Field key={field.key} label={field.label} required={field.required}>{field.key === editableNameKey && selected && syntheticCode(selected[field.key]) && <span>Il nome registrato è un codice di prova. Inserisci il nome leggibile da salvare per questa scheda.</span>}<input type={field.kind ?? 'text'} required={field.required} min={field.kind === 'number' ? 0 : undefined} step={field.kind === 'number' ? 'any' : undefined} value={String(draft[field.key] ?? '')} onChange={event => update(field.key, event.target.value)} /></Field>
     })}</div><Field label="Motivo della modifica" required><input value={reason} maxLength={500} onChange={event => { setReason(event.target.value); key.current = requestKey() }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit">{creating ? 'Rivedi dati' : 'Rivedi modifica'}</Button></div></form></section>}
-    {confirm && <section className="detail-section archive-review" aria-label="Conferma dati"><h2>{creating ? `Conferma creazione · ${spec.label}` : `Conferma modifica · ${spec.label}`}</h2>
+    {confirm && <section className="detail-section archive-review" aria-label="Conferma dati"><h2 ref={editorHeading} tabIndex={-1}>{creating ? `Conferma creazione · ${spec.label}` : `Conferma modifica · ${spec.label}`}</h2>
       <div className="review-diff-container">
         <p style={{ margin: '0 0 10px 0', fontSize: 13, color: '#475569' }}>
           {creating ? 'Verifica i dati della nuova scheda prima di salvare nel sistema:' : 'Verifica le variazioni apportate alla scheda prima di salvare:'}

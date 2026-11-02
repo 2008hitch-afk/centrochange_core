@@ -516,10 +516,36 @@ test('GOAL75: collegamento canonico dal profilo alla scheda archivio, senza over
   await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
   await page.getByRole('button', { name: 'Modifica scheda' }).click()
   await expect(page.locator('.archive-edit')).toBeVisible()
+  await expect(page.locator('.archive-edit h2')).toBeFocused()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.screenshot({ path: info.outputPath(`archivio-edit-${info.project.name}.png`), fullPage: true })
   await page.keyboard.press('Escape')
   await expect(page.locator('.archive-edit')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Modifica scheda' })).toBeFocused()
   await page.getByRole('button', { name: 'Torna agli archivi' }).click()
   await expect(page.getByRole('navigation', { name: 'Tipi di archivio' })).toBeVisible()
+})
+
+test('GOAL75: movimento bancario deep link usa la proiezione autorizzata anche oltre la prima pagina', async ({ page }) => {
+  await mock(page, [])
+  let searchedPages = 0
+  await page.route('**/api/method/centrochange_core.finance.reporting.records*', route => {
+    const params = new URL(route.request().url()).searchParams
+    if (params.get('doctype') !== 'Bank Transaction') return route.fallback()
+    const search = params.get('search') || '', offset = Number(params.get('offset') || 0)
+    if (!search) return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [{ name: 'BANK-001', date: today, reference_number: 'SYN-001', deposit: 60, withdrawal: 0 }], has_more: false } }) })
+    searchedPages++
+    const data = search === 'BANK-001' ? offset === 0 ? { rows: Array.from({ length: 100 }, (_, i) => ({ name: `OTHER-${i}` })), has_more: true } : { rows: [{ name: 'BANK-001', date: today, reference_number: 'SYN-001', deposit: 60, withdrawal: 0 }], has_more: false } : { rows: [], has_more: false }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: data }) })
+  })
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Movimenti bancari' }).click()
+  await page.locator('.archive-panel tbody tr').first().click()
+  await expect(page.locator('.archive-detail-page')).toContainText('SYN-001')
+  await page.reload()
+  await expect(page.locator('.archive-detail-page')).toContainText('SYN-001')
+  expect(searchedPages).toBeGreaterThanOrEqual(2)
+  await page.goto('./?archive_kind=Bank+Transaction&archive_record=OTHER-CENTER#Archivi')
+  await expect(page.getByRole('alert')).toContainText('Scheda non disponibile')
+  await expect(page.locator('.archive-detail-page')).toHaveCount(0)
 })
