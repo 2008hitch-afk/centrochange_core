@@ -507,7 +507,7 @@ test('GOAL75: registro distingue note e motivi automatici preservando il testo l
   await expect(detail).toContainText('ORGANIZATIONAL_NOTE_CREATED')
 })
 
-test('GOAL75: collegamento canonico dal profilo alla scheda archivio, senza overlay', async ({ page }) => {
+test('GOAL75: collegamento canonico dal profilo alla scheda archivio, senza overlay', async ({ page }, info) => {
   await mock(page, [])
   await page.goto('./?practitioner=PR-001#Professionisti')
   const link = page.getByRole('link', { name: 'Modifica professionista negli Archivi' })
@@ -517,6 +517,7 @@ test('GOAL75: collegamento canonico dal profilo alla scheda archivio, senza over
   await page.getByRole('button', { name: 'Modifica scheda' }).click()
   await expect(page.locator('.archive-edit')).toBeVisible()
   await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.screenshot({ path: info.outputPath(`archivio-edit-${info.project.name}.png`), fullPage: true })
   await page.keyboard.press('Escape')
   await expect(page.locator('.archive-edit')).toHaveCount(0)
   await page.getByRole('button', { name: 'Torna agli archivi' }).click()
