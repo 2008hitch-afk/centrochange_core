@@ -33,11 +33,13 @@ export function FinanceReportsPage({
   start,
   end,
   feedback,
-  initialMode = 'patients',
+  initialMode = 'customers',
   initialPatient = '',
   onClose,
 }: Props) {
-  const [mode, setMode] = useState<'patients' | 'customers' | 'professionals'>(initialMode)
+  const [mode, setMode] = useState<'patients' | 'customers' | 'professionals'>(
+    initialPatient ? 'patients' : initialMode
+  )
   const [groups, setGroups] = useState<Row[]>([])
   const [key, setKey] = useState('')
   const [patientId, setPatientId] = useState(initialPatient)
@@ -176,10 +178,10 @@ export function FinanceReportsPage({
       : url('patient_reporting.patient_export', { center, start, end })
 
   return (
-    <section className="panel finance-reports-page">
+    <section className="panel finance-reports-page" role="dialog" aria-label="Report dettagliati">
       <header className="patient-page-header">
         {onClose && (
-          <button type="button" className="patient-back" onClick={onClose}>
+          <button type="button" className="patient-back" onClick={onClose} aria-label="Chiudi">
             ← Torna al riepilogo
           </button>
         )}

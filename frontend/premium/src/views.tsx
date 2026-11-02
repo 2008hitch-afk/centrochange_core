@@ -650,9 +650,9 @@ export function ServiceCatalog({ boot, center }: { boot: Boot; center: string })
   const services = boot.services.filter(service => `${demoText(service.cc_service_label)} ${service.cc_service_label ?? ''} ${service.name}`.toLocaleLowerCase('it-IT').includes(search))
 
   if (selected) {
-    return <article className="panel service-detail-page">
+    return <article className="panel service-detail-page" role="dialog" aria-label={demoText(selected.cc_service_label || selected.name)}>
       <header className="patient-page-header">
-        <button className="patient-back" type="button" onClick={() => setSelected(null)}>← Torna ai servizi</button>
+        <button className="patient-back" type="button" onClick={() => setSelected(null)} aria-label="Chiudi">← Torna ai servizi</button>
         <h1>{demoText(selected.cc_service_label || selected.name)}</h1>
       </header>
       <div className="detail-summary">
@@ -964,9 +964,9 @@ function FinanceDetail({ row, tab, center, centers, canWrite, assignees, account
   const { busy, error, run } = useAction(feedback, onChange)
   useEffect(() => { let live = true; const name = String(row.name ?? ''); const method = tab === 'Fatture pazienti' ? 'receivables.position' : tab === 'Fatture fornitori' ? 'incoming.position' : tab === 'Professionisti' ? 'professional_economics.position' : null; if (method) finance<Row>(method, tab === 'Professionisti' ? { center, practitioner: row.practitioner } : { name }).then(r => { if (live) setDetail(r) }).catch(e => feedback(getError(e), true)); return () => { live = false } }, [row, tab, center])
   const title = demoText(row.invoice_number ?? row.name ?? row.reference_name ?? row.exception_type ?? 'Dettaglio')
-  return <section className="panel finance-detail-page">
+  return <section className="panel finance-detail-page" role="dialog" aria-label={title}>
     <header className="patient-page-header">
-      <button className="patient-back" type="button" onClick={onClose}>← Torna a Finanza</button>
+      <button className="patient-back" type="button" onClick={onClose} aria-label="Chiudi">← Torna a Finanza</button>
       <h1>{title}</h1>
     </header>
     <div className="detail-section">

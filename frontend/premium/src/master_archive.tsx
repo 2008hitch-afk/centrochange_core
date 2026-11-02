@@ -87,9 +87,9 @@ export function MasterArchive({ boot, financeBoot, center }: { boot: Boot; finan
   const groups = ['Anagrafiche', 'Catalogo', 'Finanza'].filter(group => definitions.some(d => d.group === group))
   if (selected) {
     return <>
-      <section className="panel archive-detail-page">
+      <section className="panel archive-detail-page" role="dialog" aria-label={labelFor(definition, selected)}>
         <header className="patient-page-header">
-          <button type="button" className="patient-back" onClick={() => setSelected(null)}>← Torna agli archivi</button>
+          <button type="button" className="patient-back" onClick={() => setSelected(null)} aria-label="Chiudi">← Torna agli archivi</button>
           <h1>{labelFor(definition, selected)}</h1>
         </header>
         <div className="detail-section">

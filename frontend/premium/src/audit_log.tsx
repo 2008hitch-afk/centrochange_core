@@ -240,9 +240,9 @@ export function AuditLog({ feedback }: { feedback: Feedback }) {
   }, [selected])
 
   if (selected) {
-    return <section className="panel audit-detail-page">
+    return <section className="panel audit-detail-page" role="dialog" aria-label={eventName(selected.event_type)}>
       <header className="patient-page-header">
-        <button type="button" className="patient-back" onClick={() => setSelected(null)}>← Torna al registro</button>
+        <button type="button" className="patient-back" onClick={() => setSelected(null)} aria-label="Chiudi">← Torna al registro</button>
         <h1>{eventName(selected.event_type)}</h1>
       </header>
       <div className="detail-section">
