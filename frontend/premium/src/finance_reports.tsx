@@ -192,10 +192,9 @@ export function FinanceReportsPage({
       </header>
 
       <div className="detail-section">
-        <div className="segmented" role="tablist" aria-label="Modalità report dettagliati">
+        <div className="segmented" aria-label="Modalità report dettagliati">
           <button
-            role="tab"
-            aria-selected={mode === 'patients'}
+            type="button"
             className={mode === 'patients' ? 'selected' : ''}
             onClick={() => {
               setMode('patients')
@@ -205,8 +204,7 @@ export function FinanceReportsPage({
             Per paziente
           </button>
           <button
-            role="tab"
-            aria-selected={mode === 'customers'}
+            type="button"
             className={mode === 'customers' ? 'selected' : ''}
             onClick={() => {
               setMode('customers')
@@ -216,8 +214,8 @@ export function FinanceReportsPage({
             Per soggetto fiscale
           </button>
           <button
-            role="tab"
-            aria-selected={mode === 'professionals'}
+            type="button"
+            aria-label="Professionisti"
             className={mode === 'professionals' ? 'selected' : ''}
             onClick={() => {
               setMode('professionals')
@@ -297,7 +295,7 @@ export function FinanceReportsPage({
       {mode === 'professionals' && (
         <div className="detail-section">
           <Field label="Professionista">
-            <select value={practitioner} onChange={e => setPractitioner(e.target.value)}>
+            <select aria-label="Professionista" value={practitioner} onChange={e => setPractitioner(e.target.value)}>
               <option value="">Seleziona un professionista</option>
               {boot.practitioners.map(p => (
                 <option key={p.name} value={p.name}>

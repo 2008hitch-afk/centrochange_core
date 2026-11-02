@@ -943,7 +943,7 @@ export function FinanceView({ boot, center, feedback }: { boot: FinanceBoot; cen
         start={start}
         end={end}
         feedback={feedback}
-        initialMode="patients"
+        initialMode="customers"
         onClose={() => setDetailedReportOpen(false)}
       />
     )
