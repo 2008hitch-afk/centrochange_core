@@ -13,9 +13,42 @@ const labels: Record<string, string> = {
   RECEIPT_POSTED: 'Pagamento registrato', PROFESSIONAL_RULE_CONFIGURED: 'Regola compenso configurata',
   SCHEDULE_CHANGED: 'Orario aggiornato', ABSENCE_CREATED: 'Assenza registrata',
   ABSENCE_CANCELLED: 'Assenza annullata', SESSION_AUTO_LOCKED: 'Chiusura seduta bloccata automaticamente',
-  SESSION_LATE_COMPLETED: 'Chiusura tardiva seduta'
+  SESSION_LATE_COMPLETED: 'Chiusura tardiva seduta',
+  PATIENT_INTAKE_CREATED: 'Paziente registrato', PRINCIPAL_REPLACED: 'Account professionista sostituito',
+  CENTER_OPERATIONAL_STATE: 'Stato operativo del centro aggiornato',
+  PREMIUM_MASTER_CREATED: 'Scheda archivio creata', PREMIUM_MASTER_UPDATED: 'Scheda archivio aggiornata',
+  OPERATIONAL_SETTLEMENT: 'Incasso operativo registrato', ECONOMIC_WAIVER: 'Deroga economica registrata',
+  PAYMENT_AGREEMENT_RECORDED: 'Accordo di pagamento registrato', PAYMENT_BLOCK_NOTIFIED: 'Blocco pagamento notificato',
+  PAYMENT_BLOCK_OVERRIDDEN: 'Deroga al blocco pagamento registrata',
+  NOTIFICATION_RETRY: 'Notifica ritentata', BOOKING_CONFIRMATION_RETRIED: 'Conferma prenotazione ritentata',
+  BOOKING_CONFIRMATION_FAILED: 'Conferma prenotazione non riuscita', BOOKING_CONFIRMATION_SIMULATED: 'Conferma prenotazione simulata',
+  RECEIVABLE_DRAFTED: 'Fattura paziente preparata', RECEIVABLE_SUBMITTED: 'Fattura paziente confermata',
+  RECEIVABLE_AMENDED: 'Fattura paziente rettificata', RECEIVABLE_CANCELLED: 'Fattura paziente annullata',
+  PAYABLE_DRAFT_REVIEWED: 'Fattura fornitore rivista', PAYABLE_SUBMITTED: 'Fattura fornitore confermata',
+  PAYABLE_AMENDED: 'Fattura fornitore rettificata', PAYABLE_CANCELLED: 'Fattura fornitore annullata',
+  BANK_MOVEMENT_IMPORTED: 'Movimento bancario importato', BANK_MOVEMENT_RECONCILED: 'Movimento bancario riconciliato',
+  BANK_MOVEMENT_CANCELLED: 'Movimento bancario annullato',
+  ADMIN_EXCEPTION_DETECTED: 'Condizione amministrativa rilevata', ADMIN_EXCEPTION_MANAGED: 'Condizione amministrativa gestita',
+  ADMIN_EXCEPTION_REFRESHED: 'Condizione amministrativa aggiornata', ADMIN_EXCEPTION_AUTO_CLOSED: 'Condizione amministrativa chiusa automaticamente',
+  PROFESSIONAL_EXPECTATION_OVERRIDDEN: 'Compenso professionista rettificato', PROFESSIONAL_INVOICE_COMPARED: 'Fattura professionista confrontata',
+  PROFESSIONAL_SUPPLIER_MAPPED: 'Fornitore professionista collegato', PROFESSIONAL_UNPAID_THRESHOLD_CONFIGURED: 'Soglia insoluti professionista configurata',
+  PATIENT_CUSTOMER_MAPPED: 'Cliente paziente collegato', CENTER_BANK_CONFIGURED: 'Conto bancario del centro configurato',
+  ACCOUNTING_CENTER_MAPPED: 'Centro contabile collegato', INCOMING_SUPPLIER_MAPPED: 'Fornitore fattura in ingresso collegato',
+  INCOMING_XML_RETAINED: 'XML fattura in ingresso conservato', FINANCIAL_DOCUMENT_ATTACHED: 'Documento finanziario allegato',
+  FISCAL_PAYLOAD_PREPARED: 'Dati fiscali preparati', ECONOMIC_SOURCE_CAPTURED: 'Fonte economica registrata',
+  CREDIT_DRAFTED: 'Nota di credito preparata', SUPPLIER_PAYMENT_POSTED: 'Pagamento fornitore registrato',
+  SDI_SIMULATED_QUEUED: 'Invio SdI simulato accodato', SDI_SIMULATED_RESULT: 'Esito SdI simulato registrato',
+  SDI_SIMULATED_INBOUND_RETAINED: 'Risposta SdI simulata conservata',
+  TS_SIMULATED_SUBMITTED: 'Invio TS simulato registrato', TS_SIMULATED_RESULT: 'Esito TS simulato registrato',
+  TS_SYNTHETIC_INPUT_REVIEWED: 'Dati TS sintetici rivisti', PUBLIC_FIRST_MEETING_ASSIGNMENT: 'Primo incontro assegnato'
 }
 const eventName = (value: unknown) => labels[String(value)] ?? 'Modifica registrata'
+const systemReasons: Record<string, string> = {
+  '07:00 local cutoff catch-up': 'Chiusura automatica alla scadenza delle 07:00 (ora di Roma)',
+  'Protected note revision': 'Rettifica di nota protetta',
+  'Protected note entry': 'Registrazione di nota protetta'
+}
+const reasonName = (value: unknown) => systemReasons[String(value ?? '')] ?? String(value ?? '—')
 const eventStamp = (value: unknown) => {
   const raw = String(value ?? '')
   return raw ? `${displayDate(raw)}${raw.length >= 16 ? ' · ' + raw.slice(11, 16) : ''}` : 'Data non disponibile'
@@ -194,7 +227,7 @@ export function AuditLog({ feedback }: { feedback: Feedback }) {
   return <><Heading eyebrow="AMMINISTRAZIONE" title="Registro modifiche" subtitle="Consulta le modifiche registrate, chi le ha effettuate e il relativo motivo." />
     <section className="panel"><div className="panel-toolbar audit-filters"><div className="panel-title"><h2>Eventi</h2><p>Filtra per periodo o riferimento. L'ora mostrata è quella registrata dal sito.</p></div><div className="toolbar-right"><Field label="Dal"><DateInput value={start} onChange={value => { setStart(value); setOffset(0) }} required /></Field><Field label="Al"><DateInput value={end} onChange={value => { setEnd(value); setOffset(0) }} required /></Field></div></div>
       <form className="audit-search" onSubmit={e => { e.preventDefault(); setQuery(reference); setOffset(0) }}><Field label="Riferimento documento"><input value={reference} onChange={e => setReference(e.target.value)} maxLength={140} placeholder="Codice o parte del codice" /></Field><Button type="submit" variant="secondary">Cerca</Button></form>
-      {error && <p className="inline-error" role="alert">{error}</p>}{loading ? <p className="panel-loading" role="status">Caricamento eventi…</p> : <DataTable rows={rows} columns={[{ key: 'event_type', label: 'Evento', render: value => eventName(value) }, { key: 'event_time', label: 'Quando', render: eventStamp }, { key: 'actor', label: 'Autore', render: auditActorName }, { key: 'reference_name', label: 'Riferimento' }, { key: 'reason', label: 'Motivo' }]} onRow={setSelected} />}
+      {error && <p className="inline-error" role="alert">{error}</p>}{loading ? <p className="panel-loading" role="status">Caricamento eventi…</p> : <DataTable rows={rows} columns={[{ key: 'event_type', label: 'Evento', render: value => eventName(value) }, { key: 'event_time', label: 'Quando', render: eventStamp }, { key: 'actor', label: 'Autore', render: auditActorName }, { key: 'reference_name', label: 'Riferimento' }, { key: 'reason', label: 'Motivo', render: reasonName }]} onRow={setSelected} />}
       <div className="audit-pager"><Button variant="secondary" disabled={offset === 0} onClick={() => setOffset(value => Math.max(0, value - 100))}>Precedenti</Button><span>Pagina {Math.floor(offset / 100) + 1}</span><Button variant="secondary" disabled={!hasMore} onClick={() => setOffset(value => value + 100)}>Successivi</Button></div>
-    </section>{selected && <Drawer title={eventName(selected.event_type)} onClose={() => setSelected(null)}><div className="detail-summary"><p>{eventStamp(selected.event_time)} · {auditActorName(selected.actor)}</p><p>Riferimento: {String(selected.reference_name ?? '—')}</p></div><div className="detail-section"><h3>Motivo</h3><p>{String(selected.reason ?? '—')}</p><h3>Cosa è cambiato</h3>{isSchedule && scheduleDiff ? (scheduleDiff.status === 'malformed' ? <p>Dati dell’orario non disponibili o non conformi.</p> : scheduleDiff.status === 'empty' ? <p>Nessuna fascia oraria definita.</p> : scheduleDiff.status === 'identical' ? <p>Nessuna variazione di orario registrata.</p> : <div className="audit-changes">{scheduleDiff.changes.map(c => <div key={c.day}><strong>{c.dayItalian}</strong><p><span>Prima:</span> {c.beforeText}</p><p><span>Dopo:</span> {c.afterText}</p></div>)}</div>) : changes.length ? <div className="audit-changes">{changes.map(key => <div key={key}><strong>{label(key, String(selected.event_type ?? ''))}</strong><p><span>Prima:</span> {textValue(key, before[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(before, key))}</p><p><span>Dopo:</span> {textValue(key, after[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(after, key))}</p></div>)}</div> : <p>Dettaglio della modifica non disponibile in forma comparabile.</p>}<p className="scope-note">Il registro conserva l'evento originale; questa vista mostra solo la differenza leggibile.</p></div></Drawer>}</>
+    </section>{selected && <Drawer title={eventName(selected.event_type)} onClose={() => setSelected(null)}><div className="detail-summary"><p>{eventStamp(selected.event_time)} · {auditActorName(selected.actor)}</p><p>Riferimento: {String(selected.reference_name ?? '—')}</p></div><div className="detail-section"><h3>Motivo</h3><p>{reasonName(selected.reason)}</p>{!labels[String(selected.event_type)] && <details><summary>Tipo evento originale</summary><p>{String(selected.event_type)}</p></details>}{reasonName(selected.reason) !== String(selected.reason ?? '—') && <details><summary>Motivo originale registrato</summary><p>{String(selected.reason)}</p></details>}<h3>Cosa è cambiato</h3>{isSchedule && scheduleDiff ? (scheduleDiff.status === 'malformed' ? <p>Dati dell’orario non disponibili o non conformi.</p> : scheduleDiff.status === 'empty' ? <p>Nessuna fascia oraria definita.</p> : scheduleDiff.status === 'identical' ? <p>Nessuna variazione di orario registrata.</p> : <div className="audit-changes">{scheduleDiff.changes.map(c => <div key={c.day}><strong>{c.dayItalian}</strong><p><span>Prima:</span> {c.beforeText}</p><p><span>Dopo:</span> {c.afterText}</p></div>)}</div>) : changes.length ? <div className="audit-changes">{changes.map(key => <div key={key}><strong>{label(key, String(selected.event_type ?? ''))}</strong><p><span>Prima:</span> {textValue(key, before[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(before, key))}</p><p><span>Dopo:</span> {textValue(key, after[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(after, key))}</p></div>)}</div> : <p>Dettaglio della modifica non disponibile in forma comparabile.</p>}<p className="scope-note">Il registro conserva l'evento originale; questa vista mostra solo la differenza leggibile.</p></div></Drawer>}</>
 }

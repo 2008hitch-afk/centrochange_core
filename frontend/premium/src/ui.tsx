@@ -42,7 +42,7 @@ export function Drawer({ title, children, onClose, compact = false }: { title: s
   return <div className={`drawer-backdrop${compact ? ' compact' : ''}`} onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}><aside ref={ref} className="drawer" role="dialog" aria-modal="true" aria-label={title}><header className="drawer-head"><div><span className="eyebrow">DETTAGLIO</span><h2>{title}</h2></div><button className="icon-button" aria-label="Chiudi" onClick={onClose}><X /></button></header><div className="drawer-body">{children}</div></aside></div>
 }
 export function Field({ label, name, required, children }: { label: string; name?: string; required?: boolean; children: React.ReactNode }) { return <label className="field"><span>{label}{required && <b className="required"> *</b>}</span>{children}</label> }
-export function SearchableSelect({ label, options, value, onChange, required = false, empty = 'Seleziona', disabled = false }: { label: string; options: { value: string; label: string }[]; value: string; onChange: (value: string) => void; required?: boolean; empty?: string; disabled?: boolean }) {
+export function SearchableSelect({ label, options, value, onChange, required = false, empty = 'Seleziona', disabled = false }: { label: string; options: { value: string; label: string; searchText?: string }[]; value: string; onChange: (value: string) => void; required?: boolean; empty?: string; disabled?: boolean }) {
   const id = React.useId()
   const root = React.useRef<HTMLDivElement>(null)
   const input = React.useRef<HTMLInputElement>(null)
@@ -52,7 +52,7 @@ export function SearchableSelect({ label, options, value, onChange, required = f
   const [invalidQuery, setInvalidQuery] = useState(false)
   const selected = options.find(option => option.value === value)
   const search = query.trim().toLocaleLowerCase('it-IT')
-  const visible = search ? options.filter(option => option.label.toLocaleLowerCase('it-IT').includes(search)) : options
+  const visible = search ? options.filter(option => `${option.label} ${option.searchText ?? ''}`.toLocaleLowerCase('it-IT').includes(search)) : options
   const choose = (next: string) => { onChange(next); input.current?.setCustomValidity(''); setInvalidQuery(false); setQuery(''); setOpen(false) }
   const move = (delta: number) => {
     setOpen(true)

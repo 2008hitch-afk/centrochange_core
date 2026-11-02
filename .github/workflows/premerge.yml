@@ -6,6 +6,7 @@ on:
       - main
       - docs/premium-react-macrogoal-148-20261021
       - issue-148/premium-react-frontend
+      - issue-190/access-audit
   workflow_dispatch:
 
 permissions:

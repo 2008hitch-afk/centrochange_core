@@ -1,0 +1,62 @@
+name: GOAL-75 isolated Frappe and browser
+on:
+  pull_request:
+    branches: [issue-190/access-audit]
+permissions:
+  contents: read
+concurrency:
+  group: goal75-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  isolated-goal75:
+    if: github.head_ref == 'issue-75/coordinated-premium-ux' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.22.1'
+          cache: npm
+          cache-dependency-path: frontend/premium/package-lock.json
+      - name: Build exact candidate outside VPS
+        working-directory: frontend/premium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Verify source parity
+        run: python3 infra/verify_full_single_stack.py --source
+      - name: Chromium desktop and mobile UX regressions with synthetic API fixtures
+        working-directory: frontend/premium
+        env:
+          CI: '1'
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test --config=playwright.scoped.config.ts --workers=2
+      - name: Build isolated Frappe image
+        run: docker build --progress=plain -f infra/Dockerfile.single-stack-full --build-arg SINGLE_STACK_SOURCE_SHA=${{ github.event.pull_request.head.sha }} -t cc75-ux-ci:local .
+      - name: Run Frappe/API and Chromium regressions in isolated clone
+        env:
+          CC_CLONE_IMAGE: cc75-ux-ci:local
+          CC_ARTIFACT_DIR: ${{ github.workspace }}/.goal75-artifacts
+        run: python3 infra/audit10_clone.py
+      - name: Check teardown even on failure
+        if: always()
+        run: |
+          test -z "$(docker ps -a --format '{{.Names}}' | grep '^cc183-clone-' || true)"
+          test -z "$(docker volume ls --format '{{.Name}}' | grep '^cc183-clone-' || true)"
+          test -z "$(docker network ls --format '{{.Name}}' | grep '^cc183-clone-' || true)"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: goal75-evidence-${{ github.event.pull_request.head.sha }}
+          path: |
+            .goal75-artifacts/
+            frontend/premium/test-results/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 7

@@ -53,6 +53,10 @@ async function mock(page: Page, writes: Write[], role = 'CC Manager') {
       }
     } else if (method.endsWith('operations.workspace.agenda')) message = { appointments: [], truncated: false }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
+    else if (method.endsWith('operations.workspace.patient_history')) message = { appointments: [], truncated: false, settlements: [], organizational_notes: [{ name: 'ORG-001', content: 'Nota organizzativa di prova', creation: '2026-10-31 10:00:00' }], private_notes: role === 'CC Professional' ? [{ name: 'PRIV-001', content: 'Nota riservata di prova', creation: '2026-10-31 10:01:00' }] : [], packages: [], assignment_events: [] }
+    else if (method.endsWith('operations.workspace.management_context')) message = { users: [{ name: 'manager@example.invalid', full_name: 'Direzione di prova', roles: ['CC Manager'] }], practitioners: boot.practitioners, memberships: [{ name: 'MEM-001', user: 'manager@example.invalid', active: 1 }] }
+    else if (method.endsWith('security.audit_view.events')) message = { events: [{ name: 'AUD-001', event_type: 'SESSION_AUTO_LOCKED', event_time: '2026-10-27 07:00:04', actor: 'cc-automation-service@example.invalid', reference_name: 'APP-001', reason: '07:00 local cutoff catch-up', before_state: '{}', after_state: '{}' }], has_more: false }
+    else if (method.endsWith('operations.notes.add_note') && request.method() === 'POST') message = { name: 'NOTE-NEW' }
     else if (method.endsWith('operations.workspace.schedules')) message = []
     else status = 404
     await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(status === 200 ? { message } : { exc: 'PermissionError' }) })
@@ -387,4 +391,82 @@ test('ricerca server-side mantiene un risultato trovato per codice anche se il n
   await page.getByLabel('Cerca in pazienti').fill('PAT-REMOTE-520')
   await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
   await expect(page.locator('.archive-panel tbody tr').first()).toContainText('Mario Rossi')
+})
+
+test('GOAL-75: scheda Paziente usa pagina e schede, conserva il collegamento e ritorna alla ricerca', async ({ page }, info) => {
+  await mock(page, [])
+  await page.goto('./')
+  if ((page.viewportSize()?.width ?? 1440) < 760) await page.getByRole('button', { name: 'Apri menu' }).click()
+  await page.getByRole('button', { name: 'Pazienti', exact: true }).click()
+  await page.getByRole('textbox', { name: 'Cerca pazienti' }).fill('Paziente')
+  await page.locator('tbody tr').first().click()
+  await expect(page.locator('.patient-detail-page')).toBeVisible()
+  await expect(page).toHaveURL(/patient=PAT-001/)
+  await expect(page.getByRole('navigation', { name: 'Sezioni della scheda paziente' })).toBeVisible()
+  await page.getByRole('button', { name: 'Note', exact: true }).click()
+  await expect(page.locator('.patient-tab-notes')).toBeVisible()
+  await page.screenshot({ path: info.outputPath(`paziente-scheda-${info.project.name}.png`), fullPage: true })
+  await page.reload()
+  await expect(page.locator('.patient-detail-page')).toBeVisible()
+  await page.getByRole('button', { name: 'Torna ai pazienti' }).click()
+  await expect(page.getByRole('textbox', { name: 'Cerca pazienti' })).toBeVisible()
+  await expect(page).not.toHaveURL(/patient=/)
+})
+
+test('GOAL-75: accessi usa ricerca e conferma esplicita della disattivazione globale', async ({ page }, info) => {
+  await mock(page, [])
+  await page.goto('./')
+  if ((page.viewportSize()?.width ?? 1440) < 760) await page.getByRole('button', { name: 'Apri menu' }).click()
+  await page.getByRole('button', { name: 'Gestione accessi', exact: true }).click()
+  await page.getByRole('button', { name: 'Stato professionista' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Stato professionista' })
+  await dialog.getByRole('combobox', { name: 'Professionista' }).fill('Sintetico')
+  await dialog.getByRole('option', { name: 'Professionista Sintetico' }).click()
+  await dialog.getByLabel('Nuovo stato').selectOption('0')
+  await expect(dialog.getByRole('alert')).toContainText('tutte le sedi')
+  await dialog.getByLabel('Motivo della modifica').fill('Test sintetico')
+  await dialog.getByRole('button', { name: 'Rivedi modifica' }).click()
+  await expect(dialog.getByRole('alert')).toContainText('tutte le sedi')
+  await page.screenshot({ path: info.outputPath(`accessi-disattivazione-${info.project.name}.png`), fullPage: true })
+})
+
+test('GOAL-75: registro rende leggibile il motivo di sistema e conserva l’originale', async ({ page }, info) => {
+  await mock(page, [])
+  await page.goto('./')
+  if ((page.viewportSize()?.width ?? 1440) < 760) await page.getByRole('button', { name: 'Apri menu' }).click()
+  await page.getByRole('button', { name: 'Registro modifiche', exact: true }).click()
+  await expect(page.locator('tbody')).toContainText('Chiusura automatica alla scadenza')
+  await page.locator('tbody tr').first().click()
+  const drawer = page.getByRole('dialog')
+  await drawer.getByText('Motivo originale registrato').click()
+  await expect(drawer).toContainText('07:00 local cutoff catch-up')
+  await page.screenshot({ path: info.outputPath(`registro-motivo-${info.project.name}.png`), fullPage: true })
+})
+
+test('GOAL-75: un deep link paziente negato non monta note o azioni di assegnazione', async ({ page }) => {
+  await mock(page, [])
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_detail*', route =>
+    route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ exc: 'PermissionError' }) }))
+  await page.goto('./?patient=PAT-FOREIGN#Pazienti')
+  await expect(page.locator('.patient-detail-page')).toBeVisible()
+  await expect(page.locator('.patient-detail-page').getByRole('alert')).toBeVisible()
+  await expect(page.locator('.patient-tab-notes')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Gestisci assegnazione' })).toHaveCount(0)
+})
+
+test('GOAL-75: rettifica nota riservata conserva il tipo e il riferimento originale', async ({ page }) => {
+  const writes: Write[] = []
+  await mock(page, writes, 'CC Professional')
+  await page.goto('./')
+  if ((page.viewportSize()?.width ?? 1440) < 760) await page.getByRole('button', { name: 'Apri menu' }).click()
+  await page.getByRole('button', { name: 'Pazienti', exact: true }).click()
+  await page.locator('tbody tr').first().click()
+  await page.getByRole('button', { name: 'Note', exact: true }).click()
+  await expect(page.locator('.patient-tab-notes')).toContainText('Nota riservata di prova')
+  await page.locator('.note.private').getByRole('button', { name: 'Rettifica' }).click()
+  await expect(page.locator('.patient-tab-notes')).toContainText('Rettifica di una nota professionale riservata')
+  await expect(page.locator('.note-kind')).toHaveCount(0)
+  await page.getByRole('textbox', { name: 'Testo della rettifica' }).fill('Rettifica riservata sintetica')
+  await page.getByRole('button', { name: 'Registra rettifica' }).click()
+  await expect.poll(() => writes.find(write => write.method.endsWith('operations.notes.add_note'))?.body).toMatchObject({ private: 1, corrects: 'PRIV-001' })
 })

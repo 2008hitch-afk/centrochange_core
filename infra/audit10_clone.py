@@ -14,6 +14,18 @@ try:
     result = next(json.loads(line) for line in out.splitlines() if line.startswith('{') and 'status' in line)
     assert result['status'] == 'PASS', result
     print('AUDIT10_BACKEND', json.dumps(result), flush=True)
+    note_source = """import frappe, json
+frappe.init('centrochange.local', sites_path='sites'); frappe.connect()
+frappe.set_user('Administrator')
+from centrochange_core.operations.dev_acceptance import run
+print(json.dumps(run()))
+"""
+    note_out = clone.run_cmd(['docker', 'exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1', '-w', '/home/frappe/frappe-bench', clone.BACKEND_CONTAINER, 'env/bin/python', '-'], input_str=note_source)
+    note_result = next(json.loads(line) for line in note_out.splitlines() if line.startswith('{') and 'status' in line)
+    assert note_result['status'] == 'PASS' and note_result['cleanup'] == 'rollback', note_result
+    assert 'private revision appends and retains original' in note_result['checks'], note_result
+    assert 'second assigned professional private read denied' in note_result['checks'], note_result
+    print('GOAL75_PRIVATE_NOTE_ROLLBACK_AND_IDOR_PASS', json.dumps(note_result), flush=True)
     race_source = (root / 'infra/audit10_clone_race.py').read_text()
     race = clone.run_cmd(['docker', 'exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1', '-w', '/home/frappe/frappe-bench', clone.BACKEND_CONTAINER, 'env/bin/python', '-'], input_str=race_source)
     assert 'AUDIT10_CONCURRENCY_PASS' in race, race
