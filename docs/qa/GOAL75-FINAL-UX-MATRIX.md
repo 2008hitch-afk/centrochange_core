@@ -20,7 +20,7 @@ Criteri trasversali: nessuna nuova API o fonte dati; conferma esplicita, motivo,
 
 ## Altre superfici con overlay
 
-- Agenda: il drawer rapido cliente è richiesto dall'Owner; le azioni ordinarie sono inline. Solo il blocco pagamento apre una conferma contestuale sopra il drawer: è un'interruzione di sicurezza con deroga circoscritta, non l'editor anagrafico; conservarla e collaudare annulla/permessi senza cambiare regole economiche.
+- Agenda: il drawer rapido cliente è richiesto dall'Owner; le azioni ordinarie sono inline. Solo il blocco pagamento apre una conferma contestuale sopra il drawer: è un'interruzione di sicurezza per il blocco pagamento, non l'editor anagrafico; conservarla e collaudare annulla/permessi senza cambiare regole economiche.
 - Paziente operativo: pagina completa e modale di modifica, senza drawer sottostante; API profilo canonica condivisa con Archivi.
 - Servizi: drawer breve di sola lettura, rimanda al catalogo canonico; nessun editor sovrapposto.
 - Registro: singolo drawer di dettaglio, nessun editor.
