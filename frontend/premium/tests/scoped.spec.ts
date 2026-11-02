@@ -591,3 +591,21 @@ test('GOAL75: collegamento anagrafico conserva la sede scelta', async ({ page })
   await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
   expect(detailCenters.every(value => value === 'CENTRO-B')).toBe(true)
 })
+
+test('GOAL75: cronologia mantiene sincronizzata la sede con la URL', async ({ page }) => {
+  await mock(page, [])
+  const centers = [boot.centers[0], { name: 'CENTRO-B', branch: 'Centro B' }]
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => {
+    const selected = new URL(route.request().url()).searchParams.get('center') || center
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, centers, center: selected } }) })
+  })
+  await page.goto('./?center=CENTRO-A#Archivi')
+  await page.locator('.archive-panel tbody tr').first().click()
+  await expect(page.locator('.archive-detail-page')).toBeVisible()
+  const selector = page.locator('.center-selector select')
+  await selector.selectOption('CENTRO-B')
+  await expect(selector).toHaveValue('CENTRO-B')
+  await page.goBack()
+  await expect.poll(() => new URL(page.url()).searchParams.get('center')).toBe('CENTRO-A')
+  await expect(selector).toHaveValue('CENTRO-A')
+})

@@ -67,11 +67,19 @@ function App() {
       if (!live) return
       if (o.status === 'fulfilled') setBoot(o.value)
       if (f.status === 'fulfilled') setFinanceBoot(f.value)
-      if (!center) { const selected = o.status === 'fulfilled' ? o.value.center : f.status === 'fulfilled' ? f.value.center : ''; if (selected) { hydratedCenter.current = selected; setCenter(selected) } }
+      if (!center) { const selected = o.status === 'fulfilled' ? o.value.center : f.status === 'fulfilled' ? f.value.center : ''; if (selected) { const url = new URL(location.href); url.searchParams.set('center', selected); history.replaceState(null, '', url); hydratedCenter.current = selected; setCenter(selected) } }
       if (o.status === 'rejected' && f.status === 'rejected') setError('Nessuna area disponibile per questo account. Verifica assegnazione e ruolo.')
       setLoading(false)
     })
     return () => { live = false }
+  }, [center])
+  useEffect(() => {
+    const onPopState = () => {
+      const next = new URLSearchParams(location.search).get('center')
+      if (next && next !== center) { hydratedCenter.current = ''; setLoading(true); setBoot(null); setFinanceBoot(null); setCenter(next) }
+    }
+    addEventListener('popstate', onPopState)
+    return () => removeEventListener('popstate', onPopState)
   }, [center])
   const roles = boot?.roles ?? []
   const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : !!boot || !!financeBoot : v === 'Notifiche' ? roles.includes('CC Manager') || roles.includes('CC Professional') || roles.includes('CC Secretariat') : ['Gestione accessi', 'Registro modifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
