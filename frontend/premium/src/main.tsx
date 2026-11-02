@@ -29,6 +29,7 @@ function App() {
   const [view, setView] = useState<View>(fromHash)
   const [boot, setBoot] = useState<Boot | null>(null)
   const [financeBoot, setFinanceBoot] = useState<FinanceBoot | null>(null)
+  const [reportPatient, setReportPatient] = useState<string | undefined>(undefined)
   const [center, setCenter] = useState(() => new URLSearchParams(location.search).get('center') ?? '')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -108,10 +109,30 @@ function App() {
   }, [mobileOpen])
   const centers = boot?.centers?.length ? boot.centers : financeBoot?.centers ?? []
   configureDemoLabels(boot, financeBoot)
-  const switchView = (next: View) => { const url = new URL(location.href); url.searchParams.delete('patient'); url.searchParams.delete('practitioner'); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); url.hash = encodeURIComponent(next); history.pushState(null, '', url); dispatchEvent(new HashChangeEvent('hashchange')); setView(next); setMobileOpen(false); setUserMenuOpen(false); setError(''); setNotice(''); if (mobileOpen) requestAnimationFrame(() => document.getElementById('main')?.focus()) }
+  const switchView = (next: View) => {
+    setReportPatient(undefined)
+    const url = new URL(location.href); url.searchParams.delete('patient'); url.searchParams.delete('tab'); url.searchParams.delete('practitioner'); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); url.hash = encodeURIComponent(next); history.pushState(null, '', url); dispatchEvent(new HashChangeEvent('hashchange')); setView(next); setMobileOpen(false); setUserMenuOpen(false); setError(''); setNotice(''); if (mobileOpen) requestAnimationFrame(() => document.getElementById('main')?.focus())
+  }
+  const openPatientPayments = (patientId: string) => {
+    const url = new URL(location.href)
+    url.searchParams.set('patient', patientId)
+    url.searchParams.set('tab', 'Pagamenti')
+    url.hash = 'Pazienti'
+    history.pushState(null, '', url)
+    dispatchEvent(new HashChangeEvent('hashchange'))
+    setView('Pazienti')
+  }
+  const openDetailedReports = (patientId?: string) => {
+    setReportPatient(patientId)
+    const url = new URL(location.href)
+    url.hash = 'Report'
+    history.pushState(null, '', url)
+    dispatchEvent(new HashChangeEvent('hashchange'))
+    setView('Report')
+  }
   const feedback = (message: string, fail = false) => { if (fail) setError(message); else { setNotice(message); setError('') } }
   const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(fresh) }
-  const changeCenter = (next: string) => { if (next === center) return; const url = new URL(location.href); url.searchParams.set('center', next); url.searchParams.delete('patient'); url.searchParams.delete('practitioner'); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); history.replaceState(null, '', url); hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setCenter(next) }
+  const changeCenter = (next: string) => { if (next === center) return; const url = new URL(location.href); url.searchParams.set('center', next); url.searchParams.delete('patient'); url.searchParams.delete('tab'); url.searchParams.delete('practitioner'); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); history.replaceState(null, '', url); hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setCenter(next) }
   const logout = async () => {
     setLoggingOut(true); setUserMenuOpen(false)
     try { await call('logout', {}, true); location.replace('/login?redirect-to=/premium') }
@@ -134,12 +155,12 @@ function App() {
         {loading && <div className="loading-state" role="status"><div className="skeleton heading-skeleton" /><div className="skeleton wide-skeleton" /><div className="skeleton panel-skeleton" /></div>}
         {error && <div className="alert error" role="alert"><span>{error}</span><button onClick={() => setError('')} aria-label="Chiudi errore"><X /></button></div>}
         {notice && <div className="alert success" role="status"><span>{notice}</span><button onClick={() => setNotice('')} aria-label="Chiudi avviso"><X /></button></div>}
-        {!loading && currentView === 'Agenda' && boot && <Agenda boot={boot} center={center} feedback={feedback} refreshBoot={refreshBoot} />}
-        {!loading && currentView === 'Pazienti' && boot && <Patients key={center} boot={boot} center={center} feedback={feedback} refreshBoot={refreshBoot} />}
+        {!loading && currentView === 'Agenda' && boot && <Agenda boot={boot} center={center} feedback={feedback} refreshBoot={refreshBoot} financeBoot={financeBoot} onOpenPatientPayments={openPatientPayments} />}
+        {!loading && currentView === 'Pazienti' && boot && <Patients key={center} boot={boot} center={center} feedback={feedback} refreshBoot={refreshBoot} financeBoot={financeBoot} onOpenReport={openDetailedReports} />}
         {!loading && currentView === 'Professionisti' && boot && <Professionals key={center} boot={boot} center={center} />}
         {!loading && currentView === 'Servizi' && boot && <ServiceCatalog boot={boot} center={center} />}
         {!loading && currentView === 'Disponibilità' && boot && <Availability boot={boot} center={center} feedback={feedback} />}
-        {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} financeBoot={financeBoot} />}
+        {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} financeBoot={financeBoot} initialPatient={reportPatient} />}
         {!loading && currentView === 'Finanza' && financeBoot && <FinanceView boot={financeBoot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Archivi' && (boot || financeBoot) && (syntheticArchive ? boot && <MasterArchive boot={boot} financeBoot={financeBoot} center={center} /> : <ScopedArchive boot={boot} financeBoot={financeBoot} center={center} />)}
         {!loading && currentView === 'Gestione accessi' && boot && <Access boot={boot} center={center} feedback={feedback} />}
