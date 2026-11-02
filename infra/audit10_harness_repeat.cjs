@@ -139,9 +139,10 @@ async function round(browser, width, iteration) {
     let proPage
     for (const active of ['1', '0', '1']) {
       stage = 'access-ui'; diagnosticPage = page
-      await page.getByRole('button', { name: 'Appartenenza', exact: true }).click()
+      await page.getByRole('button', { name: 'Gestisci appartenenza', exact: true }).click()
       const d = page.getByRole('dialog', { name: 'Appartenenza al centro', exact: true })
-      await d.getByLabel('Utente').selectOption(user); await d.getByLabel('Nuovo stato').selectOption(active)
+      await d.getByRole('combobox', { name: 'Account di accesso' }).fill(user)
+      await d.getByRole('option').first().click(); await d.getByLabel('Nuovo stato').selectOption(active)
       await d.getByLabel('Motivo della modifica').fill(tag); await d.getByRole('button', { name: 'Rivedi modifica', exact: true }).click()
       const response = page.waitForResponse(r => r.url().includes('security.lifecycle.set_membership') && r.request().method() === 'POST')
       await d.getByRole('button', { name: 'Conferma modifica', exact: true }).click(); const saved = await response; if (!saved.ok()) faults.push({ type: 'unexpected_status', status: saved.status(), path: '/api/method/security.lifecycle.set_membership' }); assert(saved.ok()); await d.waitFor({ state: 'hidden' })
