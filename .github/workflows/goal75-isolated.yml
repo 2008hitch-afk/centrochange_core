@@ -1,7 +1,7 @@
 name: GOAL-75 isolated Frappe and browser
 on:
   pull_request:
-    branches: [issue-190/access-audit]
+    branches: [issue-190/access-audit, issue-75/coordinated-premium-ux]
 permissions:
   contents: read
 concurrency:
@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   isolated-goal75:
-    if: github.head_ref == 'issue-75/coordinated-premium-ux' && github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.head_ref == 'issue-75/coordinated-premium-ux' || github.head_ref == 'issue-75/final-ux-remediation') && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:

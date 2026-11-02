@@ -1,0 +1,32 @@
+name: GOAL-75 final assets
+on:
+  pull_request:
+    branches: [issue-75/coordinated-premium-ux]
+permissions:
+  contents: read
+jobs:
+  build-assets:
+    if: github.head_ref == 'issue-75/final-ux-remediation' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.1'
+          cache: npm
+          cache-dependency-path: frontend/premium/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund && npm run typecheck && npm run build
+        working-directory: frontend/premium
+      - run: |
+          git add -A app/centrochange_core/centrochange_core/public/premium
+          python3 infra/verify_full_single_stack.py --write-manifest
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: goal75-final-assets-${{ github.event.pull_request.head.sha }}
+          path: |
+            app/centrochange_core/centrochange_core/public/premium/
+            infra/full-single-stack-manifest.json
+          retention-days: 7

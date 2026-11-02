@@ -87,6 +87,7 @@ const syntheticAuditRoles: Record<string, string> = {
 
 export const auditActorName = (value: unknown) => {
   const raw = String(value ?? '').trim()
+  if (raw === 'cc-automation-service@example.invalid') return 'Servizio automatico'
   const match = /^cc-http-[a-z0-9]{10}-([msabcft])@example\.invalid$/i.exec(raw)
   return match ? syntheticAuditRoles[match[1].toLowerCase()] : raw || 'Autore non disponibile'
 }
