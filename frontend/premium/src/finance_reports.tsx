@@ -325,7 +325,7 @@ export function FinanceReportsPage({
               <Chip tone={detail.blocked ? 'bad' : patientToSettleCount > 0 ? 'warn' : 'good'}>
                 {detail.blocked ? 'Blocco prenotazioni' : patientToSettleCount > 0 ? `${patientToSettleCount} sedute da saldare` : 'Posizione regolare'}
               </Chip>
-              {detail.deferred && <Chip tone="purple">Scadenza differita</Chip>}
+              {Boolean(detail.deferred) && <Chip tone="blue">Scadenza differita</Chip>}
             </div>
             <h2>{patientList.find(p => p.name === patientId)?.label || patientId}</h2>
             <p className="scope-note">
@@ -336,7 +336,7 @@ export function FinanceReportsPage({
               <Metric label="Sedute nel periodo" value={String(patientSessions.length)} />
               <Metric label="Sedute svolte" value={String(patientSessions.filter(s => s.category === 'performed').length)} tone="green" />
               <Metric label="Sedute da saldare" value={String(patientToSettleCount)} tone={patientToSettleCount > 0 ? 'amber' : 'green'} />
-              <Metric label="Debito operativo" value={money(patientDebts.reduce((sum, d) => sum + Number(d.amount || 0), 0))} tone={patientDebts.length > 0 ? 'amber' : 'neutral'} />
+              <Metric label="Debito operativo" value={money(patientDebts.reduce((sum, d) => sum + Number(d.amount || 0), 0))} tone={patientDebts.length > 0 ? 'amber' : 'blue'} />
             </div>
           </div>
 

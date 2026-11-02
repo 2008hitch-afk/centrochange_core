@@ -277,7 +277,7 @@ function PatientPaymentsTab({ patient, center, onOpenReport }: {
         <Metric
           label="Stato prenotazioni"
           value={isBlocked ? 'Bloccato' : 'Autorizzato'}
-          tone={isBlocked ? 'bad' : 'green'}
+          tone={isBlocked ? 'amber' : 'green'}
         />
       </div>
 
