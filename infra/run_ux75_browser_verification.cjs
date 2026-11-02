@@ -17,15 +17,67 @@ if (!fs.existsSync(CANDIDATE_JS) || !fs.existsSync(CANDIDATE_CSS)) {
   process.exit(1);
 }
 
-const SIDS = {
-  m: 'e6dec4cc51b89cd39b77ed6da4a658b3a9b0ad8da65870030477d75c', // CC Manager
-  s: '365a0258b05ce91121279a39e6b67de7789fb31e48f858f49f8616cd', // CC Secretariat
-  f: 'ef4b651fa6e38fe627b454c537b00ba68292b3b6123f4bceb63d6aff', // CC Finance
-  t: '188629de08801ef95371b5628e277480a0711351d1903ac306f40372', // CC Accountant
-  a: '22aa0d6b9f7412a22b559a9f243a5429cc0dd561941539ce93be2d79', // CC Professional
-};
+const { execSync } = require('child_process');
 
-const BASE_URL = 'http://centrochange.local:8082';
+const CONTAINER = process.env.CC_TEST_CONTAINER || 'centrochange-dev-backend-1';
+const SITE = process.env.CC_TEST_SITE || 'centrochange.local';
+const BASE_URL = process.env.CC_TEST_BASE_URL || 'http://centrochange.local:8082';
+
+function createEphemeralSessions(container, site) {
+  const users = {
+    m: 'cc-http-uat0000001-m@example.invalid',
+    s: 'cc-http-uat0000001-s@example.invalid',
+    f: 'cc-http-uat0000001-f@example.invalid',
+    t: 'cc-http-uat0000001-t@example.invalid',
+    a: 'cc-http-uat0000001-a@example.invalid',
+  };
+  const script = `
+import frappe, json
+from werkzeug.test import EnvironBuilder
+from frappe.sessions import Session
+
+frappe.init("${site}")
+frappe.connect()
+frappe.request = EnvironBuilder().get_request()
+
+res = {}
+for role, email in ${JSON.stringify(users)}.items():
+    sess = Session(user=email).start()
+    res[role] = frappe.session.sid
+
+frappe.db.commit()
+print(json.dumps(res))
+`;
+  const raw = execSync(`docker exec -i -w /home/frappe/frappe-bench/sites ${container} /home/frappe/frappe-bench/env/bin/python`, {
+    input: script,
+    encoding: 'utf-8',
+  });
+  return JSON.parse(raw.trim());
+}
+
+function teardownEphemeralSessions(container, site, sids) {
+  if (!sids || sids.length === 0) return;
+  const script = `
+import frappe, json
+from frappe.sessions import delete_session
+
+frappe.init("${site}")
+frappe.connect()
+
+for sid in ${JSON.stringify(sids)}:
+    if sid:
+        delete_session(sid=sid, reason="Teardown ephemeral test session")
+print("cleaned")
+`;
+  try {
+    execSync(`docker exec -i -w /home/frappe/frappe-bench/sites ${container} /home/frappe/frappe-bench/env/bin/python`, {
+      input: script,
+      encoding: 'utf-8',
+    });
+  } catch (err) {
+    console.error('Warning: Error tearing down ephemeral sessions:', err.message);
+  }
+}
 
 async function setupPage(browser, sid, width = 1440, height = 900) {
   const context = await browser.newContext({
@@ -47,22 +99,24 @@ async function setupPage(browser, sid, width = 1440, height = 900) {
 
   const page = await context.newPage();
 
-  // Intercept bundle assets to serve the newly built candidate code
-  await page.route('**/assets/centrochange_core/premium/app.js*', route => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/javascript; charset=utf-8',
-      body: fs.readFileSync(CANDIDATE_JS),
+  if (process.env.CC_SERVE_LIVE !== 'true') {
+    // Intercept bundle assets to serve the newly built candidate code
+    await page.route('**/assets/centrochange_core/premium/app.js*', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/javascript; charset=utf-8',
+        body: fs.readFileSync(CANDIDATE_JS),
+      });
     });
-  });
 
-  await page.route('**/assets/centrochange_core/premium/app.css*', route => {
-    route.fulfill({
-      status: 200,
-      contentType: 'text/css; charset=utf-8',
-      body: fs.readFileSync(CANDIDATE_CSS),
+    await page.route('**/assets/centrochange_core/premium/app.css*', route => {
+      route.fulfill({
+        status: 200,
+        contentType: 'text/css; charset=utf-8',
+        body: fs.readFileSync(CANDIDATE_CSS),
+      });
     });
-  });
+  }
 
   return { context, page };
 }
@@ -89,6 +143,15 @@ async function findOrNavigateToEvent(page) {
 
 (async () => {
   console.log('=== STARTING UX #75 COMPREHENSIVE BROWSER VERIFICATION ===');
+  let SIDS = {};
+  try {
+    SIDS = createEphemeralSessions(CONTAINER, SITE);
+    console.log(`[AUTH] Ephemeral sessions dynamically created for roles: ${Object.keys(SIDS).join(', ')}`);
+  } catch (authErr) {
+    console.error('Failed to create ephemeral sessions:', authErr.message);
+    process.exit(1);
+  }
+
   const browser = await chromium.launch({
     executablePath: '/home/empv26/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell',
     headless: true,
@@ -123,6 +186,7 @@ async function findOrNavigateToEvent(page) {
 
       // Verify immediate payment summary banner is present
       const summaryBanner = await page.waitForSelector('.appointment-payment-summary', { timeout: 5000 });
+      await page.waitForFunction(() => !document.querySelector('.appointment-payment-summary')?.textContent.includes('Caricamento'), { timeout: 5000 }).catch(() => {});
       const summaryText = await summaryBanner.textContent();
       console.log(`Payment summary banner text: ${summaryText.trim()}`);
 
@@ -463,7 +527,13 @@ async function findOrNavigateToEvent(page) {
     console.error('Test execution error:', err);
     record('FATAL', 'Browser verification fatal exception', 'FAIL', err.message);
   } finally {
-    await browser.close();
+    if (browser) await browser.close();
+    try {
+      teardownEphemeralSessions(CONTAINER, SITE, Object.values(SIDS));
+      console.log('[AUTH] Ephemeral sessions torn down cleanly.');
+    } catch (cleanErr) {
+      console.error('Failed to teardown ephemeral sessions:', cleanErr.message);
+    }
   }
 
   console.log('\n=======================================================');
