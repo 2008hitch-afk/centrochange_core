@@ -174,7 +174,27 @@ bench --site {CLONE_SITE} install-app healthcare
 bench --site {CLONE_SITE} install-app centrochange_core
 bench --site {CLONE_SITE} execute "__import__('centrochange_core.dev_bootstrap', fromlist=['setup']).setup()"
 bench --site {CLONE_SITE} migrate
-bench --site {CLONE_SITE} execute "__import__('centrochange_core.uat.demo', fromlist=['seed']).seed()"
+env/bin/python - <<'CC_SYNTHETIC_SEED'
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from unittest.mock import patch
+import frappe
+frappe.init('{CLONE_SITE}', sites_path='sites')
+frappe.connect()
+frappe.set_user('Administrator')
+from centrochange_core.finance import collections
+from centrochange_core.uat import demo
+original_agree = collections.agree
+def historical_agree(*args, **kwargs):
+    previous = frappe.flags.get('cc_test_clock')
+    frappe.flags.cc_test_clock = datetime(2026, 9, 21, 8, tzinfo=ZoneInfo('Europe/Rome'))
+    try:
+        return original_agree(*args, **kwargs)
+    finally:
+        frappe.flags.cc_test_clock = previous
+with patch.object(collections, 'agree', historical_agree):
+    demo.seed()
+CC_SYNTHETIC_SEED
 """
     run_cmd(['docker', 'exec', '-i', BACKEND_CONTAINER, 'bash'], input_str=bootstrap_script)
     log("Standalone synthetic Frappe site bootstrapped and seeded.")
