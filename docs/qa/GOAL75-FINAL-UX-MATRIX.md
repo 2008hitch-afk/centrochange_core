@@ -6,7 +6,7 @@ Baseline 8a3d6b96e82d0a0970beb0a828bac0adc83f103c, PR #193. Target di sviluppo i
 | --- | --- | --- | --- | --- |
 | Pazienti | operativi autorizzati; modifica Manager | cerca, dettaglio, modifica | drawer + modale → pagina + modifica in pagina | profiles.patient_detail/save; scope, versione, audit |
 | Professionisti | Manager/Professionista; modifica Manager | cerca, dettaglio, modifica | drawer + modale → pagina + modifica in pagina | profiles.practitioner_detail/save; scope, versione, audit |
-| Articoli | Manager | cerca, dettaglio, crea, modifica | drawer + modale → pagina + modifica in pagina | catalog; versione, audit |
+| Articoli | Manager | cerca, dettaglio, modifica | drawer + modale → pagina + modifica in pagina | catalog; versione, audit |
 | Tariffe | Manager | cerca, dettaglio, crea, modifica | drawer + modale → pagina + modifica in pagina | catalog; prezzi storici invariati |
 | Tipi seduta | Manager | cerca, dettaglio, crea, modifica | drawer + modale → pagina + modifica in pagina | catalog; versione, audit |
 | Servizi del centro | Manager | cerca, dettaglio, crea, modifica | drawer + modale → pagina + modifica in pagina | catalog; scope centro |
@@ -14,7 +14,7 @@ Baseline 8a3d6b96e82d0a0970beb0a828bac0adc83f103c, PR #193. Target di sviluppo i
 | Fatture pazienti | finanza autorizzata | dettaglio, stampa se consentita | drawer + anteprima → senza sovrapposizione | finance document, sola lettura |
 | Fatture professionisti | finanza autorizzata | dettaglio, stampa se consentita | drawer + anteprima → senza sovrapposizione | finance document, sola lettura |
 | Pagamenti | finanza autorizzata | dettaglio, stampa se consentita | drawer + anteprima → senza sovrapposizione | finance document, sola lettura |
-| Movimenti bancari | finanza autorizzata | dettaglio | drawer singolo mantenuto | finance document, sola lettura |
+| Movimenti bancari | finanza autorizzata | dettaglio | drawer → pagina di dettaglio | finance.reporting.records, sola lettura |
 
 Criteri trasversali: nessuna nuova API o fonte dati; conferma esplicita, motivo, diff e versione; focus/tastiera e ritorno alla ricerca, desktop/mobile; test positivi/negativi server-side sul clone; audit note distinto per tipo canonico, raw preservato; Agenda senza mutazioni lifecycle. Smoke regressione per componenti condivisi, rilevazione overlay; screenshot sintetici.
 
