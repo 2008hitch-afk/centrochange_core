@@ -172,9 +172,9 @@ bench --site {CLONE_SITE} set-config cc_uat_demo 1
 bench --site {CLONE_SITE} set-config cc_premium_primary 1
 bench --site {CLONE_SITE} install-app healthcare
 bench --site {CLONE_SITE} install-app centrochange_core
-bench --site {CLONE_SITE} execute centrochange_core.dev_bootstrap.setup
+bench --site {CLONE_SITE} execute "__import__('centrochange_core.dev_bootstrap', fromlist=['setup']).setup()"
 bench --site {CLONE_SITE} migrate
-bench --site {CLONE_SITE} execute centrochange_core.uat.demo.seed
+bench --site {CLONE_SITE} execute "__import__('centrochange_core.uat.demo', fromlist=['seed']).seed()"
 """
     run_cmd(['docker', 'exec', '-i', BACKEND_CONTAINER, 'bash'], input_str=bootstrap_script)
     log("Standalone synthetic Frappe site bootstrapped and seeded.")

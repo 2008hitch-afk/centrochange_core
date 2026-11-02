@@ -487,6 +487,7 @@ export function Patients({ boot, center, feedback, refreshBoot }: Context & { re
 
 export function Professionals({ boot, center }: { boot: Boot; center: string }) {
   const [query, setQuery] = useState('')
+  const listScroll = useRef(0)
   const [rows, setRows] = useState<Practitioner[]>([])
   const [hasMore, setHasMore] = useState(false)
   const [selected, setSelected] = useState<Practitioner | null>(() => {
@@ -509,6 +510,7 @@ export function Professionals({ boot, center }: { boot: Boot; center: string }) 
     return () => removeEventListener('popstate', onBack)
   }, [boot.practitioners])
   const openPractitioner = (row: Practitioner) => {
+    listScroll.current = scrollY
     const url = new URL(location.href); url.searchParams.set('practitioner', row.name)
     history.pushState(null, '', url)
     setSelected(row); setDetail(null); setError('')
@@ -518,6 +520,7 @@ export function Professionals({ boot, center }: { boot: Boot; center: string }) 
     const url = new URL(location.href); url.searchParams.delete('practitioner')
     history.replaceState(null, '', url)
     setSelected(null); setDetail(null)
+    requestAnimationFrame(() => window.scrollTo(0, listScroll.current))
   }
   useEffect(() => {
     searchGeneration.current += 1
