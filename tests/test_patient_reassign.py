@@ -29,6 +29,7 @@ class ReassignmentGuardTests(unittest.TestCase):
         guards.centers = guards.enabled = guards.is_manager = guards.patient_names = guards.require_center = lambda *args: None
         guards.require_manager = lambda: None
         guards.require_operations = lambda center: None
+        guards.require_operational_center = lambda center: None
         guards.current_rows = guards.roles = lambda *args, **kwargs: []
         modules = {
             'frappe': self.frappe, 'frappe.share': self.frappe.share, 'frappe.permissions': permissions,

@@ -1,0 +1,200 @@
+/* Full isolated browser rehearsal. Runs only in the disposable CI clone. */
+const { chromium } = require('playwright')
+const { execFileSync } = require('child_process')
+const crypto = require('crypto')
+const fs = require('fs')
+const path = require('path')
+const assert = require('assert')
+const { classifyFailure, isPremiumPath, resolveTarget } = require('./audit10_failure_diagnostics.cjs')
+const target = resolveTarget(process.env)
+process.umask(0o077)
+const out = process.env.CC_ARTIFACT_DIR
+fs.mkdirSync(out, { recursive: true, mode: 0o700 })
+if (target.mode === 'staging') {
+  if (fs.statSync(out).mode & 0o077) throw new Error('Staging evidence directory must be private')
+  const actual = execFileSync('docker', ['inspect', '--format', '{{index .Config.Labels "centrochange.source"}}', target.backend], { encoding: 'utf8' }).trim()
+  if (actual !== target.expectedSha) throw new Error('Running staging image does not match the explicitly supplied SHA')
+}
+const base = target.base
+function py(code, data = {}) {
+  return execFileSync('docker', ['exec', '-i', '-e', 'FRAPPE_STREAM_LOGGING=1', '-w', '/home/frappe/frappe-bench', target.backend, 'env/bin/python', '-c', code], { input: JSON.stringify(data), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim()
+}
+const discover = `import frappe,json,sys
+from centrochange_core.uat.demo import read
+frappe.init('centrochange.local',sites_path='sites');frappe.connect()
+try:
+ assert frappe.conf.get('cc_synthetic_dev')==1 and frappe.conf.get('cc_uat_demo')==1
+ f=read()['fixture'];print(json.dumps({'manager':f['users']['m'],'professional':f['users']['a'],'patients':f['patients'],'a':f['centers'][0],'b':f['centers'][1]}))
+finally:frappe.destroy()`
+const initInactive = `import frappe,json,sys
+from centrochange_core.security.center_state import set_operational
+from centrochange_core.uat.demo import read
+d=json.load(sys.stdin);frappe.init('centrochange.local',sites_path='sites');frappe.connect()
+try:
+ assert frappe.conf.get('cc_synthetic_dev')==1 and frappe.conf.get('cc_uat_demo')==1
+ f=read()['fixture'];assert d['center']==f['centers'][1] and d['manager']==f['users']['m']['name']
+ frappe.set_user(d['manager'])
+ if d['mode']=='clone':set_operational(d['center'],0,'AUDIT10-HARNESS synthetic inactive center');frappe.db.commit()
+ else:assert d['mode']=='staging' and frappe.db.get_value('Branch',d['center'],'cc_operational')==0
+ print('PASS')
+finally:frappe.destroy()`
+const setup = `import json,sys,frappe
+from frappe.utils.password import update_password
+from centrochange_core.uat.demo import read
+d=json.load(sys.stdin);frappe.init('centrochange.local',sites_path='sites');frappe.connect()
+try:
+ assert frappe.conf.get('cc_synthetic_dev')==1 and frappe.conf.get('cc_uat_demo')==1
+ assert d['user'].startswith('audit10-test-') and d['user'].endswith('@example.invalid') and not frappe.db.exists('User',d['user'])
+ frappe.set_user('Administrator');frappe.in_test=True
+ frappe.get_doc({'doctype':'User','email':d['user'],'first_name':d['tag'],'enabled':1,'send_welcome_email':0,'roles':[{'role':'CC Professional'}]}).insert(ignore_permissions=True)
+ update_password(d['user'],d['password']);contacts=frappe.get_all('Contact',filters={'user':d['user']},pluck='name',limit_page_length=0);assert contacts
+ f=read()['fixture'];assert f['centers'][0]==d['center'] and frappe.db.get_value('Branch',d['center'],'cc_operational')==1
+ frappe.db.commit();print(json.dumps({'contacts':contacts}))
+except:frappe.db.rollback();raise
+finally:frappe.destroy()`
+const cleanup = `import json,sys,frappe
+from centrochange_core.security.audit import internal_write
+from frappe.sessions import clear_sessions
+d=json.load(sys.stdin);frappe.init('centrochange.local',sites_path='sites');frappe.connect()
+try:
+ assert frappe.conf.get('cc_synthetic_dev')==1 and d['user'].startswith('audit10-test-') and d['user'].endswith('@example.invalid')
+ frappe.set_user('Administrator');frappe.in_test=True;contacts=[]
+ if frappe.db.exists('User',d['user']):
+  assert frappe.db.get_value('User',d['user'],'first_name')==d['tag']
+  members=frappe.get_all('CC Center Membership',filters={'user':d['user']},fields=['name','center'],limit_page_length=0);assert len(members)<=1 and all(x.center==d['center'] for x in members)
+  contacts=frappe.get_all('Contact',filters={'user':d['user']},pluck='name',limit_page_length=0)
+  for c in contacts:assert frappe.db.get_value('Contact',c,'first_name')==d['tag']
+  clear_sessions(user=d['user'],force=True)
+  for m in members:
+   with internal_write('cc_permission_write'):frappe.delete_doc('CC Center Membership',m.name,ignore_permissions=True,force=True)
+  frappe.delete_doc('User',d['user'],ignore_permissions=True,force=True)
+  for c in contacts:frappe.delete_doc('Contact',c,ignore_permissions=True,force=True)
+  frappe.db.delete('DefaultValue',{'parent':d['user']});frappe.db.commit()
+ assert not frappe.db.exists('User',d['user']) and not frappe.db.count('CC Center Membership',{'user':d['user']})
+ for dt,filters in [('Has Role',{'parent':d['user']}),('User Permission',{'user':d['user']}),('DocShare',{'user':d['user']}),('Sessions',{'user':d['user']}),('DefaultValue',{'parent':d['user']}),('__Auth',{'doctype':'User','name':d['user']})]:assert not frappe.db.count(dt,filters),dt
+ assert not frappe.db.exists('Notification Settings',d['user']) and all(not frappe.db.exists('Contact',x) for x in contacts)
+ events=frappe.get_all('CC Audit Event',filters={'reason':d['tag']},fields=['name','event_type'],limit_page_length=0)
+ history={'comments':frappe.db.count('Comment',{'subject':['like','%'+d['user']+'%']}),'deleted_documents':frappe.db.count('Deleted Document',{'deleted_name':['like','%'+d['user']+'%']}),'permission_logs':frappe.db.count('Permission Log',{'for_document':d['user']})}
+ print(json.dumps({'status':'PASS','retained_test_audit':len(events),'event_names':[x.name for x in events],'contacts_removed':len(contacts),'retained_system_history':history}))
+except:frappe.db.rollback();raise
+finally:frappe.destroy()`
+const snapshot = `import json,sys,hashlib,frappe
+d=json.load(sys.stdin);frappe.init('centrochange.local',sites_path='sites');frappe.connect()
+try:
+ assert frappe.conf.get('cc_synthetic_dev')==1 and frappe.conf.get('cc_uat_demo')==1
+ tracked=['User','Has Role','User Permission','DocShare','CC Center Membership','Branch','Healthcare Practitioner','Patient','CC Patient Assignment','Contact','Contact Email','Notification Settings','DefaultValue']
+ rows={dt:frappe.get_all(dt,fields=['*'],order_by='name',limit_page_length=0) for dt in tracked}
+ for row in rows['User']:
+  for key in ('last_login','last_active','last_ip'):row.pop(key,None)
+ rows['__Auth']=frappe.db.sql('SELECT * FROM __Auth ORDER BY doctype,name,fieldname',as_list=True)
+ audit=frappe.get_all('CC Audit Event',fields=['*'],order_by='name',limit_page_length=0)
+ names=d.get('audit_names');names=[x.name for x in audit] if names is None else names
+ rows['CC Audit Event']=[x for x in audit if x.name in set(names)]
+ digest=hashlib.sha256(json.dumps(rows,sort_keys=True,default=str,separators=(',',':')).encode()).hexdigest()
+ print(json.dumps({'digest':digest,'audit_names':names,'new_audit_count':len(audit)-len(rows['CC Audit Event'])}))
+finally:frappe.destroy()`
+const cfg = JSON.parse(py(discover))
+assert.strictEqual(py(initInactive, { center: cfg.b, manager: cfg.manager.name, mode: target.mode }), 'PASS')
+const initial = JSON.parse(py(snapshot))
+let retainedAuditTotal = 0
+async function login(page, user, password) {
+  await page.goto(base + '/login?redirect-to=/premium', { waitUntil: 'domcontentloaded' })
+  await page.locator('#login_email').fill(user)
+  await page.locator('#login_password').fill(password)
+  await page.locator('.form-login button[type=submit]').click()
+  await page.waitForURL(isPremiumPath, { timeout: 30000 })
+  const identity = await page.evaluate(async () => { const r = await fetch('/api/method/frappe.auth.get_logged_user'); return { status: r.status, body: await r.json() } })
+  if (identity.status !== 200 || identity.body.message !== user) { const error = new Error('Authenticated session identity mismatch'); error.failureKind = 'AUTH_FAILURE'; throw error }
+  await page.getByRole('heading', { name: 'Agenda', exact: true }).waitFor()
+}
+async function diagnose(page, label, stage, error, faults, navigation) {
+  let pathname = 'unavailable'
+  try { pathname = new URL(page.url()).pathname } catch {}
+  const kind = classifyFailure(error, faults)
+  const data = { classification: kind, stage, pathname, message: String(error.message).split('\n')[0], navigation, network: faults }
+  fs.writeFileSync(path.join(out, label + '-failure.json'), JSON.stringify(data, null, 2))
+  try { await page.screenshot({ path: path.join(out, label + '-failure.png'), mask: [page.locator('input'), page.locator('textarea'), page.locator('tbody'), page.locator('[role=dialog]')] }) } catch {}
+  console.error(kind, stage, pathname)
+}
+async function round(browser, width, iteration) {
+  const id = crypto.randomBytes(8).toString('hex'), user = `audit10-test-${id}@example.invalid`, tag = `AUDIT10-TEST-${id}`, password = crypto.randomBytes(24).toString('base64url')
+  const label = `repeat-${width}-${iteration}`, inventory = path.join(out, label + '-inventory.json')
+  fs.writeFileSync(inventory, JSON.stringify({ tag, status: 'PLANNED' }))
+  let managerCtx, proCtx, page, diagnosticPage, stage = 'setup', failure, completed = false, diagnosed = false
+  const faults = [], navigation = []
+  const track = p => {
+    p.on('pageerror', () => faults.push({ type: 'pageerror', status: 0 }))
+    p.on('response', r => { const u = new URL(r.url()); const safe = ['/login', '/premium'].includes(u.pathname) ? u.pathname : '/redacted'; if (r.request().isNavigationRequest()) navigation.push({ path: safe, status: r.status() }); if (r.status() >= 500) faults.push({ type: 'http', status: r.status(), path: u.pathname.startsWith('/api/method/') ? u.pathname : '/redacted' }); else if (stage === 'authentication' && [401, 403].includes(r.status()) && ['/api/method/login', '/api/method/frappe.auth.get_logged_user'].includes(u.pathname)) faults.push({ type: 'auth_denied', status: r.status(), path: '/api/method/redacted' }) })
+    p.on('requestfailed', r => { if (r.failure()?.errorText === 'net::ERR_ABORTED') return; const u = new URL(r.url()); faults.push({ type: 'network', status: 0, path: u.pathname.startsWith('/api/method/') ? u.pathname : '/redacted' }) })
+  }
+  try {
+    py(setup, { user, tag, password, center: cfg.a })
+    managerCtx = await browser.newContext({ viewport: { width, height: 900 }, locale: 'it-IT' })
+    page = await managerCtx.newPage(); diagnosticPage = page; track(page)
+    stage = 'authentication'; await login(page, cfg.manager.name, cfg.manager.password)
+    stage = 'access-ui'; await page.goto(base + '/premium#Gestione%20accessi', { waitUntil: 'networkidle' })
+    await page.getByRole('heading', { name: 'Gestione accessi', exact: true }).waitFor()
+    const center = page.locator('.center-selector select'); if (await center.count()) await center.selectOption(cfg.a)
+    await page.getByRole('heading', { name: 'Gestione accessi', exact: true }).waitFor()
+    let proPage
+    for (const active of ['1', '0', '1']) {
+      stage = 'access-ui'; diagnosticPage = page
+      await page.getByRole('button', { name: 'Appartenenza', exact: true }).click()
+      const d = page.getByRole('dialog', { name: 'Appartenenza al centro', exact: true })
+      await d.getByLabel('Utente').selectOption(user); await d.getByLabel('Nuovo stato').selectOption(active)
+      await d.getByLabel('Motivo della modifica').fill(tag); await d.getByRole('button', { name: 'Rivedi modifica', exact: true }).click()
+      const response = page.waitForResponse(r => r.url().includes('security.lifecycle.set_membership') && r.request().method() === 'POST')
+      await d.getByRole('button', { name: 'Conferma modifica', exact: true }).click(); const saved = await response; if (!saved.ok()) faults.push({ type: 'unexpected_status', status: saved.status(), path: '/api/method/security.lifecycle.set_membership' }); assert(saved.ok()); await d.waitFor({ state: 'hidden' })
+      if (!proCtx) { stage = 'authentication'; proCtx = await browser.newContext({ viewport: { width, height: 900 }, locale: 'it-IT' }); proPage = await proCtx.newPage(); diagnosticPage = proPage; track(proPage); await login(proPage, user, password); stage = 'session-scope' }
+      stage = 'session-scope'; diagnosticPage = proPage
+      const status = await proPage.evaluate(async c => (await fetch('/api/method/centrochange_core.operations.workspace.patient_search?center=' + encodeURIComponent(c) + '&query=')).status, cfg.a)
+      if (status !== (active === '0' ? 403 : 200)) faults.push({ type: 'unexpected_status', status, path: '/api/method/operations.workspace.patient_search' })
+      assert.strictEqual(status, active === '0' ? 403 : 200)
+    }
+    stage = 'security-and-audit'; diagnosticPage = page
+    const negative = await page.evaluate(async ({ user, center, tag }) => { const token = document.querySelector('meta[name="csrf-token"]').content; return (await fetch('/api/method/centrochange_core.security.lifecycle.set_membership', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Frappe-CSRF-Token': token }, body: new URLSearchParams({ user, center, active: '1', reason: tag }) })).status }, { user, center: cfg.b, tag })
+    if (negative !== 403) faults.push({ type: 'unexpected_status', status: negative, path: '/api/method/security.lifecycle.set_membership' })
+    assert.strictEqual(negative, 403)
+    const proDenied = await proPage.evaluate(async () => (await fetch('/api/method/centrochange_core.security.audit_view.events?start=2026-01-01&end=2026-12-31')).status)
+    assert.strictEqual(proDenied, 403)
+    await page.goto(base + '/premium#Registro%20modifiche', { waitUntil: 'networkidle' }); await page.getByRole('heading', { name: 'Registro modifiche', exact: true }).waitFor()
+    const row = page.getByRole('row', { name: new RegExp(tag) }).first(); await row.waitFor(); await row.focus(); await row.press('Enter')
+    const detail = page.getByRole('dialog', { name: 'Appartenenza al centro', exact: true }); await detail.waitFor()
+    assert((await detail.innerText()).includes('Prima:') && (await detail.innerText()).includes('Dopo:'))
+    await page.screenshot({ path: path.join(out, label + '-audit.png'), mask: [page.locator('tbody'), detail] })
+    stage = 'professional-patients'
+    const existing = await browser.newContext({ viewport: { width, height: 900 }, locale: 'it-IT' }); const patientPage = await existing.newPage(); diagnosticPage = patientPage; track(patientPage)
+    try {
+      stage = 'authentication'; await login(patientPage, cfg.professional.name, cfg.professional.password); stage = 'professional-patients'
+      await patientPage.goto(base + '/premium#Pazienti', { waitUntil: 'networkidle' })
+      await patientPage.getByRole('heading', { name: 'Pazienti', exact: true }).waitFor()
+      const scopes = await patientPage.evaluate(async ({ center, other }) => { const get = async c => { const r = await fetch('/api/method/centrochange_core.operations.workspace.patient_search?center=' + encodeURIComponent(c) + '&query='); return { status: r.status, body: await r.json() } }; return [await get(center), await get(other)] }, { center: cfg.a, other: cfg.b })
+      assert.strictEqual(scopes[0].status, 200); assert.strictEqual(scopes[1].status, 403)
+      const ids = scopes[0].body.message.patients.map(x => x.name); assert(ids.includes(cfg.patients[0])); assert(!ids.includes(cfg.patients[1]))
+      await patientPage.screenshot({ path: path.join(out, label + '-patients.png'), mask: [patientPage.locator('tbody')] })
+    } catch (error) { await diagnose(patientPage, label, stage, error, faults, navigation); diagnosed = true; diagnosticPage = null; throw error } finally { await existing.close() }
+    diagnosticPage = page
+    assert(!faults.length, 'Unexpected browser/server errors')
+    completed = true
+  } catch (error) { failure = error; if (diagnosticPage) await diagnose(diagnosticPage, label, stage, error, faults, navigation); else if (!diagnosed) console.error('HARNESS_FAILURE', stage) }
+  finally {
+    if (proCtx) await proCtx.close(); if (managerCtx) await managerCtx.close()
+    try {
+      const result = JSON.parse(py(cleanup, { user, tag, center: cfg.a }))
+      const after = JSON.parse(py(snapshot, { audit_names: initial.audit_names }))
+      assert.strictEqual(after.digest, initial.digest, 'Preexisting data changed during synthetic fixture test')
+      assert.strictEqual(after.new_audit_count, retainedAuditTotal + result.retained_test_audit, 'Unexpected audit events appeared during fixture test')
+      retainedAuditTotal += result.retained_test_audit
+      fs.writeFileSync(inventory, JSON.stringify({ user, tag, status: result.status, preexisting_digest: after.digest, retained_test_audit: result.retained_test_audit, event_names: result.event_names, contacts_removed: result.contacts_removed, retained_system_history: result.retained_system_history }))
+      if (completed) assert.strictEqual(result.retained_test_audit, 3)
+      console.log('AUDIT10_FIXTURE_CLEANUP', label, result.status, 'retained_test_audit=' + result.retained_test_audit)
+    } catch (error) { console.error('HARNESS_FAILURE fixture-cleanup'); failure = failure || error }
+  }
+  if (failure) throw failure
+  console.log('AUDIT10_FULL_REHEARSAL_PASS', label)
+}
+;(async () => {
+  const browser = await chromium.launch({ headless: true, args: ['--host-resolver-rules=MAP centrochange.local 127.0.0.1', '--no-proxy-server'] })
+  try { for (const width of [1440, 390]) for (const iteration of (target.mode === 'clone' ? [1, 2] : [1])) await round(browser, width, iteration) }
+  finally { await browser.close() }
+})().catch(error => { console.error(String(error.message).split('\n')[0]); process.exit(1) })
