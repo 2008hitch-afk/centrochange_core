@@ -1,5 +1,15 @@
 # Centro Change — REGISTRO OPERATIVO VIGENTE / instradamento GOAL e AUDIT
 
+## PRECEDENZA 03/11/2026 — FACTORY BROWNFIELD #199
+
+Questo checkpoint prevale sulle fotografie storiche del 26–27 ottobre riportate in seguito, ma va sempre confrontato con Issue, PR e CI **LIVE**.
+- AUDIT-10 [#190](https://github.com/2008hitch-afk/centrochange_core/issues/190) e GOAL UX [#75](https://github.com/2008hitch-afk/centrochange_core/issues/75) **CHIUSI** dopo integrazione PR #191 → #193 → #195 → #197 su `main` `6bac0a1fdb9152711db30d6a9a14daaf69d4f8a4` e CI postmerge verificata.
+- **#199** autorizza esclusivamente l'adozione tecnica di EMPV Factory v1.1 su branch/worktree isolato, senza alterare il prodotto o gli ambienti runtime. Fonte ufficiale tracciata in `factory/source.json`.
+- **AUDIT-11 Primo incontro pubblico/prenotazione online ancora da autorizzare come nuovo GOAL**, con Issue e gate propri. Non attivarlo automaticamente dal completamento di AUDIT-10 o da #199.
+- Nessun nuovo permesso su merge, DEV/STAGING, produzione, DB/schema, DocPerm/ruoli, dati reali o prestazioni provider.
+
+---
+
 **Fotografia iniziale:** 26/10/2026. **Scopo:** evitare che un agente, ChatGPT o Codex riparta dalla roadmap MVP storica oppure confonda i numeri degli AUDIT funzionali con quelli dei macro-GOAL di consegna. Questo è l'**indice di ingresso alla fase corrente**; NON sostituisce prove, decisioni e gate nelle Issue collegate.
 
 > **ISTRUZIONE OBBLIGATORIA ALLA RIPRESA:** PRIMA di proporre un GOAL, rispondere a «dove siamo?», aggiornare una matrice o inviare AGY ad agire, controllare **live** le Issue e le PR qui elencate. Questo file è una fotografia versionata, non uno stato in tempo reale. Il codice e le attestazioni dinamiche sono su GitHub. In assenza di nuova verifica non dichiarare PASS, deploy, merge o accettazione.
