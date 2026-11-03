@@ -300,6 +300,7 @@
     "centrochange_core/operations/automation.py",
     "centrochange_core/operations/booking_confirmation.py",
     "centrochange_core/operations/client_landing.py",
+    "centrochange_core/operations/confirmation_acceptance.py",
     "centrochange_core/operations/dev_acceptance.py",
     "centrochange_core/operations/lifecycle.py",
     "centrochange_core/operations/notes.py",
