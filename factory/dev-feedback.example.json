@@ -1,0 +1,36 @@
+{
+  "_notice": "Example only for isolated Linux/WSL development. Copy to factory/dev-feedback.json. Not a DEV/STAGING deployment.",
+  "cwd": "frontend/premium",
+  "preview": {
+    "command": [
+      "npm",
+      "run",
+      "dev"
+    ],
+    "ready_url": "http://127.0.0.1:5182/assets/centrochange_core/premium/"
+  },
+  "suites": {
+    "typecheck": [
+      "npm",
+      "run",
+      "typecheck"
+    ],
+    "ui": [
+      "npx",
+      "playwright",
+      "test",
+      "--config=playwright.feedback.config.ts",
+      "--workers=2"
+    ],
+    "smoke": [
+      "npx",
+      "playwright",
+      "test",
+      "--config=playwright.feedback.config.ts",
+      "--project=desktop",
+      "--grep",
+      "AUDIT-03: vista giorno usa la stessa etichetta servizio della settimana",
+      "--workers=1"
+    ]
+  }
+}
