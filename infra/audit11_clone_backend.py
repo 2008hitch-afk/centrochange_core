@@ -288,9 +288,9 @@ try:
     after_patient_doc = frappe.get_doc("Patient", existing_patient)
     assert after_patient_doc.modified == existing_modified
     assert after_patient_doc.first_name == "CC11 Synthetic"
-    dup_audit = frappe.get_all("CC Audit Log", filters={"event": "PUBLIC_FIRST_MEETING_POTENTIAL_DUPLICATE", "document_name": dup_appt.patient}, fields=["after"])
+    dup_audit = frappe.get_all("CC Audit Event", filters={"event_type": "PUBLIC_FIRST_MEETING_POTENTIAL_DUPLICATE", "reference_name": dup_appt.patient}, fields=["after_state"])
     assert len(dup_audit) == 1, "Expected PUBLIC_FIRST_MEETING_POTENTIAL_DUPLICATE audit event"
-    dup_audit_data = json.loads(dup_audit[0].after)
+    dup_audit_data = json.loads(dup_audit[0].after_state)
     assert dup_audit_data["existing_patient"] == existing_patient
     assert dup_audit_data["email"] == "cc11-marco-sede@example.invalid"
     checks.append("email_privacy_anti_enumeration_verified")
