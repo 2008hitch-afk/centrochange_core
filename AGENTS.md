@@ -1,5 +1,21 @@
 # AGENTS.md — Centro Change
 
+## CURRENT CHECKPOINT — EMPV BROWNFIELD / 03-11-2026
+
+**Precedenza assoluta sui blocchi storici qui sotto:** verificare Issue/PR/HEAD/CI su GitHub LIVE. Centro Change `main` di partenza: `6bac0a1fdb9152711db30d6a9a14daaf69d4f8a4`, con AUDIT-10 [#190](https://github.com/2008hitch-afk/centrochange_core/issues/190) e GOAL UX [#75](https://github.com/2008hitch-afk/centrochange_core/issues/75) CHIUSI e PR #191/#193/#195/#197 integrate. Non interpretare più il vecchio checkpoint 27/10 come attivo.
+
+**Mandato corrente:** solo [#199 — adozione tecnica brownfield EMPV v1.1](https://github.com/2008hitch-afk/centrochange_core/issues/199) in branch/worktree isolato, NO MERGE e NO DEPLOY. **AUDIT-11 Primo incontro pubblico è successivo ma NON autorizzato allo sviluppo** da #199. Non usare gate o permessi di altri Goal per AUDIT-11.
+
+**Fonte di metodo:** `empv26/empv-ai-software-factory@02818f47606bffdeea4d4fda49c6bb12e0e739f4`; `factory/source.json`, `SOP-v1.1.md`, `factory/contract.json`, `factory/state.json` e `docs/factory/ADOPTION-2026-11-03.md`. Lo stato Factory parte senza nuovi Goal; non migrare o autorizzare Goal storici inventandone gli esiti. Il validatore è strutturale, non prova review, autorizzazioni o UAT.
+
+**Codex:** carica le dieci skill EMPV quando pertinenti, mantenendo le skill locali `centrochange-premium-ui` e `ui-ux-pro-max`. In caso di conflitto governano le decisioni Owner HC-0005, le autorizzazioni LIVE, la Product Identity approvata e il backend Frappe autorevole.
+
+**Ciclo operativo per un futuro Goal autorizzato:** acceptance da requisiti → UX task-first → Vite preview localhost → Playwright sintetico mirato su 5183 → diagnosi/fix/retest → QA API/Frappe in ambiente isolato e autorizzato → CI/review indipendente → gate DEV/STAGING specifico → un walkthrough Owner. Non trattare mock o `PASS_LOCAL` come `PASS_LIVE`. Non avviare `bootstrap` sul repository esistente; usare `scripts/goal_factory.py status --root .` / `validate-project --root .` e `scripts/dev_feedback.py` con configurazione locale.
+
+**STOP:** nessuna modifica a schema, ruoli, DocPerm, dati reali, DEV/STAGING/produzione, merge o funzionalità AUDIT-11 senza mandato specifico.
+
+---
+
 ## PRIORITÀ STATO OWNER PIÙ RECENTE — 27/10/2026
 
 [**CORE #173 `OWNER_ACCEPTED_SCOPED_CORE173`**](https://github.com/2008hitch-afk/centrochange_core/issues/173#issuecomment-6440597230) su DEV `b498ea5`, **AUDIT-05 #171 `OWNER_ACCEPTED_SCOPED`**. È completata l'accettazione funzionale del perimetro verificato, **non** il merge né il gestionale globale. **La prossima unità NON è automaticamente AUDIT-06**: prima serve gate di consolidamento per PR #172→#175 e docs #174, con reviewer realmente indipendente identificabile, CI coerenti, ordine PR e **nuovo permesso Owner specifico**. Le PR sono DRAFT/UNMERGED e Issue #173 OPEN. La review formale della PR #175 è `COMMENTED` dall'account GitHub `2008hitch-afk` con descrizione «QA/Security persona»: **non confonderla con una review approvativa indipendente attestata**. Non eseguire merge/produzione/nuovi deploy/nuovo GOAL su generiche dichiarazioni di accettazione. Leggere per primo il [router](docs/qa/ACTIVE-GOAL-ROUTER.md) + Issue/PR LIVE. Le sezioni storiche sotto descrivono gate precedenti e non annullano questa decisione.
