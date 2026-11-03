@@ -34,6 +34,8 @@ jobs:
             --build-arg SINGLE_STACK_SOURCE_SHA=${{ github.event.pull_request.head.sha }} \
             -t cc201-audit11-ci:local .
       - name: Frappe/MariaDB native isolated booking acceptance, no DEV contact
+        env:
+          CC_CLONE_IMAGE: cc201-audit11-ci:local
         run: python3 infra/audit11_clone.py
       - name: Enforce clean teardown
         if: always()

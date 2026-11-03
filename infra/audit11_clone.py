@@ -7,6 +7,8 @@ import test_audit09_isolated_clone as clone
 root = Path(__file__).resolve().parent.parent
 if os.environ.get("GITHUB_ACTIONS") != "true" or not os.environ.get("RUNNER_TEMP"):
     raise RuntimeError("AUDIT-11 isolated clone may run only on ephemeral GitHub Actions")
+if os.environ.get("CC_CLONE_IMAGE") != "cc201-audit11-ci:local":
+    raise RuntimeError("AUDIT-11 CI must run the locally built pinned candidate, not a legacy image")
 
 try:
     clone.setup_clone()
