@@ -86,11 +86,11 @@ class RequiredBookingModeTests(unittest.TestCase):
 
     def test_frontend_communicates_zero_euro_and_44_euro_next_session(self):
         code = (ROOT / "frontend/premium/src/first_meeting.tsx").read_text(encoding="utf-8")
-        self.assertIn("Totale dovuto online", code)
-        self.assertIn("Prima seduta successiva", code)
+        self.assertIn("Da pagare online", code)
+        self.assertIn("Prima seduta psicologica di 45 minuti", code)
         self.assertIn("44 €", code)
         self.assertIn("0 €", code)
-        self.assertIn("pagata solo al momento della seduta", code)
+        self.assertIn("da pagare <strong>alla seduta</strong>, non online", code)
 
 
 if __name__ == "__main__":

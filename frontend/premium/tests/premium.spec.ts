@@ -1434,18 +1434,32 @@ test('AUDIT-11 guest sceglie modalità, Direttore, slot 20 minuti gratuiti e pre
   await page.getByRole('button', { name: 'Continua' }).click()
   await page.getByRole('radio', { name: /Francesca/ }).check()
   await page.getByRole('button', { name: 'Continua' }).click()
+  const dateInput = page.locator('.booking-calendar-form input')
+  const searchButton = page.locator('.booking-calendar-form button.booking-search')
+  await expect(dateInput).toBeVisible()
+  await expect(searchButton).toBeVisible()
+  const dateBox = (await dateInput.boundingBox())!
+  const buttonBox = (await searchButton.boundingBox())!
+  if (page.viewportSize() && page.viewportSize()!.width >= 900) {
+    expect(Math.abs(dateBox.y - buttonBox.y)).toBeLessThanOrEqual(1.5)
+    expect(Math.abs(dateBox.height - buttonBox.height)).toBeLessThanOrEqual(1.5)
+    expect(dateBox.height).toBeGreaterThanOrEqual(46)
+    expect(dateBox.height).toBeLessThanOrEqual(50)
+  }
   await page.getByRole('button', { name: 'Cerca disponibilità' }).click()
   await expect(page.getByRole('radio', { name: /10:00/ })).toBeVisible()
   await page.screenshot({ path: 'test-results/' + testInfo.project.name + '-first-meeting.png', fullPage: true })
   await page.getByRole('radio', { name: /10:00/ }).check()
   await page.getByRole('button', { name: 'Continua' }).click()
+  await expect(page.getByText('Inserisci i tuoi dati per confermare il primo colloquio.')).toBeVisible()
   await page.getByRole('textbox', { name: /^Nome/ }).fill('SYNTHETIC Ada')
   await page.getByRole('textbox', { name: 'Cognome' }).fill('Test')
   await page.getByRole('textbox', { name: 'Email' }).fill('ada@example.invalid')
   await page.getByRole('combobox', { name: 'Sesso anagrafico' }).selectOption('Female')
   await page.getByRole('button', { name: 'Conferma primo incontro' }).click()
   await expect(page.getByRole('heading', { name: 'Prenotazione registrata' })).toBeVisible()
-  await expect(page.getByText(/seduta completa/i).first()).toBeVisible()
+  await expect(page.getByText(/colloquio conoscitivo gratuito di 20 minuti/i)).toBeVisible()
+  await expect(page.getByText(/Da pagare online: 0 €/i)).toBeVisible()
   const booking = writes.find(w => w.method.endsWith('scheduling.public_booking.first_meeting'))!
   expect(booking.body).toMatchObject({ mode: 'online', route: 'Francesca', appointment_date: today })
   expect(booking.body).not.toHaveProperty('patient')
@@ -1474,6 +1488,46 @@ test('AUDIT-11 onsite Marco e cambio modalità invalidano lo slot precedente', a
   await expect(page.getByRole('radio', { name: /10:00/ })).toBeVisible()
   const calls = writes.filter(w => w.method.endsWith('scheduling.public_booking.first_meeting'))
   expect(calls).toHaveLength(0)
+})
+
+
+test('AUDIT-11 date input e search button allineamento e responsive viewports', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+
+  for (const width of [1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('./public.html')
+    await page.getByRole('radio', { name: /Primo Incontro in Sede/ }).check()
+    await page.getByRole('button', { name: 'Continua' }).click()
+    await page.getByRole('radio', { name: 'Marco' }).check()
+    await page.getByRole('button', { name: 'Continua' }).click()
+    const input = page.locator('.booking-calendar-form input')
+    const button = page.locator('.booking-calendar-form button.booking-search')
+    const inBox = (await input.boundingBox())!
+    const btnBox = (await button.boundingBox())!
+    expect(Math.abs(inBox.y - btnBox.y)).toBeLessThanOrEqual(1.5)
+    expect(Math.abs(inBox.height - btnBox.height)).toBeLessThanOrEqual(1.5)
+    expect(inBox.height).toBeGreaterThanOrEqual(46)
+    expect(inBox.height).toBeLessThanOrEqual(50)
+  }
+
+  for (const width of [390, 375]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('./public.html')
+    await page.getByRole('radio', { name: /Primo Incontro in Sede/ }).check()
+    await page.getByRole('button', { name: 'Continua' }).click()
+    await page.getByRole('radio', { name: 'Marco' }).check()
+    await page.getByRole('button', { name: 'Continua' }).click()
+    const form = page.locator('.booking-calendar-form')
+    const input = page.locator('.booking-calendar-form input')
+    const button = page.locator('.booking-calendar-form button.booking-search')
+    const inBox = (await input.boundingBox())!
+    const btnBox = (await button.boundingBox())!
+    const formBox = (await form.boundingBox())!
+    expect(btnBox.y).toBeGreaterThan(inBox.y + inBox.height)
+    expect(btnBox.width).toBeGreaterThanOrEqual(formBox.width - 40)
+  }
 })
 
 

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, CalendarDays, Check, Clock3, Mail, MapPin, MonitorPlay, ShieldCheck, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarDays, Check, Mail, MapPin, MonitorPlay, ShieldCheck, Sparkles, UserRound } from 'lucide-react'
 import { type Row, displayDate, requestKey, romeToday, schedule, time } from './api'
 import { DateInput, Field, FormError } from './ui'
 
@@ -99,11 +99,9 @@ export function FirstMeeting() {
     <div className="booking-summary-row"><span>Direttore</span><strong>{route ?? 'Da scegliere'}</strong></div>
     <div className="booking-summary-row"><span>Giorno e ora</span><strong>{chosenSlot ? displayDate(chosenSlot.date) + ' · ' + time(chosenSlot.time) : 'Da scegliere'}</strong></div>
     <div className="booking-summary-divider" />
-    <div className="booking-summary-row"><span>Colloquio conoscitivo (20 min)</span><strong>Gratuito (0 €)</strong></div>
-    <div className="booking-summary-row"><span>Prima seduta successiva</span><strong>44 € (con segreteria)</strong></div>
+    <div className="booking-summary-row"><span>Colloquio conoscitivo 20 minuti</span><strong>Gratuito</strong></div>
     <div className="booking-summary-divider" />
-    <div className="booking-summary-price"><strong>Totale dovuto online</strong><strong>0 €</strong></div>
-    <p className="booking-summary-note">Il colloquio conoscitivo di 20 minuti è gratuito. La prima seduta completa successiva costa 44 €, sarà concordata con la segreteria e pagata solo al momento della seduta.</p>
+    <div className="booking-summary-price"><strong>Da pagare online</strong><strong>0 €</strong></div>
   </div>
 
   return <main className="booking-public" id="cc-main">
@@ -124,25 +122,32 @@ export function FirstMeeting() {
         {step === 0 && <section className="booking-stage">
           <p className="booking-eyebrow">IL TUO PRIMO PASSO</p>
           <h1>Prenota il tuo primo incontro</h1>
-          <p className="booking-intro">Inizia con un colloquio conoscitivo gratuito di 20 minuti con uno dei Direttori del centro. La prima seduta completa successiva costa 44 € e sarà concordata con la segreteria.</p>
+          <p className="booking-intro">Inizia con un colloquio conoscitivo gratuito di 20 minuti con uno dei Direttori del centro.</p>
           <h2>Scegli come incontrarci</h2>
           <div className="booking-mode-list" role="radiogroup" aria-label="Modalità del primo incontro">
             <label className={'booking-mode ' + (mode === 'sede' ? 'chosen' : '')}>
               <input type="radio" name="booking-mode" checked={mode === 'sede'} onChange={() => selectMode('sede')} />
               <span className="booking-option-icon"><MapPin size={24} aria-hidden="true" /></span>
               <span className="booking-option-copy"><strong>Primo Incontro in Sede con Direttore + Prima Seduta</strong>
-                <small>Colloquio gratuito di 20 min in sede. Prima seduta successiva: 44 €, organizzata dalla segreteria e saldata alla seduta.</small></span>
+                <small>Colloquio conoscitivo gratuito di 20 min in sede con il Direttore.</small></span>
               <span className="booking-option-check"><Check size={17} aria-hidden="true" /></span>
             </label>
             <label className={'booking-mode ' + (mode === 'online' ? 'chosen' : '')}>
               <input type="radio" name="booking-mode" checked={mode === 'online'} onChange={() => selectMode('online')} />
               <span className="booking-option-icon"><MonitorPlay size={24} aria-hidden="true" /></span>
               <span className="booking-option-copy"><strong>Primo Incontro Online con Direttore + Prima Seduta</strong>
-                <small>Colloquio conoscitivo gratuito di 20 min a distanza. Prima seduta successiva: 44 €, organizzata dalla segreteria e saldata alla seduta.</small></span>
+                <small>Colloquio conoscitivo gratuito di 20 min a distanza con il Direttore.</small></span>
               <span className="booking-option-check"><Check size={17} aria-hidden="true" /></span>
             </label>
           </div>
-          <p className="booking-info"><Clock3 size={18} aria-hidden="true" /> La prenotazione online riguarda solo il colloquio conoscitivo gratuito (0 € dovuti oggi). La prima seduta successiva costa 44 € e sarà concordata con la segreteria con pagamento alla seduta.</p>
+          <div className="booking-includes-box" aria-label="Cosa include il percorso">
+            <div className="booking-includes-title"><Sparkles size={18} aria-hidden="true" /><strong>Cosa include il percorso</strong></div>
+            <ul className="booking-includes-list">
+              <li><strong>Primo colloquio conoscitivo di 20 minuti</strong> con uno dei due Direttori (<strong>gratuito</strong>).</li>
+              <li><strong>Prima seduta psicologica di 45 minuti</strong> con lo psicologo che i Direttori ritengono più indicato per la problematica; viene concordata/prenotata <strong>al termine del colloquio conoscitivo</strong>.</li>
+              <li><strong>Costo 44 €</strong>, da pagare <strong>alla seduta</strong>, non online.</li>
+            </ul>
+          </div>
           <button type="button" className="booking-primary" disabled={!mode} onClick={next}>Continua <ArrowRight size={18} aria-hidden="true" /></button>
         </section>}
         {step === 1 && <section className="booking-stage">
@@ -190,7 +195,7 @@ export function FirstMeeting() {
         {step === 3 && <section className="booking-stage">
           <p className="booking-eyebrow">QUASI FATTO</p>
           <h1>Completa la prenotazione</h1>
-          <p className="booking-intro">Confermi solo il colloquio conoscitivo gratuito di 20 minuti (0 € dovuti online). La prima seduta completa successiva costa 44 €, sarà concordata con la segreteria e pagata solo al momento della seduta.</p>
+          <p className="booking-intro">Inserisci i tuoi dati per confermare il primo colloquio.</p>
           <form className="booking-details" onSubmit={event => { event.preventDefault(); void submit() }}>
             <div className="booking-form-row"><Field label="Nome" required><input required autoComplete="given-name" maxLength={80} value={firstName} onChange={event => setFirstName(event.target.value)} /></Field>
               <Field label="Cognome" required><input required autoComplete="family-name" maxLength={80} value={lastName} onChange={event => setLastName(event.target.value)} /></Field></div>
@@ -207,8 +212,8 @@ export function FirstMeeting() {
         {step === 4 && confirmed && <section className="booking-stage booking-success" role="status">
           <span className="booking-success-icon"><Check size={32} aria-hidden="true" /></span>
           <h1>Prenotazione registrata</h1>
-          <p>Il tuo colloquio conoscitivo gratuito di 20 minuti {mode === 'sede' ? 'in sede' : 'online'} con {route} è prenotato per il <strong>{chosenSlot ? displayDate(chosenSlot.date) : ''}</strong> alle <strong>{chosenSlot ? time(chosenSlot.time) : ''}</strong>.</p>
-          <p><strong>Importo dovuto per la prenotazione online: 0 €.</strong> La segreteria ti contatterà successivamente per organizzare la prima seduta completa (44 €, da pagare al momento della seduta). Nessun pagamento anticipato richiesto.</p>
+          <p>Il tuo colloquio conoscitivo gratuito di 20 minuti {mode === 'sede' ? 'in sede' : 'online'} con {route} è confermato per il <strong>{chosenSlot ? displayDate(chosenSlot.date) : ''}</strong> alle <strong>{chosenSlot ? time(chosenSlot.time) : ''}</strong>.</p>
+          <p><strong>Da pagare online: 0 €.</strong></p>
           <p className="booking-success-note"><Mail size={18} aria-hidden="true" /> Le conferme via email sono abilitate solo quando il centro avrà completato la configurazione del servizio.</p>
         </section>}
       </div>
