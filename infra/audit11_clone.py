@@ -55,14 +55,15 @@ def run_http_acceptance():
                 parsed = {"raw": body}
             return status, parsed
 
-    # 1. Fetch /login to extract CSRF token and set session cookie
-    req_login = urllib.request.Request(f"{base_url}/login", headers={"Host": host_header})
-    with opener.open(req_login, timeout=20) as resp:
-        login_html = resp.read().decode("utf-8")
-    csrf_match = re.search(r'<meta\s+name=["\']csrf-token["\']\s+content=["\']([^"\']+)["\']', login_html)
-    assert csrf_match, "Failed to extract CSRF token from /login HTML"
+    # 1. Fetch /primo_incontro to extract CSRF token and set session cookie
+    req_page = urllib.request.Request(f"{base_url}/primo_incontro", headers={"Host": host_header})
+    with opener.open(req_page, timeout=20) as resp:
+        page_html = resp.read().decode("utf-8")
+    csrf_match = re.search(r'<meta\s+name=["\']csrf-token["\']\s+content=["\']([^"\']+)["\']', page_html)
+    assert csrf_match, f"Failed to extract CSRF token from /primo_incontro HTML (length {len(page_html)}): {page_html[:500]}"
     csrf_token = csrf_match.group(1)
-    http_checks.append("login_csrf_token_extracted")
+    assert csrf_token and len(csrf_token) >= 16, "Invalid CSRF token extracted"
+    http_checks.append("guest_page_csrf_token_extracted")
 
     now = datetime.now(ZoneInfo("Europe/Rome")).date()
     next_monday = now + timedelta(days=(7 - now.weekday()) % 7 or 7)
