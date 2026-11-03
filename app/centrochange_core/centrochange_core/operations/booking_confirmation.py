@@ -88,7 +88,12 @@ def confirm(appointment, route, email, mode):
     time = str(frappe.utils.get_time(doc.appointment_time))[:5]
     mode_text = 'in sede' if mode == 'sede' else 'online'
     sim_note = '<p>Conferma registrata in simulazione: nessuna email reale inviata.</p>' if frappe.conf.get('cc_synthetic_dev') == 1 else ''
-    message = f'<p>Colloquio conoscitivo gratuito di 20 minuti confermato {mode_text} per il {date} alle {time} con {escape(route)}.</p><p>Importo del colloquio: 0 €. La prima seduta completa sarà concordata successivamente dalla segreteria; non è prenotata con questa conferma.</p>{sim_note}'
+    message = (
+        f'<p>Colloquio conoscitivo gratuito di 20 minuti confermato {mode_text} per il {date} alle {time} con {escape(route)}.</p>'
+        f'<p><strong>Importo dovuto per la prenotazione online: 0 €.</strong></p>'
+        f'<p>La prima seduta completa successiva costa 44 €: verrà concordata successivamente con la segreteria e sarà pagata solo al momento della seduta. Nessuna seconda seduta o addebito anticipato è stato effettuato con questa richiesta.</p>'
+        f'{sim_note}'
+    )
     with internal_write('cc_confirmation_write'):
         outbox = frappe.get_doc({
             'doctype': 'CC Booking Confirmation',

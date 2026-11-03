@@ -71,6 +71,21 @@ class RequiredBookingModeTests(unittest.TestCase):
         self.assertNotIn("L’identità esiste già", code)
         self.assertIn("PUBLIC_FIRST_MEETING_POTENTIAL_DUPLICATE", code)
 
+    def test_confirmation_email_communicates_zero_euro_and_44_euro_next_session(self):
+        code = CONFIRM.read_text(encoding="utf-8")
+        self.assertIn("Importo dovuto per la prenotazione online: 0 €", code)
+        self.assertIn("La prima seduta completa successiva costa 44 €", code)
+        self.assertIn("Nessuna seconda seduta o addebito anticipato è stato effettuato con questa richiesta", code)
+        self.assertIn("Pending", code)
+
+    def test_frontend_communicates_zero_euro_and_44_euro_next_session(self):
+        code = (ROOT / "frontend/premium/src/first_meeting.tsx").read_text(encoding="utf-8")
+        self.assertIn("Totale dovuto online", code)
+        self.assertIn("Prima seduta successiva", code)
+        self.assertIn("44 €", code)
+        self.assertIn("0 €", code)
+        self.assertIn("pagata solo al momento della seduta", code)
+
 
 if __name__ == "__main__":
     unittest.main()
