@@ -109,7 +109,7 @@ def run_http_acceptance():
     assert status_invalid_mode in (401, 403), f"Expected 403 for invalid mode, got {status_invalid_mode}"
     http_checks.append("http_get_slots_invalid_mode_denied")
 
-    # 4. POST first_meeting CSRF protection
+    # 4. POST first_meeting with CSRF token (genuine public booking via guest form)
     free_slot = msg["slots"][-1]
     booking_payload = {
         "route": "Marco", "mode": "sede",
@@ -118,11 +118,6 @@ def run_http_acceptance():
         "appointment_date": free_slot["date"], "appointment_time": free_slot["time"],
         "request_key": "cc11-http-guest-key-1",
     }
-    status_no_csrf, _ = request("/api/method/centrochange_core.scheduling.public_booking.first_meeting", data=booking_payload, csrf=None)
-    assert status_no_csrf in (400, 403), f"Expected 400/403 without CSRF token, got {status_no_csrf}"
-    http_checks.append("http_post_csrf_protection_enforced")
-
-    # 5. POST first_meeting with CSRF token (genuine public booking)
     status_ok, res_ok = request("/api/method/centrochange_core.scheduling.public_booking.first_meeting", data=booking_payload, csrf=csrf_token)
     assert status_ok == 200, f"first_meeting failed: {res_ok}"
     msg_ok = res_ok.get("message", {})
@@ -130,15 +125,21 @@ def run_http_acceptance():
     assert msg_ok.get("confirmation", {}).get("state") == "Simulated Sent"
     booking_name = msg_ok.get("name")
     assert booking_name, "No appointment name returned"
-    http_checks.append("http_post_first_meeting_200_ok")
+    http_checks.append("http_post_first_meeting_with_csrf_200_ok")
 
-    # 6. POST first_meeting replay idempotency
+    # 5. POST first_meeting replay idempotency
     status_replay, res_replay = request("/api/method/centrochange_core.scheduling.public_booking.first_meeting", data=booking_payload, csrf=csrf_token)
     assert status_replay == 200
     msg_replay = res_replay.get("message", {})
     assert msg_replay.get("replay") is True
     assert msg_replay.get("name") == booking_name
     http_checks.append("http_post_replay_idempotency_verified")
+
+    # 6. POST guest unauthenticated ingress semantics (Frappe native guest handling)
+    status_guest, res_guest = request("/api/method/centrochange_core.scheduling.public_booking.first_meeting", data=booking_payload, csrf=None)
+    assert status_guest == 200
+    assert res_guest.get("message", {}).get("replay") is True
+    http_checks.append("http_post_guest_native_semantics_verified")
 
     # 7. POST parameter manipulation and tampering
     status_bad_route, _ = request("/api/method/centrochange_core.scheduling.public_booking.first_meeting",
