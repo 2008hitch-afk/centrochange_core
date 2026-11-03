@@ -27,7 +27,7 @@ center = seed["centers"][0]
 original_route = seed["catalog"]["CC Public Booking Route"][0]
 other_route = "Francesca" if original_route == "Marco" else "Marco"
 assert original_route in ("Marco", "Francesca")
-assert not frappe.db.exists("CC Public Booking Route", other_route), "Unexpected route on disposable site"
+assert frappe.db.exists("CC Public Booking Route", other_route), "Expected other route to be seeded on disposable site"
 assert frappe.db.get_value("Branch", center, "cc_operational")
 price_list = frappe.db.get_value("Branch", center, "cc_price_list")
 assert price_list and frappe.db.get_value("Price List", price_list, "currency") == "EUR"
