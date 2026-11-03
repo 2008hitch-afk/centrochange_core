@@ -233,7 +233,7 @@ export function FinanceReportsPage({
           <p className="scope-note">
             Cerca per nome, cognome o codice. Consulta le sedute da saldare, i debiti operativi e la posizione del soggetto fiscale intestatario.
           </p>
-          <div className="form-grid" style={{ marginBottom: 16 }}>
+          <div style={{ maxWidth: 540, marginBottom: 16 }}>
             <Field label="Cerca paziente">
               <label className="search-inline">
                 <Search size={17} />
@@ -247,7 +247,7 @@ export function FinanceReportsPage({
             </Field>
           </div>
           {!patientId && (
-            <div className="patient-picker-list" style={{ maxHeight: 280, overflowY: 'auto', border: '1px solid var(--line, #dce5ee)', borderRadius: 8, padding: 8 }}>
+            <div className="patient-picker-list">
               {patientList.length === 0 ? (
                 <Empty title="Nessun paziente trovato" detail="Modifica il testo di ricerca." />
               ) : (
