@@ -79,7 +79,7 @@ def cleanup():
     log("Cleanup complete.")
 
 
-def setup_clone():
+def setup_clone(seed_audit11_types=False):
     log("Setting up 100% standalone synthetic isolated environment for AUDIT-09 (zero DEV contact)...")
     cleanup()
 
@@ -198,6 +198,61 @@ CC_SYNTHETIC_SEED
 """
     run_cmd(['docker', 'exec', '-i', BACKEND_CONTAINER, 'bash'], input_str=bootstrap_script)
     log("Standalone synthetic Frappe site bootstrapped and seeded.")
+
+    if seed_audit11_types:
+        audit11_seed = """
+import json
+import frappe
+frappe.init('centrochange.local', sites_path='sites')
+frappe.connect()
+frappe.set_user('Administrator')
+from centrochange_core.uat import demo
+seed = demo.read()['fixture']
+center = seed['centers'][0]
+price_list = frappe.db.get_value('Branch', center, 'cc_price_list')
+types = {}
+for mode, label in (('sede', 'in sede'), ('online', 'online')):
+    item = frappe.get_doc({
+        'doctype': 'Item',
+        'item_code': f'CC11-UAT-{mode.upper()}-20',
+        'item_name': f'CC11 UAT colloquio conoscitivo {label}',
+        'item_group': 'Services',
+        'stock_uom': 'Nos', 'is_stock_item': 0, 'is_sales_item': 1,
+    }).insert(ignore_permissions=True)
+    appt_type = frappe.get_doc({
+        'doctype': 'Appointment Type',
+        'appointment_type': f'CC11 UAT 20 MIN {mode.upper()}',
+        'allow_booking_for': 'Practitioner',
+        'default_duration': 20, 'cc_service_item': item.name, 'cc_first_meeting': 1,
+    }).insert(ignore_permissions=True)
+    frappe.get_doc({
+        'doctype': 'Item Price', 'item_code': item.name,
+        'price_list': price_list, 'price_list_rate': 0,
+        'currency': 'EUR', 'valid_from': '2020-01-01',
+    }).insert(ignore_permissions=True)
+    frappe.get_doc({
+        'doctype': 'CC Center Service', 'center': center,
+        'appointment_type': appt_type.name, 'enabled': 1,
+    }).insert(ignore_permissions=True)
+    types[mode] = appt_type.name
+cfg_path = frappe.get_site_path('site_config.json')
+with open(cfg_path, 'r', encoding='utf-8') as f:
+    cfg = json.load(f)
+cfg['cc_public_first_meeting_types'] = types
+with open(cfg_path, 'w', encoding='utf-8') as f:
+    json.dump(cfg, f, indent=2)
+orig_route = seed['catalog']['CC Public Booking Route'][0]
+other_route = 'Francesca' if orig_route == 'Marco' else 'Marco'
+if not frappe.db.exists('CC Public Booking Route', other_route):
+    frappe.get_doc({
+        'doctype': 'CC Public Booking Route', 'route': other_route,
+        'center': center, 'practitioner': seed['practitioners'][1],
+        'appointment_type': types['sede'], 'enabled': 1,
+    }).insert(ignore_permissions=True)
+frappe.db.commit()
+"""
+        run_cmd(['docker', 'exec', '-i', '-w', '/home/frappe/frappe-bench', BACKEND_CONTAINER, 'env/bin/python', '-'], input_str=audit11_seed)
+        log("Seeded AUDIT-11 public first meeting types in site_config.json before gunicorn start.")
 
     # 7. Start gunicorn inside isolated backend container
     log("Starting gunicorn inside isolated backend container...")

@@ -36,46 +36,47 @@ assert frappe.db.get_value("CC Public Booking Route", original_route, "practitio
 baseline_email_queue = frappe.db.count("Email Queue")
 checks = []
 try:
-    types = {}
-    for mode, label in (("sede", "in sede"), ("online", "online")):
-        item = frappe.get_doc({
-            "doctype": "Item",
-            "item_code": f"CC11-UAT-{mode.upper()}-20",
-            "item_name": f"CC11 UAT colloquio conoscitivo {label}",
-            "item_group": "Services",
-            "stock_uom": "Nos", "is_stock_item": 0, "is_sales_item": 1,
-        }).insert(ignore_permissions=True)
-        appointment_type = frappe.get_doc({
-            "doctype": "Appointment Type",
-            "appointment_type": f"CC11 UAT 20 MIN {mode.upper()}",
-            "allow_booking_for": "Practitioner",
-            "default_duration": 20, "cc_service_item": item.name, "cc_first_meeting": 1,
-        }).insert(ignore_permissions=True)
+    cfg = frappe.get_site_config()
+    types = cfg.get("cc_public_first_meeting_types")
+    if not types:
+        types = {}
+        for mode, label in (("sede", "in sede"), ("online", "online")):
+            item = frappe.get_doc({
+                "doctype": "Item",
+                "item_code": f"CC11-UAT-{mode.upper()}-20",
+                "item_name": f"CC11 UAT colloquio conoscitivo {label}",
+                "item_group": "Services",
+                "stock_uom": "Nos", "is_stock_item": 0, "is_sales_item": 1,
+            }).insert(ignore_permissions=True)
+            appointment_type = frappe.get_doc({
+                "doctype": "Appointment Type",
+                "appointment_type": f"CC11 UAT 20 MIN {mode.upper()}",
+                "allow_booking_for": "Practitioner",
+                "default_duration": 20, "cc_service_item": item.name, "cc_first_meeting": 1,
+            }).insert(ignore_permissions=True)
+            frappe.get_doc({
+                "doctype": "Item Price", "item_code": item.name,
+                "price_list": price_list, "price_list_rate": 0,
+                "currency": "EUR", "valid_from": "2020-01-01",
+            }).insert(ignore_permissions=True)
+            frappe.get_doc({
+                "doctype": "CC Center Service", "center": center,
+                "appointment_type": appointment_type.name, "enabled": 1,
+            }).insert(ignore_permissions=True)
+            types[mode] = appointment_type.name
+        site_config_path = frappe.get_site_path("site_config.json")
+        with open(site_config_path, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        cfg["cc_public_first_meeting_types"] = types
+        with open(site_config_path, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2)
         frappe.get_doc({
-            "doctype": "Item Price", "item_code": item.name,
-            "price_list": price_list, "price_list_rate": 0,
-            "currency": "EUR", "valid_from": "2020-01-01",
+            "doctype": "CC Public Booking Route", "route": other_route,
+            "center": center, "practitioner": seed["practitioners"][1],
+            "appointment_type": types["sede"], "enabled": 1,
         }).insert(ignore_permissions=True)
-        frappe.get_doc({
-            "doctype": "CC Center Service", "center": center,
-            "appointment_type": appointment_type.name, "enabled": 1,
-        }).insert(ignore_permissions=True)
-        types[mode] = appointment_type.name
     assert len(set(types.values())) == 2
     frappe.conf.cc_public_first_meeting_types = types
-    site_config_path = frappe.get_site_path("site_config.json")
-    with open(site_config_path, "r", encoding="utf-8") as f:
-        cfg = json.load(f)
-    cfg["cc_public_first_meeting_types"] = types
-    with open(site_config_path, "w", encoding="utf-8") as f:
-        json.dump(cfg, f, indent=2)
-
-    # The second Director has an existing synthetic schedule seeded by demo.seed.
-    frappe.get_doc({
-        "doctype": "CC Public Booking Route", "route": other_route,
-        "center": center, "practitioner": seed["practitioners"][1],
-        "appointment_type": types["sede"], "enabled": 1,
-    }).insert(ignore_permissions=True)
 
     now = datetime.now(ZoneInfo("Europe/Rome")).date()
     next_monday = now + timedelta(days=(7 - now.weekday()) % 7 or 7)
