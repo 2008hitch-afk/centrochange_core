@@ -51,3 +51,7 @@ Thumbs.db
 # Local synthetic runtime artifacts
 runtime/
 tmp/
+
+# EMPV local development only
+/factory/dev-feedback.json
+/.factory-runtime/
