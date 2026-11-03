@@ -383,7 +383,7 @@
 .booking-mode,.booking-director{position:relative;display:flex;gap:17px;align-items:center;padding:22px;border-radius:16px;border:1.5px solid #e1e5e9;background:#fff;cursor:pointer;box-shadow:0 2px 7px rgba(16,26,40,.025);transition:border-color .12s,box-shadow .12s}
 .booking-mode:hover,.booking-director:hover{border-color:#8cbbd2}
 .booking-mode.chosen,.booking-director.chosen{border-color:#397da4;box-shadow:0 0 0 3px rgba(47,119,159,.13)}
-.booking-mode input[type=radio],.booking-director input[type=radio],.booking-slot input[type=radio]{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.booking-mode input[type=radio],.booking-director input[type=radio],.booking-slot input[type=radio]{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
 .booking-mode:focus-within,.booking-director:focus-within,.booking-slot:focus-within{outline:3px solid #3c83ab;outline-offset:3px}
 .booking-option-icon{flex:0 0 53px;width:53px;height:53px;display:grid;place-items:center;background:#eef5f9;color:#245b79;border-radius:12px}
 .booking-option-copy{flex:1;min-width:0;display:grid;gap:7px}
