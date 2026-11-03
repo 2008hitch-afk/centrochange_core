@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Printer, Search } from 'lucide-react'
 import { displayDate, money, recentPaymentStart, requestKey, romeToday, type Boot, type FinanceBoot, type Practitioner, type Row } from './api'
 import { archiveDetail, createArchive, creatableKinds, documentDetail, documentPreview, editableKinds, financeKinds, listArchive, saveArchive, type ArchiveKind, type ArchiveRecord, type FinanceDocument, type PrintPreview } from './scoped_api'
-import { Button, DataTable, DateInput, Drawer, Empty, Field, FormError, Heading, Modal, SearchableSelect } from './ui'
+import { Button, DataTable, DateInput, Empty, Field, FormError, Heading, Modal, SearchableSelect } from './ui'
 import { financeFieldValue } from './finance_locale'
 import { demoPatient, demoText, syntheticCode, syntheticLetter } from './demo_labels'
 import { centerNameFor, practitionerName } from './display_names'
@@ -73,7 +73,11 @@ const archiveCatalogName = (kind: ArchiveKind, row: Row) => {
 export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null; financeBoot: FinanceBoot | null; center: string }) {
   const manager = !!boot?.roles.includes('CC Manager') || !!financeBoot?.is_manager
   const visible = specs.filter(spec => spec.group === 'Catalogo' ? manager && !!boot : financeKinds.includes(spec.kind) ? !!financeBoot : spec.kind === 'Healthcare Practitioner' ? !!boot && (manager || boot.roles.includes('CC Professional')) : !!boot)
-  const [kind, setKind] = useState<ArchiveKind>(boot ? 'Patient' : 'Sales Invoice')
+  const [kind, setKind] = useState<ArchiveKind>(() => {
+    const params = new URLSearchParams(location.search)
+    const requested = params.get('archive_kind')
+    return visible.find(item => item.kind === requested)?.kind ?? (params.get('archive') === 'practitioner' && boot?.roles.includes('CC Manager') ? 'Healthcare Practitioner' : boot ? 'Patient' : 'Sales Invoice')
+  })
   const [rows, setRows] = useState<ArchiveRecord[]>([])
   const [loadedKey, setLoadedKey] = useState('')
   const [hasMore, setHasMore] = useState(false)
@@ -97,6 +101,10 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const [availableTypes, setAvailableTypes] = useState<{ value: string; label: string }[]>([])
   const key = useRef(requestKey())
   const frame = useRef<HTMLIFrameElement>(null)
+  const listScroll = useRef(0)
+  const detailHeading = useRef<HTMLHeadingElement>(null)
+  const editorHeading = useRef<HTMLHeadingElement>(null)
+  const wasEditing = useRef(false)
   const spec = visible.find(s => s.kind === kind) ?? visible[0]
   const queryKey = `${center}\u0000${spec.kind}\u0000${debouncedSearch}\u0000${paymentStart}\u0000${paymentEnd}`
 
@@ -172,14 +180,17 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const filtered = pendingQuery ? [] : rows
 
   const change = (next: ArchiveKind) => {
+    const url = new URL(location.href); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); history.replaceState(null, '', url)
     setKind(next)
     setNotice('')
     setError('')
     setSearch('')
     setDebouncedSearch('')
   }
-  const open = async (row: ArchiveRecord) => {
+  const open = async (row: ArchiveRecord, navigate = true) => {
+    listScroll.current = window.scrollY
     const gen = ++detailGen.current
+    let opened = false
     setLoading(true); setError('')
     try {
       if (kind === 'Sales Invoice' || kind === 'Purchase Invoice' || kind === 'Payment Entry') {
@@ -187,11 +198,67 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
         if (gen !== detailGen.current) return
         setDocument(result)
         setSelected({ ...row, ...result, party_label: result.party })
-      } else { const result = financeKinds.includes(kind) ? row : await archiveDetail(center, kind, row.name); if (gen !== detailGen.current) return; setDocument(null); setSelected(result) }
+      } else {
+        let result: ArchiveRecord
+        if (kind === 'Bank Transaction' && Object.keys(row).length === 1) {
+          let offset = 0, found: ArchiveRecord | undefined
+          do {
+            const page = await listArchive(center, kind, offset, undefined, row.name)
+            found = page.rows.find(item => item.name === row.name)
+            if (found || !page.has_more) break
+            offset += page.rows.length
+            if (!page.rows.length) throw new Error('Risultati dell’archivio non disponibili.')
+          } while (true)
+          if (!found) throw new Error('Scheda non disponibile nel centro selezionato.')
+          result = found
+        } else result = financeKinds.includes(kind) ? row : await archiveDetail(center, kind, row.name)
+        if (gen !== detailGen.current) return
+        setDocument(null); setSelected(result)
+      }
+      opened = true
     }
     catch (cause) { if (gen === detailGen.current) setError(cause instanceof Error ? cause.message : 'Dettaglio non disponibile.') }
     finally { if (gen === detailGen.current) setLoading(false) }
+    if (opened && navigate && gen === detailGen.current) {
+      const url = new URL(location.href); url.searchParams.set('archive_kind', kind); url.searchParams.set('archive_record', row.name); history.pushState(null, '', url)
+    }
   }
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const id = params.get('archive_record')
+    const requested = params.get('archive_kind') ?? (params.get('archive') === 'practitioner' && manager ? 'Healthcare Practitioner' : '')
+    if (!id || requested !== kind || !visible.some(item => item.kind === kind)) return
+    void open({ name: id } as ArchiveRecord, false)
+  }, [center, manager, kind])
+  useEffect(() => { if (selected) { window.scrollTo(0, 0); detailHeading.current?.focus() } }, [selected?.name])
+  useEffect(() => {
+    if (draft || confirm) { wasEditing.current = true; editorHeading.current?.focus() }
+    else if (wasEditing.current) { wasEditing.current = false; const target = window.document.querySelector<HTMLElement>('[data-archive-edit], [data-archive-create], .archive-filters input[type=search]'); target?.focus({ preventScroll: true }) }
+  }, [!!draft, confirm])
+  const closeDetail = () => {
+    detailGen.current++; setSelected(null); setDocument(null); setDraft(null); setConfirm(false)
+    const url = new URL(location.href); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); history.replaceState(null, '', url)
+    requestAnimationFrame(() => { window.scrollTo(0, listScroll.current); window.document.querySelector<HTMLInputElement>('.archive-filters input[type=search]')?.focus({ preventScroll: true }) })
+  }
+  useEffect(() => {
+    const onBack = () => {
+      const params = new URLSearchParams(location.search), requested = params.get('archive_kind'), id = params.get('archive_record')
+      if (!id || requested !== kind) { detailGen.current++; setSelected(null); setDocument(null); setDraft(null); setConfirm(false); requestAnimationFrame(() => window.scrollTo(0, listScroll.current)); return }
+      void open({ name: id } as ArchiveRecord, false)
+    }
+    window.addEventListener('popstate', onBack)
+    return () => window.removeEventListener('popstate', onBack)
+  }, [kind, center])
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || preview) return
+      if (confirm) { setConfirm(false); return }
+      if (draft) { setDraft(null); return }
+      if (selected) closeDetail()
+    }
+    window.document.addEventListener('keydown', onKey)
+    return () => window.document.removeEventListener('keydown', onKey)
+  }, [selected, draft, confirm, preview])
   const edit = () => { if (!selected) return; setCreating(false); const nameField = kind === 'Patient' || kind === 'Healthcare Practitioner' ? 'first_name' : kind === 'Item' ? 'item_name' : kind === 'CC Package Template' ? 'title' : ''; setDraft({ ...selected, ...(nameField && syntheticCode(selected[nameField]) ? { [nameField]: '' } : {}) }); setReason(''); key.current = requestKey(); setConfirm(false); setError('') }
   const beginCreate = () => { setCreating(true); setSelected(null); setDraft({ enabled: 1, valid_from: romeToday() }); setReason(''); key.current = requestKey(); setError('') }
   const update = (field: string, value: string) => { setDraft(old => ({ ...old, [field]: value })); key.current = requestKey() }
@@ -241,17 +308,17 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
     ? [{ key: 'practitioner_name', label: 'Identità' }, { key: 'status', label: 'Stato' }] : spec.fields
   const groups = ['Anagrafiche', 'Catalogo', 'Finanza'].filter(group => visible.some(s => s.group === group))
   return <>
-    <Heading eyebrow="ARCHIVI OPERATIVI" title="Archivi" subtitle="Dati del centro, con autorizzazioni verificate dal server." />
+    {!selected && !draft && !confirm && <><Heading eyebrow="ARCHIVI OPERATIVI" title="Archivi" subtitle="Dati del centro, con autorizzazioni verificate dal server." />
     <div className="archive-layout"><nav className="archive-menu" aria-label="Tipi di archivio">{groups.map(group => <div key={group}><h2>{group}</h2>{visible.filter(s => s.group === group).map(s => <button key={s.kind} aria-label={s.label} className={spec.kind === s.kind ? 'active' : ''} aria-current={spec.kind === s.kind ? 'page' : undefined} onClick={() => change(s.kind)}>{s.label}</button>)}</div>)}</nav>
-      <section className="panel archive-panel"><div className="panel-toolbar"><div className="panel-title"><h2>{spec.label}</h2><p>{rows.length} {rows.length === 1 ? 'scheda' : 'schede'} · {centerNameFor(center, boot?.centers?.length ? boot.centers : financeBoot?.centers ?? [])}{hasMore ? ' · altri risultati disponibili nella ricerca dedicata' : ''}</p></div><div className="form-actions">{manager && creatableKinds.includes(kind) && <Button onClick={beginCreate}>Nuova scheda</Button>}<Button variant="secondary" onClick={() => void refresh(spec.kind, debouncedSearch)} disabled={loading}>Ricarica</Button></div></div>
+      <section className="panel archive-panel"><div className="panel-toolbar"><div className="panel-title"><h2>{spec.label}</h2><p>{rows.length} {rows.length === 1 ? 'scheda' : 'schede'} · {centerNameFor(center, boot?.centers?.length ? boot.centers : financeBoot?.centers ?? [])}{hasMore ? ' · altri risultati disponibili nella ricerca dedicata' : ''}</p></div><div className="form-actions">{manager && creatableKinds.includes(kind) && <Button data-archive-create onClick={beginCreate}>Nuova scheda</Button>}<Button variant="secondary" onClick={() => void refresh(spec.kind, debouncedSearch)} disabled={loading}>Ricarica</Button></div></div>
         <div className="archive-filters"><label className="search-inline"><Search size={17} /><input type="search" aria-label={`Cerca in ${spec.label.toLocaleLowerCase('it-IT')}`} placeholder={`Cerca in ${spec.label.toLocaleLowerCase('it-IT')}…`} value={search} onChange={e => setSearch(e.target.value)} /></label>{kind === 'Payment Entry' && <div className="archive-dates"><Field label="Dal"><DateInput value={paymentStart} onChange={setPaymentStart} calendarLabel="data iniziale pagamenti" /></Field><Field label="Al"><DateInput value={paymentEnd} onChange={setPaymentEnd} calendarLabel="data finale pagamenti" /></Field><Button variant="secondary" onClick={() => void refresh(spec.kind, debouncedSearch)}>Applica</Button></div>}</div>
         {(loading || pendingQuery) && <p className="panel-loading" role="status">Caricamento…</p>}{error && <p className="alert error" role="alert">{error}</p>}
         {!loading && !pendingQuery && (filtered.length ? <DataTable rows={filtered} columns={columns} onRow={row => void open(row as ArchiveRecord)} /> : <Empty title="Nessuna scheda trovata" detail="Modifica il filtro o ricarica la lista." />)}
         {!pendingQuery && hasMore && <div className="archive-more"><Button variant="secondary" onClick={() => void more()} disabled={loading}>Carica altri</Button></div>}
         <p className="scope-note">Seleziona una scheda per consultarne i dettagli.</p>
-      </section></div>
+      </section></div></>}
     {notice && <div className="alert success archive-notice" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Chiudi avviso">×</button></div>}
-    {selected && <Drawer title={selectedTitle} compact onClose={() => { detailGen.current++; setSelected(null); setDocument(null); setDraft(null) }}>
+    {(selected || draft || confirm) && <section className="professional-detail-page archive-detail-page">{selected && <><header className="patient-page-header"><button type="button" className="patient-back" onClick={closeDetail}>← Torna agli archivi</button><h1 ref={detailHeading} tabIndex={-1}>{selectedTitle}</h1></header>
       <div className="detail-section"><h3>{kind === 'Patient' ? 'Anagrafica' : 'Dettaglio'}</h3>
         <dl className="property-list">{detailFields.map(field => <div key={field.key}><dt>{field.label}</dt><dd>{document && ['grand_total', 'outstanding_amount', 'paid_amount', 'unallocated_amount'].includes(field.key) ? documentMoney(selected[field.key], field.key === 'outstanding_amount' || field.key === 'unallocated_amount' ? document.party_currency : field.key === 'paid_amount' ? document.paid_currency : document.currency) : kind === 'Patient' && field.key === 'patient_name' ? archivePatientName(selected) : kind === 'Patient' && field.key === 'first_name' && syntheticCode(selected.first_name) ? `Dato di prova ${syntheticLetter(selected.first_name) ?? ''}` : kind === 'Healthcare Practitioner' && field.key === 'practitioner_name' ? archivePractitionerName(selected as Practitioner) : kind === 'Healthcare Practitioner' && field.key === 'status' ? selected.status === 'Active' ? 'Attivo' : 'Non attivo' : ((kind === 'Item' && field.key === 'item_name') || (kind === 'CC Package Template' && field.key === 'title')) ? archiveCatalogName(kind, selected) : view(field, selected[field.key])}</dd></div>)}</dl>
         {document && <section className="detail-section"><h3>Documento completo</h3><dl className="property-list"><div><dt>Numero documento</dt><dd>{document.name}</dd></div><div><dt>Soggetto</dt><dd>{document.party || "—"}</dd></div><div><dt>Sede</dt><dd>{centerNameFor(center, boot?.centers?.length ? boot.centers : financeBoot?.centers ?? [])}</dd></div>{document.status && <div><dt>Stato contabile</dt><dd>{financeFieldValue('status', document.status)}</dd></div>}{document.address && <div><dt>Indirizzo</dt><dd>{document.address}</dd></div>}{document.tax_id && <div><dt>Identificativo fiscale</dt><dd>{document.tax_id}</dd></div>}{document.company_address && <div><dt>Indirizzo azienda</dt><dd>{document.company_address}</dd></div>}{document.company_tax_id && <div><dt>Identificativo fiscale azienda</dt><dd>{document.company_tax_id}</dd></div>}{document.due_date && <div><dt>Scadenza</dt><dd>{displayDate(document.due_date)}</dd></div>}{document.mode_of_payment && <div><dt>Metodo</dt><dd>{document.mode_of_payment}</dd></div>}{document.reference_no && <div><dt>Riferimento operazione</dt><dd>{document.reference_no}</dd></div>}{document.reference_date && <div><dt>Data riferimento</dt><dd>{displayDate(document.reference_date)}</dd></div>}{document.payment_type && <div><dt>Operazione</dt><dd>{financeFieldValue('payment_type', document.payment_type)}</dd></div>}{(['net_total', 'discount_amount', 'total_taxes_and_charges', 'grand_total', 'outstanding_amount', 'paid_amount', 'received_amount', 'unallocated_amount'] as const).map(key => document[key] != null && <div key={key}><dt>{({ net_total: 'Imponibile', discount_amount: 'Sconto', total_taxes_and_charges: 'Imposte e oneri', grand_total: 'Totale', outstanding_amount: 'Residuo', paid_amount: 'Importo pagato', received_amount: 'Importo ricevuto', unallocated_amount: 'Non attribuito' })[key]}</dt><dd>{documentMoney(document[key], key === 'paid_amount' ? document.paid_currency : key === 'received_amount' ? document.received_currency : key === 'unallocated_amount' || key === 'outstanding_amount' ? document.party_currency : document.currency)}</dd></div>)}</dl>{document.items && <><h3>Servizi e articoli</h3>{document.items.length ? document.items.map((item, i) => <div className="archive-display-context" key={i}><strong>{item.item_name || item.description}</strong><p>{item.description}</p><p>Quantità: {documentNumber(item.qty)} {item.uom} · Prezzo: {documentMoney(item.rate, document.currency)} · Importo: {documentMoney(item.amount, document.currency)}</p>{!!item.discount_percentage && <p>Sconto: {documentNumber(item.discount_percentage)}%</p>}{!!item.discount_amount && <p>Sconto per unità: {documentMoney(item.discount_amount, document.currency)}</p>}</div>) : <p>Nessuna riga presente.</p>}</>}{document.taxes?.map((tax, i) => <p key={i}>{tax.description || 'Imposta'}: {documentMoney(tax.tax_amount, document.currency)}</p>)}{document.references?.map((ref, i) => <p key={i}>Documento collegato: {ref.name} · {documentMoney(ref.allocated_amount, document.party_currency)}</p>)}{document.links?.map((link, i) => <p key={i}>Documento collegato: {link.name}</p>)}</section>}
@@ -259,10 +326,10 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
         {kind === 'Sales Invoice' && Number(selected.docstatus) === 2 && <p className="scope-note">Il residuo mostrato appartiene al documento annullato: non è un importo da incassare.</p>}
         {kind === 'Purchase Invoice' && Number(selected.docstatus) === 2 && <p className="scope-note">Il residuo mostrato appartiene al documento annullato: non è un importo da pagare.</p>}
         {['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && !canPrint && <p className="scope-note">{Number(selected.docstatus) === 2 ? 'Questo documento è annullato e non è disponibile per la stampa.' : Number(selected.docstatus) === 0 ? 'Questo documento è in bozza e non è disponibile per la stampa.' : 'Non hai il permesso di stampare questo documento.'}</p>}
-        <div className="form-actions">{manager && editableKinds.includes(kind) && <Button onClick={edit}>Modifica scheda</Button>}{['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && canPrint && <Button variant="secondary" onClick={() => void print()}><Printer size={16} /> Anteprima e stampa</Button>}</div>
+        <div className="form-actions">{manager && !draft && editableKinds.includes(kind) && <Button data-archive-edit onClick={edit}>Modifica scheda</Button>}{['Sales Invoice', 'Purchase Invoice', 'Payment Entry'].includes(kind) && canPrint && <Button variant="secondary" onClick={() => void print()}><Printer size={16} /> Anteprima e stampa</Button>}</div>
       </div>
-    </Drawer>}
-    {draft && !confirm && <Modal title={`${creating ? 'Nuova scheda' : 'Modifica'} · ${spec.label}`} onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); const issue = validate(); if (issue) setError(issue); else { setError(''); setConfirm(true) } }}><p>Modifica i dati della scheda e indica il motivo: l’operazione sarà registrata.</p>{displayDiffersFromStored && <p className="archive-display-context">Scheda selezionata: <strong>{selectedTitle}</strong>. Le modifiche riguardano solo questa scheda.</p>}{selected && <details><summary>Identificativo della scheda</summary><p>{selected.name}</p></details>}<div className="form-grid">{formFields.map(field => {
+    </>}
+    {draft && !confirm && <section className="detail-section archive-edit" aria-label={creating ? "Nuova scheda" : "Modifica scheda"}><h2 ref={editorHeading} tabIndex={-1}>{creating ? 'Nuova scheda' : 'Modifica scheda'} · {spec.label}</h2><form onSubmit={event => { event.preventDefault(); const issue = validate(); if (issue) setError(issue); else { setError(''); setConfirm(true) } }}><p>Modifica i dati della scheda e indica il motivo: l’operazione sarà registrata.</p>{displayDiffersFromStored && <p className="archive-display-context">Scheda selezionata: <strong>{selectedTitle}</strong>. Le modifiche riguardano solo questa scheda.</p>}{selected && <details><summary>Identificativo della scheda</summary><p>{selected.name}</p></details>}<div className="form-grid">{formFields.map(field => {
       if (field.key === 'valid_from') {
         return <Field key={field.key} label={field.label} required={field.required}><DateInput value={String(draft[field.key] ?? '')} onChange={value => update(field.key, value)} required={field.required} /></Field>
       }
@@ -276,8 +343,8 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
         return <Field key={field.key} label={field.label} required={field.required}><select value={String(draft[field.key] ?? '')} onChange={event => update(field.key, event.target.value)}>{field.values?.map(choice => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select></Field>
       }
       return <Field key={field.key} label={field.label} required={field.required}>{field.key === editableNameKey && selected && syntheticCode(selected[field.key]) && <span>Il nome registrato è un codice di prova. Inserisci il nome leggibile da salvare per questa scheda.</span>}<input type={field.kind ?? 'text'} required={field.required} min={field.kind === 'number' ? 0 : undefined} step={field.kind === 'number' ? 'any' : undefined} value={String(draft[field.key] ?? '')} onChange={event => update(field.key, event.target.value)} /></Field>
-    })}</div><Field label="Motivo della modifica" required><input value={reason} maxLength={500} onChange={event => { setReason(event.target.value); key.current = requestKey() }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit">{creating ? 'Rivedi dati' : 'Rivedi modifica'}</Button></div></form></Modal>}
-    {confirm && <Modal title={creating ? `Conferma creazione · ${spec.label}` : `Conferma modifica · ${spec.label}`} onClose={() => setConfirm(false)}>
+    })}</div><Field label="Motivo della modifica" required><input value={reason} maxLength={500} onChange={event => { setReason(event.target.value); key.current = requestKey() }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit">{creating ? 'Rivedi dati' : 'Rivedi modifica'}</Button></div></form></section>}
+    {confirm && <section className="detail-section archive-review" aria-label="Conferma dati"><h2 ref={editorHeading} tabIndex={-1}>{creating ? `Conferma creazione · ${spec.label}` : `Conferma modifica · ${spec.label}`}</h2>
       <div className="review-diff-container">
         <p style={{ margin: '0 0 10px 0', fontSize: 13, color: '#475569' }}>
           {creating ? 'Verifica i dati della nuova scheda prima di salvare nel sistema:' : 'Verifica le variazioni apportate alla scheda prima di salvare:'}
@@ -316,7 +383,8 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
           <Button onClick={() => void save()} disabled={loading}>{loading ? 'Salvataggio…' : 'Conferma salvataggio'}</Button>
         </div>
       </div>
-    </Modal>}
+    </section>}
+    </section>}
     {preview && <Modal className="document-preview-modal" title={`Anteprima · ${demoText(preview.name)}`} onClose={() => setPreview(null)}><p className="scope-note">Scorri lateralmente per vedere tutto il documento. Per escludere data e indirizzo del browser, disattiva intestazioni e piè di pagina nelle opzioni di stampa.</p><div className="document-preview-scroll" role="region" aria-label="Anteprima documento scorrevole" tabIndex={0}><iframe ref={frame} title={`Documento ${demoText(preview.name)}`} srcDoc={preview.html} sandbox="allow-same-origin allow-modals" referrerPolicy="no-referrer" className="document-preview" /></div><div className="form-actions"><Button variant="secondary" onClick={() => setPreview(null)}>Chiudi</Button><Button onClick={() => frame.current?.contentWindow?.print()}><Printer size={16} /> Stampa</Button></div></Modal>}
   </>
 }

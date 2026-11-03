@@ -29,7 +29,7 @@ function App() {
   const [view, setView] = useState<View>(fromHash)
   const [boot, setBoot] = useState<Boot | null>(null)
   const [financeBoot, setFinanceBoot] = useState<FinanceBoot | null>(null)
-  const [center, setCenter] = useState('')
+  const [center, setCenter] = useState(() => new URLSearchParams(location.search).get('center') ?? '')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -67,11 +67,19 @@ function App() {
       if (!live) return
       if (o.status === 'fulfilled') setBoot(o.value)
       if (f.status === 'fulfilled') setFinanceBoot(f.value)
-      if (!center) { const selected = o.status === 'fulfilled' ? o.value.center : f.status === 'fulfilled' ? f.value.center : ''; if (selected) { hydratedCenter.current = selected; setCenter(selected) } }
+      if (!center) { const selected = o.status === 'fulfilled' ? o.value.center : f.status === 'fulfilled' ? f.value.center : ''; if (selected) { const url = new URL(location.href); url.searchParams.set('center', selected); history.replaceState(null, '', url); hydratedCenter.current = selected; setCenter(selected) } }
       if (o.status === 'rejected' && f.status === 'rejected') setError('Nessuna area disponibile per questo account. Verifica assegnazione e ruolo.')
       setLoading(false)
     })
     return () => { live = false }
+  }, [center])
+  useEffect(() => {
+    const onPopState = () => {
+      const next = new URLSearchParams(location.search).get('center')
+      if (next && next !== center) { hydratedCenter.current = ''; setLoading(true); setBoot(null); setFinanceBoot(null); setCenter(next) }
+    }
+    addEventListener('popstate', onPopState)
+    return () => removeEventListener('popstate', onPopState)
   }, [center])
   const roles = boot?.roles ?? []
   const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : !!boot || !!financeBoot : v === 'Notifiche' ? roles.includes('CC Manager') || roles.includes('CC Professional') || roles.includes('CC Secretariat') : ['Gestione accessi', 'Registro modifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
@@ -100,10 +108,10 @@ function App() {
   }, [mobileOpen])
   const centers = boot?.centers?.length ? boot.centers : financeBoot?.centers ?? []
   configureDemoLabels(boot, financeBoot)
-  const switchView = (next: View) => { const url = new URL(location.href); url.searchParams.delete('patient'); url.searchParams.delete('practitioner'); url.hash = encodeURIComponent(next); history.pushState(null, '', url); dispatchEvent(new HashChangeEvent('hashchange')); setView(next); setMobileOpen(false); setUserMenuOpen(false); setError(''); setNotice(''); if (mobileOpen) requestAnimationFrame(() => document.getElementById('main')?.focus()) }
+  const switchView = (next: View) => { const url = new URL(location.href); url.searchParams.delete('patient'); url.searchParams.delete('practitioner'); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); url.hash = encodeURIComponent(next); history.pushState(null, '', url); dispatchEvent(new HashChangeEvent('hashchange')); setView(next); setMobileOpen(false); setUserMenuOpen(false); setError(''); setNotice(''); if (mobileOpen) requestAnimationFrame(() => document.getElementById('main')?.focus()) }
   const feedback = (message: string, fail = false) => { if (fail) setError(message); else { setNotice(message); setError('') } }
   const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(fresh) }
-  const changeCenter = (next: string) => { if (next === center) return; const url = new URL(location.href); url.searchParams.delete('patient'); url.searchParams.delete('practitioner'); history.replaceState(null, '', url); hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setCenter(next) }
+  const changeCenter = (next: string) => { if (next === center) return; const url = new URL(location.href); url.searchParams.set('center', next); url.searchParams.delete('patient'); url.searchParams.delete('practitioner'); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); history.replaceState(null, '', url); hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setCenter(next) }
   const logout = async () => {
     setLoggingOut(true); setUserMenuOpen(false)
     try { await call('logout', {}, true); location.replace('/login?redirect-to=/premium') }

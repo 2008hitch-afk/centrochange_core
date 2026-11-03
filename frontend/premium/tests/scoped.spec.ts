@@ -81,7 +81,7 @@ test('anagrafica sintetica: il nome in elenco e dettaglio non diventa alias clie
   await expect(list).toContainText('Dato di prova BETA')
   await expect(list).not.toContainText('Cliente 3')
   await list.locator('tr').first().click()
-  await expect(page.locator('.drawer')).toContainText('Dato di prova BETA')
+  await expect(page.locator('.archive-detail-page')).toContainText('Dato di prova BETA')
 })
 
 test('AUDIT-05: archivio professionisti usa alias solo in lettura, editor mantiene il dato canonico', async ({ page }, info) => {
@@ -96,13 +96,13 @@ test('AUDIT-05: archivio professionisti usa alias solo in lettura, editor mantie
   await expect(page.locator('tbody')).toContainText('Professionista di prova A')
   await expect(page.locator('tbody')).not.toContainText('CC-HTTP-AbCd123456 a')
   await page.locator('tbody tr').click()
-  const drawer = page.getByRole('dialog')
+  const drawer = page.locator('.archive-detail-page')
   await expect(drawer.getByRole('heading', { name: 'Dettaglio' })).toBeVisible()
   await expect(drawer.getByRole('heading', { name: 'Professionista di prova A' })).toHaveCount(1)
   await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
   await page.screenshot({ path: info.outputPath(`professionisti-archivio-${info.project.name}.png`), fullPage: true })
   await drawer.getByRole('button', { name: 'Modifica scheda' }).click()
-  await expect(page.getByRole('dialog', { name: 'Modifica · Professionisti' }).getByRole('textbox', { name: /^Nome/ })).toHaveValue('')
+  await expect(page.locator('.archive-edit').getByRole('textbox', { name: /^Nome/ })).toHaveValue('')
 })
 
 test('regressioni DECISION-064: Agenda unica e intervallo pagamenti ammesso', async ({ page }) => {
@@ -141,7 +141,7 @@ test('AUDIT-09: fattura annullata mostra il limite di stampa senza richiedere an
   await expect(page.locator('.archive-panel tbody tr').first()).toContainText('Cliente precedente')
   await expect(page.locator('.archive-panel tbody tr').first()).not.toContainText('CC-MVP-POS-TEST')
   await page.locator('.archive-panel tbody tr').first().click()
-  const drawer = page.getByRole('dialog')
+  const drawer = page.locator('.archive-detail-page')
   await expect(drawer).toContainText('Questo documento è annullato')
   await expect(drawer).toContainText('Numero documento')
   await expect(drawer).toContainText('SINV-CANCELLED')
@@ -167,11 +167,11 @@ test('anteprima scorrevole e riferimento operazione integro', async ({ page }) =
     expect(await region.evaluate(el => el.scrollLeft)).toBeGreaterThan(0)
   }
   await page.getByRole('dialog', { name: /Anteprima/ }).getByRole('button', { name: 'Chiudi' }).first().click()
-  await page.locator('.drawer[role="dialog"]').getByRole('button', { name: 'Chiudi' }).click()
+  await page.getByRole('button', { name: 'Torna agli archivi' }).click()
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Pagamenti' }).click()
   await page.locator('.archive-panel tbody tr').first().click()
-  await expect(page.locator('.drawer[role="dialog"]')).toContainText('Riferimento operazione')
-  await expect(page.locator('.drawer[role="dialog"]')).toContainText('CC-HTTP-UAT0000001-ref')
+  await expect(page.locator('.archive-detail-page')).toContainText('Riferimento operazione')
+  await expect(page.locator('.archive-detail-page')).toContainText('CC-HTTP-UAT0000001-ref')
 })
 
 test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa', async ({ page }, testInfo) => {
@@ -182,7 +182,8 @@ test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa
     await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name, exact: true }).click()
     await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
     await page.locator('.archive-panel tbody tr').first().click()
-    await expect(page.getByRole('dialog')).toBeVisible()
+    await expect(page.locator('.archive-detail-page')).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     if (name === 'Pagamenti') {
       await page.getByRole('button', { name: 'Anteprima e stampa' }).click()
       await expect(page.getByTitle('Documento PAY-001')).toBeVisible()
@@ -193,13 +194,13 @@ test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa
       await page.getByRole('dialog', { name: /Anteprima/ }).getByRole('button', { name: 'Chiudi' }).first().click()
     }
     await page.screenshot({ path: testInfo.outputPath(`scoped-${name.toLowerCase().replaceAll(' ', '-')}-${testInfo.project.name}.png`), fullPage: true })
-    await page.getByRole('dialog').getByRole('button', { name: 'Chiudi' }).click()
+    await page.getByRole('button', { name: 'Torna agli archivi' }).click()
   }
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Articoli' }).click()
   await page.locator('.archive-panel tbody tr').first().click()
   await page.getByRole('button', { name: 'Modifica scheda' }).click()
-  await page.getByRole('dialog', { name: /Modifica/ }).getByLabel('Articolo').fill('Visita sintetica aggiornata')
-  await page.getByRole('dialog', { name: /Modifica/ }).getByLabel('Motivo').fill('Aggiornamento prova')
+  await page.locator('.archive-edit').getByLabel('Articolo').fill('Visita sintetica aggiornata')
+  await page.locator('.archive-edit').getByLabel('Motivo').fill('Aggiornamento prova')
   await page.getByRole('button', { name: 'Rivedi modifica' }).click()
   await page.getByRole('button', { name: 'Conferma salvataggio' }).click()
   await expect(page.getByText(/Scheda salvata/)).toBeVisible()
@@ -216,7 +217,7 @@ test('API scoped: creazione autorizzata e diniego ruolo', async ({ page }) => {
   await openArchives(page)
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Modelli pacchetto' }).click()
   await page.getByRole('button', { name: 'Nuova scheda' }).click()
-  const form = page.getByRole('dialog', { name: /Nuova scheda/ })
+  const form = page.locator('.archive-edit')
   await form.getByLabel('Modello').fill('Percorso nuovo')
   await form.getByLabel('Articolo').fill('ITEM-001')
   await form.getByLabel(/Numero di sedute incluse|Unità/).fill('4')
@@ -238,7 +239,7 @@ for (const task of [
   await openArchives(page)
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: task.section, exact: true }).click()
   await page.getByRole('button', { name: 'Nuova scheda' }).click()
-  const form = page.getByRole('dialog', { name: /Nuova scheda/ })
+  const form = page.locator('.archive-edit')
   for (const [label, value] of Object.entries(task.fields)) await form.getByLabel(label).first().fill(value)
   await form.getByLabel('Motivo').fill('Creazione sintetica')
   await form.getByRole('button', { name: /Rivedi (dati|modifica)/ }).click()
@@ -283,7 +284,7 @@ test('API scoped: validazione e 403 non confermano una modifica', async ({ page 
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Articoli' }).click()
   await page.locator('.archive-panel tbody tr').first().click()
   await page.getByRole('button', { name: 'Modifica scheda' }).click()
-  const form = page.getByRole('dialog', { name: /Modifica/ })
+  const form = page.locator('.archive-edit')
   await form.getByLabel('Articolo').fill('Nome aggiornato')
   await form.getByRole('button', { name: 'Rivedi modifica' }).click()
   await expect(form.getByRole('alert')).toContainText('motivo')
@@ -291,7 +292,7 @@ test('API scoped: validazione e 403 non confermano una modifica', async ({ page 
   await form.getByLabel('Motivo').fill('Prova diniego')
   await form.getByRole('button', { name: 'Rivedi modifica' }).click()
   await page.getByRole('button', { name: 'Conferma salvataggio' }).click()
-  await expect(page.getByRole('dialog', { name: /Modifica/ })).toBeVisible()
+  await expect(page.locator('.archive-edit')).toBeVisible()
   await expect(page.getByRole('alert').first()).toContainText('Accesso negato')
   await expect(page.getByText(/Scheda salvata/)).toHaveCount(0)
 })
@@ -310,7 +311,7 @@ for (const task of [
   await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: task.section, exact: true }).click()
   await page.locator('.archive-panel tbody tr').first().click()
   await page.getByRole('button', { name: 'Modifica scheda' }).click()
-  const form = page.getByRole('dialog', { name: /Modifica/ })
+  const form = page.locator('.archive-edit')
   if (task.field === 'Stato') await form.getByLabel(task.field).first().selectOption(task.value)
   else await form.getByLabel(task.field).first().fill(task.value)
   await form.getByLabel('Motivo').fill('Revisione sintetica')
@@ -321,10 +322,9 @@ for (const task of [
   expect(writes[0].method).toContain(task.method)
   expect(writes[0].body).not.toHaveProperty('customer')
   if (['Pazienti', 'Professionisti', 'Modelli pacchetto'].includes(task.section)) {
-    await expect(page.locator('.archive-panel tbody tr').first()).toContainText(task.value)
-    await expect(page.locator('.drawer[role="dialog"]')).toContainText(task.value)
+    await expect(page.locator('.archive-detail-page')).toContainText(task.value)
     await page.getByRole('button', { name: 'Modifica scheda' }).click()
-    await expect(page.getByRole('dialog', { name: /Modifica/ }).getByLabel(task.field).first()).toHaveValue(task.value)
+    await expect(page.locator('.archive-edit').getByLabel(task.field).first()).toHaveValue(task.value)
   }
 })
 
@@ -473,4 +473,139 @@ test('GOAL-75: rettifica nota riservata conserva il tipo e il riferimento origin
   await page.getByRole('textbox', { name: 'Testo della rettifica' }).fill('Rettifica riservata sintetica')
   await page.getByRole('button', { name: 'Registra rettifica' }).click()
   await expect.poll(() => writes.find(write => write.method.endsWith('operations.notes.add_note'))?.body).toMatchObject({ private: 1, corrects: 'PRIV-001' })
+})
+
+test('GOAL75: registro distingue note e motivi automatici preservando il testo libero', async ({ page }) => {
+  await mock(page, [])
+  const base = { event_time: '2026-10-27 07:00:00', reference_name: 'SYN-1', before_state: '{}', after_state: '{}', actor: 'manager@example.invalid' }
+  const events = [
+    { ...base, event_type: 'ORGANIZATIONAL_NOTE_CREATED', reason: 'Protected note entry' },
+    { ...base, event_type: 'ORGANIZATIONAL_NOTE_CREATED', reason: 'Protected note revision' },
+    { ...base, event_type: 'PRIVATE_NOTE_CREATED', reason: 'Protected note entry' },
+    { ...base, event_type: 'PRIVATE_NOTE_CREATED', reason: 'Protected note revision' },
+    { ...base, event_type: 'ADMIN_EXCEPTION_DETECTED', actor: 'cc-automation-service@example.invalid', reason: 'Scheduled administrative condition reconciliation' },
+    { ...base, event_type: 'PAYMENT_BLOCK_NOTIFIED', actor: 'cc-automation-service@example.invalid', reason: 'Scheduled payment-rule catch-up' },
+    { ...base, event_type: 'ADMIN_EXCEPTION_MANAGED', reason: 'Scheduled payment-rule catch-up' }
+  ]
+  await page.route('**/api/method/centrochange_core.security.audit_view.events*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { events, has_more: false } }) }))
+  await page.goto('./#Registro%20modifiche')
+  const rows = page.locator('tbody tr')
+  await expect(rows).toHaveCount(7)
+  await expect(rows.nth(0)).toContainText('Registrazione di nota organizzativa')
+  await expect(rows.nth(1)).toContainText('Rettifica di nota organizzativa')
+  await expect(rows.nth(2)).toContainText('Registrazione di nota professionale riservata')
+  await expect(rows.nth(3)).toContainText('Rettifica di nota professionale riservata')
+  await expect(rows.nth(4)).toContainText('Servizio automatico')
+  await expect(rows.nth(4)).toContainText('Verifica automatica delle condizioni amministrative')
+  await expect(rows.nth(5)).toContainText('Verifica automatica delle regole di pagamento')
+  await expect(rows.nth(6)).toContainText('Scheduled payment-rule catch-up')
+  await rows.nth(0).click()
+  const detail = page.getByRole('dialog')
+  await detail.getByText('Motivo originale registrato').click()
+  await expect(detail).toContainText('Protected note entry')
+  await detail.getByText('Dettagli tecnici').click()
+  await expect(detail).toContainText('ORGANIZATIONAL_NOTE_CREATED')
+})
+
+test('GOAL75: collegamento canonico dal profilo alla scheda archivio, senza overlay', async ({ page }, info) => {
+  await mock(page, [])
+  await page.goto('./?practitioner=PR-001#Professionisti')
+  const link = page.getByRole('link', { name: 'Modifica professionista negli Archivi' })
+  await expect(link).toBeVisible()
+  await link.click()
+  await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
+  await page.getByRole('button', { name: 'Modifica scheda' }).click()
+  await expect(page.locator('.archive-edit')).toBeVisible()
+  await expect(page.locator('.archive-edit h2')).toBeFocused()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.screenshot({ path: info.outputPath(`archivio-edit-${info.project.name}.png`), fullPage: true })
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.archive-edit')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Modifica scheda' })).toBeFocused()
+  await page.getByRole('button', { name: 'Torna agli archivi' }).click()
+  await expect(page.getByRole('navigation', { name: 'Tipi di archivio' })).toBeVisible()
+})
+
+test('GOAL75: movimento bancario deep link usa la proiezione autorizzata anche oltre la prima pagina', async ({ page }) => {
+  await mock(page, [])
+  let searchedPages = 0
+  await page.route('**/api/method/centrochange_core.finance.reporting.records*', route => {
+    const params = new URL(route.request().url()).searchParams
+    if (params.get('doctype') !== 'Bank Transaction') return route.fallback()
+    const search = params.get('search') || '', offset = Number(params.get('offset') || 0)
+    if (!search) return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [{ name: 'BANK-001', date: today, reference_number: 'SYN-001', deposit: 60, withdrawal: 0 }], has_more: false } }) })
+    searchedPages++
+    const data = search === 'BANK-001' ? offset === 0 ? { rows: Array.from({ length: 100 }, (_, i) => ({ name: `OTHER-${i}` })), has_more: true } : { rows: [{ name: 'BANK-001', date: today, reference_number: 'SYN-001', deposit: 60, withdrawal: 0 }], has_more: false } : { rows: [], has_more: false }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: data }) })
+  })
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Movimenti bancari' }).click()
+  await page.locator('.archive-panel tbody tr').first().click()
+  await expect(page.locator('.archive-detail-page')).toContainText('SYN-001')
+  await page.reload()
+  await expect(page.locator('.archive-detail-page')).toContainText('SYN-001')
+  expect(searchedPages).toBeGreaterThanOrEqual(2)
+  await page.goto('./?archive_kind=Bank+Transaction&archive_record=OTHER-CENTER#Archivi')
+  await expect(page.getByRole('alert')).toContainText('Scheda non disponibile')
+  await expect(page.locator('.archive-detail-page')).toHaveCount(0)
+})
+
+test('GOAL75: focus torna al comando dopo annullamento creazione e conferma', async ({ page }) => {
+  await mock(page, [])
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Modelli pacchetto' }).click()
+  const create = page.getByRole('button', { name: 'Nuova scheda' })
+  await create.click()
+  await expect(page.locator('.archive-edit h2')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(create).toBeFocused()
+  await page.locator('.archive-panel tbody tr').first().click()
+  await page.getByRole('button', { name: 'Modifica scheda' }).click()
+  await page.locator('.archive-edit').getByLabel('Modello').fill('Modificato')
+  await page.locator('.archive-edit').getByLabel('Motivo').fill('Prova')
+  await page.getByRole('button', { name: 'Rivedi modifica' }).click()
+  await expect(page.locator('.archive-review h2')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.archive-edit h2')).toBeFocused()
+})
+
+test('GOAL75: collegamento anagrafico conserva la sede scelta', async ({ page }) => {
+  await mock(page, [])
+  const centers = [boot.centers[0], { name: 'CENTRO-B', branch: 'Centro B' }]
+  const detailCenters: string[] = []
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => {
+    const selected = new URL(route.request().url()).searchParams.get('center') || center
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, centers, center: selected } }) })
+  })
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route => {
+    detailCenters.push(new URL(route.request().url()).searchParams.get('center') || '')
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { name: 'PR-001', practitioner_name: 'Professionista Sintetico', first_name: 'Professionista', last_name: 'Sintetico', status: 'Active', modified: 'v1' } }) })
+  })
+  await page.goto('./?center=CENTRO-B&practitioner=PR-001#Professionisti')
+  await page.getByRole('link', { name: 'Modifica professionista negli Archivi' }).click()
+  await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
+  expect(new URL(page.url()).searchParams.get('center')).toBe('CENTRO-B')
+  expect(detailCenters.length).toBeGreaterThanOrEqual(2)
+  expect(detailCenters.every(value => value === 'CENTRO-B')).toBe(true)
+  await page.reload()
+  await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
+  expect(detailCenters.every(value => value === 'CENTRO-B')).toBe(true)
+})
+
+test('GOAL75: cronologia mantiene sincronizzata la sede con la URL', async ({ page }) => {
+  await mock(page, [])
+  const centers = [boot.centers[0], { name: 'CENTRO-B', branch: 'Centro B' }]
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => {
+    const selected = new URL(route.request().url()).searchParams.get('center') || center
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, centers, center: selected } }) })
+  })
+  await page.goto('./?center=CENTRO-A#Archivi')
+  await page.locator('.archive-panel tbody tr').first().click()
+  await expect(page.locator('.archive-detail-page')).toBeVisible()
+  const selector = page.locator('.center-selector select')
+  await selector.selectOption('CENTRO-B')
+  await expect(selector).toHaveValue('CENTRO-B')
+  await page.goBack()
+  await expect.poll(() => new URL(page.url()).searchParams.get('center')).toBe('CENTRO-A')
+  await expect(selector).toHaveValue('CENTRO-A')
 })

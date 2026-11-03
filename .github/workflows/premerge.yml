@@ -7,6 +7,7 @@ on:
       - docs/premium-react-macrogoal-148-20261021
       - issue-148/premium-react-frontend
       - issue-190/access-audit
+      - issue-75/coordinated-premium-ux
   workflow_dispatch:
 
 permissions:
