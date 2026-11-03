@@ -1,7 +1,9 @@
 """Narrow first-meeting ingress; caller cannot select existing patient or practitioner IDs."""
+from datetime import datetime, timedelta
 from hashlib import sha256
 import json
 import re
+from zoneinfo import ZoneInfo
 
 import frappe
 from frappe.utils import getdate,get_time
@@ -54,9 +56,13 @@ def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointm
 		frappe.throw('Nel DEV sono consentite solo identità demo example.invalid.')
 	if not frappe.db.exists('Gender',sex):
 		frappe.throw('Controlla il valore anagrafico selezionato.')
+	booking_date=getdate(appointment_date)
+	today=datetime.now(ZoneInfo('Europe/Rome')).date()
+	if booking_date<today or booking_date>today+timedelta(days=120):
+		frappe.throw('Scegli una data futura entro 120 giorni.')
 	caller=frappe.session.user
 	payload={'route':route,'mode':mode,'first_name':first_name.strip(),'last_name':last_name.strip(),'email':email.lower(),
-		'sex':sex,'appointment_date':str(getdate(appointment_date)),'appointment_time':str(get_time(appointment_time))}
+		'sex':sex,'appointment_date':str(booking_date),'appointment_time':str(get_time(appointment_time))}
 	fingerprint=sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()
 	key=sha256((SERVICE_USER+'\0public-'+request_key).encode()).hexdigest()
 	try:
@@ -114,8 +120,6 @@ def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointm
 @rate_limit(limit=30,seconds=60)
 def available_slots(route,start_date,mode):
 	"""Public seven-day projection exposes slots only, never patient or practitioner IDs."""
-	from datetime import datetime,timedelta
-	from zoneinfo import ZoneInfo
 	from types import SimpleNamespace
 	from centrochange_core.security.guards import current_rows,centers
 	from centrochange_core.scheduling.booking import snapshot,validate_slot

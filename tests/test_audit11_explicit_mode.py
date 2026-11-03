@@ -42,6 +42,20 @@ class RequiredBookingModeTests(unittest.TestCase):
         self.assertIn("float(public_doc['cc_price_snapshot'])==0", src)
         self.assertIn("public_doc['appointment_type'],'fieldname':'cc_first_meeting'", src)
 
+    def test_both_endpoints_enforce_rome_120_day_future_horizon(self):
+        code = PUBLIC.read_text(encoding="utf-8")
+        syntax = ast.parse(code)
+        self.assertIn("ZoneInfo('Europe/Rome')", code)
+        self.assertIn("timedelta(days=120)", code)
+
+        for fn_name in ("first_meeting", "available_slots"):
+            with self.subTest(function=fn_name):
+                fn = next(node for node in syntax.body
+                          if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == fn_name)
+                fn_source = ast.get_source_segment(code, fn)
+                self.assertIn("timedelta(days=120)", fn_source, f"{fn_name} must enforce 120 days horizon")
+                self.assertIn("Scegli una data futura entro 120 giorni.", fn_source, f"{fn_name} must reject horizon breach")
+
 
 if __name__ == "__main__":
     unittest.main()

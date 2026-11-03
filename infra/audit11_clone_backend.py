@@ -162,6 +162,86 @@ try:
         raise AssertionError("Missing private catalog mapping accepted")
     frappe.conf.cc_public_first_meeting_types = types
 
+    # Date boundary and negative security checks for available_slots and first_meeting
+    frappe.set_user("Guest")
+    past_date = (now - timedelta(days=1)).isoformat()
+    too_far_date = (now + timedelta(days=121)).isoformat()
+    at_horizon_date = (now + timedelta(days=120)).isoformat()
+
+    try:
+        available_slots("Marco", past_date, "sede")
+    except frappe.ValidationError:
+        checks.append("slots_past_date_rejected")
+    else:
+        raise AssertionError("available_slots accepted past date")
+
+    try:
+        available_slots("Marco", too_far_date, "sede")
+    except frappe.ValidationError:
+        checks.append("slots_121_days_rejected")
+    else:
+        raise AssertionError("available_slots accepted date beyond 120 days")
+
+    try:
+        slots_120 = available_slots("Marco", at_horizon_date, "sede")
+        assert isinstance(slots_120.get("slots"), list)
+        checks.append("slots_120_days_boundary_accepted")
+    except frappe.ValidationError:
+        raise AssertionError("available_slots rejected 120 days boundary")
+
+    try:
+        first_meeting(
+            route="Marco", mode="sede",
+            first_name="CC11 Synthetic", last_name="Boundary",
+            email="cc11-past@example.invalid", sex="Other",
+            appointment_date=past_date, appointment_time="10:00:00",
+            request_key="cc11-boundary-past",
+        )
+    except frappe.ValidationError:
+        checks.append("booking_past_date_rejected")
+    else:
+        raise AssertionError("first_meeting accepted past date")
+
+    try:
+        first_meeting(
+            route="Marco", mode="sede",
+            first_name="CC11 Synthetic", last_name="Boundary",
+            email="cc11-too-far@example.invalid", sex="Other",
+            appointment_date=too_far_date, appointment_time="10:00:00",
+            request_key="cc11-boundary-too-far",
+        )
+    except frappe.ValidationError:
+        checks.append("booking_121_days_rejected")
+    else:
+        raise AssertionError("first_meeting accepted date beyond 120 days")
+
+    try:
+        first_meeting(
+            route="Marco", mode="sede",
+            first_name="CC11 Synthetic", last_name="Boundary",
+            email="cc11-unavailable@example.invalid", sex="Other",
+            appointment_date=day, appointment_time="03:00:00",
+            request_key="cc11-boundary-unavailable",
+        )
+    except Exception:
+        checks.append("booking_unavailable_slot_rejected")
+    else:
+        raise AssertionError("first_meeting accepted unavailable slot at 03:00")
+
+    already_booked = bookings[("Marco", "sede")]["slot"]
+    try:
+        first_meeting(
+            route="Marco", mode="sede",
+            first_name="CC11 Synthetic", last_name="Colliding",
+            email="cc11-colliding@example.invalid", sex="Other",
+            appointment_date=already_booked["date"], appointment_time=already_booked["time"],
+            request_key="cc11-different-request-collision",
+        )
+    except Exception:
+        checks.append("booking_conflicting_slot_rejected")
+    else:
+        raise AssertionError("first_meeting accepted already booked slot")
+
     frappe.set_user("Administrator")
     assert frappe.db.count("Email Queue") == baseline_email_queue
     checks.append("no_real_email_queue")
