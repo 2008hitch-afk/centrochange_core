@@ -43,6 +43,7 @@ def deliver(name):
     # Non-synthetic mode (Staging / Production)
     # Check if real email delivery is enabled in site config
     if not frappe.conf.get('cc_email_booking_confirmation_enabled'):
+        append('BOOKING_CONFIRMATION_QUEUED', doc.doctype, doc.name, None, {'appointment': doc.appointment, 'state': 'Pending'}, 'First-meeting confirmation stored without dispatch')
         return {'state': doc.state, 'replay': False}
 
     frappe.db.savepoint('cc_confirmation_delivery')
@@ -58,14 +59,15 @@ def deliver(name):
     except Exception as exc:
         frappe.db.rollback(save_point='cc_confirmation_delivery')
         with internal_write('cc_confirmation_write'):
-            doc.update({'state': 'Failed', 'attempts': doc.attempts + 1, 'last_error': f'Email sending failed: {str(exc)[:140]}'}).save(ignore_permissions=True)
+            doc.update({'state': 'Failed', 'attempts': doc.attempts + 1, 'last_error': f'Email queueing failed: {str(exc)[:140]}'}).save(ignore_permissions=True)
         append('BOOKING_CONFIRMATION_FAILED', doc.doctype, doc.name, None, {'appointment': doc.appointment, 'state': 'Failed'}, 'First-meeting confirmation')
         return {'state': 'Failed', 'replay': False}
 
+    # Asynchronously enqueued: state remains Pending until physical SMTP delivery
     with internal_write('cc_confirmation_write'):
-        doc.update({'state': 'Sent', 'attempts': doc.attempts + 1, 'last_error': None}).save(ignore_permissions=True)
-    append('BOOKING_CONFIRMATION_SENT', doc.doctype, doc.name, None, {'appointment': doc.appointment, 'state': 'Sent'}, 'First-meeting confirmation')
-    return {'state': 'Sent', 'replay': False}
+        doc.update({'state': 'Pending', 'attempts': doc.attempts + 1, 'last_error': None}).save(ignore_permissions=True)
+    append('BOOKING_CONFIRMATION_QUEUED', doc.doctype, doc.name, None, {'appointment': doc.appointment, 'state': 'Pending'}, 'First-meeting confirmation enqueued for dispatch')
+    return {'state': 'Pending', 'replay': False}
 
 
 def confirm(appointment, route, email, mode):

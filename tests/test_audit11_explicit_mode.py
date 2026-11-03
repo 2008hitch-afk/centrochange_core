@@ -78,6 +78,12 @@ class RequiredBookingModeTests(unittest.TestCase):
         self.assertIn("Nessuna seconda seduta o addebito anticipato è stato effettuato con questa richiesta", code)
         self.assertIn("Pending", code)
 
+    def test_confirmation_delivery_does_not_prematurely_mark_sent_on_async_queue(self):
+        code = CONFIRM.read_text(encoding="utf-8")
+        self.assertIn("BOOKING_CONFIRMATION_QUEUED", code)
+        # When enqueued via frappe.sendmail(now=False), state remains Pending
+        self.assertNotIn("doc.update({'state': 'Sent'", code)
+
     def test_frontend_communicates_zero_euro_and_44_euro_next_session(self):
         code = (ROOT / "frontend/premium/src/first_meeting.tsx").read_text(encoding="utf-8")
         self.assertIn("Totale dovuto online", code)
