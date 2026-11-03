@@ -12,7 +12,7 @@ SPEC.loader.exec_module(offer)
 class PublicFirstMeetingOfferTests(unittest.TestCase):
     def setUp(self):
         self.mapping = {"sede": "PRIMO-IN-SEDE", "online": "PRIMO-ONLINE"}
-        self.profile = {"duration": 20, "cc_price_snapshot": 0, "cc_currency_snapshot": "EUR"}
+        self.profile = {"duration": 20, "cc_price_snapshot": 0, "cc_currency_snapshot": "EUR", "cc_service_label": "Colloquio gratuito in sede"}
 
     def test_only_exact_modes_and_distinct_appointment_types(self):
         self.assertEqual(offer.configured_type(self.mapping, "sede"), "PRIMO-IN-SEDE")
@@ -27,12 +27,22 @@ class PublicFirstMeetingOfferTests(unittest.TestCase):
                 offer.configured_type(config, "online")
 
     def test_no_paid_or_long_or_non_eur_public_first_meeting(self):
-        self.assertTrue(offer.validate_free_offer(self.profile))
+        self.assertTrue(offer.validate_free_offer(self.profile, 'sede'))
         for changes in ({"duration": 65}, {"duration": 45}, {"duration": 0},
                         {"cc_price_snapshot": 44}, {"cc_price_snapshot": -1},
                         {"cc_price_snapshot": "NaN"}, {"cc_currency_snapshot": "USD"}):
             with self.subTest(changes=changes), self.assertRaises(offer.PublicOfferError):
-                offer.validate_free_offer({**self.profile, **changes})
+                offer.validate_free_offer({**self.profile, **changes}, 'sede')
+
+    def test_mode_must_match_item_label_in_internal_agenda(self):
+        valid_online = {**self.profile, "cc_service_label": "Colloquio conoscitivo online"}
+        self.assertTrue(offer.validate_free_offer(valid_online, "online"))
+        with self.assertRaises(offer.PublicOfferError):
+            offer.validate_free_offer(valid_online, "sede")
+        with self.assertRaises(offer.PublicOfferError):
+            offer.validate_free_offer(self.profile, "online")
+        with self.assertRaises(offer.PublicOfferError):
+            offer.validate_free_offer(self.profile, "gruppo")
 
     def test_no_missing_money_or_duration(self):
         for key in self.profile:
@@ -40,7 +50,7 @@ class PublicFirstMeetingOfferTests(unittest.TestCase):
                 data = dict(self.profile)
                 del data[key]
                 with self.assertRaises(offer.PublicOfferError):
-                    offer.validate_free_offer(data)
+                    offer.validate_free_offer(data, 'sede')
 
 
 if __name__ == "__main__":

@@ -1455,6 +1455,28 @@ test('AUDIT-11 guest sceglie modalità, Direttore, slot 20 minuti gratuiti e pre
 })
 
 
+test('AUDIT-11 onsite Marco e cambio modalità invalidano lo slot precedente', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./public.html')
+  await page.getByRole('radio', { name: /Primo Incontro in Sede/ }).check()
+  await page.getByRole('button', { name: 'Continua' }).click()
+  await page.getByRole('radio', { name: 'Marco' }).check()
+  await page.getByRole('button', { name: 'Continua' }).click()
+  await page.getByRole('button', { name: 'Cerca disponibilità' }).click()
+  await page.getByRole('radio', { name: /10:00/ }).check()
+  await page.getByRole('button', { name: 'Indietro' }).click()
+  await page.getByRole('radio', { name: 'Francesca' }).check()
+  await page.getByRole('button', { name: 'Continua' }).click()
+  await expect(page.getByRole('radio', { name: /10:00/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Continua' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Cerca disponibilità' }).click()
+  await expect(page.getByRole('radio', { name: /10:00/ })).toBeVisible()
+  const calls = writes.filter(w => w.method.endsWith('scheduling.public_booking.first_meeting'))
+  expect(calls).toHaveLength(0)
+})
+
+
 test('rettifica nota conserva riferimento alla versione precedente', async ({ page }) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)

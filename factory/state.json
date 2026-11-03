@@ -4,5 +4,37 @@
   "project_id": "CENTROCHANGE-HC-0005",
   "handoff_ref": "github:2008hitch-afk/hitch-client-discovery/clients/HC-0005/CLIENT-CONTEXT-MANIFEST.yaml",
   "notice": "Brownfield adoption. Historical goals and decisions remain in GitHub/HITCH; no historical goals are silently migrated. No new AUDIT-11 authorization is implied.",
-  "goals": []
+  "goals": [
+    {
+      "id": "AUDIT-11",
+      "title": "Primo incontro pubblico gratuito, sede/online, Marco/Francesca",
+      "outcome": "Ospite prenota solo colloquio conoscitivo gratuito 20 minuti; Direzione gestisce seduta successiva",
+      "type": "FEATURE",
+      "status": "ACTIVE",
+      "issue_ref": "github:2008hitch-afk/centrochange_core/issues/201",
+      "authorization_ref": "github:2008hitch-afk/centrochange_core/issues/201",
+      "dependencies": [],
+      "acceptance": [],
+      "tests": [],
+      "skill_runs": {},
+      "review": {
+        "status": "PENDING"
+      },
+      "result_report": "",
+      "commit_sha": "",
+      "risk_flags": [],
+      "approvals": {},
+      "implementer": "ChatGPT-assisted isolated branch; independent reviewer pending",
+      "ui_impact": "YES",
+      "ui_rationale": "Guest booking wizard is materially redesigned",
+      "ui_identity_change": "NO",
+      "ui_design_contract": "",
+      "ui_interfaces": [
+        "PUBLIC_FIRST_MEETING"
+      ],
+      "uat_results": [],
+      "uat_report": "",
+      "owner_ui_acceptance": []
+    }
+  ]
 }

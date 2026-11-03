@@ -31,7 +31,7 @@ def _public_offer(configuration, mode, for_update=False):
 	from centrochange_core.scheduling.booking import snapshot
 	profile = snapshot(appointment_type, configuration.center)
 	try:
-		validate_free_offer(profile)
+		validate_free_offer(profile, mode)
 	except PublicOfferError:
 		frappe.throw('Il colloquio gratuito non è disponibile. Contatta la segreteria.', frappe.PermissionError)
 	return appointment_type, profile

@@ -28,7 +28,9 @@ def configured_type(mapping, mode):
     return mapping[mode].strip()
 
 
-def validate_free_offer(profile):
+def validate_free_offer(profile, mode):
+    if mode not in MODES:
+        raise PublicOfferError('Modalità non consentita.')
     try:
         duration = Decimal(str(profile["duration"]))
         price = Decimal(str(profile["cc_price_snapshot"]))
@@ -38,4 +40,12 @@ def validate_free_offer(profile):
         raise PublicOfferError("Il primo colloquio deve durare 20 minuti ed essere gratuito.")
     if profile.get("cc_currency_snapshot") != "EUR":
         raise PublicOfferError("La valuta del colloquio gratuito non è configurata.")
+    label = profile.get("cc_service_label")
+    if not isinstance(label, str):
+        raise PublicOfferError("Il servizio pubblico non ha una descrizione valida.")
+    canonical = label.casefold()
+    if (mode == "sede" and "sede" not in canonical) or (
+        mode == "online" and not any(word in canonical for word in ("online", "on-line", "a distanza"))
+    ):
+        raise PublicOfferError("Il servizio non distingue la modalità scelta.")
     return True
