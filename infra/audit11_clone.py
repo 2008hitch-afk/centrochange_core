@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -196,6 +198,28 @@ try:
     assert len(lines) == 1 and lines[0].get("status") == "PASS", "No verified Frappe result"
     assert lines[0]["count"] == 4
     print("AUDIT11_NATIVE_FRAPPE_ISOLATED_PASS", json.dumps(lines[0]), flush=True)
+
+    # Restart Gunicorn so workers load the updated site_config.json
+    clone.run_cmd(["docker", "exec", clone.BACKEND_CONTAINER, "pkill", "-f", "gunicorn"], check=False)
+    time.sleep(1)
+    clone.run_cmd([
+        "docker", "exec", "-d", "-w", "/home/frappe/frappe-bench/sites", clone.BACKEND_CONTAINER,
+        "/home/frappe/frappe-bench/env/bin/gunicorn",
+        "-b", "0.0.0.0:8000",
+        "-w", "2",
+        "--threads", "4",
+        "-t", "120",
+        "frappe.app:application",
+    ])
+    for _ in range(30):
+        time.sleep(1)
+        res = subprocess.run(
+            ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}",
+             "-H", f"Host: {clone.CLONE_SITE}", f"http://127.0.0.1:{clone.PORT}/primo_incontro"],
+            capture_output=True, text=True,
+        )
+        if res.stdout.strip() == "200":
+            break
 
     http_checks = run_http_acceptance()
     print("AUDIT11_HTTP_ISOLATED_PASS", json.dumps({"status": "PASS", "checks": http_checks}), flush=True)
