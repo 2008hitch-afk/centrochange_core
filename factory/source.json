@@ -1,0 +1,92 @@
+{
+  "factory": "EMPV AI Software Factory",
+  "sop_version": "1.1",
+  "upstream_repository": "empv26/empv-ai-software-factory",
+  "upstream_commit": "02818f47606bffdeea4d4fda49c6bb12e0e739f4",
+  "centrochange_baseline": "6bac0a1fdb9152711db30d6a9a14daaf69d4f8a4",
+  "adoption_issue": "https://github.com/2008hitch-afk/centrochange_core/issues/199",
+  "status": "BROWNFIELD_ADOPTION_DRAFT_NOT_DEPLOYED",
+  "note": "File copied byte-for-byte from upstream. Git blob SHAs are provenance, not a claim of execution or approval. Revisions require deliberate versioned migration.",
+  "files": {
+    ".agents/skills/handoff-analyst/SKILL.md": {
+      "origin": "template/.agents/skills/handoff-analyst/SKILL.md",
+      "blob_sha": "4e16209f41d0a42ac6d9954678d220222154e920"
+    },
+    ".agents/skills/solution-architect/SKILL.md": {
+      "origin": "template/.agents/skills/solution-architect/SKILL.md",
+      "blob_sha": "fa33c27a92494a28b6e88c5651052e8e78bdc432"
+    },
+    ".agents/skills/product-art-director/SKILL.md": {
+      "origin": "template/.agents/skills/product-art-director/SKILL.md",
+      "blob_sha": "8922575690680e05db448282002326767effdc56"
+    },
+    ".agents/skills/ux-prototyping/SKILL.md": {
+      "origin": "template/.agents/skills/ux-prototyping/SKILL.md",
+      "blob_sha": "d773ff5f51a2677cdf19d6f87f58cadcedf2fd66"
+    },
+    ".agents/skills/data-model-review/SKILL.md": {
+      "origin": "template/.agents/skills/data-model-review/SKILL.md",
+      "blob_sha": "df7cb57220abf3a9926b5e4d588ae51d6ab4c819"
+    },
+    ".agents/skills/vertical-slice-engineer/SKILL.md": {
+      "origin": "template/.agents/skills/vertical-slice-engineer/SKILL.md",
+      "blob_sha": "3f9db8dca778fcc3c394375613378b32365919fb"
+    },
+    ".agents/skills/qa-validation/SKILL.md": {
+      "origin": "template/.agents/skills/qa-validation/SKILL.md",
+      "blob_sha": "6171577dedd779c2ce76b853fe27b00c502c7537"
+    },
+    ".agents/skills/premium-ui-reviewer/SKILL.md": {
+      "origin": "template/.agents/skills/premium-ui-reviewer/SKILL.md",
+      "blob_sha": "fbee41628564e8017687cc9dbb3f1b814592d541"
+    },
+    ".agents/skills/security-review/SKILL.md": {
+      "origin": "template/.agents/skills/security-review/SKILL.md",
+      "blob_sha": "8142919ea115be776dfca652f2fe8fc083529b67"
+    },
+    ".agents/skills/release-engineer/SKILL.md": {
+      "origin": "template/.agents/skills/release-engineer/SKILL.md",
+      "blob_sha": "d578e81cb1061e9e675664373be5a77ad8f35786"
+    },
+    "SOP-v1.1.md": {
+      "origin": "SOP-v1.1.md",
+      "blob_sha": "6163c02a95f473664f65326372858acab4d148be"
+    },
+    "decisions/DECISION-002.md": {
+      "origin": "decisions/DECISION-002.md",
+      "blob_sha": "c2694af738717b6c9b3b8d5503463e2c3bc74bf2"
+    },
+    "docs/AUTOMATED-OWNER-UAT.md": {
+      "origin": "docs/AUTOMATED-OWNER-UAT.md",
+      "blob_sha": "4d2d44fc971556217ba18881977a9cc54c10739d"
+    },
+    "docs/EXPERIENCE-FIRST.md": {
+      "origin": "docs/EXPERIENCE-FIRST.md",
+      "blob_sha": "adc57d93baeb65f4a4b9bc12f69871fa510e7223"
+    },
+    "docs/UI-QUALITY-GATE.md": {
+      "origin": "docs/UI-QUALITY-GATE.md",
+      "blob_sha": "b32701e0532d5003da383a08f5764fee830ba410"
+    },
+    "docs/DEVELOPMENT-FEEDBACK-LOOP.md": {
+      "origin": "docs/DEVELOPMENT-FEEDBACK-LOOP.md",
+      "blob_sha": "966fcfa4ab10113fc53dff816b964e9350e91076"
+    },
+    "docs/HANDOFF-CONTRACT.md": {
+      "origin": "docs/HANDOFF-CONTRACT.md",
+      "blob_sha": "c7fec3569b53f72234890eabc6230d82ea2cbad4"
+    },
+    "scripts/goal_factory.py": {
+      "origin": "factory/goal_cli.py",
+      "blob_sha": "17197fb1067e9ba2cb3316eeb7dade0d19381200"
+    },
+    "scripts/dev_feedback.py": {
+      "origin": "templates/v1.1/scripts/dev_feedback.py",
+      "blob_sha": "8f0b51c78bd44fa1921ba88cae16fec3035fb0c5"
+    },
+    "factory/contract.json": {
+      "origin": "templates/v1.1/factory/contract.json",
+      "blob_sha": "ba1e91fb7316aa50f3ba4e874b396307a59c6d2e"
+    }
+  }
+}

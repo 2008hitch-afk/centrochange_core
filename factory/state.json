@@ -1,0 +1,8 @@
+{
+  "sop_id": "EMPV-AI-SOFTWARE-FACTORY",
+  "sop_version": "1.1",
+  "project_id": "CENTROCHANGE-HC-0005",
+  "handoff_ref": "github:2008hitch-afk/hitch-client-discovery/clients/HC-0005/CLIENT-CONTEXT-MANIFEST.yaml",
+  "notice": "Brownfield adoption. Historical goals and decisions remain in GitHub/HITCH; no historical goals are silently migrated. No new AUDIT-11 authorization is implied.",
+  "goals": []
+}

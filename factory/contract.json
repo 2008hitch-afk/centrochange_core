@@ -1,0 +1,103 @@
+{
+  "sop_id": "EMPV-AI-SOFTWARE-FACTORY",
+  "version": "1.1",
+  "execution_model": "GOAL_DRIVEN",
+  "description": "Founder approves outcomes and material decisions. Codex organizes internal tasks and phases autonomously; quality evidence is required at goal closure.",
+  "max_active_goals": 3,
+  "goal_types": {
+    "FOUNDATION": {
+      "required_skills": [
+        "solution-architect",
+        "data-model-review",
+        "product-art-director",
+        "ux-prototyping",
+        "premium-ui-reviewer"
+      ],
+      "founder_gate": true
+    },
+    "FEATURE": {
+      "required_skills": [
+        "vertical-slice-engineer",
+        "qa-validation"
+      ],
+      "founder_gate": false
+    },
+    "RELEASE": {
+      "required_skills": [
+        "release-engineer",
+        "qa-validation",
+        "security-review"
+      ],
+      "founder_gate": true
+    },
+    "MAINTENANCE": {
+      "required_skills": [
+        "qa-validation"
+      ],
+      "founder_gate": false
+    }
+  },
+  "risk_flags": [
+    "scope_change",
+    "sensitive_permissions",
+    "real_data",
+    "destructive_migration",
+    "new_paid_dependency",
+    "controlled_dev_deploy",
+    "production",
+    "security_exception"
+  ],
+  "internal_method_guide": [
+    "HANDOFF",
+    "ARCHITECTURE",
+    "UX",
+    "PLANNING",
+    "FOUNDATIONS",
+    "BUILD",
+    "QA_UAT",
+    "READINESS",
+    "GO_LIVE",
+    "CONTINUITY"
+  ],
+  "notice": "Local checks validate structure only. Founder approval, independent review identity, real skill execution and real-world test performance require external verification.",
+  "ui_uat_required_checks": [
+    "interactions",
+    "negative_cases",
+    "roles_permissions",
+    "data_persistence",
+    "responsive",
+    "visual_accessibility"
+  ],
+  "ui_uat_policy": "On any UI-impacting Goal, Codex must complete per-interface pre-UAT with proof before READY_FOR_REVIEW; Founder final acceptance per interface required for VERIFIED. Structural metadata is not authenticated test execution.",
+  "ui_required_skills": [
+    "ux-prototyping",
+    "premium-ui-reviewer"
+  ],
+  "ui_identity_skill": "product-art-director",
+  "ui_design_required_checks": [
+    "workflow_fit",
+    "approved_visual_fidelity",
+    "information_hierarchy",
+    "user_friendly_forms",
+    "responsive_quality"
+  ],
+  "ui_design_policy": "Every UI-impacting Goal needs an Owner-approved design contract with per-interface reference screenshots, task workflows and a separate reviewer. Structural validation checks declarations, not aesthetic quality, true approval or reviewer independence. Design identity changes require fresh Founder approval.",
+  "ui_experience_required_fields": [
+    "user_role",
+    "user_goal",
+    "entry_point",
+    "primary_action",
+    "success_outcome",
+    "journey_steps",
+    "backend_mapping",
+    "technical_fields_policy"
+  ],
+  "ui_experience_required_checks": [
+    "user_task_completed",
+    "plain_language",
+    "minimum_user_input",
+    "backend_complexity_hidden",
+    "error_recovery"
+  ],
+  "ui_experience_policy": "Experience-first: derive each UI journey from a real user role and outcome before UI layout and before binding Frappe/ERP data. Present only meaningful business inputs; internal DocType IDs and system configuration must be hidden or justified, not rendered by default. Independently test scenario completion with user-language actions and results; database integrity remains authoritative."
+}
