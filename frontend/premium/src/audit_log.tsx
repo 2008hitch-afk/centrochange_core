@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import { type Row, call, displayDate, romeToday } from './api'
-import { type Feedback, Button, DataTable, DateInput, Drawer, Field, Heading } from './ui'
+import { type Feedback, Button, DataTable, DateInput, Field, Heading } from './ui'
 import { auditActorName } from './display_names'
 
 const labels: Record<string, string> = {
@@ -231,10 +231,59 @@ export function AuditLog({ feedback }: { feedback: Feedback }) {
   const before = selected && !isSchedule ? parse(selected.before_state) : {}
   const after = selected && !isSchedule ? parse(selected.after_state) : {}
   const changes = Array.from(new Set([...Object.keys(before), ...Object.keys(after)])).filter(key => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+
+  useEffect(() => {
+    if (!selected) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelected(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selected])
+
+  if (selected) {
+    return <section className="panel audit-detail-page" role="dialog" aria-label={eventName(selected.event_type)}>
+      <header className="patient-page-header">
+        <button type="button" className="patient-back" onClick={() => setSelected(null)} aria-label="Chiudi">← Torna al registro</button>
+        <h1>{eventName(selected.event_type)}</h1>
+      </header>
+      <div className="detail-section">
+        <div className="detail-summary">
+          <p>{eventStamp(selected.event_time)} · {auditActorName(selected.actor)}</p>
+          <p>Riferimento: {String(selected.reference_name ?? '—')}</p>
+        </div>
+        <h3>Motivo</h3>
+        <p>{reasonName(selected)}</p>
+        <details>
+          <summary>Dettagli tecnici</summary>
+          <p>Tipo evento: {String(selected.event_type ?? '—')}</p>
+          <p>Autore originale: {String(selected.actor ?? '—')}</p>
+          <p>Tipo riferimento: {String(selected.reference_doctype ?? '—')}</p>
+        </details>
+        {reasonName(selected) !== String(selected.reason ?? '—') && (
+          <details>
+            <summary>Motivo originale registrato</summary>
+            <p>{String(selected.reason)}</p>
+          </details>
+        )}
+        <h3>Cosa è cambiato</h3>
+        {isSchedule && scheduleDiff ? (
+          scheduleDiff.status === 'malformed' ? <p>Dati dell’orario non disponibili o non conformi.</p> :
+          scheduleDiff.status === 'empty' ? <p>Nessuna fascia oraria definita.</p> :
+          scheduleDiff.status === 'identical' ? <p>Nessuna variazione di orario registrata.</p> :
+          <div className="audit-changes">{scheduleDiff.changes.map(c => <div key={c.day}><strong>{c.dayItalian}</strong><p><span>Prima:</span> {c.beforeText}</p><p><span>Dopo:</span> {c.afterText}</p></div>)}</div>
+        ) : changes.length ? (
+          <div className="audit-changes">{changes.map(key => <div key={key}><strong>{label(key, String(selected.event_type ?? ''))}</strong><p><span>Prima:</span> {textValue(key, before[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(before, key))}</p><p><span>Dopo:</span> {textValue(key, after[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(after, key))}</p></div>)}</div>
+        ) : (
+          <p>Dettaglio della modifica non disponibile in forma comparabile.</p>
+        )}
+        <p className="scope-note">Il registro conserva l'evento originale; questa vista mostra solo la differenza leggibile.</p>
+      </div>
+    </section>
+  }
+
   return <><Heading eyebrow="AMMINISTRAZIONE" title="Registro modifiche" subtitle="Consulta le modifiche registrate, chi le ha effettuate e il relativo motivo." />
     <section className="panel"><div className="panel-toolbar audit-filters"><div className="panel-title"><h2>Eventi</h2><p>Filtra per periodo o riferimento. L'ora mostrata è quella registrata dal sito.</p></div><div className="toolbar-right"><Field label="Dal"><DateInput value={start} onChange={value => { setStart(value); setOffset(0) }} required /></Field><Field label="Al"><DateInput value={end} onChange={value => { setEnd(value); setOffset(0) }} required /></Field></div></div>
       <form className="audit-search" onSubmit={e => { e.preventDefault(); setQuery(reference); setOffset(0) }}><Field label="Riferimento documento"><input value={reference} onChange={e => setReference(e.target.value)} maxLength={140} placeholder="Codice o parte del codice" /></Field><Button type="submit" variant="secondary">Cerca</Button></form>
       {error && <p className="inline-error" role="alert">{error}</p>}{loading ? <p className="panel-loading" role="status">Caricamento eventi…</p> : <DataTable rows={rows} columns={[{ key: 'event_type', label: 'Evento', render: value => eventName(value) }, { key: 'event_time', label: 'Quando', render: eventStamp }, { key: 'actor', label: 'Autore', render: auditActorName }, { key: 'reference_name', label: 'Riferimento' }, { key: 'reason', label: 'Motivo', render: (_value, row) => reasonName(row) }]} onRow={setSelected} />}
       <div className="audit-pager"><Button variant="secondary" disabled={offset === 0} onClick={() => setOffset(value => Math.max(0, value - 100))}>Precedenti</Button><span>Pagina {Math.floor(offset / 100) + 1}</span><Button variant="secondary" disabled={!hasMore} onClick={() => setOffset(value => value + 100)}>Successivi</Button></div>
-    </section>{selected && <Drawer title={eventName(selected.event_type)} onClose={() => setSelected(null)}><div className="detail-summary"><p>{eventStamp(selected.event_time)} · {auditActorName(selected.actor)}</p><p>Riferimento: {String(selected.reference_name ?? '—')}</p></div><div className="detail-section"><h3>Motivo</h3><p>{reasonName(selected)}</p><details><summary>Dettagli tecnici</summary><p>Tipo evento: {String(selected.event_type ?? '—')}</p><p>Autore originale: {String(selected.actor ?? '—')}</p><p>Tipo riferimento: {String(selected.reference_doctype ?? '—')}</p></details>{reasonName(selected) !== String(selected.reason ?? '—') && <details><summary>Motivo originale registrato</summary><p>{String(selected.reason)}</p></details>}<h3>Cosa è cambiato</h3>{isSchedule && scheduleDiff ? (scheduleDiff.status === 'malformed' ? <p>Dati dell’orario non disponibili o non conformi.</p> : scheduleDiff.status === 'empty' ? <p>Nessuna fascia oraria definita.</p> : scheduleDiff.status === 'identical' ? <p>Nessuna variazione di orario registrata.</p> : <div className="audit-changes">{scheduleDiff.changes.map(c => <div key={c.day}><strong>{c.dayItalian}</strong><p><span>Prima:</span> {c.beforeText}</p><p><span>Dopo:</span> {c.afterText}</p></div>)}</div>) : changes.length ? <div className="audit-changes">{changes.map(key => <div key={key}><strong>{label(key, String(selected.event_type ?? ''))}</strong><p><span>Prima:</span> {textValue(key, before[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(before, key))}</p><p><span>Dopo:</span> {textValue(key, after[key], String(selected.event_type ?? ''), Object.prototype.hasOwnProperty.call(after, key))}</p></div>)}</div> : <p>Dettaglio della modifica non disponibile in forma comparabile.</p>}<p className="scope-note">Il registro conserva l'evento originale; questa vista mostra solo la differenza leggibile.</p></div></Drawer>}</>
+    </section></>
 }

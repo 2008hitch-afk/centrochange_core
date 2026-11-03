@@ -1,0 +1,115 @@
+{
+  "results": [
+    {
+      "id": "UX-01A",
+      "title": "Agenda Drawer: Payment summary banner displayed for Manager",
+      "status": "PASS",
+      "detail": "Paziente 7 — 1 seduta da saldare · Blocco prenotazioniApri situazione pagamenti →"
+    },
+    {
+      "id": "UX-01B",
+      "title": "Agenda Drawer: Click \"Apri situazione pagamenti\" navigates to Patient Pagamenti tab",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-02A",
+      "title": "Agenda Drawer: Pure Professional sees ZERO payment banner",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-02B",
+      "title": "Agenda Drawer: Pure Professional triggers ZERO collections API calls",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-03A",
+      "title": "Patient Scheda: Pagamenti tab present for CC Secretariat",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-03B",
+      "title": "Patient Scheda: Pagamenti tab contains metrics, operational debts, fiscal banner, and report link",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-04A",
+      "title": "Patient Scheda: Pagamenti tab completely absent for CC Professional",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-04B",
+      "title": "Patient Scheda: Direct URL tab=Pagamenti rejected and falls back safely for Professional",
+      "status": "PASS",
+      "detail": "active=Riepilogo"
+    },
+    {
+      "id": "UX-05A",
+      "title": "FinanceReportsPage: Opened as full-page panel, ZERO drawer",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-05B",
+      "title": "FinanceReportsPage: All 3 mandatory tabs present",
+      "status": "PASS",
+      "detail": "Per paziente, Per soggetto fiscale, Per professionista"
+    },
+    {
+      "id": "UX-05C",
+      "title": "FinanceReportsPage: \"Per soggetto fiscale\" tab active with customer list",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-05D",
+      "title": "FinanceReportsPage: \"Per professionista\" tab active with practitioner selector",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-05E",
+      "title": "FinanceReportsPage: \"Torna al riepilogo\" returns cleanly to operational reports",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-06A",
+      "title": "AuditLog detail: Uses responsive full page .audit-detail-page, ZERO drawer",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-06B",
+      "title": "ServiceCatalog detail: Uses responsive full page .service-detail-page, ZERO drawer",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-06C",
+      "title": "MasterArchive detail: Uses responsive full page .archive-detail-page, ZERO drawer",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-07A",
+      "title": "Mobile 390x844: Agenda Drawer payment summary visible and responsive",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "UX-07B",
+      "title": "Mobile 390x844: Patient Pagamenti tab loads cleanly",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "passCount": 18,
+  "failCount": 0,
+  "timestamp": "2026-11-03T10:51:13.117Z"
+}

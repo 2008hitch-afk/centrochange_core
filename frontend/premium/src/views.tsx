@@ -11,7 +11,7 @@ import { ProfessionalWorkflow } from './professional_workflow'
 import { PatientAssignments } from './patient_assignments'
 import { PatientPackages, availableUnitLabel } from './patient_packages'
 import { PatientDetail } from './patient_detail'
-import { FinanceReports } from './finance_reports'
+import { FinanceReports, FinanceReportsPage } from './finance_reports'
 import { financeFieldLabel, financeFieldValue } from './finance_locale'
 import { NoteHistory } from './note_history'
 import { AppointmentTimeline } from './appointment_timeline'
@@ -213,7 +213,11 @@ function PractitionerMultiSelect({
   )
 }
 
-export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refreshBoot: () => Promise<void> }) {
+export function Agenda({ boot, center, feedback, refreshBoot, financeBoot, onOpenPatientPayments }: Context & {
+  refreshBoot: () => Promise<void>;
+  financeBoot?: FinanceBoot | null;
+  onOpenPatientPayments?: (patientId: string) => void;
+}) {
   const isManager = boot.roles.includes('CC Manager')
   const isSecretariat = boot.roles.includes('CC Secretariat')
   const isProfessional = boot.roles.includes('CC Professional') && !isManager && !isSecretariat
@@ -277,7 +281,7 @@ export function Agenda({ boot, center, feedback, refreshBoot }: Context & { refr
     <section className="panel calendar-panel"><div className="panel-toolbar"><div className="toolbar-left"><div className="segmented"><button className={mode === 'day' ? 'selected' : ''} onClick={() => setMode('day')}>Giorno</button><button className={mode === 'week' ? 'selected' : ''} onClick={() => setMode('week')}>Settimana</button></div><button className="icon-button bordered" title="Precedente" aria-label="Periodo precedente" onClick={() => step(-1)}><ChevronLeft /></button><button className="icon-button bordered" title="Successivo" aria-label="Periodo successivo" onClick={() => step(1)}><ChevronRight /></button><Button variant="secondary" onClick={() => setDate(wallDate(romeToday(), '12:00'))}>Oggi</Button><div className="calendar-popover-wrap"><Button variant="secondary" onClick={() => setCalendarOpen(open => !open)} aria-expanded={calendarOpen} aria-label="Apri calendario"><CalendarDays size={16} /> Scegli data</Button>{calendarOpen && <CalendarPopover current={date} onSelect={setDate} onClose={() => setCalendarOpen(false)} />}</div></div><div className="toolbar-right">{isProfessional ? <span className="agenda-practitioner-label">Professionista: <strong>{practitionerName(boot.practitioners[0] ?? { name: effectivePractitioners[0], practitioner_name: 'Mio profilo' } as Practitioner)}</strong></span> : <><PractitionerMultiSelect practitioners={boot.practitioners} selected={selectedPractitioners} onChange={setSelectedPractitioners} /><select aria-label="Professionista" value={selectedPractitioners.length === 1 ? selectedPractitioners[0] : isAll ? 'all' : selectedPractitioners.join(',')} onChange={e => { const val = e.target.value; setSelectedPractitioners(val === 'all' || !val ? [] : [val]) }} style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0, margin: 0, padding: 0 }} tabIndex={-1}><option value="all">Tutti i professionisti</option>{boot.practitioners.map(p => <option key={p.name} value={p.name}>{practitionerName(p)}</option>)}</select></>}<button className="icon-button bordered" title="Aggiorna" aria-label="Aggiorna agenda" onClick={() => setReload(x => x + 1)}><RefreshCw /></button></div></div>
       {error && <p className="inline-error" role="alert">{error}</p>}
       {loading ? <div className="calendar-loading" role="status">Caricamento agenda…</div> : !resources.length ? <Empty title="Nessun professionista disponibile" detail="Verifica l'assegnazione al centro selezionato." /> : mode === 'week' ? <WeekGrid days={days.map(iso)} resources={resources} rows={rows} schedules={schedules} onSelect={setSelected} onBook={(day, professional) => { setDate(wallDate(day, '12:00')); setBookingPractitioner(professional); setBooking(true) }} /> : <div className="calendar-wrap"><Calendar localizer={localizer} culture="it" events={events} resources={resources} resourceIdAccessor="id" resourceTitleAccessor="title" view={Views.DAY} date={date} onNavigate={setDate} onView={v => setMode(v === Views.WEEK ? 'week' : 'day')} toolbar={false} popup selectable min={wallDate(iso(date), '07:00')} max={wallDate(iso(date), '21:00')} step={30} timeslots={2} startAccessor="start" endAccessor="end" onSelectEvent={e => setSelected(e.row)} onSelectSlot={slot => { setDate(slot.start); setBookingPractitioner(bookingPractitionerId); setBooking(true) }} eventPropGetter={e => ({ className: e.row.status === 'Cancelled' ? 'event-cancelled' : e.row.cc_performed ? 'event-done' : 'event-booked' })} messages={{ noEventsInRange: 'Nessuna seduta nel periodo', showMore: count => `+ ${count} altre`, allDay: 'Tutto il giorno' }} /></div>}
-    </section>{booking && <Booking boot={boot} center={center} onClose={() => setBooking(false)} onSuccess={refresh} feedback={feedback} date={iso(date)} initialPractitioner={bookingPractitioner} />}{selected && <AppointmentDetail row={selected} boot={boot} center={center} onClose={() => setSelected(null)} onSuccess={refresh} feedback={feedback} onOpenDayClosure={d => { setSelected(null); setDayClosureInitialDate(d); setDayClosureOpen(true) }} />}{dayClosureOpen && <DayClosureModal boot={boot} center={center} initialDate={dayClosureInitialDate} onClose={() => setDayClosureOpen(false)} onSuccess={() => { setDayClosureOpen(false); refresh() }} feedback={feedback} />}</>
+    </section>{booking && <Booking boot={boot} center={center} onClose={() => setBooking(false)} onSuccess={refresh} feedback={feedback} date={iso(date)} initialPractitioner={bookingPractitioner} />}{selected && <AppointmentDetail row={selected} boot={boot} center={center} onClose={() => setSelected(null)} onSuccess={refresh} feedback={feedback} financeBoot={financeBoot} onOpenPatientPayments={onOpenPatientPayments} onOpenDayClosure={d => { setSelected(null); setDayClosureInitialDate(d); setDayClosureOpen(true) }} />}{dayClosureOpen && <DayClosureModal boot={boot} center={center} initialDate={dayClosureInitialDate} onClose={() => setDayClosureOpen(false)} onSuccess={() => { setDayClosureOpen(false); refresh() }} feedback={feedback} />}</>
 }
 
 function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPractitioner = '' }: { boot: Boot; center: string; onClose: () => void; onSuccess: () => void; feedback: Feedback; date: string; initialPractitioner?: string }) {
@@ -326,7 +330,27 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
 
 
 
-function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback, onOpenDayClosure }: { row: Appointment; boot: Boot; center: string; onClose: () => void; onSuccess: () => void; feedback: Feedback; onOpenDayClosure?: (date: string) => void }) {
+function AppointmentDetail({
+  row,
+  boot,
+  center,
+  onClose,
+  onSuccess,
+  feedback,
+  onOpenDayClosure,
+  financeBoot,
+  onOpenPatientPayments
+}: {
+  row: Appointment;
+  boot: Boot;
+  center: string;
+  onClose: () => void;
+  onSuccess: () => void;
+  feedback: Feedback;
+  onOpenDayClosure?: (date: string) => void;
+  financeBoot?: FinanceBoot | null;
+  onOpenPatientPayments?: (patientId: string) => void;
+}) {
   const overrideKeys = useRef<Record<string, string>>({})
   const [tab, setTab] = useState<'Seduta' | 'Storico' | 'Note'>('Seduta')
   const [history, setHistory] = useState<Row | null>(null)
@@ -347,6 +371,29 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback, on
   const [privateNote, setPrivateNote] = useState(false)
   const [corrects, setCorrects] = useState<string | null>(null)
   const { busy, error, run } = useAction(feedback, onSuccess)
+
+  const canViewPayments = Boolean(
+    financeBoot &&
+    !boot.roles.includes('CC Professional') &&
+    boot.roles.some(r => ['CC Manager', 'CC Secretariat', 'CC Finance', 'CC Accountant'].includes(r))
+  )
+  const [paymentPos, setPaymentPos] = useState<{
+    blocked: boolean;
+    debts: Array<{ doctype: string; name: string; amount: number; currency: string; due_date: string }>;
+    agreement?: { mode: string; due_date?: string } | null;
+  } | null>(null)
+  const [paymentPosLoading, setPaymentPosLoading] = useState(false)
+
+  useEffect(() => {
+    if (!canViewPayments || !row.patient) return
+    let live = true
+    setPaymentPosLoading(true)
+    finance<{ blocked: boolean; debts: any[]; agreement?: any }>('collections.position', { patient: row.patient, center })
+      .then(res => { if (live) setPaymentPos(res) })
+      .catch(() => { if (live) setPaymentPos(null) })
+      .finally(() => { if (live) setPaymentPosLoading(false) })
+    return () => { live = false }
+  }, [canViewPayments, row.patient, center])
   useEffect(() => {
     if (tab === 'Seduta') return
     let live = true
@@ -431,20 +478,53 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback, on
     return () => clearInterval(timer)
   }, [action])
   const { isTimely: isTimelyNotice, noticeDisplay } = computeCancellationNotice(row.appointment_date, row.appointment_time, cancelNowMs)
-  return <><Drawer title={fullName(row)} onClose={onClose}><div className="detail-summary"><Chip tone={row.status === 'Cancelled' ? 'bad' : row.cc_performed ? 'good' : 'blue'}>{row.status === 'Cancelled' ? (row.cc_late_cancellation ? 'Cancellata tardiva (< 48h)' : 'Cancellata tempestiva (≥ 48h)') : row.cc_performed ? 'Svolta' : 'Prenotata'}</Chip><h3>{demoText(row.cc_service_label) || 'Seduta'}</h3><p><CalendarDays size={16} /> {displayDate(row.appointment_date)} · {time(row.appointment_time)}</p><p><UserRound size={16} /> {practitionerNameFor(row.practitioner, boot.practitioners, row.practitioner_name)}</p><p><Clock3 size={16} /> {row.duration} min · {money(row.cc_price_snapshot, row.cc_currency_snapshot || 'EUR')}</p></div><div className="detail-tabs" role="tablist">{(['Seduta', 'Storico', 'Note'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div>
+  return <><Drawer title={fullName(row)} onClose={onClose}><div className="detail-summary"><Chip tone={row.status === 'Cancelled' ? 'bad' : row.cc_performed ? 'good' : 'blue'}>{row.status === 'Cancelled' ? (row.cc_late_cancellation ? 'Cancellata tardiva (< 48h)' : 'Cancellata tempestiva (≥ 48h)') : row.cc_performed ? 'Svolta' : 'Prenotata'}</Chip><h3>{demoText(row.cc_service_label) || 'Seduta'}</h3><p><CalendarDays size={16} /> {displayDate(row.appointment_date)} · {time(row.appointment_time)}</p><p><UserRound size={16} /> {practitionerNameFor(row.practitioner, boot.practitioners, row.practitioner_name)}</p><p><Clock3 size={16} /> {row.duration} min · {money(row.cc_price_snapshot, row.cc_currency_snapshot || 'EUR')}</p>{canViewPayments && (
+    <div className={`appointment-payment-summary ${!paymentPos ? 'warn' : paymentPos.blocked ? 'bad' : paymentPos.debts.length > 0 ? 'warn' : 'good'}`}>
+      <div className="payment-summary-header">
+        {paymentPosLoading ? (
+          <span>Caricamento situazione pagamenti…</span>
+        ) : paymentPos ? (
+          <span>
+            {demoPatient(row.patient, row.patient_name)} — {paymentPos.debts.length === 0
+              ? 'Nessuna seduta da saldare · Posizione regolare'
+              : `${paymentPos.debts.filter(d => d.doctype === 'Patient Appointment').length} ${paymentPos.debts.filter(d => d.doctype === 'Patient Appointment').length === 1 ? 'seduta da saldare' : 'sedute da saldare'}${paymentPos.debts.filter(d => d.doctype === 'Sales Invoice').length > 0 ? ` (${paymentPos.debts.filter(d => d.doctype === 'Sales Invoice').length} fatt. aperte)` : ''}${paymentPos.blocked ? ' · Blocco prenotazioni' : ''}`}
+          </span>
+        ) : (
+          <span>Verifica pagamenti paziente disponibile</span>
+        )}
+      </div>
+      {onOpenPatientPayments && (
+        <button
+          type="button"
+          className="payment-link-btn"
+          onClick={() => {
+            onClose()
+            onOpenPatientPayments(row.patient)
+          }}
+        >
+          Apri situazione pagamenti →
+        </button>
+      )}
+    </div>
+  )}</div><div className="detail-tabs" role="tablist">{(['Seduta', 'Storico', 'Note'] as const).map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{t}</button>)}</div>
     {tab === 'Seduta' && <><div className="detail-section"><h3>Stato operativo</h3><p>Lo stato della prenotazione e la chiusura della seduta sono distinti.</p><p>Stato della chiusura della seduta: {closureName(row.cc_closure_state)}<br />Economia: {economyName(row.cc_economic_state)}</p>{row.status === 'Cancelled' && <p className="scope-note">{row.cc_late_cancellation ? 'Disdetta tardiva (comunicata a meno di 48 ore dalla seduta).' : 'Disdetta tempestiva (comunicata con almeno 48 ore di preavviso).'}{row.cc_economic_state === 'Waived' ? ' Applicata deroga economica autorizzata.' : ''}</p>}{row.cc_closure_state === 'Auto Locked' && !administrative && <><p className="scope-note">La chiusura della seduta è bloccata automaticamente per superamento dei termini giornalieri.</p>{onOpenDayClosure && <div style={{ marginTop: 8 }}><Button variant="secondary" onClick={() => onOpenDayClosure(row.appointment_date)}>Completa seduta arretrata</Button></div>}</>}<div className="action-grid">{actions.map(a => <Button key={a.id} variant={a.id === 'close' ? 'primary' : a.id === 'cancel' ? 'danger' : 'secondary'} onClick={() => setAction(a.id)}>{a.label}</Button>)}</div></div>{action && <form className="action-form" onSubmit={e => { e.preventDefault(); void submit() }}><h3>{actions.find(a => a.id === action)?.label}</h3>{action === 'cancel' && <div className="cancellation-preview-card" style={{ background: 'var(--surface-sunken, #f8fafc)', border: '1px solid var(--border-subtle, #e2e8f0)', borderRadius: 8, padding: 14, marginBottom: 16 }}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}><span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted, #64748b)' }}>Preavviso stimato: <strong>{noticeDisplay}</strong></span><Chip tone={isTimelyNotice ? 'good' : 'warn'}>{isTimelyNotice ? 'Disdetta tempestiva (≥ 48h)' : 'Disdetta tardiva (< 48h)'}</Chip></div><div style={{ fontSize: '0.9rem', lineHeight: 1.45, marginBottom: 8, color: 'var(--text-main, #0f172a)' }}>{isTimelyNotice ? <p style={{ margin: 0 }}><strong>Esito previsto:</strong> Cancellazione con preavviso pari o superiore a 48 ore. La seduta risulterà <strong>non dovuta</strong> e l’eventuale quota pacchetto riservata verrà rilasciata alla disponibilità del paziente.</p> : <p style={{ margin: 0 }}><strong>Esito previsto:</strong> Cancellazione con preavviso inferiore a 48 ore. La seduta verrà registrata come <strong>disdetta tardiva</strong> con tariffa a carico del paziente o consumo della quota pacchetto (importo dovuto secondo tariffa o pacchetto), salvo eventuale deroga economica motivata autorizzata da Segreteria o Direzione.</p>}</div><p className="scope-note" style={{ margin: 0, fontSize: '0.78rem' }}>Stima calcolata secondo il fuso Europe/Rome ({isTimelyNotice ? '≥ 48 ore' : '< 48 ore'}). La verifica definitiva della soglia e la registrazione della disdetta avvengono in modo atomico sul server alla conferma.</p></div>}{action === 'waive' && <p className="scope-note">La deroga economica annulla l’addebito o riaccredita l’unità al pacchetto del paziente, conservando inalterato l’evento di disdetta tardiva nel registro di audit.</p>}{action === 'move' && <div className="form-grid"><Field label="Nuova data"><DateInput value={moveDate} onChange={value => { setMoveDate(value); setPaymentBlock(null) }} required /></Field><Field label="Nuova ora"><Time24Input value={moveTime} onChange={value => { setMoveTime(value); setPaymentBlock(null) }} required /></Field></div>}{action === 'close' && <><label className="checkbox-row"><input type="checkbox" checked={paid} onChange={e => { setPaid(e.target.checked); setPaymentMethod('') }} /> Pagata</label>{paid && <><Field label="Metodo di pagamento" required><select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} required><option value="">Seleziona un metodo</option>{boot.payment_methods.map(p => <option key={p} value={p}>{paymentMethodLabel(p)}</option>)}</select></Field><p className="scope-note">La scelta registra il pagamento operativo, non una fattura o un incasso contabile. Se compaiono più configurazioni simili, verifica quale utilizzare prima di confermare.</p></>}</>}<Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field><FormError error={action === 'move' ? moveError : error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setAction(''); setPaymentBlock(null) }}>Annulla</Button><Button disabled={busy || moveBusy} type="submit">{busy || moveBusy ? 'Salvataggio…' : 'Conferma'}</Button></div></form>}</>}
     {tab === 'Storico' && <div className="detail-section"><h3>Eventi della seduta</h3><p className="scope-note">Modifiche e motivi relativi a questa seduta. Le versioni delle note sono nella scheda Note.</p>{eventsError && <p className="inline-error" role="alert">{eventsError}</p>}{!events && !eventsError ? <p role="status">Caricamento eventi…</p> : events && <AppointmentTimeline rows={events} />}<h3>Altre sedute del paziente</h3>{!history ? <p role="status">Caricamento sedute…</p> : entries('appointments').length ? <div className="timeline">{entries('appointments').map((a, i) => <article key={i}><strong>{displayDate(a.appointment_date)} · {demoText(a.cc_service_label) || 'Seduta'}</strong><span>{closureName(a.cc_closure_state)} · {economyName(a.cc_economic_state)}</span></article>)}</div> : <Empty title="Nessun'altra seduta nel centro" />}<h3>Pacchetti</h3>{entries('packages').map((p, i) => <p key={i}>{demoText(p.label)} · Residue: {String(p.remaining)}</p>)}</div>}
     {tab === 'Note' && <div className="detail-section"><h3>Note organizzative</h3><NoteHistory rows={entries('organizational_notes')} onCorrect={n => { setNote(String(n.content ?? '')); setPrivateNote(false); setCorrects(String(n.name)) }} />{boot.roles.includes('CC Professional') && <><h3>Note riservate</h3><NoteHistory rows={entries('private_notes')} privateNotes onCorrect={n => { setNote(String(n.content ?? '')); setPrivateNote(true); setCorrects(String(n.name)) }} /></>}<form onSubmit={e => { e.preventDefault(); void run(() => ops('notes.add_note', { patient: row.patient, center, content: note, private: privateNote ? 1 : 0, corrects }, true), 'Nota registrata.').then(ok => { if (ok) { setNote(''); setCorrects(null); setHistory(null); void ops<Row>('workspace.patient_history', { patient: row.patient, center }).then(setHistory) } }) }}><Field label={corrects ? "Rettifica nota" : "Nuova nota"}><textarea required value={note} onChange={e => setNote(e.target.value)} maxLength={100000} /></Field>{boot.roles.includes('CC Professional') && <label className="checkbox-row"><input type="checkbox" checked={privateNote} onChange={e => setPrivateNote(e.target.checked)} /> Nota professionale riservata</label>}<FormError error={error} /><Button disabled={busy || !note} type="submit">{corrects ? "Registra rettifica" : "Aggiungi nota"}</Button></form></div>}
   </Drawer>{paymentBlock && <Modal title="Verifica pagamenti prima dello spostamento" onClose={() => { setPaymentBlock(null); setMoveError('') }}><p className="scope-note">La prenotazione resta invariata finché la verifica non viene completata.</p>{paymentBlock.can_override ? <form onSubmit={e => { e.preventDefault(); void authorizeAndMove() }}><p>Posizioni che impediscono lo spostamento:</p><ul className="payment-block-list">{paymentBlock.debts.map((debt, index) => <li key={`${debt.reference_doctype}:${debt.reference_name}`}><strong>{debt.reference_doctype === 'Sales Invoice' ? 'Fattura' : 'Seduta non fatturata'} {index + 1}</strong><span>{money(debt.amount, debt.currency)} · scadenza {displayDate(debt.due_date)} · {centerNameFor(debt.center, boot.centers)}</span></li>)}</ul><p className="scope-note">Debito, fatture e scadenze originarie restano conservati nello storico.</p><Field label="Motivazione della deroga" required><textarea value={overrideReason} onChange={e => setOverrideReason(e.target.value)} required maxLength={2000} /></Field><Field label="Nuova scadenza" required><DateInput value={overrideDue} onChange={setOverrideDue} required /></Field><FormError error={moveError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => { setPaymentBlock(null); setMoveError('') }}>Annulla</Button><Button disabled={moveBusy || !overrideReason.trim() || !overrideDue} type="submit">{moveBusy ? 'Verifica in corso…' : 'Autorizza e procedi'}</Button></div></form> : <><p role="alert">Serve una verifica dei pagamenti. Contatta la segreteria o la Direzione: il tuo ruolo non può autorizzare una deroga.</p><div className="form-actions"><Button onClick={() => setPaymentBlock(null)}>Chiudi</Button></div></>}</Modal>}</>
 }
 
-export function Patients({ boot, center, feedback, refreshBoot }: Context & { refreshBoot: () => Promise<void> }) {
+export function Patients({ boot, center, feedback, refreshBoot, financeBoot, onOpenReport }: Context & {
+  refreshBoot: () => Promise<void>;
+  financeBoot?: FinanceBoot | null;
+  onOpenReport?: (patientId?: string) => void;
+}) {
   const [search, setSearch] = useState('')
   const [rows, setRows] = useState<Patient[]>(boot.patients)
   const [selected, setSelected] = useState<Patient | null>(() => {
     const id = new URLSearchParams(location.search).get('patient')
     return id ? boot.patients.find(row => row.name === id) ?? { name: id, patient_name: '' } : null
   })
+  const initialTab = new URLSearchParams(location.search).get('tab') as 'Riepilogo' | 'Sedute' | 'Assegnazioni' | 'Note' | 'Pacchetti' | 'Pagamenti' | null
   const listScroll = useRef(0)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -459,13 +539,13 @@ export function Patients({ boot, center, feedback, refreshBoot }: Context & { re
   }, [boot.patients])
   const openPatient = (patient: Patient) => {
     listScroll.current = scrollY
-    const url = new URL(location.href); url.searchParams.set('patient', patient.name)
+    const url = new URL(location.href); url.searchParams.set('patient', patient.name); url.searchParams.delete('tab')
     history.pushState(null, '', url)
     setSelected(patient)
     window.scrollTo(0, 0)
   }
   const closePatient = () => {
-    const url = new URL(location.href); url.searchParams.delete('patient')
+    const url = new URL(location.href); url.searchParams.delete('patient'); url.searchParams.delete('tab')
     history.replaceState(null, '', url)
     setSelected(null)
     requestAnimationFrame(() => window.scrollTo(0, listScroll.current))
@@ -482,7 +562,7 @@ export function Patients({ boot, center, feedback, refreshBoot }: Context & { re
       .catch(cause => { if (live) { setRows([]); setError(getError(cause)); setLoading(false) } })
     return () => { live = false }
   }, [center, search, boot])
-  return selected ? <PatientDetail key={`${center}:${selected.name}`} boot={boot} patient={selected} center={center} feedback={feedback} onClose={closePatient} onSuccess={() => { void refreshBoot() }} /> : <><Heading eyebrow="PERCORSO PAZIENTE" title="Pazienti" subtitle="Cerca, consulta e segui il percorso operativo nel centro." /><section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco pazienti</h2><p>{rows.length} {rows.length === 1 ? 'risultato' : 'risultati'} nel centro selezionato</p></div><label className="search-inline"><Search size={17} /><input placeholder="Cerca per nome o codice" aria-label="Cerca pazienti" value={search} onChange={event => setSearch(event.target.value)} /></label></div>{loading && <p className="panel-loading" role="status">Caricamento pazienti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{truncated && <p className="scope-note">Mostrati i primi 50 risultati. Affina la ricerca.</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'patient_name', label: 'Paziente', render: (value, row) => <><strong>{demoPatient(row.name, value, row.first_name, row.last_name)}</strong>{row.active_assignment === false && <Chip tone="warn">Storico</Chip>}</> }, { key: 'name', label: '', render: () => <ArrowRight size={17} /> }]} onRow={row => openPatient(row as Patient)} /> : <Empty title="Nessun paziente trovato nel centro." />)}</section></>
+  return selected ? <PatientDetail key={`${center}:${selected.name}`} boot={boot} financeBoot={financeBoot} patient={selected} center={center} feedback={feedback} initialTab={initialTab ?? undefined} onOpenReport={onOpenReport} onClose={closePatient} onSuccess={() => { void refreshBoot() }} /> : <><Heading eyebrow="PERCORSO PAZIENTE" title="Pazienti" subtitle="Cerca, consulta e segui il percorso operativo nel centro." /><section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco pazienti</h2><p>{rows.length} {rows.length === 1 ? 'risultato' : 'risultati'} nel centro selezionato</p></div><label className="search-inline"><Search size={17} /><input placeholder="Cerca per nome o codice" aria-label="Cerca pazienti" value={search} onChange={event => setSearch(event.target.value)} /></label></div>{loading && <p className="panel-loading" role="status">Caricamento pazienti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{truncated && <p className="scope-note">Mostrati i primi 50 risultati. Affina la ricerca.</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'patient_name', label: 'Paziente', render: (value, row) => <><strong>{demoPatient(row.name, value, row.first_name, row.last_name)}</strong>{row.active_assignment === false && <Chip tone="warn">Storico</Chip>}</> }, { key: 'name', label: '', render: () => <ArrowRight size={17} /> }]} onRow={row => openPatient(row as Patient)} /> : <Empty title="Nessun paziente trovato nel centro." />)}</section></>
 }
 
 export function Professionals({ boot, center }: { boot: Boot; center: string }) {
@@ -568,20 +648,51 @@ export function ServiceCatalog({ boot, center }: { boot: Boot; center: string })
   const [selected, setSelected] = useState<(typeof boot.services)[number] | null>(null)
   const search = query.trim().toLocaleLowerCase('it-IT')
   const services = boot.services.filter(service => `${demoText(service.cc_service_label)} ${service.cc_service_label ?? ''} ${service.name}`.toLocaleLowerCase('it-IT').includes(search))
+
+  if (selected) {
+    return <article className="panel service-detail-page" role="dialog" aria-label={demoText(selected.cc_service_label || selected.name)}>
+      <header className="patient-page-header">
+        <button className="patient-back" type="button" onClick={() => setSelected(null)} aria-label="Chiudi">← Torna ai servizi</button>
+        <h1>{demoText(selected.cc_service_label || selected.name)}</h1>
+      </header>
+      <div className="detail-summary">
+        <Chip tone="blue">Servizio disponibile</Chip>
+        <p>Centro: {centerNameFor(center, boot.centers)}</p>
+      </div>
+      <div className="detail-section">
+        <h3>Scheda servizio</h3>
+        <dl className="property-list">
+          <div><dt>Codice</dt><dd>{demoText(selected.name)}</dd></div>
+          <div><dt>Articolo canonico</dt><dd>{demoText(selected.cc_service_item || '—')}</dd></div>
+          <div><dt>Durata</dt><dd>{selected.duration == null ? 'Da definire' : `${selected.duration} min`}</dd></div>
+          <div><dt>Tariffa corrente per prenotazione</dt><dd>{money(selected.cc_price_snapshot, selected.cc_currency_snapshot || 'EUR')}</dd></div>
+        </dl>
+        <p className="scope-note">Tariffa valida per le nuove prenotazioni. Le sedute già fissate conservano la tariffa registrata al momento della prenotazione.</p>
+        {boot.roles.includes('CC Manager') && <p className="scope-note">Per modificare durata, tariffa o abilitazione di questo servizio, consulta <strong>Archivi → Catalogo</strong>.</p>}
+      </div>
+    </article>
+  }
+
   return <><Heading eyebrow="OPERATIVITÀ" title="Servizi e professionisti" subtitle="Servizi disponibili nel centro selezionato e professionisti associati." />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Servizi del centro</h2><p>{centerNameFor(center, boot.centers)} · {services.length === boot.services.length ? `${boot.services.length} ${boot.services.length === 1 ? 'servizio' : 'servizi'}` : `${services.length} di ${boot.services.length} servizi trovati`} · tariffe e durate del catalogo servizi.</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Cerca servizi" placeholder="Cerca servizio" /></label></div><DataTable rows={services as unknown as Row[]} emptyTitle={query ? 'Nessun servizio trovato' : 'Nessun elemento'} emptyDetail={query ? 'Modifica la ricerca o azzera i filtri.' : 'Nessun servizio disponibile per questo centro.'} columns={[{ key: 'cc_service_label', label: 'Servizio', render: (value, row) => <strong>{demoText(value || row.name)}</strong> }, { key: 'duration', label: 'Durata', render: value => value == null ? 'Da definire' : `${String(value)} min` }, { key: 'cc_price_snapshot', label: 'Tariffa', render: (value, row) => money(value, String(row.cc_currency_snapshot || 'EUR')) }]} onRow={row => setSelected(row as typeof selected)} /></section>
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Servizi del centro</h2><p>{centerNameFor(center, boot.centers)} · {services.length === boot.services.length ? `${boot.services.length} ${boot.services.length === 1 ? 'servizio' : 'servizi'}` : `${services.length} di ${boot.services.length} servizi trovati`} · tariffe e durate del catalogo servizi.</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Cerca servizi" placeholder="Cerca servizio" /></label></div><DataTable rows={services as unknown as Row[]} emptyTitle={query ? 'Nessun servizio trovato' : 'Nessun elemento'} emptyDetail={query ? 'Modifica la ricerca o azzera i filtri.' : 'Nessun servizio disponibile per questo centro.'} columns={[{ key: 'cc_service_label', label: 'Servizio', render: (value, row) => <strong>{demoText(value || row.name)}</strong> }, { key: 'duration', label: 'Durata', render: value => value == null ? 'Da definire' : `${String(value)} min` }, { key: 'cc_price_snapshot', label: 'Tariffa', render: (value, row) => money(value, String(row.cc_currency_snapshot || 'EUR')) }]} onRow={row => setSelected(row as unknown as typeof selected)} /></section>
     <section className="panel catalog-practitioners"><div className="panel-toolbar"><div className="panel-title"><h2>Professionisti del centro</h2><p>Professionisti abilitati a operare nella sede selezionata.</p></div></div><div className="schedule-grid">{boot.practitioners.map(practitioner => <article className="schedule-card" key={practitioner.name}><span className="avatar">{practitionerName(practitioner).slice(0, 2).toLocaleUpperCase('it-IT')}</span><h3>{practitionerName(practitioner)}</h3><Chip tone="good">Attivo nel centro</Chip></article>)}</div>{!boot.practitioners.length && <Empty title="Nessun professionista attivo" />}</section>
-    {selected && <Drawer title={demoText(selected.cc_service_label || selected.name)} onClose={() => setSelected(null)}><div className="detail-summary"><Chip tone="blue">Servizio disponibile</Chip><p>Centro: {centerNameFor(center, boot.centers)}</p></div><div className="detail-section"><h3>Scheda servizio</h3><dl className="property-list"><div><dt>Codice</dt><dd>{demoText(selected.name)}</dd></div><div><dt>Articolo canonico</dt><dd>{demoText(selected.cc_service_item || '—')}</dd></div><div><dt>Durata</dt><dd>{selected.duration == null ? 'Da definire' : `${selected.duration} min`}</dd></div><div><dt>Tariffa corrente per prenotazione</dt><dd>{money(selected.cc_price_snapshot, selected.cc_currency_snapshot || 'EUR')}</dd></div></dl><p className="scope-note">Tariffa valida per le nuove prenotazioni. Le sedute già fissate conservano la tariffa registrata al momento della prenotazione.</p>{boot.roles.includes('CC Manager') && <p className="scope-note">Per modificare durata, tariffa o abilitazione di questo servizio, consulta <strong>Archivi → Catalogo</strong>.</p>}</div></Drawer>}
   </>
 }
 
 export { Availability } from './availability_view'
 
-export function Reports({ boot, center, feedback, financeBoot }: Context & { financeBoot?: FinanceBoot | null }) {
+export function Reports({ boot, center, feedback, financeBoot, initialPatient }: Context & {
+  financeBoot?: FinanceBoot | null;
+  initialPatient?: string;
+}) {
   const isManager = boot.roles.includes('CC Manager')
   const isSecretariat = boot.roles.includes('CC Secretariat')
   const isProfessional = boot.roles.includes('CC Professional') && !isManager && !isSecretariat
   const myPractitioner = isProfessional ? (boot.practitioners[0]?.name || '') : ''
+
+  const [detailedReportOpen, setDetailedReportOpen] = useState(Boolean(initialPatient))
+  const [detailedReportMode, setDetailedReportMode] = useState<'patients' | 'customers' | 'professionals'>(isProfessional ? 'professionals' : 'patients')
+  const [detailedReportPatient, setDetailedReportPatient] = useState<string | undefined>(initialPatient)
 
   const [start, setStart] = useState(dayjs(romeToday()).startOf('month').format('YYYY-MM-DD'))
   const [end, setEnd] = useState(romeToday())
@@ -729,7 +840,25 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
     setPage(1)
   }
 
-  return <><Heading eyebrow="OPERATIVITÀ" title="Report" subtitle="Andamento delle sedute e dati operativi del centro." action={<div className="button-group"><Button variant="secondary" onClick={() => setProfessionalOpen(v => !v)}>Dettaglio professionista</Button><a className="button secondary" href={validPeriod && !loading && data && !data.truncated && !sessionsError && !sessionsLoading ? exportUrl : undefined} aria-disabled={!validPeriod || loading || !data || !!data.truncated || !!sessionsError || sessionsLoading} onClick={e => { if (!validPeriod || loading || !data || data.truncated || sessionsError || sessionsLoading) e.preventDefault() }}><Download size={17} /> {isProfessional ? 'Esporta le mie sedute' : 'Esporta CSV del centro'}</a>{validPeriod && financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode={isProfessional ? 'professionals' : 'patients'} buttonLabel="Compensi e fatture autorizzati" />}</div>} />
+  if (detailedReportOpen && financeBoot) {
+    return (
+      <FinanceReportsPage
+        boot={financeBoot}
+        center={center}
+        start={start}
+        end={end}
+        feedback={feedback}
+        initialMode={detailedReportMode}
+        initialPatient={detailedReportPatient}
+        onClose={() => {
+          setDetailedReportOpen(false)
+          setDetailedReportPatient(undefined)
+        }}
+      />
+    )
+  }
+
+  return <><Heading eyebrow="OPERATIVITÀ" title="Report" subtitle="Andamento delle sedute e dati operativi del centro." action={<div className="button-group"><Button variant="secondary" onClick={() => setProfessionalOpen(v => !v)}>Dettaglio professionista</Button><a className="button secondary" href={validPeriod && !loading && data && !data.truncated && !sessionsError && !sessionsLoading ? exportUrl : undefined} aria-disabled={!validPeriod || loading || !data || !!data.truncated || !!sessionsError || sessionsLoading} onClick={e => { if (!validPeriod || loading || !data || data.truncated || sessionsError || sessionsLoading) e.preventDefault() }}><Download size={17} /> {isProfessional ? 'Esporta le mie sedute' : 'Esporta CSV del centro'}</a>{validPeriod && financeBoot && <Button variant="secondary" onClick={() => { setDetailedReportMode(isProfessional ? 'professionals' : 'patients'); setDetailedReportPatient(undefined); setDetailedReportOpen(true) }}>Compensi e fatture autorizzati</Button>}</div>} />
     <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Riepilogo sedute e pagamenti</h2><p>Panoramica del periodo: sedute, pagamenti operativi e tariffe previste. Non rappresenta la contabilità né i compensi professionali.</p></div><div className="toolbar-right">{isProfessional ? <span className="agenda-practitioner-label">Report personale: <strong>{practitionerName(boot.practitioners[0] ?? { name: myPractitioner, practitioner_name: 'Mio profilo' } as Practitioner)}</strong></span> : <Field label="Professionista"><select aria-label="Filtro professionista" value={professional} onChange={event => { setProfessional(event.target.value); setPage(1) }}><option value="">Tutti i professionisti</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field>}<Field label="Dal"><DateInput value={start} onChange={v => { setStart(v); setPreset('custom'); setPage(1) }} onValidityChange={setStartValid} calendarLabel="data iniziale" resetKey={preset} required /></Field><Field label="Al"><DateInput value={end} onChange={v => { setEnd(v); setPreset('custom'); setPage(1) }} onValidityChange={setEndValid} calendarLabel="data finale" resetKey={preset} required /></Field></div></div>
       <div className="period-presets" role="group" aria-label="Scorciatoie periodo"><button type="button" className={preset === 'today' ? 'selected' : ''} onClick={() => applyPreset('today')}>Oggi</button><button type="button" className={preset === 'week' ? 'selected' : ''} onClick={() => applyPreset('week')}>Questa settimana</button><button type="button" className={preset === 'month' ? 'selected' : ''} onClick={() => applyPreset('month')}>Questo mese</button><button type="button" className={preset === 'last_month' ? 'selected' : ''} onClick={() => applyPreset('last_month')}>Mese scorso</button></div>
       {!validPeriod ? <p className="inline-error" role="alert">Periodo non valido: inserisci due date complete nel formato GG/MM/AAAA, con «Dal» precedente o uguale ad «Al». Report ed esportazioni sono sospesi.</p> : loading ? <p className="panel-loading">Caricamento…</p> : !Object.keys(currencies).length ? <Empty title="Nessun dato nel periodo" /> : Object.entries(currencies).map(([currency, r]) => <div className="report-currency" key={currency}>
@@ -756,12 +885,12 @@ export function Reports({ boot, center, feedback, financeBoot }: Context & { fin
       </div>)}{Boolean(data?.truncated) && <p className="inline-error" role="alert">Totali parziali: restringi il periodo. L'esportazione è sospesa.</p>}
       {validPeriod && <div className="report-drilldown"><div className="report-drilldown-header"><h3>Dettaglio sedute — {kpiLabel[selectedKpi] || 'Tutte'}{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 ? ` (${selectedCurrency})` : ''} ({totalSessions})</h3><div className="button-group">{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 && <Button variant="secondary" onClick={() => { setSelectedCurrency('all'); setPage(1) }}>Tutte le valute</Button>}<a className={`button secondary ${sessionsError || sessionsLoading ? 'disabled' : ''}`} href={sessionsError || sessionsLoading || loading || !data || !!data.truncated ? undefined : exportUrl} aria-disabled={sessionsLoading || loading || !data || !!sessionsError || !!data?.truncated} onClick={e => { if (sessionsError || sessionsLoading || loading || !data || data.truncated) e.preventDefault() }}><Download size={16} /> Esporta CSV ({kpiLabel[selectedKpi] || 'Filtro'}{selectedCurrency !== 'all' && Object.keys(currencies).length > 1 ? ` ${selectedCurrency}` : ''})</a></div></div>{sessionsLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : sessionsError ? <p className="inline-error" role="alert">{sessionsError}</p> : !sessions.length ? <Empty title="Nessuna seduta per questo filtro" detail="Modifica il filtro KPI o il periodo per visualizzare i record." /> : <><DataTable rows={sessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (_v, row) => demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name) }, { key: 'practitioner_name', label: 'Professionista', render: (_v, row) => demoText(row.practitioner_name || row.practitioner) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato seduta', render: (v, row) => row.cc_performed ? 'Svolta' : (v === 'Cancelled' ? 'Annullata' : (row.cc_closure_state === 'Closed' ? 'Non svolta' : (row.cc_classified_future ? 'In programma' : (row.cc_closure_state === 'Auto Locked' ? 'Bloccata' : 'Da chiudere')))) }, { key: 'cc_paid', label: 'Pagamento operativo', render: (v, row) => { if (v) return <Chip tone="good">Registrato</Chip>; if (row.status === 'Cancelled') return <Chip tone="neutral">— (annullata)</Chip>; if (row.cc_classified_future) return <Chip tone="blue">In programma</Chip>; if (['Non Due', 'Waived', 'Package Covered'].includes(String(row.cc_economic_state))) return <Chip tone="neutral">Non dovuto</Chip>; if (row.cc_economic_state === 'Pending') return <Chip tone="neutral">Da definire</Chip>; return <Chip tone="warn">Da incassare</Chip> } }, { key: 'mode_of_payment', label: 'Metodo', render: v => v ? paymentMethodLabel(v) : '—' }, { key: 'cc_price_snapshot', label: 'Tariffa prevista', render: (v, row) => v != null ? money(v, String(row.cc_currency_snapshot || 'EUR')) : '—' }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />{totalPages > 1 && <div className="pagination-bar" role="navigation" aria-label="Paginazione sedute"><span>Pagina <strong>{page}</strong> di <strong>{totalPages}</strong> ({totalSessions} sedute totali)</span><div className="button-group"><Button variant="secondary" disabled={page <= 1 || sessionsLoading} onClick={() => setPage(p => Math.max(1, p - 1))}>Precedente</Button><Button variant="secondary" disabled={page >= totalPages || sessionsLoading} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Successiva</Button></div></div>}</>}</div>}
     </section>
-    {professionalOpen && <section className="panel professional-report"><div className="panel-toolbar"><div className="panel-title"><h2>Attività del professionista</h2><p>Consulta le sedute di una persona senza modificare il filtro del riepilogo superiore. Il periodo è condiviso; non indica compensi pagati.</p></div><div className="toolbar-right"><Field label="Professionista"><select aria-label="Professionista report" value={detailProfessional} onChange={event => { setDetailProfessional(event.target.value); setProfPage(1) }}><option value="">Seleziona</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field><a className="button secondary" href={validPeriod && detailProfessional && !profLoading && !profError && profSummary && !profSummary.truncated ? professionalExportUrl : undefined} aria-disabled={!validPeriod || !detailProfessional || profLoading || !!profError || !profSummary || !!profSummary.truncated} onClick={event => { if (!validPeriod || !detailProfessional || profLoading || profError || !profSummary || profSummary.truncated) event.preventDefault() }}><Download size={16} /> Esporta CSV completo</a>{financeBoot && <FinanceReports boot={financeBoot} center={center} start={start} end={end} feedback={feedback} initialMode="professionals" buttonLabel="Compensi e fatture autorizzati" />}</div></div>{!validPeriod ? <p className="inline-error" role="alert">Correggi il periodo prima di visualizzare o esportare le sedute.</p> : !detailProfessional ? <Empty title="Seleziona un professionista" /> : profLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : profError ? <p className="inline-error" role="alert">{profError}</p> : (() => {
+    {professionalOpen && <section className="panel professional-report"><div className="panel-toolbar"><div className="panel-title"><h2>Attività del professionista</h2><p>Consulta le sedute di una persona senza modificare il filtro del riepilogo superiore. Il periodo è condiviso; non indica compensi pagati.</p></div><div className="toolbar-right"><Field label="Professionista"><select aria-label="Professionista report" value={detailProfessional} onChange={event => { setDetailProfessional(event.target.value); setProfPage(1) }}><option value="">Seleziona</option>{boot.practitioners.map(row => <option key={row.name} value={row.name}>{practitionerName(row)}</option>)}</select></Field><a className="button secondary" href={validPeriod && detailProfessional && !profLoading && !profError && profSummary && !profSummary.truncated ? professionalExportUrl : undefined} aria-disabled={!validPeriod || !detailProfessional || profLoading || !!profError || !profSummary || !!profSummary.truncated} onClick={event => { if (!validPeriod || !detailProfessional || profLoading || profError || !profSummary || profSummary.truncated) event.preventDefault() }}><Download size={16} /> Esporta CSV completo</a>{financeBoot && <Button variant="secondary" onClick={() => { setDetailedReportMode('professionals'); setDetailedReportPatient(undefined); setDetailedReportOpen(true) }}>Compensi e fatture autorizzati</Button>}</div></div>{!validPeriod ? <p className="inline-error" role="alert">Correggi il periodo prima di visualizzare o esportare le sedute.</p> : !detailProfessional ? <Empty title="Seleziona un professionista" /> : profLoading ? <p className="panel-loading" role="status">Caricamento sedute…</p> : profError ? <p className="inline-error" role="alert">{profError}</p> : (() => {
       const professionalCurrencies = (profSummary?.currencies as Record<string, Row> | undefined) ?? {}
       const sum = (key: string) => Object.values(professionalCurrencies).reduce((value, item) => value + Number(item[key] ?? 0), 0)
       return <><div className="metrics-grid inset"><Metric label="Sedute nel periodo" value={String(profTotal)} /><Metric label="Sedute svolte" value={String(sum('performed'))} tone="green" /><Metric label="Sedute da chiudere" value={String(sum('to_close'))} tone="amber" /><Metric label="Sedute annullate" value={String(sum('cancelled'))} tone="purple" /></div>{Boolean(profSummary?.truncated) && <p className="inline-error" role="alert">Riepilogo parziale: restringi il periodo per consultare ed esportare dati completi.</p>}<DataTable rows={profSessions as unknown as Row[]} columns={[dateColumn('appointment_date', 'Data'), { key: 'appointment_time', label: 'Ora', render: time }, { key: 'patient_name', label: 'Paziente', render: (value, row) => demoPatient(row.patient, value, row.patient_first_name, row.patient_last_name) }, { key: 'cc_service_label', label: 'Servizio', render: v => demoText(v) || 'Seduta' }, { key: 'status', label: 'Stato', render: (value, row) => row.cc_performed ? 'Svolta' : value === 'Cancelled' ? 'Annullata' : (row.cc_closure_state === 'Closed' ? 'Non svolta' : (row.cc_closure_state === 'Auto Locked' ? 'Bloccata' : (row.cc_classified_future ? 'In programma' : 'Da chiudere'))) }]} onRow={row => setSelectedAppointment(row as unknown as Appointment)} />{profTotalPages > 1 && <div className="pagination-bar" role="navigation" aria-label="Paginazione attività professionista"><span>Pagina {profPage} di {profTotalPages} · {profTotal} sedute</span><div className="button-group"><Button variant="secondary" disabled={profPage <= 1 || profLoading} onClick={() => setProfPage(p => Math.max(1, p - 1))}>Precedente</Button><Button variant="secondary" disabled={profPage >= profTotalPages || profLoading} onClick={() => setProfPage(p => Math.min(profTotalPages, p + 1))}>Successiva</Button></div></div>}</>
     })()}</section>}
-    {selectedAppointment && <AppointmentDetail row={selectedAppointment} boot={boot} center={center} onClose={() => setSelectedAppointment(null)} onSuccess={() => { setSelectedAppointment(null); setReload(x => x + 1) }} feedback={feedback} />}
+    {selectedAppointment && <AppointmentDetail row={selectedAppointment} boot={boot} center={center} onClose={() => setSelectedAppointment(null)} onSuccess={() => { setSelectedAppointment(null); setReload(x => x + 1) }} feedback={feedback} financeBoot={financeBoot} />}
   </>
 }
 
@@ -771,6 +900,7 @@ const financeDoctype: Partial<Record<FinanceTab, string>> = { 'Fatture pazienti'
 export function FinanceView({ boot, center, feedback }: { boot: FinanceBoot; center: string; feedback: Feedback }) {
   const [tab, setTab] = useState<FinanceTab>('Riepilogo')
   const [createOpen, setCreateOpen] = useState(false)
+  const [detailedReportOpen, setDetailedReportOpen] = useState(false)
   const [start, setStart] = useState(dayjs(romeToday()).startOf('month').format('YYYY-MM-DD'))
   const [end, setEnd] = useState(romeToday())
   const [data, setData] = useState<Row | Row[] | null>(null)
@@ -804,7 +934,22 @@ export function FinanceView({ boot, center, feedback }: { boot: FinanceBoot; cen
     TS: [{ key: 'reference_name', label: 'Fonte spesa' }, { key: 'status', label: 'Stato', render: v => financeFieldValue('status', v) }, { key: 'attempt_count', label: 'Tentativi' }, { key: 'error_class', label: 'Da verificare' }]
   }
   const createable = boot.can_write && ['Fatture pazienti', 'XML ricevuti', 'Banca', 'Coda amministrativa', 'SdI', 'TS'].includes(tab)
-  return <><Heading eyebrow="CONTROLLO FINANZIARIO" title="Finanza" subtitle="Contabilità e amministrazione del centro, dai sistemi Frappe ed ERPNext." action={<div className="button-group"><a className="button secondary" href={csvUrl('finance.reporting.export_csv', { center, start, end })}><Download size={17} /> Esporta CSV</a>{tab === 'Riepilogo' && <FinanceReports boot={boot} center={center} start={start} end={end} feedback={feedback} />}{boot.can_write && tab === 'Professionisti' && <ProfessionalWorkflow boot={boot} center={center} feedback={feedback} onSuccess={() => setReload(x => x + 1)} />}{createable && <Button onClick={() => setCreateOpen(true)}><Plus size={17} /> Nuova operazione</Button>}</div>} /><div className="finance-status"><Chip tone={boot.simulation_only ? 'warn' : 'good'}>{boot.simulation_only ? 'Ambiente simulato' : 'Ambiente'}</Chip><span>Solo dati autorizzati del centro selezionato · Nessun invio a provider reali</span></div><div className="tab-nav" role="tablist" aria-label="Aree finanza">{financeTabs.map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => { setTab(t); setSelected(null) }}>{t}</button>)}</div>
+
+  if (detailedReportOpen) {
+    return (
+      <FinanceReportsPage
+        boot={boot}
+        center={center}
+        start={start}
+        end={end}
+        feedback={feedback}
+        initialMode="customers"
+        onClose={() => setDetailedReportOpen(false)}
+      />
+    )
+  }
+
+  return <><Heading eyebrow="CONTROLLO FINANZIARIO" title="Finanza" subtitle="Contabilità e amministrazione del centro, dai sistemi Frappe ed ERPNext." action={<div className="button-group"><a className="button secondary" href={csvUrl('finance.reporting.export_csv', { center, start, end })}><Download size={17} /> Esporta CSV</a>{tab === 'Riepilogo' && <Button variant="secondary" onClick={() => setDetailedReportOpen(true)}>Report dettagliati</Button>}{boot.can_write && tab === 'Professionisti' && <ProfessionalWorkflow boot={boot} center={center} feedback={feedback} onSuccess={() => setReload(x => x + 1)} />}{createable && <Button onClick={() => setCreateOpen(true)}><Plus size={17} /> Nuova operazione</Button>}</div>} /><div className="finance-status"><Chip tone={boot.simulation_only ? 'warn' : 'good'}>{boot.simulation_only ? 'Ambiente simulato' : 'Ambiente'}</Chip><span>Solo dati autorizzati del centro selezionato · Nessun invio a provider reali</span></div><div className="tab-nav" role="tablist" aria-label="Aree finanza">{financeTabs.map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => { setTab(t); setSelected(null) }}>{t}</button>)}</div>
     <section className="panel finance-panel"><div className="panel-toolbar"><div className="panel-title"><h2>{tab === 'Riepilogo' ? 'Panoramica finanziaria' : tab}</h2><p>{tab === 'Riepilogo' ? 'Valori registrati; margine da definire secondo regole approvate.' : 'Elenco circoscritto al centro selezionato.'}</p></div>{tab === 'Riepilogo' && <div className="toolbar-right"><Field label="Dal"><DateInput value={start} onChange={setStart} required /></Field><Field label="Al"><DateInput value={end} onChange={setEnd} required /></Field></div>}</div>{error && <p className="inline-error" role="alert">{error}</p>}{loading ? <p className="panel-loading" role="status">Caricamento…</p> : summary ? <><div className="metrics-grid inset"><Metric label="Ricavi netti" value={money(totals?.revenue_net)} /><Metric label="Incassato" value={money(totals?.collected)} tone="green" /><Metric label="Crediti residui" value={money(totals?.receivable_outstanding)} tone="amber" /><Metric label="Costi fornitori" value={money(totals?.purchase_net)} tone="purple" /></div><div className="finance-secondary"><div><span>Debito residuo</span><strong>{money(totals?.payable_outstanding)}</strong></div><div><span>Compensi attesi</span><strong>{money(totals?.expected_compensation)}</strong></div><div><span>Attesi da verificare</span><strong>{String(totals?.unresolved_expectations ?? 0)}</strong></div><div><span>Sedute</span><strong>{String(totals?.sessions ?? 0)}</strong></div></div><div className="summary-tables"><div><h3>Fatture pazienti</h3><DataTable rows={(summary.sales_invoices as Row[] ?? []).slice(0, 5)} columns={[{ key: 'name', label: 'Documento' }, { key: 'customer', label: 'Cliente' }, moneyColumn('outstanding_amount', 'Residuo')]} /></div><div><h3>Fatture fornitori</h3><DataTable rows={(summary.purchase_invoices as Row[] ?? []).slice(0, 5)} columns={[{ key: 'name', label: 'Documento' }, { key: 'supplier', label: 'Fornitore' }, moneyColumn('outstanding_amount', 'Residuo')]} /></div></div><p className="scope-note">Le date di registrazione regolano la contabilità; le date delle sedute regolano l’operatività. I ricavi pazienti includono il pagatore fiscale condiviso. Le fatture fornitori sono totali fiscali del fornitore, senza attribuzione dedotta ai singoli professionisti. Il margine resta da definire secondo regole approvate.</p></> : <DataTable rows={rows} columns={columns[tab]} onRow={setSelected} />}</section>{selected && <FinanceDetail row={selected} tab={tab} center={center} centers={boot.centers} canWrite={boot.can_write} assignees={boot.assignees ?? []} accounts={boot.accounts ?? []} suppliers={boot.suppliers ?? []} items={boot.items ?? []} feedback={feedback} onClose={() => setSelected(null)} onChange={() => { setSelected(null); setReload(x => x + 1) }} />}{createOpen && <FinanceCreate tab={tab} center={center} feedback={feedback} start={start} end={end} onClose={() => setCreateOpen(false)} onSuccess={() => { setCreateOpen(false); setReload(x => x + 1) }} />}</>
 }
 
@@ -819,7 +964,21 @@ function FinanceDetail({ row, tab, center, centers, canWrite, assignees, account
   const { busy, error, run } = useAction(feedback, onChange)
   useEffect(() => { let live = true; const name = String(row.name ?? ''); const method = tab === 'Fatture pazienti' ? 'receivables.position' : tab === 'Fatture fornitori' ? 'incoming.position' : tab === 'Professionisti' ? 'professional_economics.position' : null; if (method) finance<Row>(method, tab === 'Professionisti' ? { center, practitioner: row.practitioner } : { name }).then(r => { if (live) setDetail(r) }).catch(e => feedback(getError(e), true)); return () => { live = false } }, [row, tab, center])
   const title = demoText(row.invoice_number ?? row.name ?? row.reference_name ?? row.exception_type ?? 'Dettaglio')
-  return <Drawer title={title} onClose={onClose}><div className="detail-summary"><Chip tone={String(row.state ?? row.status).includes('Error') ? 'bad' : 'blue'}>{financeFieldValue('state', row.state ?? row.status ?? tab)}</Chip><p>Centro: {centerNameFor(center, centers)}</p></div><div className="detail-section"><h3>Informazioni</h3><dl className="property-list">{Object.entries(row).filter(([k]) => !['name', 'problem'].includes(k)).map(([k, v]) => <div key={k}><dt>{financeFieldLabel(k)}</dt><dd>{financeFieldValue(k, v)}</dd></div>)}</dl>{detail && <><h3>Posizione</h3><dl className="property-list">{Object.entries(detail).filter(([, v]) => !Array.isArray(v) && typeof v !== 'object').map(([k, v]) => <div key={k}><dt>{financeFieldLabel(k)}</dt><dd>{financeFieldValue(k, v)}</dd></div>)}</dl></>}{Boolean(row.problem) && <p className="inline-error">{String(row.problem)}</p>}{canWrite && tab === 'Coda amministrativa' && <><Button variant="secondary" onClick={() => setAction(true)}>Gestisci condizione</Button>{action && <form onSubmit={e => { e.preventDefault(); void run(() => finance('admin_queue.manage', { name: row.name, priority, assignee: assignee || null, due_at: dueAt ? dueAt.replace('T', ' ') : null, defer_until: deferUntil ? deferUntil.replace('T', ' ') : null, reason }, true)) }}><Field label="Priorità" required><select value={priority} onChange={e => setPriority(Number(e.target.value))}>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}</select></Field><Field label="Assegnatario"><select value={assignee} onChange={e => setAssignee(e.target.value)}><option value="">Nessuno</option>{assignees.map(u => <option key={u} value={u}>{u}</option>)}</select></Field><Field label="Scadenza UTC"><input type="datetime-local" value={dueAt} onChange={e => setDueAt(e.target.value)} /></Field><Field label="Rinvio fino a UTC"><input type="datetime-local" value={deferUntil} onChange={e => setDeferUntil(e.target.value)} /></Field><Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required /></Field><FormError error={error} /><Button disabled={busy} type="submit">Conferma</Button></form>}</>}</div><FinanceActions row={row} tab={tab} center={center} canWrite={canWrite} accounts={accounts} suppliers={suppliers} items={items} feedback={feedback} onChange={onChange} /></Drawer>
+  return <section className="panel finance-detail-page" role="dialog" aria-label={title}>
+    <header className="patient-page-header">
+      <button className="patient-back" type="button" onClick={onClose} aria-label="Chiudi">← Torna a Finanza</button>
+      <h1>{title}</h1>
+    </header>
+    <div className="detail-section">
+      <div className="detail-summary"><Chip tone={String(row.state ?? row.status).includes('Error') ? 'bad' : 'blue'}>{financeFieldValue('state', row.state ?? row.status ?? tab)}</Chip><p>Centro: {centerNameFor(center, centers)}</p></div>
+      <h3>Informazioni</h3>
+      <dl className="property-list">{Object.entries(row).filter(([k]) => !['name', 'problem'].includes(k)).map(([k, v]) => <div key={k}><dt>{financeFieldLabel(k)}</dt><dd>{financeFieldValue(k, v)}</dd></div>)}</dl>
+      {detail && <><h3>Posizione</h3><dl className="property-list">{Object.entries(detail).filter(([, v]) => !Array.isArray(v) && typeof v !== 'object').map(([k, v]) => <div key={k}><dt>{financeFieldLabel(k)}</dt><dd>{financeFieldValue(k, v)}</dd></div>)}</dl></>}
+      {Boolean(row.problem) && <p className="inline-error">{String(row.problem)}</p>}
+      {canWrite && tab === 'Coda amministrativa' && <><Button variant="secondary" onClick={() => setAction(true)}>Gestisci condizione</Button>{action && <form onSubmit={e => { e.preventDefault(); void run(() => finance('admin_queue.manage', { name: row.name, priority, assignee: assignee || null, due_at: dueAt ? dueAt.replace('T', ' ') : null, defer_until: deferUntil ? deferUntil.replace('T', ' ') : null, reason }, true)) }}><Field label="Priorità" required><select value={priority} onChange={e => setPriority(Number(e.target.value))}>{[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}</select></Field><Field label="Assegnatario"><select value={assignee} onChange={e => setAssignee(e.target.value)}><option value="">Nessuno</option>{assignees.map(u => <option key={u} value={u}>{u}</option>)}</select></Field><Field label="Scadenza UTC"><input type="datetime-local" value={dueAt} onChange={e => setDueAt(e.target.value)} /></Field><Field label="Rinvio fino a UTC"><input type="datetime-local" value={deferUntil} onChange={e => setDeferUntil(e.target.value)} /></Field><Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required /></Field><FormError error={error} /><Button disabled={busy} type="submit">Conferma</Button></form>}</>}
+      <FinanceActions row={row} tab={tab} center={center} canWrite={canWrite} accounts={accounts} suppliers={suppliers} items={items} feedback={feedback} onChange={onChange} />
+    </div>
+  </section>
 }
 
 export function Access({ center, feedback, boot }: Context) {
