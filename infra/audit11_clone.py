@@ -200,8 +200,19 @@ try:
     print("AUDIT11_NATIVE_FRAPPE_ISOLATED_PASS", json.dumps(lines[0]), flush=True)
 
     # Restart Gunicorn so workers load the updated site_config.json
-    clone.run_cmd(["docker", "exec", clone.BACKEND_CONTAINER, "pkill", "-f", "gunicorn"], check=False)
-    time.sleep(1)
+    restart_script = """
+import os, signal, time
+for p in [int(p) for p in os.listdir('/proc') if p.isdigit()]:
+    try:
+        with open(f'/proc/{p}/cmdline', 'rb') as f:
+            cmd = f.read().decode('utf-8', errors='ignore')
+        if 'gunicorn' in cmd and int(p) != os.getpid():
+            os.kill(int(p), signal.SIGKILL)
+    except Exception:
+        pass
+"""
+    clone.run_cmd(["docker", "exec", "-i", clone.BACKEND_CONTAINER, "env/bin/python", "-"], input_str=restart_script)
+    time.sleep(2)
     clone.run_cmd([
         "docker", "exec", "-d", "-w", "/home/frappe/frappe-bench/sites", clone.BACKEND_CONTAINER,
         "/home/frappe/frappe-bench/env/bin/gunicorn",
@@ -211,6 +222,7 @@ try:
         "-t", "120",
         "frappe.app:application",
     ])
+    ready = False
     for _ in range(30):
         time.sleep(1)
         res = subprocess.run(
@@ -219,7 +231,9 @@ try:
             capture_output=True, text=True,
         )
         if res.stdout.strip() == "200":
+            ready = True
             break
+    assert ready, "Gunicorn failed to restart after reloading site_config.json"
 
     http_checks = run_http_acceptance()
     print("AUDIT11_HTTP_ISOLATED_PASS", json.dumps({"status": "PASS", "checks": http_checks}), flush=True)
