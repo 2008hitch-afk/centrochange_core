@@ -21,6 +21,16 @@
       "test",
       "--config=playwright.feedback.config.ts",
       "--workers=2"
+    ],
+    "smoke": [
+      "npx",
+      "playwright",
+      "test",
+      "--config=playwright.feedback.config.ts",
+      "--project=desktop",
+      "--grep",
+      "AUDIT-03: vista giorno usa la stessa etichetta servizio della settimana",
+      "--workers=1"
     ]
   }
 }
