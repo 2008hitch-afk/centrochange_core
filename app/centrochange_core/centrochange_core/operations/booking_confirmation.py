@@ -37,19 +37,21 @@ def deliver(name):
     return {'state':doc.state,'replay':False}
 
 
-def confirm(appointment,route,email):
+def confirm(appointment,route,email,mode='sede'):
     require_synthetic();lock()
     from centrochange_core.scheduling.public_booking import SERVICE_USER
     if frappe.session.user!=SERVICE_USER:
         frappe.throw('La conferma pubblica richiede il servizio autorizzato.',frappe.PermissionError)
     doc=frappe.get_doc('Patient Appointment',appointment)
+    if float(doc.duration)!=20 or float(doc.cc_price_snapshot)!=0:
+        frappe.throw('La conferma non corrisponde a un colloquio gratuito.',frappe.PermissionError)
     old=frappe.db.get_value('CC Booking Confirmation',{'appointment':appointment},'name',for_update=True)
     if old:return {'state':frappe.db.get_value('CC Booking Confirmation',old,'state'),'replay':True}
-    if route not in ('Marco','Francesca') or not email.endswith('@example.invalid'):
+    if route not in ('Marco','Francesca') or mode not in ('sede','online') or not email.endswith('@example.invalid'):
         frappe.throw('Seleziona una conferma sintetica del primo incontro.')
     date=frappe.utils.getdate(doc.appointment_date).strftime('%d/%m/%Y')
     time=str(frappe.utils.get_time(doc.appointment_time))[:5]
-    message='<p>Primo incontro confermato per il '+date+' alle '+time+' con '+escape(route)+'.</p><p>Servizio: '+escape(re.sub(r'^CC-HTTP-[A-Za-z0-9]+\s+','',doc.cc_service_label))+' · '+str(int(doc.duration))+' minuti.</p><p>Conferma registrata in simulazione: nessuna email reale inviata.</p>'
+    message='<p>Colloquio conoscitivo gratuito di 20 minuti confermato '+('in sede' if mode=='sede' else 'online')+' per il '+date+' alle '+time+' con '+escape(route)+'.</p><p>Importo del colloquio: 0 €. La prima seduta completa sarà concordata successivamente dalla segreteria; non è prenotata con questa conferma.</p><p>Conferma registrata in simulazione: nessuna email reale inviata.</p>'
     with internal_write('cc_confirmation_write'):
         outbox=frappe.get_doc({'doctype':'CC Booking Confirmation','appointment':doc.name,'center':doc.cc_center,'recipient':email,'message':message,'state':'Pending'}).insert(ignore_permissions=True)
     return deliver(outbox.name)
