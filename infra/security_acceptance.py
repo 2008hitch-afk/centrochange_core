@@ -145,13 +145,16 @@ def main():
             guest=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
             public='/api/method/centrochange_core.scheduling.public_booking.first_meeting'
             public_route=fixture_public_route(fixture)
-            public_payload={'route':public_route,'first_name':fixture['tag']+' SYNTHETIC','last_name':'Guest',
+            public_payload={'route':public_route,'mode':'sede','first_name':fixture['tag']+' SYNTHETIC','last_name':'Guest',
                 'email':fixture['tag'].lower()+'-guest@example.invalid','sex':'Female',
                 'appointment_date':'2099-01-12','appointment_time':'10:00:00','request_key':fixture['tag']+'-public'}
             public_result=call(guest,public,public_payload)['message']
             public_doc=call(admin,'/api/resource/Patient%20Appointment/'+urllib.parse.quote(public_result['name'],safe=''))['data']
             fixture['patients'].append(public_doc['patient'])
-            assert public_doc['practitioner']==fixture['practitioners'][0] and public_doc['appointment_type']==fixture['catalog']['Appointment Type'][0]
+            assert public_doc['practitioner']==fixture['practitioners'][0]
+            assert public_doc['appointment_type'] in fixture['catalog']['Appointment Type'], 'Refuse to mutate non-test-owned Appointment Type'
+            assert int(float(public_doc['duration']))==20 and float(public_doc['cc_price_snapshot'])==0
+            assert 'sede' in public_doc['cc_service_label'].casefold(), 'Public mode missing from authoritative service label'
             assert_public_replay(call(guest,public,public_payload)['message'],public_result['name'])
             checks.append('Guest first meeting fixed route and idempotent replay')
             denied('Guest cannot read created appointment',guest,'/api/resource/Patient%20Appointment/'+urllib.parse.quote(public_result['name'],safe=''))
@@ -160,7 +163,7 @@ def main():
             call(admin,'/api/method/frappe.client.set_value',{'doctype':'CC Public Booking Route','name':public_route,'fieldname':'enabled','value':0})
             denied('disabled public route denied',guest,public,{**public_payload,'email':fixture['tag'].lower()+'-other@example.invalid','request_key':fixture['tag']+'-disabled'})
             call(admin,'/api/method/frappe.client.set_value',{'doctype':'CC Public Booking Route','name':public_route,'fieldname':'enabled','value':1})
-            call(admin,'/api/method/frappe.client.set_value',{'doctype':'Appointment Type','name':fixture['catalog']['Appointment Type'][0],'fieldname':'cc_first_meeting','value':0})
+            call(admin,'/api/method/frappe.client.set_value',{'doctype':'Appointment Type','name':public_doc['appointment_type'],'fieldname':'cc_first_meeting','value':0})
             denied('public subsequent-session profile denied',guest,public,{**public_payload,'email':fixture['tag'].lower()+'-other@example.invalid','request_key':fixture['tag']+'-subsequent'})
         if args.with_operations:
             private='/api/resource/CC%20Private%20Note/'+urllib.parse.quote(fixture['private_note'],safe='')

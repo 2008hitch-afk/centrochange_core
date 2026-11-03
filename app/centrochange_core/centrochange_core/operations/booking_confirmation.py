@@ -37,7 +37,7 @@ def deliver(name):
     return {'state':doc.state,'replay':False}
 
 
-def confirm(appointment,route,email,mode='sede'):
+def confirm(appointment,route,email,mode):
     require_synthetic();lock()
     from centrochange_core.scheduling.public_booking import SERVICE_USER
     if frappe.session.user!=SERVICE_USER:

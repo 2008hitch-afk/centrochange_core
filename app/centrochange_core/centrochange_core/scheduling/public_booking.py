@@ -41,7 +41,7 @@ def _public_offer(configuration, mode, for_update=False):
 @frappe.whitelist(allow_guest=True,methods=['POST'])
 @rate_limit(limit=10,seconds=60)
 @atomic
-def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointment_time,request_key,mode='sede'):
+def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointment_time,request_key,mode):
 	if route not in ('Marco','Francesca') or mode not in ('sede','online') or not isinstance(request_key,str) or not request_key or len(request_key)>140:
 		frappe.throw('Controlla i dati del primo incontro.')
 	for value in (first_name,last_name):
@@ -112,7 +112,7 @@ def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointm
 
 @frappe.whitelist(allow_guest=True)
 @rate_limit(limit=30,seconds=60)
-def available_slots(route,start_date,mode='sede'):
+def available_slots(route,start_date,mode):
 	"""Public seven-day projection exposes slots only, never patient or practitioner IDs."""
 	from datetime import datetime,timedelta
 	from zoneinfo import ZoneInfo
