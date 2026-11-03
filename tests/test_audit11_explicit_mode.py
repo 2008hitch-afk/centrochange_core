@@ -56,6 +56,21 @@ class RequiredBookingModeTests(unittest.TestCase):
                 self.assertIn("timedelta(days=120)", fn_source, f"{fn_name} must enforce 120 days horizon")
                 self.assertIn("Scegli una data futura entro 120 giorni.", fn_source, f"{fn_name} must reject horizon breach")
 
+    def test_available_slots_breaks_projection_at_horizon(self):
+        code = PUBLIC.read_text(encoding="utf-8")
+        syntax = ast.parse(code)
+        fn = next(node for node in syntax.body
+                  if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "available_slots")
+        fn_source = ast.get_source_segment(code, fn)
+        self.assertIn("day>horizon", fn_source)
+        self.assertIn("break", fn_source)
+
+    def test_first_meeting_does_not_disclose_email_identity(self):
+        code = PUBLIC.read_text(encoding="utf-8")
+        # Must not leak email existence to public caller
+        self.assertNotIn("L’identità esiste già", code)
+        self.assertIn("PUBLIC_FIRST_MEETING_POTENTIAL_DUPLICATE", code)
+
 
 if __name__ == "__main__":
     unittest.main()

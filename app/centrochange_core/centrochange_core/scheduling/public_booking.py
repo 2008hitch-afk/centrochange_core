@@ -86,14 +86,18 @@ def first_meeting(route,first_name,last_name,email,sex,appointment_date,appointm
 		from centrochange_core.security.guards import centers
 		if practitioner.status!='Active' or configuration.center not in centers(practitioner.user_id):
 			frappe.throw('Il professionista del primo incontro non è disponibile.')
-		# Existing identities require authorized human matching; never let public input link them.
-		if frappe.db.get_value('Patient',{'email':payload['email']},for_update=True):
-			frappe.throw('L’identità esiste già: rivolgiti alla segreteria per prenotare.')
+		# Existing identities require authorized human matching; never let public input link or mutate them.
+		# If an email is already present, isolate the ingress record and emit a triage event for front-office deduplication.
+		existing_patient=frappe.db.get_value('Patient',{'email':payload['email']},'name',for_update=True)
 		context={'practitioner':configuration.practitioner,'center':configuration.center,
 			'appointment_type':appointment_type}
 		with internal_write('cc_public_ingress'):
 			patient=frappe.get_doc({'doctype':'Patient','first_name':payload['first_name'],
 				'last_name':payload['last_name'],'email':payload['email'],'sex':sex,'invite_user':0}).insert(ignore_permissions=True)
+			if existing_patient:
+				append('PUBLIC_FIRST_MEETING_POTENTIAL_DUPLICATE','Patient',patient.name,None,
+					{'existing_patient':existing_patient,'email':payload['email'],'mode':mode,'director':route},
+					'Segreteria triage required: public first meeting with existing email identity')
 			previous=getattr(frappe.flags,'cc_public_booking_context',None)
 			frappe.flags.cc_public_booking_context={**context,'patient':patient.name}
 			try:
@@ -127,7 +131,8 @@ def available_slots(route,start_date,mode):
 		frappe.throw('Percorso primo incontro non supportato.',frappe.PermissionError)
 	date=getdate(start_date)
 	today=datetime.now(ZoneInfo('Europe/Rome')).date()
-	if date<today or date>today+timedelta(days=120):
+	horizon=today+timedelta(days=120)
+	if date<today or date>horizon:
 		frappe.throw('Scegli una data futura entro 120 giorni.')
 	configuration=frappe.get_doc('CC Public Booking Route',route)
 	if not frappe.db.get_value('Branch',configuration.center,'cc_operational'):
@@ -144,6 +149,8 @@ def available_slots(route,start_date,mode):
 	slots=[]
 	for offset in range(7):
 		day=date+timedelta(days=offset)
+		if day>horizon:
+			break
 		for row in rows:
 			if row.day!=day.strftime('%A'):
 				continue

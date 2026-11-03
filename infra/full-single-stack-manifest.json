@@ -236,7 +236,7 @@
     "centrochange_core/scheduling/availability.py": "5e123db5de2dc16edd7b266192128f5836e4b45127ebd288895736304233bc25",
     "centrochange_core/scheduling/booking.py": "ce8ec08073b45b91102774239573426328b0596b9f3cef1b1d15da50db3f47f3",
     "centrochange_core/scheduling/dev_acceptance.py": "021708af4ff8f9f6597ee1400a5091fea4efd30feda11073d18ce33fe6f4a1a1",
-    "centrochange_core/scheduling/public_booking.py": "f50ba4b2f502fa7781c4286e2875238a986664545c972845ac603e2cdfcaff77",
+    "centrochange_core/scheduling/public_booking.py": "954a16ca9a2ddf96b5205c5c9f4a642d450a76b67606847a04f1a4171e50053a",
     "centrochange_core/scheduling/public_offer.py": "4a1bf0b632c7e526158669b189c91faf2b802b0d3a8be52349066821dd7cb21f",
     "centrochange_core/scheduling/reopen_acceptance.py": "1b667bbf6354a5336f2da760a24dc84720d90b99362a28580ecd68e3d698f38b",
     "centrochange_core/scoped_api.py": "575a40ede97706e6d92919417c887bf716f28800e5bba3b0afdf2c657ad0757a",

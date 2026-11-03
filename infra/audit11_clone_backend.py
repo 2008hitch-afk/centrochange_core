@@ -33,8 +33,6 @@ price_list = frappe.db.get_value("Branch", center, "cc_price_list")
 assert price_list and frappe.db.get_value("Price List", price_list, "currency") == "EUR"
 assert frappe.db.get_value("CC Public Booking Route", original_route, "practitioner") == seed["practitioners"][0]
 
-frappe.db.savepoint("audit11_free_public_test")
-previous_config = frappe.conf.get("cc_public_first_meeting_types")
 baseline_email_queue = frappe.db.count("Email Queue")
 checks = []
 try:
@@ -65,6 +63,12 @@ try:
         types[mode] = appointment_type.name
     assert len(set(types.values())) == 2
     frappe.conf.cc_public_first_meeting_types = types
+    site_config_path = frappe.get_site_path("site_config.json")
+    with open(site_config_path, "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+    cfg["cc_public_first_meeting_types"] = types
+    with open(site_config_path, "w", encoding="utf-8") as f:
+        json.dump(cfg, f, indent=2)
 
     # The second Director has an existing synthetic schedule seeded by demo.seed.
     frappe.get_doc({
@@ -185,9 +189,18 @@ try:
     try:
         slots_120 = available_slots("Marco", at_horizon_date, "sede")
         assert isinstance(slots_120.get("slots"), list)
+        for s in slots_120["slots"]:
+            assert s["date"] <= at_horizon_date, f"Slot {s['date']} leaked beyond 120 days horizon"
         checks.append("slots_120_days_boundary_accepted")
     except frappe.ValidationError:
         raise AssertionError("available_slots rejected 120 days boundary")
+
+    day_119 = (now + timedelta(days=119)).isoformat()
+    slots_119 = available_slots("Marco", day_119, "sede")
+    assert isinstance(slots_119.get("slots"), list)
+    for s in slots_119["slots"]:
+        assert s["date"] <= at_horizon_date, f"Slot {s['date']} leaked beyond 120 days horizon from day 119"
+    checks.append("slots_119_days_boundary_accepted")
 
     try:
         first_meeting(
@@ -242,14 +255,53 @@ try:
     else:
         raise AssertionError("first_meeting accepted already booked slot")
 
+    # Email privacy & anti-enumeration test (P1):
+    # Booking with an email that already belongs to an existing Patient must NOT disclose its existence,
+    # must NOT link or mutate the existing Patient, must create an isolated Patient record,
+    # must record PUBLIC_FIRST_MEETING_POTENTIAL_DUPLICATE in audit log, and must return 200/indistinguishable confirmation.
+    frappe.set_user("Administrator")
+    first_appt = frappe.get_doc("Patient Appointment", bookings[("Marco", "sede")]["name"])
+    existing_patient = first_appt.patient
+    existing_patient_doc = frappe.get_doc("Patient", existing_patient)
+    existing_modified = existing_patient_doc.modified
+
+    frappe.set_user("Guest")
+    f_proj = available_slots("Francesca", day, "online")
+    used_slots = {(b["slot"]["date"], b["slot"]["time"]) for b in bookings.values()}
+    free_slot = next(s for s in f_proj["slots"] if (s["date"], s["time"]) not in used_slots)
+    dup_payload = {
+        "route": "Francesca", "mode": "online",
+        "first_name": "Different Guest", "last_name": "Different Family",
+        "email": "cc11-marco-sede@example.invalid",
+        "sex": "Female",
+        "appointment_date": free_slot["date"],
+        "appointment_time": free_slot["time"],
+        "request_key": "cc11-privacy-dup-native-test",
+    }
+    dup_result = first_meeting(**dup_payload)
+    assert dup_result["replay"] is False
+    assert dup_result["confirmation"]["state"] == "Simulated Sent"
+
+    frappe.set_user("Administrator")
+    dup_appt = frappe.get_doc("Patient Appointment", dup_result["name"])
+    assert dup_appt.patient != existing_patient, "Security violation: guest booking hijacked existing patient"
+    after_patient_doc = frappe.get_doc("Patient", existing_patient)
+    assert after_patient_doc.modified == existing_modified
+    assert after_patient_doc.first_name == "CC11 Synthetic"
+    dup_audit = frappe.get_all("CC Audit Log", filters={"event": "PUBLIC_FIRST_MEETING_POTENTIAL_DUPLICATE", "document_name": dup_appt.patient}, fields=["after"])
+    assert len(dup_audit) == 1, "Expected PUBLIC_FIRST_MEETING_POTENTIAL_DUPLICATE audit event"
+    dup_audit_data = json.loads(dup_audit[0].after)
+    assert dup_audit_data["existing_patient"] == existing_patient
+    assert dup_audit_data["email"] == "cc11-marco-sede@example.invalid"
+    checks.append("email_privacy_anti_enumeration_verified")
+
     frappe.set_user("Administrator")
     assert frappe.db.count("Email Queue") == baseline_email_queue
     checks.append("no_real_email_queue")
+    frappe.db.commit()
     assert len(bookings) == 4
     print(json.dumps({"status": "PASS", "scope": "isolated_native_frappe_only",
                       "count": len(bookings), "checks": checks}), flush=True)
 finally:
     frappe.set_user("Administrator")
-    frappe.conf.cc_public_first_meeting_types = previous_config
-    frappe.db.rollback(save_point="audit11_free_public_test")
     frappe.destroy()
