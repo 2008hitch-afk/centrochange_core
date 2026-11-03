@@ -7,7 +7,7 @@ import { NoteHistory } from './note_history'
 import { PatientAssignments } from './patient_assignments'
 import { PatientPackages } from './patient_packages'
 import { saveArchive } from './scoped_api'
-import { Button, Chip, Drawer, Empty, Field, FormError, Modal, type Feedback } from './ui'
+import { Button, Chip, Empty, Field, FormError, Modal, type Feedback } from './ui'
 
 type Profile = Row & { name: string; modified: string; first_name: string; last_name: string; email: string; active_assignment: boolean }
 type History = { appointments: Row[]; truncated: boolean; settlements: Row[]; organizational_notes: Row[]; private_notes: Row[]; packages: Row[]; assignment_events?: Row[]; total_appointments?: number; page?: number; total_pages?: number }
@@ -31,6 +31,7 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
   const [corrects, setCorrects] = useState<string | null>(null)
   const [noteBusy, setNoteBusy] = useState(false)
   const [appointment, setAppointment] = useState<Row | null>(null)
+  const [tab, setTab] = useState<'Riepilogo' | 'Sedute' | 'Assegnazioni' | 'Note' | 'Pacchetti'>('Riepilogo')
   const [events, setEvents] = useState<Row[] | null>(null)
   const [eventsError, setEventsError] = useState('')
   const savedScroll = useRef(0)
@@ -44,7 +45,8 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
 
   useEffect(() => {
     let live = true
-    setLoading(true); setError(''); setAppointment(null)
+    setLoading(true); setError(''); setAppointment(null); setProfile(null); setHistory(null)
+    setNote(''); setCorrects(null); setNotePrivate(false); setDraft(null)
     Promise.all([
       ops<Profile>('profiles.patient_detail', { center, name: patient.name }),
       ops<History>('workspace.patient_history', { center, patient: patient.name, page: historyPage, page_length: 50 })
@@ -66,20 +68,20 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
 
   useEffect(() => {
     if (!appointment) return
-    const drawer = document.querySelector<HTMLElement>('.drawer')
+    const drawer = document.querySelector<HTMLElement>('.patient-detail-page')
     if (drawer) drawer.scrollTop = 0
     backButton.current?.focus()
   }, [appointment])
 
   const openAppointment = (row: Row, button: HTMLButtonElement) => {
-    savedScroll.current = button.closest<HTMLElement>('.drawer')?.scrollTop ?? 0
+    savedScroll.current = button.closest<HTMLElement>('.patient-detail-page')?.scrollTop ?? 0
     sourceAppointment.current = String(row.name)
     setAppointment(row)
   }
   const returnToPatient = () => {
     setAppointment(null)
     requestAnimationFrame(() => {
-      const drawer = document.querySelector<HTMLElement>('.drawer')
+      const drawer = document.querySelector<HTMLElement>('.patient-detail-page')
       if (drawer) drawer.scrollTop = savedScroll.current
       Array.from(drawer?.querySelectorAll<HTMLButtonElement>('button[data-appointment]') ?? [])
         .find(button => button.dataset.appointment === sourceAppointment.current)?.focus({ preventScroll: true })
@@ -101,13 +103,15 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
     setNoteBusy(true); setError('')
     try {
       await ops('notes.add_note', { patient: patient.name, center, content: note.trim(), private: notePrivate ? 1 : 0, corrects }, true)
-      setNote(''); setCorrects(null); feedback(corrects ? 'Rettifica registrata.' : 'Nota registrata.'); refresh()
+      setNote(''); setCorrects(null); setNotePrivate(false); feedback(corrects ? 'Rettifica registrata.' : 'Nota registrata.'); refresh()
     } catch (cause) { setError(errorText(cause)); feedback(errorText(cause), true) }
     finally { setNoteBusy(false) }
   }
   const correct = (row: Row, privateNote: boolean) => { setCorrects(String(row.name)); setNote(String(row.content ?? '')); setNotePrivate(privateNote) }
 
-  return <><Drawer title={appointment ? 'Dettaglio seduta' : patientLabel} onClose={onClose}>
+  return <><article className="patient-detail-page" data-active-tab={tab}>
+    <header className="patient-page-header"><button type="button" className="patient-back" onClick={onClose}>← Torna ai pazienti</button><h1>{appointment ? 'Dettaglio seduta' : patientLabel}</h1></header>
+    {!appointment && <nav className="patient-page-tabs" aria-label="Sezioni della scheda paziente">{(['Riepilogo', 'Sedute', 'Assegnazioni', 'Note', 'Pacchetti'] as const).map(next => <button type="button" key={next} aria-current={tab === next ? 'page' : undefined} onClick={() => setTab(next)}>{next}</button>)}</nav>}
     {appointment ? <section className="detail-section patient-appointment-detail">
       <button ref={backButton} className="patient-back" type="button" onClick={returnToPatient}>← Torna alla scheda paziente</button>
       <h3>{demoText(appointment.cc_service_label) || 'Seduta'}</h3>
@@ -124,8 +128,8 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
     </section> : <>
     {loading && <p role="status">Caricamento scheda paziente…</p>}
     {error && <p className="inline-error" role="alert">{error}</p>}
-    {profile && <section className="detail-section"><h3>Anagrafica</h3>{historical && <p className="scope-note" role="status">Nessuna assegnazione attiva in questo centro. La scheda è consultabile come storico; per riprendere le operazioni, registra una nuova assegnazione autorizzata.</p>}<dl className="property-list"><div><dt>Nome</dt><dd>{profile.first_name || '—'}</dd></div><div><dt>Cognome</dt><dd>{profile.last_name || '—'}</dd></div><div><dt>Email</dt><dd>{profile.email || '—'}</dd></div></dl>{manager && !historical && <Button variant="secondary" onClick={() => { saveKey.current = requestKey(); setDraft({ ...profile }); setReason(''); setError('') }}>Modifica scheda</Button>}</section>}
-    {history && <><section className="detail-section"><h3>Sedute {history.total_appointments ? `(${history.total_appointments})` : ''}</h3>
+    {profile && <section className="detail-section patient-tab-summary"><h3>Anagrafica</h3>{historical && <p className="scope-note" role="status">Nessuna assegnazione attiva in questo centro. La scheda è consultabile come storico; per riprendere le operazioni, registra una nuova assegnazione autorizzata.</p>}<dl className="property-list"><div><dt>Nome</dt><dd>{profile.first_name || '—'}</dd></div><div><dt>Cognome</dt><dd>{profile.last_name || '—'}</dd></div><div><dt>Email</dt><dd>{profile.email || '—'}</dd></div></dl>{manager && !historical && <Button variant="secondary" onClick={() => { saveKey.current = requestKey(); setDraft({ ...profile }); setReason(''); setError('') }}>Modifica scheda</Button>}</section>}
+    {history && <><section className="detail-section patient-tab-sessions"><h3>Sedute {history.total_appointments ? `(${history.total_appointments})` : ''}</h3>
       {history.total_pages && history.total_pages > 1 ? (
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
           <Button variant="secondary" disabled={historyPage <= 1} onClick={() => setHistoryPage(p => Math.max(1, p - 1))}>Precedente</Button>
@@ -135,11 +139,11 @@ export function PatientDetail({ boot, patient, center, feedback, onClose, onSucc
       ) : null}
       {history.truncated && !history.total_pages && <p className="scope-note">Mostrate le prime 100 sedute.</p>}
       {history.appointments.length ? history.appointments.map(row => <button className="patient-history-item" type="button" data-appointment={String(row.name)} key={String(row.name)} onClick={event => openAppointment(row, event.currentTarget)}><strong>{displayDate(row.appointment_date)} · {time(row.appointment_time)} · {demoText(row.cc_service_label) || 'Seduta'}</strong><small>{closureName(row.cc_closure_state)} · {practitionerNameFor(String(row.practitioner ?? ''), boot.practitioners, String(row.practitioner_name ?? ''))}</small><span>Apri eventi</span></button>) : <p className="scope-note">Nessuna seduta nel centro.</p>}</section>
-      <section className="detail-section"><h3>Assegnazioni: storico</h3>{history.assignment_events?.length ? <div className="timeline">{history.assignment_events.map((row, index) => <article key={index} className="note"><strong>{row.active ? 'Assegnazione attivata' : 'Assegnazione revocata'} · {practitionerNameFor(String(row.practitioner ?? ''), boot.practitioners)}</strong><small>{displayDate(row.event_time)} · {auditActorName(row.actor)}</small><p>Motivo: {String(row.reason ?? '—')}</p></article>)}</div> : <p className="scope-note">Nessun evento di assegnazione disponibile.</p>}</section>
-      <section className="detail-section"><h3>Note organizzative</h3><NoteHistory rows={history.organizational_notes} onCorrect={historical ? undefined : row => correct(row, false)} />{professional && <><h3>Note professionali riservate</h3><NoteHistory rows={history.private_notes} privateNotes onCorrect={row => correct(row, true)} /></>}{!historical && <form onSubmit={event => { event.preventDefault(); void addNote() }}><Field label={corrects ? 'Rettifica nota' : 'Nuova nota organizzativa'} required><textarea value={note} onChange={event => setNote(event.target.value)} required maxLength={100000} /></Field>{professional && <label className="checkbox-row"><input type="checkbox" checked={notePrivate} onChange={event => { setNotePrivate(event.target.checked); setCorrects(null) }} /> Nota professionale riservata</label>}<FormError error={error} /><Button type="submit" disabled={noteBusy || !note.trim()}>{noteBusy ? 'Salvataggio…' : corrects ? 'Registra rettifica' : 'Aggiungi nota'}</Button></form>}</section>
-      <PatientPackages boot={boot} patient={patient.name} center={center} packages={history.packages} feedback={feedback} onSuccess={refresh} readOnly={historical} />
+      <section className="detail-section patient-tab-assignments"><h3>Assegnazioni: storico</h3>{history.assignment_events?.length ? <div className="timeline">{history.assignment_events.map((row, index) => <article key={index} className="note"><strong>{row.active ? 'Assegnazione attivata' : 'Assegnazione revocata'} · {practitionerNameFor(String(row.practitioner ?? ''), boot.practitioners)}</strong><small>{displayDate(row.event_time)} · {auditActorName(row.actor)}</small><p>Motivo: {String(row.reason ?? '—')}</p></article>)}</div> : <p className="scope-note">Nessun evento di assegnazione disponibile.</p>}</section>
+      <section className="detail-section patient-tab-notes"><h3>Note organizzative</h3><NoteHistory rows={history.organizational_notes} onCorrect={historical ? undefined : row => correct(row, false)} />{professional && <><h3>Note professionali riservate</h3><NoteHistory rows={history.private_notes} privateNotes onCorrect={historical ? undefined : row => correct(row, true)} /></>}{!historical && <form onSubmit={event => { event.preventDefault(); void addNote() }}><h3>{corrects ? `Rettifica di una nota ${notePrivate ? 'professionale riservata' : 'organizzativa'}` : 'Nuova nota'}</h3>{!corrects && professional && <fieldset className="note-kind"><legend>Tipo di nota</legend><label><input type="radio" name="note-kind" checked={!notePrivate} onChange={() => setNotePrivate(false)} /> Organizzativa</label><label><input type="radio" name="note-kind" checked={notePrivate} onChange={() => setNotePrivate(true)} /> Professionale riservata</label></fieldset>}<p className="scope-note" role="status">{notePrivate ? 'La nota professionale è visibile soltanto al professionista autorizzato nel contesto del paziente.' : 'La nota organizzativa è visibile ai ruoli autorizzati nel centro.'} {corrects ? 'La rettifica conserva il tipo e la versione precedente nello storico.' : 'Dopo il salvataggio il testo non si modifica: eventuali correzioni si registrano come rettifiche.'}</p><Field label={corrects ? 'Testo della rettifica' : 'Testo della nota'} required><textarea value={note} onChange={event => setNote(event.target.value)} required maxLength={100000} /></Field><FormError error={error} /><div className="form-actions">{corrects && <Button type="button" variant="secondary" onClick={() => { setCorrects(null); setNote(''); setNotePrivate(false) }}>Annulla rettifica</Button>}<Button type="submit" disabled={noteBusy || !note.trim()}>{noteBusy ? 'Salvataggio…' : corrects ? 'Registra rettifica' : 'Aggiungi nota'}</Button></div></form>}</section>
+      <div className="patient-tab-packages"><PatientPackages boot={boot} patient={patient.name} center={center} packages={history.packages} feedback={feedback} onSuccess={refresh} readOnly={historical} /></div>
     </>}
-    <PatientAssignments boot={boot} patient={patient.name} center={center} feedback={feedback} onSuccess={refresh} />
+    {profile && history && <div className="patient-tab-assignments"><PatientAssignments boot={boot} patient={patient.name} center={center} feedback={feedback} onSuccess={refresh} /></div>}
     </>}
-  </Drawer>{draft && <Modal title="Modifica paziente" onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); void save() }}><Field label="Nome" required><input required value={draft.first_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, first_name: event.target.value }) }} /></Field><Field label="Cognome"><input value={draft.last_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, last_name: event.target.value }) }} /></Field><Field label="Email"><input type="email" value={draft.email ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, email: event.target.value }) }} /></Field><Field label="Motivo" required><textarea required maxLength={500} value={reason} onChange={event => { saveKey.current = requestKey(); setReason(event.target.value) }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
+  </article>{draft && <Modal title="Modifica paziente" onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); void save() }}><Field label="Nome" required><input required value={draft.first_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, first_name: event.target.value }) }} /></Field><Field label="Cognome"><input value={draft.last_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, last_name: event.target.value }) }} /></Field><Field label="Email"><input type="email" value={draft.email ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, email: event.target.value }) }} /></Field><Field label="Motivo" required><textarea required maxLength={500} value={reason} onChange={event => { saveKey.current = requestKey(); setReason(event.target.value) }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
 }

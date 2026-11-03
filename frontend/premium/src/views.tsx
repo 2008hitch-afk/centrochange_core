@@ -441,10 +441,35 @@ function AppointmentDetail({ row, boot, center, onClose, onSuccess, feedback, on
 export function Patients({ boot, center, feedback, refreshBoot }: Context & { refreshBoot: () => Promise<void> }) {
   const [search, setSearch] = useState('')
   const [rows, setRows] = useState<Patient[]>(boot.patients)
-  const [selected, setSelected] = useState<Patient | null>(null)
+  const [selected, setSelected] = useState<Patient | null>(() => {
+    const id = new URLSearchParams(location.search).get('patient')
+    return id ? boot.patients.find(row => row.name === id) ?? { name: id, patient_name: '' } : null
+  })
+  const listScroll = useRef(0)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [truncated, setTruncated] = useState(false)
+  useEffect(() => {
+    const onBack = () => {
+      const id = new URLSearchParams(location.search).get('patient')
+      setSelected(id ? boot.patients.find(row => row.name === id) ?? { name: id, patient_name: '' } : null)
+    }
+    addEventListener('popstate', onBack)
+    return () => removeEventListener('popstate', onBack)
+  }, [boot.patients])
+  const openPatient = (patient: Patient) => {
+    listScroll.current = scrollY
+    const url = new URL(location.href); url.searchParams.set('patient', patient.name)
+    history.pushState(null, '', url)
+    setSelected(patient)
+    window.scrollTo(0, 0)
+  }
+  const closePatient = () => {
+    const url = new URL(location.href); url.searchParams.delete('patient')
+    history.replaceState(null, '', url)
+    setSelected(null)
+    requestAnimationFrame(() => window.scrollTo(0, listScroll.current))
+  }
   useEffect(() => {
     if (!center) return
     const term = search.trim().toLocaleLowerCase('it-IT')
@@ -457,14 +482,18 @@ export function Patients({ boot, center, feedback, refreshBoot }: Context & { re
       .catch(cause => { if (live) { setRows([]); setError(getError(cause)); setLoading(false) } })
     return () => { live = false }
   }, [center, search, boot])
-  return <><Heading eyebrow="PERCORSO PAZIENTE" title="Pazienti" subtitle="Cerca, consulta e segui il percorso operativo nel centro." /><section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco pazienti</h2><p>{rows.length} {rows.length === 1 ? 'risultato' : 'risultati'} nel centro selezionato</p></div><label className="search-inline"><Search size={17} /><input placeholder="Cerca per nome o codice" aria-label="Cerca pazienti" value={search} onChange={event => setSearch(event.target.value)} /></label></div>{loading && <p className="panel-loading" role="status">Caricamento pazienti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{truncated && <p className="scope-note">Mostrati i primi 50 risultati. Affina la ricerca.</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'patient_name', label: 'Paziente', render: (value, row) => <><strong>{demoPatient(row.name, value, row.first_name, row.last_name)}</strong>{row.active_assignment === false && <Chip tone="warn">Storico</Chip>}</> }, { key: 'name', label: '', render: () => <ArrowRight size={17} /> }]} onRow={row => setSelected(row as Patient)} /> : <Empty title="Nessun paziente trovato nel centro." />)}</section>{selected && <PatientDetail boot={boot} patient={selected} center={center} feedback={feedback} onClose={() => setSelected(null)} onSuccess={() => { void refreshBoot() }} />}</>
+  return selected ? <PatientDetail key={`${center}:${selected.name}`} boot={boot} patient={selected} center={center} feedback={feedback} onClose={closePatient} onSuccess={() => { void refreshBoot() }} /> : <><Heading eyebrow="PERCORSO PAZIENTE" title="Pazienti" subtitle="Cerca, consulta e segui il percorso operativo nel centro." /><section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco pazienti</h2><p>{rows.length} {rows.length === 1 ? 'risultato' : 'risultati'} nel centro selezionato</p></div><label className="search-inline"><Search size={17} /><input placeholder="Cerca per nome o codice" aria-label="Cerca pazienti" value={search} onChange={event => setSearch(event.target.value)} /></label></div>{loading && <p className="panel-loading" role="status">Caricamento pazienti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{truncated && <p className="scope-note">Mostrati i primi 50 risultati. Affina la ricerca.</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'patient_name', label: 'Paziente', render: (value, row) => <><strong>{demoPatient(row.name, value, row.first_name, row.last_name)}</strong>{row.active_assignment === false && <Chip tone="warn">Storico</Chip>}</> }, { key: 'name', label: '', render: () => <ArrowRight size={17} /> }]} onRow={row => openPatient(row as Patient)} /> : <Empty title="Nessun paziente trovato nel centro." />)}</section></>
 }
 
 export function Professionals({ boot, center }: { boot: Boot; center: string }) {
   const [query, setQuery] = useState('')
+  const listScroll = useRef(0)
   const [rows, setRows] = useState<Practitioner[]>([])
   const [hasMore, setHasMore] = useState(false)
-  const [selected, setSelected] = useState<Practitioner | null>(null)
+  const [selected, setSelected] = useState<Practitioner | null>(() => {
+    const id = new URLSearchParams(location.search).get('practitioner')
+    return id ? boot.practitioners.find(row => row.name === id) ?? { name: id, practitioner_name: '' } : null
+  })
   const [detail, setDetail] = useState<Row | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -473,8 +502,29 @@ export function Professionals({ boot, center }: { boot: Boot; center: string }) 
   const canReadProfile = boot.roles.includes('CC Manager') || boot.roles.includes('CC Professional')
   const term = query.trim()
   useEffect(() => {
+    const onBack = () => {
+      const id = new URLSearchParams(location.search).get('practitioner')
+      setSelected(id ? boot.practitioners.find(row => row.name === id) ?? { name: id, practitioner_name: '' } : null)
+    }
+    addEventListener('popstate', onBack)
+    return () => removeEventListener('popstate', onBack)
+  }, [boot.practitioners])
+  const openPractitioner = (row: Practitioner) => {
+    listScroll.current = scrollY
+    const url = new URL(location.href); url.searchParams.set('practitioner', row.name)
+    history.pushState(null, '', url)
+    setSelected(row); setDetail(null); setError('')
+    window.scrollTo(0, 0)
+  }
+  const closePractitioner = () => {
+    const url = new URL(location.href); url.searchParams.delete('practitioner')
+    history.replaceState(null, '', url)
+    setSelected(null); setDetail(null)
+    requestAnimationFrame(() => window.scrollTo(0, listScroll.current))
+  }
+  useEffect(() => {
     searchGeneration.current += 1
-    setSelected(null); setDetail(null); setRows([]); setHasMore(false); setError('')
+    setRows([]); setHasMore(false); setError('')
     if (!canReadProfile) {
       const needle = term.toLocaleLowerCase('it-IT')
       setRows(boot.practitioners.filter(row => practitionerName(row).toLocaleLowerCase('it-IT').includes(needle)))
@@ -506,10 +556,10 @@ export function Professionals({ boot, center }: { boot: Boot; center: string }) 
     ops<Row>('profiles.practitioner_detail', { center, name: selected.name }).then(value => { if (live) setDetail(value) }).catch(cause => { if (live) setError(getError(cause)) }).finally(() => { if (live) setDetailLoading(false) })
     return () => { live = false }
   }, [selected, center, canReadProfile])
-  const selectedStatus = String(detail?.status ?? selected?.status ?? 'Active')
-  return <><Heading eyebrow="OPERATIVITÀ" title="Professionisti" subtitle="Professionisti autorizzati per il centro selezionato." />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco professionisti</h2><p>{rows.length} {rows.length === 1 ? 'professionista' : 'professionisti'} nel centro{hasMore ? ' · altri disponibili' : ''}</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={event => setQuery(event.target.value)} aria-label="Cerca professionisti" placeholder="Cerca professionista" /></label></div>{loading && <p className="panel-loading" role="status">Caricamento professionisti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => <strong>{practitionerName(row as Practitioner)}</strong> }, { key: 'status', label: 'Stato', render: (value) => value && value !== 'Active' ? 'Non attivo' : 'Attivo' }, { key: 'name', label: 'Scheda', render: () => <ArrowRight size={17} /> }]} onRow={row => { setSelected(row as Practitioner); setDetail(null); setError('') }} /> : <Empty title={term ? 'Nessun risultato per questa ricerca.' : 'Nessun professionista disponibile nel centro.'} />)}{hasMore && <Button variant="secondary" disabled={loading} onClick={() => void more()}>Carica altri</Button>}</section>
-    {selected && <Drawer title={practitionerName(selected)} onClose={() => { setSelected(null); setDetail(null) }}><div className="detail-summary"><Chip tone={selectedStatus !== 'Active' ? 'warn' : 'good'}>{selectedStatus !== 'Active' ? 'Non attivo' : 'Attivo nel centro'}</Chip><p>Centro: {centerNameFor(center, boot.centers)}</p></div>{detailLoading && <p className="detail-section" role="status">Caricamento scheda…</p>}{error && <p className="detail-section inline-error" role="alert">{error}</p>}{detail && <div className="detail-section"><h3>Scheda professionista</h3><dl className="property-list">{syntheticCode(detail.first_name) ? <div><dt>Identità</dt><dd>{practitionerName(selected)}</dd></div> : <><div><dt>Nome</dt><dd>{String(detail.first_name ?? '—')}</dd></div><div><dt>Cognome</dt><dd>{String(detail.last_name ?? '—')}</dd></div></>}</dl>{boot.roles.includes('CC Manager') && <p className="scope-note">Per modificare nome e cognome, apri Archivi → Professionisti.</p>}</div>}{!canReadProfile && <div className="detail-section"><p>È disponibile la sola identità operativa autorizzata per questo centro.</p></div>}</Drawer>}
+  const selectedStatus = String(detail?.status ?? selected?.status ?? '')
+  return selected ? <article className="professional-detail-page"><header className="patient-page-header"><button className="patient-back" type="button" onClick={closePractitioner}>← Torna ai professionisti</button><h1>{practitionerName(selected)}</h1></header><div className="detail-summary"><Chip tone={!selectedStatus ? 'neutral' : selectedStatus !== 'Active' ? 'warn' : 'good'}>{!selectedStatus ? 'Stato non disponibile' : selectedStatus !== 'Active' ? 'Non attivo' : 'Attivo nel centro'}</Chip><p>Centro: {centerNameFor(center, boot.centers)}</p></div>{detailLoading && <p className="detail-section" role="status">Caricamento scheda…</p>}{error && <p className="detail-section inline-error" role="alert">{error}</p>}{detail && <section className="detail-section"><h2>Profilo</h2><dl className="property-list">{syntheticCode(detail.first_name) ? <div><dt>Identità</dt><dd>{practitionerName(selected)}</dd></div> : <><div><dt>Nome</dt><dd>{String(detail.first_name ?? '—')}</dd></div><div><dt>Cognome</dt><dd>{String(detail.last_name ?? '—')}</dd></div></>}</dl>{boot.roles.includes('CC Manager') && <p className="scope-note">Per modificare nome e cognome, apri Archivi → Professionisti.</p>}</section>}{!canReadProfile && <section className="detail-section"><p>È disponibile la sola identità operativa autorizzata per questo centro.</p></section>}</article> : <><Heading eyebrow="OPERATIVITÀ" title="Professionisti" subtitle="Professionisti autorizzati per il centro selezionato." />
+    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Elenco professionisti</h2><p>{rows.length} {rows.length === 1 ? 'professionista' : 'professionisti'} nel centro{hasMore ? ' · altri disponibili' : ''}</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={event => setQuery(event.target.value)} aria-label="Cerca professionisti" placeholder="Cerca professionista" /></label></div>{loading && <p className="panel-loading" role="status">Caricamento professionisti…</p>}{error && <p className="inline-error" role="alert">{error}</p>}{!loading && !error && (rows.length ? <DataTable rows={rows as unknown as Row[]} columns={[{ key: 'practitioner_name', label: 'Professionista', render: (_value, row) => <strong>{practitionerName(row as Practitioner)}</strong> }, { key: 'status', label: 'Stato', render: (value) => value && value !== 'Active' ? 'Non attivo' : 'Attivo' }, { key: 'name', label: 'Scheda', render: () => <ArrowRight size={17} /> }]} onRow={row => openPractitioner(row as Practitioner)} /> : <Empty title={term ? 'Nessun risultato per questa ricerca.' : 'Nessun professionista disponibile nel centro.'} />)}{hasMore && <Button variant="secondary" disabled={loading} onClick={() => void more()}>Carica altri</Button>}</section>
+
   </>
 }
 
@@ -809,19 +859,19 @@ export function Access({ center, feedback, boot }: Context) {
   const submit = () => form === 'membership'
     ? call('security.lifecycle.set_membership', { user, center, active, reason }, true)
     : call('security.lifecycle.set_practitioner_state', { practitioner, active, reason }, true)
-  return <><Heading eyebrow="AMMINISTRAZIONE" title="Gestione accessi" subtitle="Consulta gli account autorizzati e gestisci le appartenenze con una motivazione." action={<div className="button-group"><Button variant="secondary" onClick={() => openForm('practitioner')}>Stato professionista</Button><Button onClick={() => openForm('membership')}><Plus size={17} /> Appartenenza</Button></div>} />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Appartenenze a {centerNameFor(center, boot.centers)}</h2><p>Identità, ruolo e stato dell'account nella sede selezionata.</p></div></div>{loadError ? <p className="inline-error" role="alert">{loadError}</p> : !data ? <p className="panel-loading" role="status">Caricamento…</p> : <DataTable rows={memberships} columns={[{ key: 'user', label: 'Utente', render: value => {
+  return <><Heading eyebrow="AMMINISTRAZIONE" title="Gestione accessi" subtitle="Consulta gli account autorizzati e gestisci le appartenenze con una motivazione. Un account di accesso, un ruolo e una scheda professionista sono elementi distinti." action={<div className="button-group"><Button variant="secondary" onClick={() => openForm('practitioner')}>Stato professionista</Button><Button onClick={() => openForm('membership')}><Plus size={17} /> Gestisci appartenenza</Button></div>} />
+    <section className="panel access-memberships"><div className="panel-toolbar"><div className="panel-title"><h2>Appartenenze a {centerNameFor(center, boot.centers)}</h2><p>Identità, ruolo e stato dell'account nella sede selezionata.</p></div></div>{loadError ? <p className="inline-error" role="alert">{loadError}</p> : !data ? <p className="panel-loading" role="status">Caricamento…</p> : <DataTable rows={memberships} columns={[{ key: 'user', label: 'Utente', render: value => {
       const account = users.find(entry => entry.name === value)
       return account ? readableUser(account) : String(value ?? 'Utente non disponibile')
     } }, { key: 'active', label: 'Stato appartenenza', render: value => <Chip tone={Number(value) === 1 ? 'good' : 'neutral'}>{Number(value) === 1 ? 'Attivo' : 'Disattivo'}</Chip> }]} />}</section>
     {form && <Modal title={form === 'membership' ? 'Appartenenza al centro' : 'Stato professionista'} onClose={() => setForm(null)}><form onSubmit={e => { e.preventDefault(); if (active && reason.trim() && (form === 'membership' ? user : practitioner)) { if (confirmAccess) void run(submit); else setConfirmAccess(true) } }}>
       <p className="scope-note">{form === 'membership' ? <>Sede interessata: <strong>{centerNameFor(center, boot.centers)}</strong>.</> : 'Lo stato modifica anche l’accesso dell’account del professionista, in tutte le sedi.'} La modifica viene registrata.</p>
-      {confirmAccess ? <><p>Conferma: <strong>{form === 'membership' && selectedAccount ? readableUser(selectedAccount) : selectedPractitioner ? demoText(selectedPractitioner.practitioner_name) || String(selectedPractitioner.name) : '—'}</strong> · {active === '1' ? 'Attivo' : 'Disattivo'}.</p><p>Motivo: {reason}</p></> : <>
-      {form === 'membership' ? <Field label="Utente" required><select value={user} onChange={e => { setUser(e.target.value); setActive('') }} required><option value="">Seleziona un utente</option>{users.map(u => <option key={String(u.name)} value={String(u.name)}>{readableUser(u)}</option>)}</select></Field> : <Field label="Professionista" required><select value={practitioner} onChange={e => { setPractitioner(e.target.value); setActive('') }} required><option value="">Seleziona un professionista</option>{practitioners.map(p => <option key={String(p.name)} value={String(p.name)}>{demoText(p.practitioner_name) || String(p.name)}</option>)}</select></Field>}
+      {confirmAccess ? <><p>Conferma: <strong>{form === 'membership' && selectedAccount ? readableUser(selectedAccount) : selectedPractitioner ? demoText(selectedPractitioner.practitioner_name) || String(selectedPractitioner.name) : '—'}</strong> · {active === '1' ? 'Attivo' : 'Disattivo'}.</p>{form === 'practitioner' && active === '0' && <p role="alert"><strong>La disattivazione riguarda tutte le sedi e l’account collegato.</strong></p>}<p>Motivo: {reason}</p></> : <>
+      {form === 'membership' ? <SearchableSelect label="Account di accesso" options={users.map(u => ({ value: String(u.name), label: readableUser(u), searchText: String(u.name) }))} value={user} onChange={value => { setUser(value); setActive('') }} empty="Cerca un account" required /> : <SearchableSelect label="Professionista" options={practitioners.map(p => ({ value: String(p.name), label: demoText(p.practitioner_name) || String(p.name), searchText: `${p.name} ${p.first_name ?? ''} ${p.last_name ?? ''}` }))} value={practitioner} onChange={value => { setPractitioner(value); setActive('') }} empty="Cerca un professionista" required />}
       {form === 'membership' && selectedAccount && <p className="scope-note">Account: {readableUser(selectedAccount)}. Appartenenza attuale: <strong>{currentMembership ? Number(currentMembership.active) === 1 ? 'Attiva' : 'Disattiva' : 'Non presente in questa sede'}</strong>.</p>}
       {form === 'practitioner' && selectedPractitioner && <p className="scope-note">Stato attuale del professionista: <strong>{selectedPractitioner.status === 'Active' ? 'Attivo' : 'Non attivo'}</strong>.</p>}
       <Field label="Nuovo stato" required><select value={active} onChange={e => setActive(e.target.value)} required><option value="">Scegli lo stato da impostare</option><option value="1">Attivo</option><option value="0">Disattivo</option></select></Field>
-      {active !== '' && <p className="scope-note">{active === '0' ? 'La disattivazione impedirà le operazioni consentite tramite questa appartenenza o stato.' : 'L’attivazione rende disponibile la relativa appartenenza o stato, senza assegnare nuovi ruoli.'}</p>}
+      {active !== '' && <p className="scope-note" role={form === 'practitioner' && active === '0' ? 'alert' : undefined}>{form === 'practitioner' && active === '0' ? <strong>Attenzione: la disattivazione del professionista blocca il suo accesso e la sua operatività in tutte le sedi, non solo in quella selezionata.</strong> : active === '0' ? 'La disattivazione dell’appartenenza impedisce le operazioni in questa sede.' : 'L’attivazione rende disponibile la relativa appartenenza o stato, senza assegnare nuovi ruoli.'}</p>}
       <Field label="Motivo della modifica" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} /></Field></>}<FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => confirmAccess ? setConfirmAccess(false) : setForm(null)}>{confirmAccess ? 'Indietro' : 'Annulla'}</Button><Button type="submit" disabled={busy || !active || !reason.trim() || !(form === 'membership' ? user : practitioner)}>{busy ? 'Salvataggio…' : confirmAccess ? 'Conferma modifica' : 'Rivedi modifica'}</Button></div>
     </form></Modal>}</>
 }

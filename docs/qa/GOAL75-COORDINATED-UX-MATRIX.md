@@ -1,0 +1,25 @@
+# GOAL #75 — Premium React, matrice UX coordinata
+
+Baseline: PR #191 HEAD `c3e530bb1ef52fa6dd982e04b12b80b69aad77b3`, DRAFT il 02/11/2026; PR #192 packaging separata. Branch locale `issue-75/coordinated-premium-ux`, stacked su #191. Mandato Owner: Issue #75 commento 6574057290. Nessuna mutazione STAGING/DEV.
+
+| Superficie / ruoli | Task e fonte | Prima | Dopo in questo branch | Prova richiesta / stato |
+|---|---|---|---|---|
+| Agenda / Direzione, Professionista, Segreteria | Apertura rapida seduta, `workspace.agenda` e API seduta | Drawer rapido | Invariato come decisione Owner | Regressione browser desktop/mobile + API: **NOT_TESTED_ISOLATED** |
+| Pazienti / ruoli autorizzati | Ricerca scoped `workspace.patient_search`, profilo `profiles.patient_detail`, storico `workspace.patient_history` | Scheda lunga in drawer | Pagina completa con sezioni Riepilogo, Sedute, Assegnazioni, Note, Pacchetti; URL con `patient`, ritorno alla ricerca e selezione storica | Typecheck PASS; browser e API reali **NOT_TESTED_ISOLATED** |
+| Pazienti / Professionista e Direzione secondo backend | Nuova nota o rettifica via `notes.add_note` | Checkbox condiviso che cambiava il contesto visivo | Tipo radio solo per nuova nota; in rettifica il tipo è fissato dalla nota originaria, spiegazione append-only, annulla rettifica | Backend `validate_note` ricerca il precedente nello stesso DocType e verifica paziente/centro/professionista; UI typecheck PASS; API 403/IDOR/CSRF **NOT_TESTED_ISOLATED** |
+| Professionisti / Manager, Professionista, altri ruoli con identità operativa | Ricerca scoped `profiles.practitioners`, profilo `profiles.practitioner_detail` | Drawer minimo | Pagina dedicata e URL `practitioner`, profilo solo per ruoli già autorizzati; nessuna nuova API | Typecheck PASS; browser/API per ruolo **NOT_TESTED_ISOLATED** |
+| Gestione accessi / Direzione | `workspace.management_context`, `set_membership`, `set_practitioner_state` | Select statici per account e professionista; `+ Appartenenza` ambiguo | Combobox riusato, ricerca anche per codice/account, pulsante “Gestisci appartenenza”, avviso esplicito per disattivazione globale in fase di scelta e conferma; stato Attivo/Disattivo resta select semplice | Typecheck PASS; browser e API multiruolo **NOT_TESTED_ISOLATED** |
+| Registro modifiche / Direzione | `security.audit_view.events` | Tipi evento generici e motivi sistemici in inglese | Etichette italiane dei tipi evento presenti nel backend, traduzione visuale dei tre motivi sistemici noti, originale espandibile; raw event/before/after/timestamp intatti | Typecheck PASS; confronto timestamp `00:00` con dati originali **NOT_TESTED_ISOLATED** |
+| Archivi e altre viste toccate da componenti comuni | `SearchableSelect` | Ricerca solo per label | `searchText` opzionale; le chiamate esistenti preservano il comportamento, account/professionista possono cercare ID senza mostrarlo come label | Typecheck PASS; regressione browser **NOT_TESTED_ISOLATED** |
+| Finanza, TS, SdI / ruoli autorizzati | Flussi già implementati | Nessun cambio richiesto | Nessuna feature aggiunta; il solo componente comune `SearchableSelect` può incidere sulla presentazione | Regressione **NOT_TESTED_ISOLATED** |
+
+## Evidenza e limiti correnti
+
+- `npm run --prefix frontend/premium typecheck`: PASS. `npm run --prefix frontend/premium build`: PASS; parità sorgenti e asset generati: PASS sulla HEAD locale.
+- Suite Python: 183 pass, 1 skip, 1 errore nella prova GPG del checkpoint: il processo `gpg` fallisce nell'ambiente sandbox; nessuna modifica Python nel branch. Un primo run parallelo alla build ha anche incontrato un artefatto CSS non ancora generato; la ripetizione sequenziale ha eliminato quel race.
+- Browser Chromium presente nella cache, ma `chromium.launch` si chiude nella sandbox e `config.webServer` non può avviare il dev server. Test Playwright desktop/mobile aggiunti per Pazienti, Accessi, Registro e rettifica nota riservata; **non eseguiti con successo** localmente. Docker/Frappe isolato non accessibile da questa sessione. Il workflow `goal75-isolated.yml` è predisposto per eseguire questi test e il clone Frappe sul runner esterno, ma **non è stato eseguito**.
+- Il clone CI predisposto esegue anche l'acceptance `operations.dev_acceptance.run()` con rollback per la rettifica privata e la segregazione fra professionisti, più negazioni HTTP per nota cross-center, privata da Manager e senza CSRF. Queste sono prove **preparate, non ancora PASS**.
+- Reviewer indipendente AI `/root/ux75_review` ha segnalato due difetti P1 di dati/azioni stale nel primo diff; sono stati corretti con reset di stato, remount per centro/paziente e gate delle azioni. La sua seconda lettura non ha trovato altri blocchi di codice, ma resta `COMMENTED / NOT_APPROVED` finché CI e API reali sulla HEAD esatta non sono PASS.
+- La pubblicazione della PR DRAFT, la CI e il gate STAGING SHA-specifico restano da registrare sulla HEAD finale.
+
+Non dichiarare `READY_FOR_OWNER_UAT_LIVE`, `OWNER_ACCEPTED` o completamento del GOAL su questa evidenza.
