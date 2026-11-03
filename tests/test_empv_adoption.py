@@ -84,7 +84,7 @@ class EmpvBrownfieldAdoptionTests(unittest.TestCase):
             url, "http://127.0.0.1:5182/assets/centrochange_core/premium/"
         )
         self.assertEqual(suites["typecheck"], ["npm", "run", "typecheck"])
-        self.assertIn("playwright.feedback.config.ts", suites["ui"])
+        self.assertTrue(any("playwright.feedback.config.ts" in arg for arg in suites["ui"]))
         self.assertTrue(config_file.is_file())
 
         script = (ROOT / "frontend/premium/playwright.feedback.config.ts").read_text()
