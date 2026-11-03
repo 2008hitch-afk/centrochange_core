@@ -9,6 +9,7 @@ on:
       - 'frontend/premium/src/first_meeting.tsx'
       - 'frontend/premium/src/style.css'
       - 'frontend/premium/tests/premium.spec.ts'
+      - 'infra/verify_full_single_stack.py'
 permissions:
   contents: write
   pull-requests: read
