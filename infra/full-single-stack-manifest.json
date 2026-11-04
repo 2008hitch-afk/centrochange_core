@@ -139,7 +139,7 @@
     "centrochange_core/finance/threshold_acceptance.py": "ae4ee14142bb10dc7a6ba16bc63bbc014511ee0fc7ec6ce460f8549a51a5a002",
     "centrochange_core/finance/ts.py": "566b0dd31fe5060516b44d5d1626304a78b9d028aaec24f249a8da09f3e52acd",
     "centrochange_core/finance/ts_acceptance.py": "30df4588bf4a7fd81668565b508621cccf842cadbd7d90551f372fa99e5d1edd",
-    "centrochange_core/hooks.py": "f67670440531d07e2b14cdbad6c1fedd36c0731fe6e8f70fce630d17406e59f0",
+    "centrochange_core/hooks.py": "6ab5d4d781ad8567f4e69def6586fe154ea4c31be67b092a81221a76b20077d6",
     "centrochange_core/modules.txt": "4d57c082b6c343d0ef5c2a55421db6fd74f5ff231819ac73aaa01c91c8900e70",
     "centrochange_core/operations/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "centrochange_core/operations/automation.py": "9c1d607bd2be1dd5cf1b8d9b88774fec9b5f9baef88200fb7718a9251d20ff91",
