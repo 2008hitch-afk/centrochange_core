@@ -1,0 +1,30 @@
+name: Issue 156 isolated Frappe and MariaDB
+on:
+  pull_request:
+    branches: [audit-11/public-first-meeting-two-mode]
+permissions:
+  contents: read
+jobs:
+  synthetic-receipts:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify candidate source
+        run: python3 infra/verify_full_single_stack.py --source
+      - name: Build isolated candidate image
+        run: docker build -f infra/Dockerfile.single-stack-full --build-arg SINGLE_STACK_SOURCE_SHA=${{ github.event.pull_request.head.sha }} -t cc156-ci:local .
+      - name: Synthetic Frappe acceptance
+        env:
+          CC_CLONE_IMAGE: cc156-ci:local
+        run: python3 infra/issue156_clone.py
+      - name: Verify isolated resources removed
+        if: always()
+        run: |
+          test -z "$(docker ps -a --filter name=cc156-ci- --format '{{.Names}}')"
+          test -z "$(docker volume ls --filter name=cc156-ci- --format '{{.Name}}')"
+          test -z "$(docker network ls --filter name=cc156-ci- --format '{{.Name}}')"

@@ -67,3 +67,21 @@ def retry(name,reason):
         doc.update({'state':'Pending','retry_limit':doc.attempts+5,'last_error':None}).save(ignore_permissions=True)
     append('NOTIFICATION_RETRY',doc.doctype,name,None,{'state':'Pending'},reason)
     return {'name':name,'replay':False}
+
+@frappe.whitelist(methods=['GET'])
+def target(name):
+    """Resolve historical payment notices only after checking both records' scope."""
+    doc = frappe.get_doc('CC Notification', name)
+    doc.check_permission('read')
+    if doc.kind == 'CLOSURE_REMINDER':
+        parts = (doc.event_key or '').split(':')
+        if len(parts) >= 3 and parts[0] == 'closure-reminder':
+            return {'day_closure':parts[1]}
+        return None
+    if doc.reference_doctype != 'CC Payment Notice' or not doc.reference_name:
+        return None
+    notice = frappe.get_doc('CC Payment Notice', doc.reference_name)
+    notice.check_permission('read')
+    from centrochange_core.finance.guards import patient_context
+    patient_context(notice.patient, notice.center)
+    return {'patient':notice.patient, 'center':notice.center}

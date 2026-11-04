@@ -96,11 +96,20 @@ def cancel(appointment,reason):
 
 
 def _settlement(doc,paid,mode,reason):
+	from centrochange_core.finance.operational_receipts import has_allocation
+	if has_allocation(doc.name):
+		frappe.throw('Questa seduta ha incassi allocati: la modifica richiede una rettifica autorizzata.')
 	paid=cint(paid)
 	if paid not in (0,1):
 		frappe.throw('Lo stato di pagamento operativo deve essere sì o no.')
 	if paid and (not mode or not frappe.db.get_value('Mode of Payment',mode,'enabled',for_update=True)):
 		frappe.throw('Seleziona un metodo di pagamento informativo attivo.')
+	if paid:
+		# A newly marked paid session must use the same monetary ledger as the
+		# patient payment flow; existing historical binary events remain intact.
+		from centrochange_core.finance.operational_receipts import record_from_authorized_closure
+		record_from_authorized_closure(doc, mode, reason)
+		return current_settlements(doc.name)[0].name
 	rows=current_settlements(doc.name)
 	if rows and rows[0].paid==paid and (rows[0].mode_of_payment or None)==(mode or None):
 		return rows[0].name
@@ -155,6 +164,9 @@ def waive(appointment,reason):
 	lock()
 	doc=_doc(appointment)
 	require_operations(doc.cc_center)
+	from centrochange_core.finance.operational_receipts import has_allocation
+	if has_allocation(doc.name):
+		frappe.throw('La seduta ha incassi allocati e richiede una rettifica autorizzata.')
 	if doc.cc_economic_state=='Waived':
 		return {'name':doc.name,'replay':True}
 	if doc.cc_economic_state not in ('Due','Package Covered'):
@@ -174,6 +186,9 @@ def reopen(appointment,reason):
 	lock()
 	doc=_doc(appointment)
 	require_operations(doc.cc_center)
+	from centrochange_core.finance.operational_receipts import has_allocation
+	if has_allocation(doc.name):
+		frappe.throw('La seduta ha incassi allocati e richiede una rettifica autorizzata.')
 	if doc.cc_closure_state=='Reopened':
 		return {'name':doc.name,'replay':True}
 	if doc.cc_closure_state not in ('Closed','Auto Locked'):

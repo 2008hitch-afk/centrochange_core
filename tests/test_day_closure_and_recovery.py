@@ -219,6 +219,15 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
         finance_col = types.ModuleType('centrochange_core.finance.collections')
         finance_col.require_booking = lambda doc: None
         sys.modules['centrochange_core.finance.collections'] = finance_col
+        receipts = types.ModuleType('centrochange_core.finance.operational_receipts')
+        receipts.has_allocation = lambda appointment: False
+        def closure_receipt(doc, mode, reason):
+            doc.cc_paid = 1
+            doc.cc_settlement_revision += 1
+            self.settlements.append(Record(name=f'NEW-{len(self.settlements)+1}', appointment=doc.name,
+                paid=1, mode_of_payment=mode, sequence=doc.cc_settlement_revision))
+        receipts.record_from_authorized_closure = closure_receipt
+        sys.modules['centrochange_core.finance.operational_receipts'] = receipts
 
         ops_packages = types.ModuleType('centrochange_core.operations.packages')
         ops_packages.disposition = lambda doc, due, reason, revision: None

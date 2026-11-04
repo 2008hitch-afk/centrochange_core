@@ -48,6 +48,9 @@ def draft(sources,posting_date,due_date,request_key,reason):
             frappe.throw('La richiesta è già stata usata con dati diversi.')
         return result(doc,True)
     for row in rows:
+        from centrochange_core.finance.operational_receipts import has_allocation
+        if has_allocation(row.appointment):
+            frappe.throw('Incasso operativo presente: la fatturazione richiede prima una riconciliazione autorizzata.')
         current=frappe.db.get_value('Patient Appointment',row.appointment,['cc_economic_state','cc_revision','cc_settlement_revision'],as_dict=True,for_update=True)
         if row.economic_state!='Due' or current.cc_economic_state!='Due' or row.revision!=current.cc_revision or row.settlement_revision!=current.cc_settlement_revision:
             frappe.throw('Sono fatturabili solo sedute attualmente dovute: aggiorna le fonti non più valide.')

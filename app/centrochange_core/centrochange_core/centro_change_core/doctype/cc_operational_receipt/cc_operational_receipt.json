@@ -1,0 +1,82 @@
+{
+  "doctype": "DocType",
+  "name": "CC Operational Receipt",
+  "module": "Centro Change Core",
+  "autoname": "field:request_key",
+  "engine": "InnoDB",
+  "fields": [
+    {
+      "fieldname": "request_key",
+      "label": "Request Key",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "request_hash",
+      "label": "Request Hash",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "patient",
+      "label": "Patient",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "Patient"
+    },
+    {
+      "fieldname": "center",
+      "label": "Center",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "Branch"
+    },
+    {
+      "fieldname": "receipt_date",
+      "label": "Receipt Date",
+      "fieldtype": "Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "mode_of_payment",
+      "label": "Mode of Payment",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "Mode of Payment"
+    },
+    {
+      "fieldname": "reason",
+      "label": "Reason",
+      "fieldtype": "Small Text",
+      "reqd": 1
+    },
+    {
+      "fieldname": "actor",
+      "label": "Actor",
+      "fieldtype": "Link",
+      "reqd": 1,
+      "options": "User"
+    },
+    {
+      "fieldname": "allocations",
+      "label": "Allocations",
+      "fieldtype": "Long Text",
+      "reqd": 1
+    }
+  ],
+  "field_order": [
+    "request_key",
+    "request_hash",
+    "patient",
+    "center",
+    "receipt_date",
+    "mode_of_payment",
+    "reason",
+    "actor",
+    "allocations"
+  ],
+  "permissions": [],
+  "actions": [],
+  "links": [],
+  "states": []
+}

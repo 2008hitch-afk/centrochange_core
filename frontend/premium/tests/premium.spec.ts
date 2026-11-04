@@ -470,6 +470,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('operations.workspace.schedules')) message = [{ name: 'SCHED-001', practitioner: 'PR-001', time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '18:00:00' }], absences: [] }]
     else if (method.endsWith('operations.reporting.summary')) message = { currencies: { EUR: { sessions: 1, performed: 0, due: 1, due_snapshot_amount: 80 } }, truncated: false }
     else if (method.endsWith('operations.reporting.sessions')) message = { appointments: [{ ...appointment, ...appointmentState, patient_first_name: 'Paziente', patient_last_name: 'Sintetico', practitioner_name: 'Dott.ssa Rossi', cc_service_label: 'Prima visita', mode_of_payment: 'POS' }], total: 1, truncated: false }
+    else if (method.endsWith('finance.operational_receipts.center_records')) message = []
     else if (method.endsWith('finance.reporting.summary')) message = { totals: { revenue_net: 600, collected: 400, receivable_outstanding: 200, purchase_net: 250, payable_outstanding: 80, expected_compensation: 120, unresolved_expectations: 0, sessions: 4 }, sales_invoices: [], purchase_invoices: [], scope_note: 'Dati sintetici.' }
     else if (method.endsWith('finance.patient_reporting.patient_view')) message = new URL(req.url()).searchParams.has('key')
       ? { key: 'CUS-001', customer_label: 'Soggetto sintetico', state: 'Scaduto', counts: { sessions: 1, performed: 1 }, totals: { invoiced: 80, collected: 60, outstanding: 20, overdue: 20, open_invoices: 1 }, next_due_date: today, blocked: false, deferred: true, sessions: [{ name: 'APP-001', appointment_date: today, patient_label: 'Paziente Sintetico', cc_service_label: 'Prima visita', category: 'performed' }], invoices: [{ name: 'INV-001', posting_date: today, grand_total: 80 }], payments: [{ name: 'PAY-001', posting_date: today, collected_amount: 60 }], open_invoices: [{ name: 'INV-001', outstanding_amount: 20, original_due_date: today, effective_due_date: today, overdue: true }], scope_note: 'Dati sintetici.' }
@@ -2934,3 +2935,28 @@ test('AUDIT-08: Export CSV centro e professionista: pulsanti abilitati solo su p
 
 
 
+
+test('ISSUE-156: card apre pagamenti e registra un importo parziale su due sedute', async ({ page }) => {
+  await mockApi(page)
+  let balance = 176
+  let posted: any = null
+  await page.route('**/api/method/centrochange_core.finance.collections.position*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { blocked: false, debts: [
+    { doctype: 'Patient Appointment', name: 'APP-A', amount: balance === 176 ? 88 : 38, currency: 'EUR', appointment_date: '2026-10-01', due_date: '2026-10-01' },
+    { doctype: 'Patient Appointment', name: 'APP-B', amount: balance === 176 ? 88 : 38, currency: 'EUR', appointment_date: '2026-10-02', due_date: '2026-10-02' }
+  ] } }) }))
+  await page.route('**/api/method/centrochange_core.finance.operational_receipts.history*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: posted ? [{ name:'R1', receipt_date:today, mode_of_payment:'POS', allocations:[{cents:5000},{cents:5000}] }] : [] }) }))
+  await page.route('**/api/method/centrochange_core.finance.operational_receipts.record', async route => { posted = route.request().postDataJSON(); balance = 76; await route.fulfill({ contentType:'application/json', body: JSON.stringify({ message: { name:'R1', replay:false } }) }) })
+  await page.goto('./#Agenda')
+  await page.locator('.week-event').first().click()
+  await page.getByRole('button', { name: /Registra incasso \/ Apri situazione/ }).click()
+  const panel = page.locator('.patient-tab-payments')
+  await panel.getByRole('button', { name:'Registra incasso', exact:true }).click()
+  await panel.getByLabel(/Seduta del 01\/10\/2026/).fill('50')
+  await panel.getByLabel(/Seduta del 02\/10\/2026/).fill('50')
+  await panel.getByLabel('Metodo').selectOption({ index: 1 })
+  await panel.getByLabel('Causale').fill('Incasso sintetico')
+  await panel.getByRole('button', { name:'Conferma incasso' }).click()
+  await expect(panel.getByText('Incassi registrati')).toBeVisible()
+  await expect(panel).toContainText('76,00')
+  expect(posted.allocations).toEqual([{appointment:'APP-A',amount:'50'}, {appointment:'APP-B',amount:'50'}])
+})

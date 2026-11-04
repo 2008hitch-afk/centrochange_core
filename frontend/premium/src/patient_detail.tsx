@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { type Boot, type FinanceBoot, type Patient, type Row, displayDate, money, ops, finance, requestKey, time } from './api'
+import { type Boot, type FinanceBoot, type Patient, type Row, displayDate, money, ops, finance, requestKey, romeToday, time } from './api'
 import { demoPatient, demoText } from './demo_labels'
 import { auditActorName, closureName, practitionerNameFor } from './display_names'
 import { AppointmentTimeline } from './appointment_timeline'
@@ -162,14 +162,14 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
       <section className="detail-section patient-tab-notes"><h3>Note organizzative</h3><NoteHistory rows={history.organizational_notes} onCorrect={historical ? undefined : row => correct(row, false)} />{professional && <><h3>Note professionali riservate</h3><NoteHistory rows={history.private_notes} privateNotes onCorrect={historical ? undefined : row => correct(row, true)} /></>}{!historical && <form onSubmit={event => { event.preventDefault(); void addNote() }}><h3>{corrects ? `Rettifica di una nota ${notePrivate ? 'professionale riservata' : 'organizzativa'}` : 'Nuova nota'}</h3>{!corrects && professional && <fieldset className="note-kind"><legend>Tipo di nota</legend><label><input type="radio" name="note-kind" checked={!notePrivate} onChange={() => setNotePrivate(false)} /> Organizzativa</label><label><input type="radio" name="note-kind" checked={notePrivate} onChange={() => setNotePrivate(true)} /> Professionale riservata</label></fieldset>}<p className="scope-note" role="status">{notePrivate ? 'La nota professionale è visibile soltanto al professionista autorizzato nel contesto del paziente.' : 'La nota organizzativa è visibile ai ruoli autorizzati nel centro.'} {corrects ? 'La rettifica conserva il tipo e la versione precedente nello storico.' : 'Dopo il salvataggio il testo non si modifica: eventuali correzioni si registrano come rettifiche.'}</p><Field label={corrects ? 'Testo della rettifica' : 'Testo della nota'} required><textarea value={note} onChange={event => setNote(event.target.value)} required maxLength={100000} /></Field><FormError error={error} /><div className="form-actions">{corrects && <Button type="button" variant="secondary" onClick={() => { setCorrects(null); setNote(''); setNotePrivate(false) }}>Annulla rettifica</Button>}<Button type="submit" disabled={noteBusy || !note.trim()}>{noteBusy ? 'Salvataggio…' : corrects ? 'Registra rettifica' : 'Aggiungi nota'}</Button></div></form>}</section>
       <div className="patient-tab-packages"><PatientPackages boot={boot} patient={patient.name} center={center} packages={history.packages} feedback={feedback} onSuccess={refresh} readOnly={historical} /></div>
     </>}
-    {canViewPayments && <PatientPaymentsTab patient={patient} center={center} onOpenReport={onOpenReport} />}
+    {canViewPayments && <PatientPaymentsTab patient={patient} center={center} boot={boot} canWrite={Boolean(financeBoot?.can_write)} onOpenReport={onOpenReport} />}
     {profile && history && <div className="patient-tab-assignments"><PatientAssignments boot={boot} patient={patient.name} center={center} feedback={feedback} onSuccess={refresh} /></div>}
     </>}
   </article>{draft && <Modal title="Modifica paziente" onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); void save() }}><Field label="Nome" required><input required value={draft.first_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, first_name: event.target.value }) }} /></Field><Field label="Cognome"><input value={draft.last_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, last_name: event.target.value }) }} /></Field><Field label="Email"><input type="email" value={draft.email ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, email: event.target.value }) }} /></Field><Field label="Motivo" required><textarea required maxLength={500} value={reason} onChange={event => { saveKey.current = requestKey(); setReason(event.target.value) }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
 }
 
-function PatientPaymentsTab({ patient, center, onOpenReport }: {
-  patient: Patient; center: string; onOpenReport?: (patientId?: string) => void
+function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport }: {
+  patient: Patient; center: string; boot: Boot; canWrite: boolean; onOpenReport?: (patientId?: string) => void
 }) {
   const [position, setPosition] = useState<{
     blocked: boolean;
@@ -179,6 +179,9 @@ function PatientPaymentsTab({ patient, center, onOpenReport }: {
       amount: number;
       currency: string;
       due_date?: string;
+      appointment_date?: string;
+      service_label?: string;
+      invoice_draft?: boolean;
       original_due_date?: string;
       override?: string | null;
     }>;
@@ -207,6 +210,16 @@ function PatientPaymentsTab({ patient, center, onOpenReport }: {
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [reload, setReload] = useState(0)
+  const [recording, setRecording] = useState(false)
+  const [amounts, setAmounts] = useState<Record<string, string>>({})
+  const [method, setMethod] = useState('')
+  const [date, setDate] = useState(romeToday())
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [receiptError, setReceiptError] = useState('')
+  const [receipts, setReceipts] = useState<Array<{name: string; receipt_date: string; mode_of_payment: string; allocations: Array<{cents: number}>}>>([])
+  const receiptKey = useRef(requestKey())
 
   useEffect(() => {
     let live = true
@@ -216,18 +229,20 @@ function PatientPaymentsTab({ patient, center, onOpenReport }: {
     const end = `${now.getFullYear()}-12-31`
     Promise.allSettled([
       finance<typeof position>('collections.position', { patient: patient.name, center }),
-      finance<typeof project>('patient_reporting.patient_view', { center, start, end, patient: patient.name })
-    ]).then(([posRes, projRes]) => {
+      finance<typeof project>('patient_reporting.patient_view', { center, start, end, patient: patient.name }),
+      finance<typeof receipts>('operational_receipts.history', { center, patient: patient.name })
+    ]).then(([posRes, projRes, receiptRes]) => {
       if (!live) return
       if (posRes.status === 'fulfilled') setPosition(posRes.value)
       if (projRes.status === 'fulfilled') setProject(projRes.value)
+      if (receiptRes.status === 'fulfilled') setReceipts(receiptRes.value)
       if (posRes.status === 'rejected' && projRes.status === 'rejected') {
         setError('Impossibile caricare i dati economici per questo paziente.')
       }
       setLoading(false)
     })
     return () => { live = false }
-  }, [patient.name, center])
+  }, [patient.name, center, reload])
 
   if (loading) return <section className="detail-section patient-tab-payments"><p role="status">Caricamento situazione economica e pagamenti…</p></section>
   if (error) return <section className="detail-section patient-tab-payments"><p className="inline-error" role="alert">{error}</p></section>
@@ -281,6 +296,21 @@ function PatientPaymentsTab({ patient, center, onOpenReport }: {
         />
       </div>
 
+      {canWrite && operationalDebts.some(d => !d.invoice_draft) && <Button onClick={() => setRecording(true)}>Registra incasso</Button>}
+      {recording && <form className="action-form" onSubmit={event => {
+        event.preventDefault(); setSaving(true); setReceiptError('')
+        const allocations = operationalDebts.filter(d => !d.invoice_draft && Number(amounts[d.name]) > 0).map(d => ({ appointment: d.name, amount: amounts[d.name] }))
+        finance('operational_receipts.record', { patient: patient.name, center, receipt_date: date, mode_of_payment: method, reason, request_key: receiptKey.current, allocations }, true)
+          .then(() => { receiptKey.current = requestKey(); setAmounts({}); setReason(''); setRecording(false); setReload(n => n + 1) })
+          .catch(e => setReceiptError(errorText(e))).finally(() => setSaving(false))
+      }}><h3>Registra incasso</h3><p>Indica l’importo ricevuto per ogni seduta. Puoi registrare un pagamento parziale.</p>
+        {operationalDebts.map(d => <Field key={d.name} label={`Seduta del ${displayDate(d.appointment_date)} · residuo ${money(d.amount, d.currency)}`}><input type="number" disabled={d.invoice_draft} title={d.invoice_draft ? 'Seduta collegata a una bozza di fattura: verifica la posizione contabile.' : undefined} min="0" max={d.amount} step="0.01" value={amounts[d.name] || ''} onChange={e => setAmounts({...amounts, [d.name]: e.target.value})} /></Field>)}
+        <Field label="Data incasso" required><input type="date" required value={date} onChange={e => setDate(e.target.value)} /></Field>
+        <Field label="Metodo" required><select required value={method} onChange={e => setMethod(e.target.value)}><option value="">Seleziona</option>{boot.payment_methods.map(m => <option key={m} value={m}>{m}</option>)}</select></Field>
+        <Field label="Causale" required><textarea required value={reason} onChange={e => setReason(e.target.value)} maxLength={2000} /></Field>
+        <FormError error={receiptError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setRecording(false)}>Annulla</Button><Button disabled={saving} type="submit">{saving ? 'Registrazione…' : 'Conferma incasso'}</Button></div>
+      </form>}
+      {receipts.length > 0 && <><h3>Incassi registrati</h3>{receipts.map(r => <p key={r.name}>{displayDate(r.receipt_date)} · {money(r.allocations.reduce((sum, a) => sum + a.cents, 0) / 100)} · {r.mode_of_payment}</p>)}</>}
       <h3>Sedute da saldare e posizioni operative</h3>
       <p className="scope-note">
         Sedute svolte o addebitate in attesa di saldo o fatturazione nel centro.
@@ -289,8 +319,8 @@ function PatientPaymentsTab({ patient, center, onOpenReport }: {
         <DataTable
           rows={operationalDebts as unknown as Row[]}
           columns={[
-            { key: 'name', label: 'Riferimento seduta', render: v => <strong>{String(v)}</strong> },
-            { key: 'amount', label: 'Importo', render: (v, r) => money(v, String(r.currency || 'EUR')) },
+            { key: 'appointment_date', label: 'Seduta', render: (v, r) => <strong>{displayDate(v)} · {demoText(r.service_label) || 'Seduta'}</strong> },
+            { key: 'amount', label: 'Importo', render: (v, r) => <>{money(v, String(r.currency || 'EUR'))}{r.invoice_draft ? ' · Bozza fattura da verificare' : ''}</> },
             { key: 'due_date', label: 'Scadenza', render: v => displayDate(v) },
             {
               key: 'override',

@@ -49,7 +49,9 @@ def _end_date(date):
 
 def _debts(patient,center):
     rows=current_rows('Patient Appointment',{'patient':patient,'cc_center':center,'cc_economic_state':'Due'},
-        fields=['name','appointment_date','appointment_time','duration','cc_price_snapshot','cc_currency_snapshot','cc_paid','cc_closure_state','cc_payment_terms_mode','cc_payment_agreed_date'])
+        fields=['name','appointment_date','appointment_time','duration','cc_price_snapshot','cc_currency_snapshot','cc_service_label','cc_paid','cc_closure_state','cc_payment_terms_mode','cc_payment_agreed_date'])
+    from centrochange_core.finance.operational_receipts import allocated
+    amounts=allocated(patient,center)
     debts=[]; seen=set()
     for row in rows:
         links=frappe.db.sql('''select distinct p.name,p.outstanding_amount,p.due_date,p.currency,p.customer
@@ -69,6 +71,13 @@ def _debts(patient,center):
             continue
         if row.cc_price_snapshot<=0 or row.cc_paid or row.cc_closure_state not in ('Closed','Auto Locked'):
             continue
+        draft=bool(frappe.db.sql('''select i.name from `tabSales Invoice Item` i
+            join `tabSales Invoice` p on p.name=i.parent
+            join `tabCC Economic Source Link` s on s.name=i.cc_economic_source
+            where s.appointment=%s and p.docstatus=0 and p.is_return=0 limit 1''',(row.name,)))
+        remaining=frappe.utils.flt(row.cc_price_snapshot,2)-amounts.get(row.name,0)/100
+        if remaining <= 0:
+            continue
         override=_deferred('Patient Appointment',row.name)
         if row.cc_payment_terms_mode=='Month End':
             date=frappe.utils.getdate(row.appointment_date)
@@ -81,7 +90,7 @@ def _debts(patient,center):
             deadline=(start_utc(frappe._dict(row))+timedelta(minutes=frappe.utils.flt(row.duration))).astimezone(ROME)
         original_due_date=deadline.date() if deadline else None
         if override:deadline=_end_date(override.due_date)
-        debts.append({'doctype':'Patient Appointment','name':row.name,'amount':row.cc_price_snapshot,
+        debts.append({'doctype':'Patient Appointment','name':row.name,'amount':remaining,'appointment_date':row.appointment_date,'service_label':row.cc_service_label,'invoice_draft':draft,
             'currency':row.cc_currency_snapshot,'original_due_date':original_due_date,'due_date':deadline.date(),'deadline':deadline,'override':override.name if override else None})
     return debts
 
@@ -91,7 +100,7 @@ def position(patient,center):
     patient_context(patient,center)
     at=now_utc().astimezone(ROME)
     debts=_debts(patient,center)
-    return {'patient':patient,'center':center,'blocked':any(d['deadline']<at for d in debts),
+    return {'patient':patient,'center':center,'blocked':False,
         'debts':[{k:v for k,v in d.items() if k!='deadline'} for d in debts],
         'agreement':_agreement(patient,center)}
 
@@ -103,10 +112,8 @@ def _booking_debts(patient):
 
 
 def require_booking(doc):
-    # Generic authorization runs first; this hook reveals no fiscal/clinical detail to a professional.
-    at=start_utc(doc).astimezone(ROME)
-    if any(d['name']!=doc.name and d['deadline']<at for d in _booking_debts(doc.patient)):
-        frappe.throw('Serve una verifica dei pagamenti prima della prossima seduta: contatta la segreteria.')
+    # Ordinary unpaid balances never prevent scheduling or closure.
+    return None
 
 
 @frappe.whitelist(methods=['POST'])
@@ -149,41 +156,8 @@ def refresh(patient,center,reason):
 
 
 def _notice(patient,center,reason):
-    at=now_utc().astimezone(ROME)
-    overdue=[d for d in _debts(patient,center) if d['deadline']<at]
-    if not overdue:
-        return {'blocked':False,'notice':None}
-    identity=sha256(serialize([patient,center,[(d['doctype'],d['name'],str(d['due_date']),d['override']) for d in overdue]]).encode()).hexdigest()
-    existing=frappe.db.get_value('CC Payment Notice',{'event_key':identity},for_update=True)
-    if existing:
-        return {'blocked':True,'notice':existing,'replay':True}
-    email=frappe.db.get_value('Patient',patient,'email')
-    if email and not email.lower().endswith('@example.invalid'):
-        frappe.throw('Nel DEV le email di pagamento accettano solo destinatari demo example.invalid.',frappe.PermissionError)
-    amounts='; '.join(f"{debt['amount']:.2f} {debt['currency']} — scadenza {debt['due_date']}" for debt in overdue)
-    native_bank=frappe.db.get_value('Branch',center,'cc_bank_account')
-    bank_name=frappe.db.get_value('Bank Account',native_bank,'bank') if native_bank else None
-    instruction=f'Bonifico DEV simulato: {bank_name}.' if bank_name else 'Istruzioni di pagamento DEV presso la segreteria.'
-    message=f'Prima di una seduta successiva è richiesta la verifica del pagamento. Importi aperti: {amounts}. {instruction}'
-    with internal_write('cc_operation_write'):
-        notice=frappe.get_doc({'doctype':'CC Payment Notice','patient':patient,'center':center,'event_key':identity,
-            'recipient_email':email,'email_state':'SIMULATED' if email else 'Email Unavailable',
-            'subject':'Centro Change DEV payment review','message':message}).insert(ignore_permissions=True)
-    if email:
-        # Native local draft/trace only: no Email Queue, SMTP, gateway or fabricated delivery.
-        communication=frappe.get_doc({'doctype':'Communication','communication_type':'Communication',
-            'communication_medium':'Email','sent_or_received':'Sent','recipients':email,
-            'subject':notice.subject,'content':message,'reference_doctype':notice.doctype,'reference_name':notice.name,
-            'status':'Linked'}).insert(ignore_permissions=True)
-        frappe.db.set_value(notice.doctype,notice.name,'communication',communication.name)
-    from centrochange_core.operations.automation import enqueue_notice
-    users=current_rows('CC Center Membership',{'center':center,'active':1},pluck='user')
-    from centrochange_core.security.guards import roles,enabled
-    for user in users:
-        if enabled(user) and 'CC Secretariat' in roles(user):
-            enqueue_notice('payment-block:'+identity+':'+user,user,'Payment Block',notice.doctype,notice.name,message)
-    append('PAYMENT_BLOCK_NOTIFIED',notice.doctype,notice.name,None,{'email_state':notice.email_state},reason)
-    return {'blocked':True,'notice':notice.name,'replay':False}
+    # Historical notices remain intact; ordinary arrears no longer create holds.
+    return {'blocked':False,'notice':None}
 
 
 @atomic

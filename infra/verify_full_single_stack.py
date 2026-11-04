@@ -20,6 +20,11 @@ VERSIONS = {'frappe': '16.50.0', 'erpnext': '16.50.0',
 REFS = {'builder': '37e958bc4f801d06d0438c21b97b42c45c4eaa51',
         'healthcare': 'dda107b26e3a0fe1dbd65c7257371235de054a04'}
 PREMIUM_ADDED = {
+    'centrochange_core/finance/operational_receipts.py',
+    'centrochange_core/finance/operational_receipts_acceptance.py',
+    'centrochange_core/centro_change_core/doctype/cc_operational_receipt/__init__.py',
+    'centrochange_core/centro_change_core/doctype/cc_operational_receipt/cc_operational_receipt.py',
+    'centrochange_core/centro_change_core/doctype/cc_operational_receipt/cc_operational_receipt.json',
     'centrochange_core/catalog.py', 'centrochange_core/scoped_api.py',
     'centrochange_core/operations/profiles.py',
     'centrochange_core/uat/display.py',
@@ -38,7 +43,9 @@ PREMIUM_ADDED = {
     'centrochange_core/public/css/login_v1.css',
     'centrochange_core/public/js/login_v1.js',
 }
-REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
+REVIEWED_BACKEND_DELTAS = {'centrochange_core/finance/receivables.py',
+                           'centrochange_core/operations/notifications.py',
+                           'centrochange_core/hooks.py',
                            'centrochange_core/security/permissions.py',
                            'centrochange_core/security/audit.py',
                            'centrochange_core/security/lifecycle.py',
@@ -65,7 +72,7 @@ REVIEWED_BACKEND_DELTAS = {'centrochange_core/hooks.py',
                            'centrochange_core/operations/website_brand.py',
                            'centrochange_core/templates/cc_web_base.html',
                            'centrochange_core/translations/it.csv'}
-ENDPOINT_MODULES = ('catalog', 'scoped_api', 'operations.profiles',
+ENDPOINT_MODULES = ('finance.operational_receipts', 'catalog', 'scoped_api', 'operations.profiles',
                     'finance.payments', 'finance.documents',
                     'finance.collections', 'scheduling.booking')
 

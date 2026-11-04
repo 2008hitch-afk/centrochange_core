@@ -116,39 +116,20 @@ class PaymentOverrideContractTest(unittest.TestCase):
             'Spostamento', 'Motivo amministrativo', '2026-11-10', 'request-1',
             self.references() if refs is None else refs)
 
-    def test_two_positions_include_unbilled_and_move_together(self):
+    def test_unpaid_positions_do_not_block_reschedule_preview(self):
         preview = self.booking.reschedule_payment_blockers('APP-NEW', '2026-11-10', '10:00')
-        self.assertTrue(preview['can_override'])
-        self.assertEqual({d['reference_doctype'] for d in preview['debts']}, {'Sales Invoice', 'Patient Appointment'})
-        self.assertEqual(self.submit()['name'], 'APP-NEW')
-        self.assertEqual(len(self.events), 3)
-        self.assertEqual(self.events[-1], ('move', 'APP-NEW'))
-        self.assertEqual(self.debts[0]['original_due_date'], date(2026, 10, 1))
-
-    def test_failed_move_rolls_back_both_overrides(self):
-        self.fail_move = True
-        with self.assertRaisesRegex(ValueError, 'Slot non disponibile'):
-            self.submit()
+        self.assertEqual(preview, {'blocked': False, 'can_override': False, 'debts': []})
         self.assertEqual(self.events, [])
 
-    def test_repeated_success_is_a_replay_without_another_override(self):
-        self.submit()
-        self.debts = []
-        self.assertTrue(self.submit()['replay'])
-        self.assertEqual(len(self.events), 3)
-
-    def test_unauthorized_actor_gets_no_details_or_bypass(self):
-        self.admin = False
-        preview = self.booking.reschedule_payment_blockers('APP-NEW', '2026-11-10', '10:00')
-        self.assertEqual(preview, {'blocked': True, 'can_override': False, 'debts': []})
+    def test_obsolete_override_cannot_be_used_to_bypass_guards(self):
         with self.assertRaises(PermissionError):
             self.submit()
         self.assertEqual(self.events, [])
 
-    def test_stale_or_partial_blocker_list_rejected(self):
-        with self.assertRaisesRegex(ValueError, 'posizione dei pagamenti è cambiata'):
-            self.submit(self.references()[:1])
-        self.assertEqual(self.events, [])
+    def test_unpaid_positions_do_not_reveal_details_to_professional(self):
+        self.admin = False
+        self.assertEqual(self.booking.reschedule_payment_blockers('APP-NEW', '2026-11-10', '10:00'),
+                         {'blocked': False, 'can_override': False, 'debts': []})
 
 
 if __name__ == '__main__':

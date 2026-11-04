@@ -228,8 +228,9 @@ export function Agenda({ boot, center, feedback, refreshBoot, financeBoot, onOpe
   const [selected, setSelected] = useState<Appointment | null>(null)
   const [booking, setBooking] = useState(false)
   const [bookingPractitioner, setBookingPractitioner] = useState('')
-  const [dayClosureOpen, setDayClosureOpen] = useState(false)
-  const [dayClosureInitialDate, setDayClosureInitialDate] = useState<string | undefined>(undefined)
+  const [dayClosureOpen, setDayClosureOpen] = useState(() => Boolean(new URLSearchParams(location.search).get('close_day')))
+  const [dayClosureInitialDate, setDayClosureInitialDate] = useState<string | undefined>(() => new URLSearchParams(location.search).get('close_day') || undefined)
+  useEffect(() => { const url = new URL(location.href); if (url.searchParams.has('close_day')) { url.searchParams.delete('close_day'); history.replaceState(null, '', url) } }, [])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedPractitioners, setSelectedPractitioners] = useState<string[]>([])
@@ -487,7 +488,7 @@ function AppointmentDetail({
           <span>
             {demoPatient(row.patient, row.patient_name)} — {paymentPos.debts.length === 0
               ? 'Nessuna seduta da saldare · Posizione regolare'
-              : `${paymentPos.debts.filter(d => d.doctype === 'Patient Appointment').length} ${paymentPos.debts.filter(d => d.doctype === 'Patient Appointment').length === 1 ? 'seduta da saldare' : 'sedute da saldare'}${paymentPos.debts.filter(d => d.doctype === 'Sales Invoice').length > 0 ? ` (${paymentPos.debts.filter(d => d.doctype === 'Sales Invoice').length} fatt. aperte)` : ''}${paymentPos.blocked ? ' · Blocco prenotazioni' : ''}`}
+              : `${paymentPos.debts.filter(d => d.doctype === 'Patient Appointment').length} ${paymentPos.debts.filter(d => d.doctype === 'Patient Appointment').length === 1 ? 'seduta da saldare' : 'sedute da saldare'} · ${money(paymentPos.debts.filter(d => d.doctype === 'Patient Appointment').reduce((sum, d) => sum + Number(d.amount || 0), 0))}${paymentPos.debts.filter(d => d.doctype === 'Sales Invoice').length > 0 ? ` (${paymentPos.debts.filter(d => d.doctype === 'Sales Invoice').length} fatt. aperte)` : ''}${paymentPos.blocked ? ' · Blocco prenotazioni' : ''}`}
           </span>
         ) : (
           <span>Verifica pagamenti paziente disponibile</span>
@@ -502,7 +503,7 @@ function AppointmentDetail({
             onOpenPatientPayments(row.patient)
           }}
         >
-          Apri situazione pagamenti →
+          Registra incasso / Apri situazione pagamenti →
         </button>
       )}
     </div>
@@ -674,7 +675,7 @@ export function ServiceCatalog({ boot, center }: { boot: Boot; center: string })
   }
 
   return <><Heading eyebrow="OPERATIVITÀ" title="Servizi e professionisti" subtitle="Servizi disponibili nel centro selezionato e professionisti associati." />
-    <section className="panel"><div className="panel-toolbar"><div className="panel-title"><h2>Servizi del centro</h2><p>{centerNameFor(center, boot.centers)} · {services.length === boot.services.length ? `${boot.services.length} ${boot.services.length === 1 ? 'servizio' : 'servizi'}` : `${services.length} di ${boot.services.length} servizi trovati`} · tariffe e durate del catalogo servizi.</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Cerca servizi" placeholder="Cerca servizio" /></label></div><DataTable rows={services as unknown as Row[]} emptyTitle={query ? 'Nessun servizio trovato' : 'Nessun elemento'} emptyDetail={query ? 'Modifica la ricerca o azzera i filtri.' : 'Nessun servizio disponibile per questo centro.'} columns={[{ key: 'cc_service_label', label: 'Servizio', render: (value, row) => <strong>{demoText(value || row.name)}</strong> }, { key: 'duration', label: 'Durata', render: value => value == null ? 'Da definire' : `${String(value)} min` }, { key: 'cc_price_snapshot', label: 'Tariffa', render: (value, row) => money(value, String(row.cc_currency_snapshot || 'EUR')) }]} onRow={row => setSelected(row as unknown as typeof selected)} /></section>
+    <section className="panel"><p className="scope-note">Il primo colloquio conoscitivo dura 20 minuti ed è gratuito. La successiva seduta psicologica dura 45 minuti e costa 44 €: viene concordata separatamente; verifica che sia presente nel catalogo prima di prenotarla.</p><div className="panel-toolbar"><div className="panel-title"><h2>Servizi del centro</h2><p>{centerNameFor(center, boot.centers)} · {services.length === boot.services.length ? `${boot.services.length} ${boot.services.length === 1 ? 'servizio' : 'servizi'}` : `${services.length} di ${boot.services.length} servizi trovati`} · tariffe e durate del catalogo servizi.</p></div><label className="search-inline"><Search size={17} /><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Cerca servizi" placeholder="Cerca servizio" /></label></div><DataTable rows={services as unknown as Row[]} emptyTitle={query ? 'Nessun servizio trovato' : 'Nessun elemento'} emptyDetail={query ? 'Modifica la ricerca o azzera i filtri.' : 'Nessun servizio disponibile per questo centro.'} columns={[{ key: 'cc_service_label', label: 'Servizio', render: (value, row) => <strong>{demoText(value || row.name)}</strong> }, { key: 'duration', label: 'Durata', render: value => value == null ? 'Da definire' : `${String(value)} min` }, { key: 'cc_price_snapshot', label: 'Tariffa', render: (value, row) => money(value, String(row.cc_currency_snapshot || 'EUR')) }]} onRow={row => setSelected(row as unknown as typeof selected)} /></section>
     <section className="panel catalog-practitioners"><div className="panel-toolbar"><div className="panel-title"><h2>Professionisti del centro</h2><p>Professionisti abilitati a operare nella sede selezionata.</p></div></div><div className="schedule-grid">{boot.practitioners.map(practitioner => <article className="schedule-card" key={practitioner.name}><span className="avatar">{practitionerName(practitioner).slice(0, 2).toLocaleUpperCase('it-IT')}</span><h3>{practitionerName(practitioner)}</h3><Chip tone="good">Attivo nel centro</Chip></article>)}</div>{!boot.practitioners.length && <Empty title="Nessun professionista attivo" />}</section>
   </>
 }
@@ -897,6 +898,17 @@ export function Reports({ boot, center, feedback, financeBoot, initialPatient }:
 type FinanceTab = 'Riepilogo' | 'Fatture pazienti' | 'XML ricevuti' | 'Fatture fornitori' | 'Banca' | 'Professionisti' | 'Coda amministrativa' | 'SdI' | 'TS'
 const financeTabs: FinanceTab[] = ['Riepilogo', 'Fatture pazienti', 'XML ricevuti', 'Fatture fornitori', 'Banca', 'Professionisti', 'Coda amministrativa', 'SdI', 'TS']
 const financeDoctype: Partial<Record<FinanceTab, string>> = { 'Fatture pazienti': 'Sales Invoice', 'XML ricevuti': 'CC Incoming Invoice', 'Fatture fornitori': 'Purchase Invoice', Banca: 'Bank Transaction', Professionisti: 'CC Professional Expectation' }
+function OperationalReceiptList({ center }: { center: string }) {
+  const [rows, setRows] = useState<Row[]>([])
+  const [error, setError] = useState('')
+  useEffect(() => {
+    let live = true
+    finance<Row[]>('operational_receipts.center_records', { center }).then(r => { if (live) { if (Array.isArray(r)) setRows(r); else setError('Risposta degli incassi non valida.') } }).catch(() => { if (live) setError('Impossibile caricare gli incassi operativi.') })
+    return () => { live = false }
+  }, [center])
+  return <div><h3>Incassi operativi</h3><p className="scope-note">Registrazioni operative non contabilizzate; nessuna fattura viene generata automaticamente.</p>{error && <p role="alert">{error}</p>}{rows.length > 0 ? <DataTable rows={rows} columns={[{key:'receipt_date',label:'Data',render:displayDate},{key:'patient_label',label:'Paziente',render:demoText},{key:'mode_of_payment',label:'Metodo'},{key:'amount',label:'Importo',render:v => money(v)}]} /> : !error && <p>Nessun incasso operativo registrato.</p>}</div>
+}
+
 export function FinanceView({ boot, center, feedback }: { boot: FinanceBoot; center: string; feedback: Feedback }) {
   const [tab, setTab] = useState<FinanceTab>('Riepilogo')
   const [createOpen, setCreateOpen] = useState(false)
@@ -950,7 +962,7 @@ export function FinanceView({ boot, center, feedback }: { boot: FinanceBoot; cen
   }
 
   return <><Heading eyebrow="CONTROLLO FINANZIARIO" title="Finanza" subtitle="Contabilità e amministrazione del centro, dai sistemi Frappe ed ERPNext." action={<div className="button-group"><a className="button secondary" href={csvUrl('finance.reporting.export_csv', { center, start, end })}><Download size={17} /> Esporta CSV</a>{tab === 'Riepilogo' && <Button variant="secondary" onClick={() => setDetailedReportOpen(true)}>Report dettagliati</Button>}{boot.can_write && tab === 'Professionisti' && <ProfessionalWorkflow boot={boot} center={center} feedback={feedback} onSuccess={() => setReload(x => x + 1)} />}{createable && <Button onClick={() => setCreateOpen(true)}><Plus size={17} /> Nuova operazione</Button>}</div>} /><div className="finance-status"><Chip tone={boot.simulation_only ? 'warn' : 'good'}>{boot.simulation_only ? 'Ambiente simulato' : 'Ambiente'}</Chip><span>Solo dati autorizzati del centro selezionato · Nessun invio a provider reali</span></div><div className="tab-nav" role="tablist" aria-label="Aree finanza">{financeTabs.map(t => <button key={t} role="tab" aria-selected={tab === t} onClick={() => { setTab(t); setSelected(null) }}>{t}</button>)}</div>
-    <section className="panel finance-panel"><div className="panel-toolbar"><div className="panel-title"><h2>{tab === 'Riepilogo' ? 'Panoramica finanziaria' : tab}</h2><p>{tab === 'Riepilogo' ? 'Valori registrati; margine da definire secondo regole approvate.' : 'Elenco circoscritto al centro selezionato.'}</p></div>{tab === 'Riepilogo' && <div className="toolbar-right"><Field label="Dal"><DateInput value={start} onChange={setStart} required /></Field><Field label="Al"><DateInput value={end} onChange={setEnd} required /></Field></div>}</div>{error && <p className="inline-error" role="alert">{error}</p>}{loading ? <p className="panel-loading" role="status">Caricamento…</p> : summary ? <><div className="metrics-grid inset"><Metric label="Ricavi netti" value={money(totals?.revenue_net)} /><Metric label="Incassato" value={money(totals?.collected)} tone="green" /><Metric label="Crediti residui" value={money(totals?.receivable_outstanding)} tone="amber" /><Metric label="Costi fornitori" value={money(totals?.purchase_net)} tone="purple" /></div><div className="finance-secondary"><div><span>Debito residuo</span><strong>{money(totals?.payable_outstanding)}</strong></div><div><span>Compensi attesi</span><strong>{money(totals?.expected_compensation)}</strong></div><div><span>Attesi da verificare</span><strong>{String(totals?.unresolved_expectations ?? 0)}</strong></div><div><span>Sedute</span><strong>{String(totals?.sessions ?? 0)}</strong></div></div><div className="summary-tables"><div><h3>Fatture pazienti</h3><DataTable rows={(summary.sales_invoices as Row[] ?? []).slice(0, 5)} columns={[{ key: 'name', label: 'Documento' }, { key: 'customer', label: 'Cliente' }, moneyColumn('outstanding_amount', 'Residuo')]} /></div><div><h3>Fatture fornitori</h3><DataTable rows={(summary.purchase_invoices as Row[] ?? []).slice(0, 5)} columns={[{ key: 'name', label: 'Documento' }, { key: 'supplier', label: 'Fornitore' }, moneyColumn('outstanding_amount', 'Residuo')]} /></div></div><p className="scope-note">Le date di registrazione regolano la contabilità; le date delle sedute regolano l’operatività. I ricavi pazienti includono il pagatore fiscale condiviso. Le fatture fornitori sono totali fiscali del fornitore, senza attribuzione dedotta ai singoli professionisti. Il margine resta da definire secondo regole approvate.</p></> : <DataTable rows={rows} columns={columns[tab]} onRow={setSelected} />}</section>{selected && <FinanceDetail row={selected} tab={tab} center={center} centers={boot.centers} canWrite={boot.can_write} assignees={boot.assignees ?? []} accounts={boot.accounts ?? []} suppliers={boot.suppliers ?? []} items={boot.items ?? []} feedback={feedback} onClose={() => setSelected(null)} onChange={() => { setSelected(null); setReload(x => x + 1) }} />}{createOpen && <FinanceCreate tab={tab} center={center} feedback={feedback} start={start} end={end} onClose={() => setCreateOpen(false)} onSuccess={() => { setCreateOpen(false); setReload(x => x + 1) }} />}</>
+    <section className="panel finance-panel"><div className="panel-toolbar"><div className="panel-title"><h2>{tab === 'Riepilogo' ? 'Panoramica finanziaria' : tab}</h2><p>{tab === 'Riepilogo' ? 'Valori registrati; margine da definire secondo regole approvate.' : 'Elenco circoscritto al centro selezionato.'}</p></div>{tab === 'Riepilogo' && <div className="toolbar-right"><Field label="Dal"><DateInput value={start} onChange={setStart} required /></Field><Field label="Al"><DateInput value={end} onChange={setEnd} required /></Field></div>}</div>{error && <p className="inline-error" role="alert">{error}</p>}{loading ? <p className="panel-loading" role="status">Caricamento…</p> : summary ? <><div className="metrics-grid inset"><Metric label="Ricavi netti" value={money(totals?.revenue_net)} /><Metric label="Incassato" value={money(totals?.collected)} tone="green" /><Metric label="Crediti residui" value={money(totals?.receivable_outstanding)} tone="amber" /><Metric label="Costi fornitori" value={money(totals?.purchase_net)} tone="purple" /></div><div className="finance-secondary"><div><span>Debito residuo</span><strong>{money(totals?.payable_outstanding)}</strong></div><div><span>Compensi attesi</span><strong>{money(totals?.expected_compensation)}</strong></div><div><span>Attesi da verificare</span><strong>{String(totals?.unresolved_expectations ?? 0)}</strong></div><div><span>Sedute</span><strong>{String(totals?.sessions ?? 0)}</strong></div></div><OperationalReceiptList center={center} /><div className="summary-tables"><div><h3>Fatture pazienti</h3><DataTable rows={(summary.sales_invoices as Row[] ?? []).slice(0, 5)} columns={[{ key: 'name', label: 'Documento' }, { key: 'customer', label: 'Cliente' }, moneyColumn('outstanding_amount', 'Residuo')]} /></div><div><h3>Fatture fornitori</h3><DataTable rows={(summary.purchase_invoices as Row[] ?? []).slice(0, 5)} columns={[{ key: 'name', label: 'Documento' }, { key: 'supplier', label: 'Fornitore' }, moneyColumn('outstanding_amount', 'Residuo')]} /></div></div><p className="scope-note">Le date di registrazione regolano la contabilità; le date delle sedute regolano l’operatività. I ricavi pazienti includono il pagatore fiscale condiviso. Le fatture fornitori sono totali fiscali del fornitore, senza attribuzione dedotta ai singoli professionisti. Il margine resta da definire secondo regole approvate.</p></> : <DataTable rows={rows} columns={columns[tab]} onRow={setSelected} />}</section>{selected && <FinanceDetail row={selected} tab={tab} center={center} centers={boot.centers} canWrite={boot.can_write} assignees={boot.assignees ?? []} accounts={boot.accounts ?? []} suppliers={boot.suppliers ?? []} items={boot.items ?? []} feedback={feedback} onClose={() => setSelected(null)} onChange={() => { setSelected(null); setReload(x => x + 1) }} />}{createOpen && <FinanceCreate tab={tab} center={center} feedback={feedback} start={start} end={end} onClose={() => setCreateOpen(false)} onSuccess={() => { setCreateOpen(false); setReload(x => x + 1) }} />}</>
 }
 
 function FinanceDetail({ row, tab, center, centers, canWrite, assignees, accounts, suppliers, items, feedback, onClose, onChange }: { row: Row; tab: FinanceTab; center: string; centers: FinanceBoot['centers']; canWrite: boolean; assignees: string[]; accounts: Row[]; suppliers: Row[]; items: Row[]; feedback: Feedback; onClose: () => void; onChange: () => void }) {
@@ -1138,7 +1150,7 @@ export function Notifications({ boot, center, feedback }: Context) {
     setRows([])
     setError('')
     const doctype = personal ? 'Notification Log' : 'CC Notification'
-    const fields = personal ? ['name', 'subject', 'creation', 'read'] : ['name', 'recipient', 'kind', 'message', 'state', 'creation']
+    const fields = personal ? ['name', 'subject', 'creation', 'read', 'cc_notification'] : ['name', 'recipient', 'kind', 'message', 'state', 'creation']
     call<Row[]>('frappe.client.get_list', { doctype, fields, limit_page_length: 100, order_by: 'creation desc' })
       .then(r => {
         if (!live) return
@@ -1152,6 +1164,18 @@ export function Notifications({ boot, center, feedback }: Context) {
       })
     return () => { live = false }
   }, [center, personal, reload])
+
+  const openNotice = async (name: string) => {
+    try {
+      const target = await ops<{patient?: string; center?: string; day_closure?: string} | null>('notifications.target', { name })
+      if (!target) { feedback('Apri la pratica indicata nel messaggio.'); return }
+      const url = new URL(location.href)
+      if (target.day_closure) { url.searchParams.set('close_day', target.day_closure); url.hash = 'Agenda' }
+      else if (target.patient && target.center) { url.searchParams.set('center', target.center); url.searchParams.set('patient', target.patient); url.searchParams.set('tab', 'Pagamenti'); url.hash = 'Pazienti' }
+      else { feedback('Apri la pratica indicata nel messaggio.'); return }
+      location.assign(url.toString())
+    } catch (cause) { feedback(getError(cause), true) }
+  }
 
   const markRead = async (docname: string) => {
     try {
@@ -1223,8 +1247,8 @@ export function Notifications({ boot, center, feedback }: Context) {
                       <div>{text}</div>
                       {isClosure && (
                         <div style={{ marginTop: 6 }}>
-                          <Button variant="ghost" onClick={() => { location.hash = '#Agenda' }}>
-                            Vai ad Agenda
+                          <Button variant="ghost" onClick={() => row.cc_notification ? void openNotice(String(row.cc_notification)) : feedback('Apri Chiudi la mia giornata in Agenda.')}>
+                            Apri chiusura giornata
                           </Button>
                         </div>
                       )}
@@ -1248,7 +1272,7 @@ export function Notifications({ boot, center, feedback }: Context) {
               },
               dateColumn('creation', 'Data')
             ] : [
-              { key: 'message', label: 'Messaggio', render: value => translateNotification(value) },
+              { key: 'message', label: 'Messaggio', render: (value, row) => <div>{row.kind === 'Payment Block' ? 'Verifica la situazione dei pagamenti. Le prenotazioni non sono bloccate.' : translateNotification(value)}{['Payment Block', 'CLOSURE_REMINDER'].includes(String(row.kind)) && <Button variant="ghost" onClick={() => void openNotice(String(row.name))}>{row.kind === 'Payment Block' ? 'Apri pagamenti' : 'Apri chiusura giornata'}</Button>}</div> },
               { key: 'recipient', label: 'Destinatario', render: value => translateRecipient(value, boot) },
               { key: 'kind', label: 'Tipo', render: value => translateKind(value) },
               {
