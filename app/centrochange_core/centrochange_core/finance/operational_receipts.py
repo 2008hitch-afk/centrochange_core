@@ -54,6 +54,7 @@ def record(patient, center, receipt_date, mode_of_payment, reason, request_key, 
 def record_from_authorized_closure(doc, mode_of_payment, reason):
     # Private helper: the lifecycle caller has already enforced appointment,
     # practitioner and center permissions under the same transaction lock.
+    require_synthetic()
     return _record(doc.patient, doc.cc_center, frappe.utils.today(), mode_of_payment, reason,
         'legacy-settlement:' + doc.name + ':' + str(int(doc.cc_settlement_revision or 0)+1),
         [{'appointment':doc.name, 'amount':doc.cc_price_snapshot}])

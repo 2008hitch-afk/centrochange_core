@@ -19,6 +19,8 @@ try:
     print(clone.run_cmd(['docker','exec',clone.BACKEND_CONTAINER,'bench','--site',clone.CLONE_SITE,
         'execute','centrochange_core.finance.operational_receipts_acceptance.run']))
     print(clone.run_cmd(['docker','exec',clone.BACKEND_CONTAINER,'bench','--site',clone.CLONE_SITE,
+        'execute','centrochange_core.finance.operational_receipts_acceptance.closure_regressions']))
+    print(clone.run_cmd(['docker','exec',clone.BACKEND_CONTAINER,'bench','--site',clone.CLONE_SITE,
         'execute','centrochange_core.finance.operational_receipts_acceptance.concurrent']))
     subprocess.run([sys.executable, str(clone.ROOT_DIR / 'infra/issue156_http.py')], check=True)
 finally:

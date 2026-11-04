@@ -35,6 +35,62 @@
       "uat_results": [],
       "uat_report": "",
       "owner_ui_acceptance": []
+    },
+    {
+      "id": "OPERATIONAL-156",
+      "title": "Semplificazione operativa pre-demo",
+      "outcome": "Incassi cumulativi e parziali, accesso diretto e prenotazioni senza blocco per insoluti ordinari",
+      "type": "FEATURE",
+      "status": "ACTIVE",
+      "issue_ref": "github:2008hitch-afk/centrochange_core/issues/156",
+      "authorization_ref": "github:2008hitch-afk/centrochange_core/issues/156#issuecomment-6627551926",
+      "dependencies": [],
+      "acceptance": [
+        {
+          "id": "RECEIPTS",
+          "description": "Incassi parziali e multi-seduta con saldo, idempotenza, audit e nessuna fattura automatica",
+          "status": "PENDING"
+        },
+        {
+          "id": "NO_HOLD",
+          "description": "Insoluti ordinari non bloccano prenotazione, spostamento o chiusura",
+          "status": "PENDING"
+        },
+        {
+          "id": "UX_AND_NOTICE",
+          "description": "Card, paziente e notifiche azionabili con permessi; Agenda invariata",
+          "status": "PENDING"
+        },
+        {
+          "id": "CATALOG",
+          "description": "Distinguere colloquio gratuito e seduta successiva, previa verifica catalogo",
+          "status": "PENDING"
+        }
+      ],
+      "tests": [],
+      "skill_runs": {},
+      "review": {
+        "status": "PENDING"
+      },
+      "result_report": "docs/qa/ISSUE-156-VERIFICATION.md",
+      "commit_sha": "",
+      "risk_flags": [],
+      "approvals": {},
+      "implementer": "Codex; independent review requested separately",
+      "ui_impact": "YES",
+      "ui_rationale": "Card appuntamento, pagamenti paziente, notifiche e servizi nel perimetro Owner.",
+      "ui_identity_change": "NO",
+      "ui_design_contract": "",
+      "ui_interfaces": [
+        "APPOINTMENT_DETAIL",
+        "PATIENT_PAYMENTS",
+        "NOTIFICATIONS",
+        "SERVICE_CATALOG",
+        "FINANCE_SUMMARY"
+      ],
+      "uat_results": [],
+      "uat_report": "",
+      "owner_ui_acceptance": []
     }
   ]
 }

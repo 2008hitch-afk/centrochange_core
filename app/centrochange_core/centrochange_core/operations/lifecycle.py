@@ -96,23 +96,25 @@ def cancel(appointment,reason):
 
 
 def _settlement(doc,paid,mode,reason):
-	from centrochange_core.finance.operational_receipts import has_allocation
-	if has_allocation(doc.name):
-		frappe.throw('Questa seduta ha incassi allocati: la modifica richiede una rettifica autorizzata.')
 	paid=cint(paid)
 	if paid not in (0,1):
 		frappe.throw('Lo stato di pagamento operativo deve essere sì o no.')
 	if paid and (not mode or not frappe.db.get_value('Mode of Payment',mode,'enabled',for_update=True)):
 		frappe.throw('Seleziona un metodo di pagamento informativo attivo.')
-	if paid:
-		# A newly marked paid session must use the same monetary ledger as the
-		# patient payment flow; existing historical binary events remain intact.
-		from centrochange_core.finance.operational_receipts import record_from_authorized_closure
-		record_from_authorized_closure(doc, mode, reason)
-		return current_settlements(doc.name)[0].name
 	rows=current_settlements(doc.name)
 	if rows and rows[0].paid==paid and (rows[0].mode_of_payment or None)==(mode or None):
 		return rows[0].name
+	from centrochange_core.finance.operational_receipts import has_allocation
+	if has_allocation(doc.name):
+		frappe.throw('Questa seduta ha incassi allocati: la modifica richiede una rettifica autorizzata.')
+	# Preserve the legacy binary marker for free, covered, waived and already-paid
+	# historical sessions: none proves that a positive amount was received.
+	from decimal import Decimal
+	amount = Decimal(str(doc.get('cc_price_snapshot') or 0))
+	if paid and doc.cc_economic_state == 'Due' and amount > 0 and not cint(doc.cc_paid):
+		from centrochange_core.finance.operational_receipts import record_from_authorized_closure
+		record_from_authorized_closure(doc, mode, reason)
+		return current_settlements(doc.name)[0].name
 	if not reason or not reason.strip():
 		frappe.throw('Indica il motivo della registrazione del pagamento.')
 	sequence=cint(doc.cc_settlement_revision)+1

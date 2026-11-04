@@ -239,6 +239,28 @@ class DayClosureAndRecoveryTests(unittest.TestCase):
 
         spec.loader.exec_module(self.lifecycle)
 
+    def test_non_monetary_paid_marker_is_not_routed_to_receipts(self):
+        for economic, price in [('Due', 0), ('Package Covered', 100), ('Waived', 100)]:
+            with self.subTest(economic=economic):
+                doc = self.appointments['APP-TODAY-1']
+                doc.cc_economic_state = economic
+                doc.cc_price_snapshot = price
+                doc.cc_paid = 0
+                self.settlements.clear()
+                self.lifecycle._settlement(doc, 1, 'POS', 'Synthetic marker')
+                self.assertEqual(self.settlements[-1].paid, 1)
+                self.assertEqual(doc.cc_paid, 1)
+
+    def test_legacy_paid_replay_does_not_create_receipt(self):
+        doc = self.appointments['APP-TODAY-1']
+        doc.cc_economic_state = 'Due'
+        doc.cc_price_snapshot = 100
+        doc.cc_paid = 1
+        previous = Record(name='LEGACY-1', appointment=doc.name, paid=1, mode_of_payment='POS', sequence=1)
+        self.settlements.append(previous)
+        self.assertEqual(self.lifecycle._settlement(doc, 1, 'POS', 'Retry'), 'LEGACY-1')
+        self.assertEqual(len(self.settlements), 1)
+
     def _mock_get_doc(self, *args, **kwargs):
         if len(args) == 2 and args[0] == 'Patient Appointment':
             name = args[1]

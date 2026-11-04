@@ -157,3 +157,77 @@ def concurrent(label='Alfa non incassata 2'):
     replay_outcomes = sorted(queue.get(timeout=5) for _ in processes)
     assert replay_outcomes == ['accepted','replay'], replay_outcomes
     return {'competing_60_eur_allocations':'PASS','concurrent_same_key_replay':'PASS'}
+
+
+def closure_regressions():
+    """Exercise legacy and non-monetary closure semantics on disposable records."""
+    from datetime import timedelta
+    from unittest.mock import patch
+    from centrochange_core.operations import lifecycle
+    demo.guard()
+    data = demo.read()
+    appointment = data['appointments']['Alfa da prenotare']
+    method = frappe.get_all('Mode of Payment', filters={'enabled':1}, pluck='name', limit_page_length=1)[0]
+    manager = data['fixture']['users']['m']['name']
+    counts = {dt:frappe.db.count(dt) for dt in ('CC Operational Receipt','Sales Invoice','Payment Entry','GL Entry')}
+    frappe.db.savepoint('cc156_closure_regressions')
+    try:
+        frappe.set_user(manager)
+        # A non-synthetic environment must not gain the new ledger write via closure.
+        before = frappe.db.get_value('Patient Appointment', appointment, ['status','cc_closure_state','cc_paid','cc_revision'], as_dict=True)
+        doc = frappe.get_doc('Patient Appointment', appointment)
+        clock = lifecycle.start_utc(doc) + timedelta(hours=2)
+        with patch('centrochange_core.operations.lifecycle.now_utc', return_value=clock), patch.dict(frappe.conf, {'cc_synthetic_dev':0}):
+            try:
+                lifecycle.close(appointment,1,'Synthetic environment guard test',method)
+                raise AssertionError('Non-synthetic receipt accepted')
+            except frappe.PermissionError:
+                pass
+        assert frappe.db.get_value('Patient Appointment', appointment, ['status','cc_closure_state','cc_paid','cc_revision'], as_dict=True) == before
+        assert {dt:frappe.db.count(dt) for dt in counts} == counts
+        # Run complete paid closures for a waived session and a reserved package,
+        # then roll back each isolated scenario before testing the next one.
+        frappe.db.savepoint('cc156_waived')
+        frappe.db.set_value('Patient Appointment',appointment,'cc_economic_state','Waived')
+        with patch('centrochange_core.operations.lifecycle.now_utc', return_value=clock):
+            lifecycle.close(appointment,1,'Synthetic waived closure',method)
+        assert frappe.db.get_value('Patient Appointment',appointment,'cc_economic_state') == 'Waived'
+        assert frappe.db.count('CC Operational Receipt') == counts['CC Operational Receipt']
+        frappe.db.rollback(save_point='cc156_waived')
+        frappe.db.savepoint('cc156_package')
+        from centrochange_core.operations import packages
+        package = packages.issue(data['fixture']['catalog']['CC Package Template'][0],
+            data['patients']['Alfa'], [data['fixture']['centers'][0]], 'cc156-package-test', 'Synthetic package test')['name']
+        frappe.db.set_value('Patient Appointment',appointment,'cc_package',package)
+        package_doc = frappe.get_doc('Patient Appointment',appointment,for_update=True)
+        packages.reserve(package_doc,'Synthetic package reservation')
+        with patch('centrochange_core.operations.lifecycle.now_utc', return_value=clock):
+            lifecycle.close(appointment,1,'Synthetic package closure',method)
+        assert frappe.db.get_value('Patient Appointment',appointment,'cc_economic_state') == 'Package Covered'
+        assert frappe.db.count('CC Operational Receipt') == counts['CC Operational Receipt']
+        frappe.db.rollback(save_point='cc156_package')
+        # A free first meeting still closes with the legacy marker and no invented receipt.
+        frappe.db.set_value('Patient Appointment',appointment,'cc_price_snapshot',0)
+        with patch('centrochange_core.operations.lifecycle.now_utc', return_value=clock):
+            lifecycle.close(appointment,1,'Synthetic free meeting closure',method)
+        assert frappe.db.get_value('Patient Appointment',appointment,'cc_closure_state') == 'Closed'
+        assert frappe.db.count('CC Operational Receipt') == counts['CC Operational Receipt']
+        # Existing binary event replay and correction remain available without receipt.
+        legacy = frappe.get_doc('Patient Appointment',appointment,for_update=True)
+        old = lifecycle.current_settlements(appointment)[0].name
+        assert lifecycle._settlement(legacy,1,method,'Synthetic replay') == old
+        lifecycle.record_settlement(appointment,0,'Synthetic legacy correction')
+        assert frappe.db.get_value('Patient Appointment',appointment,'cc_paid') == 0
+        assert frappe.db.count('CC Operational Receipt') == counts['CC Operational Receipt']
+        # Existing covered and waived records retain their historical binary semantics.
+        for label in ('Epsilon pacchetto','Delta annullata puntuale'):
+            doc = frappe.get_doc('Patient Appointment',data['appointments'][label],for_update=True)
+            assert doc.cc_economic_state in ('Package Covered','Waived','Non Due')
+            lifecycle._settlement(doc,1,method,'Synthetic non monetary state')
+            assert frappe.db.count('CC Operational Receipt') == counts['CC Operational Receipt']
+        assert {dt:frappe.db.count(dt) for dt in counts} == counts
+        return {'non_synthetic_denied_atomic':'PASS','free_closure':'PASS',
+            'legacy_replay_and_correction':'PASS','package_and_waiver_closure_and_binary':'PASS','no_accounting_documents':'PASS'}
+    finally:
+        frappe.set_user('Administrator')
+        frappe.db.rollback(save_point='cc156_closure_regressions')
