@@ -60,6 +60,8 @@ def run_cmd(cmd, check=True, capture=True, input_str=None):
 
 def verify_candidate_image(image_ref, expected_digest=None, expected_source_sha=None, allow_superseded=False):
     """Verify that the candidate image exists, matches metadata, and has required labels."""
+    if not expected_digest or not expected_source_sha:
+        raise ValueError('Full image digest and source SHA are required')
     log(f"Verifying candidate image: {image_ref}")
     if not allow_superseded and image_ref in SUPERSEDED_IMAGES:
         raise ValueError(f"Image {image_ref} is marked as SUPERSEDED. Accidental deployment blocked.")
@@ -81,12 +83,12 @@ def verify_candidate_image(image_ref, expected_digest=None, expected_source_sha=
 
     if expected_source_sha:
         source_label = labels.get('centrochange.source', '')
-        if not source_label.startswith(expected_source_sha) and not expected_source_sha.startswith(source_label):
+        if not re.fullmatch(r'[0-9a-f]{40}', expected_source_sha) or source_label != expected_source_sha:
             raise ValueError(f"Source SHA mismatch on candidate image: expected {expected_source_sha}, image has {source_label}")
 
     if expected_digest:
         repo_digests = inspect_data.get('RepoDigests', [])
-        if expected_digest != image_id and not any(expected_digest in rd for rd in repo_digests):
+        if not re.fullmatch(r'sha256:[0-9a-f]{64}', expected_digest) or (expected_digest != image_id and not any(rd.rsplit('@', 1)[-1] == expected_digest for rd in repo_digests)):
             raise ValueError(f"Image digest mismatch: expected {expected_digest}, inspect returned ID {image_id}")
 
     return {
@@ -122,7 +124,7 @@ def deploy(candidate_image, expected_digest=None, expected_source_sha=None, allo
     ephemeral_env = ROOT_DIR / f'infra/.ephemeral_deploy_{time.time_ns()}.env'
     try:
         ephemeral_env.write_text(
-            f"CC_SINGLE_FULL_IMAGE={candidate_image}\n"
+            f"CC_SINGLE_FULL_IMAGE={verified_meta['image_id']}\n"
             f"HTTP_PORT={HTTP_PORT}\n"
             f"DB_PASSWORD={db_pass}\n",
             encoding='utf-8'
