@@ -162,14 +162,14 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
       <section className="detail-section patient-tab-notes"><h3>Note organizzative</h3><NoteHistory rows={history.organizational_notes} onCorrect={historical ? undefined : row => correct(row, false)} />{professional && <><h3>Note professionali riservate</h3><NoteHistory rows={history.private_notes} privateNotes onCorrect={historical ? undefined : row => correct(row, true)} /></>}{!historical && <form onSubmit={event => { event.preventDefault(); void addNote() }}><h3>{corrects ? `Rettifica di una nota ${notePrivate ? 'professionale riservata' : 'organizzativa'}` : 'Nuova nota'}</h3>{!corrects && professional && <fieldset className="note-kind"><legend>Tipo di nota</legend><label><input type="radio" name="note-kind" checked={!notePrivate} onChange={() => setNotePrivate(false)} /> Organizzativa</label><label><input type="radio" name="note-kind" checked={notePrivate} onChange={() => setNotePrivate(true)} /> Professionale riservata</label></fieldset>}<p className="scope-note" role="status">{notePrivate ? 'La nota professionale è visibile soltanto al professionista autorizzato nel contesto del paziente.' : 'La nota organizzativa è visibile ai ruoli autorizzati nel centro.'} {corrects ? 'La rettifica conserva il tipo e la versione precedente nello storico.' : 'Dopo il salvataggio il testo non si modifica: eventuali correzioni si registrano come rettifiche.'}</p><Field label={corrects ? 'Testo della rettifica' : 'Testo della nota'} required><textarea value={note} onChange={event => setNote(event.target.value)} required maxLength={100000} /></Field><FormError error={error} /><div className="form-actions">{corrects && <Button type="button" variant="secondary" onClick={() => { setCorrects(null); setNote(''); setNotePrivate(false) }}>Annulla rettifica</Button>}<Button type="submit" disabled={noteBusy || !note.trim()}>{noteBusy ? 'Salvataggio…' : corrects ? 'Registra rettifica' : 'Aggiungi nota'}</Button></div></form>}</section>
       <div className="patient-tab-packages"><PatientPackages boot={boot} patient={patient.name} center={center} packages={history.packages} feedback={feedback} onSuccess={refresh} readOnly={historical} /></div>
     </>}
-    {canViewPayments && <PatientPaymentsTab patient={patient} center={center} boot={boot} canWrite={Boolean(financeBoot?.can_write)} onOpenReport={onOpenReport} />}
+    {canViewPayments && <PatientPaymentsTab patient={patient} center={center} boot={boot} canWrite={Boolean(financeBoot?.can_write)} onOpenReport={onOpenReport} knownAppointments={history?.appointments.map(row => String(row.name)) ?? []} onOpenSession={(id, button) => { const row = history?.appointments.find(item => String(item.name) === id); if (row) openAppointment(row, button); else setTab('Sedute') }} />}
     {profile && history && <div className="patient-tab-assignments"><PatientAssignments boot={boot} patient={patient.name} center={center} feedback={feedback} onSuccess={refresh} /></div>}
     </>}
   </article>{draft && <Modal title="Modifica paziente" onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); void save() }}><Field label="Nome" required><input required value={draft.first_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, first_name: event.target.value }) }} /></Field><Field label="Cognome"><input value={draft.last_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, last_name: event.target.value }) }} /></Field><Field label="Email"><input type="email" value={draft.email ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, email: event.target.value }) }} /></Field><Field label="Motivo" required><textarea required maxLength={500} value={reason} onChange={event => { saveKey.current = requestKey(); setReason(event.target.value) }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
 }
 
-function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport }: {
-  patient: Patient; center: string; boot: Boot; canWrite: boolean; onOpenReport?: (patientId?: string) => void
+function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport, onOpenSession, knownAppointments }: {
+  patient: Patient; center: string; boot: Boot; canWrite: boolean; onOpenReport?: (patientId?: string) => void; onOpenSession: (id: string, button: HTMLButtonElement) => void; knownAppointments: string[]
 }) {
   const [position, setPosition] = useState<{
     blocked: boolean;
@@ -218,7 +218,8 @@ function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport }: {
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [receiptError, setReceiptError] = useState('')
-  const [receipts, setReceipts] = useState<Array<{name: string; receipt_date: string; mode_of_payment: string; reason: string; actor: string; reversed: boolean; allocations: Array<{cents: number; reversal_of?: string}>}>>([])
+  const [receipts, setReceipts] = useState<Array<{name: string; receipt_date: string; creation?: string; mode_of_payment: string; reason: string; actor: string; reversed: boolean; allocations: Array<{cents: number; appointment?: string; appointment_date?: string; service_label?: string; reversal_of?: string}>}>>([])
+  const [historyError, setHistoryError] = useState(false)
   const [correcting, setCorrecting] = useState('')
   const [correctionReason, setCorrectionReason] = useState('')
   const correctionKey = useRef(requestKey())
@@ -236,10 +237,12 @@ function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport }: {
       finance<typeof receipts>('operational_receipts.history', { center, patient: patient.name })
     ]).then(([posRes, projRes, receiptRes]) => {
       if (!live) return
-      if (posRes.status === 'fulfilled') setPosition(posRes.value)
+      const validPosition = posRes.status === 'fulfilled' && posRes.value && typeof posRes.value.blocked === 'boolean' && Array.isArray(posRes.value.debts)
+      if (validPosition && posRes.status === 'fulfilled') setPosition(posRes.value)
       if (projRes.status === 'fulfilled') setProject(projRes.value)
-      if (receiptRes.status === 'fulfilled') setReceipts(receiptRes.value)
-      if (posRes.status === 'rejected' && projRes.status === 'rejected') {
+      if (receiptRes.status === 'fulfilled') { setReceipts(receiptRes.value); setHistoryError(false) }
+      else { setReceipts([]); setHistoryError(true) }
+      if (!validPosition) {
         setError('Impossibile caricare i dati economici per questo paziente.')
       }
       setLoading(false)
@@ -255,6 +258,7 @@ function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport }: {
   const operationalDebtTotal = operationalDebts.reduce((sum, d) => sum + (Number(d.amount) || 0), 0)
   const accountingResidual = project?.totals?.outstanding ?? null
   const isBlocked = position?.blocked ?? false
+  const latestReceipt = [...receipts].filter(r => !r.allocations[0]?.reversal_of && !r.reversed).sort((a, b) => b.receipt_date.localeCompare(a.receipt_date) || String(b.creation ?? '').localeCompare(String(a.creation ?? '')))[0]
 
   const agreementLabel = !position?.agreement ? 'Standard (seduta per seduta)' :
     position.agreement.mode === 'Immediate' ? 'Pagamento immediato' :
@@ -288,9 +292,9 @@ function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport }: {
           tone={operationalDebtTotal > 0 ? 'amber' : 'green'}
         />
         <Metric
-          label="Residuo contabile fatture"
-          value={accountingResidual != null ? money(accountingResidual, 'EUR') : 'N/D'}
-          tone={accountingResidual && accountingResidual > 0 ? 'amber' : 'blue'}
+          label="Ultimo incasso"
+          value={historyError ? 'Non disponibile' : latestReceipt ? money(latestReceipt.allocations.reduce((sum, item) => sum + item.cents, 0) / 100, 'EUR') : 'Nessuno'}
+          tone="blue"
         />
         <Metric
           label="Stato prenotazioni"
@@ -313,10 +317,8 @@ function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport }: {
         <Field label="Causale" required><textarea required value={reason} onChange={e => setReason(e.target.value)} maxLength={2000} /></Field>
         <FormError error={receiptError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setRecording(false)}>Annulla</Button><Button disabled={saving} type="submit">{saving ? 'Registrazione…' : 'Conferma incasso'}</Button></div>
       </form>}
-      {receipts.length > 0 && <><h3>Incassi registrati</h3>{receipts.map(r => <div key={r.name}><p>{displayDate(r.receipt_date)} · {money(r.allocations.reduce((sum, a) => sum + a.cents, 0) / 100)} · {r.mode_of_payment} {r.allocations[0]?.reversal_of ? `· Rettifica del registro · Incasso originale ${r.allocations[0].reversal_of}` : r.reversed ? '· Rettificato' : ''}</p><p>Riferimento: {r.name} · Operatore: {r.actor} · Causale: {r.reason}</p>
-        {canWrite && !r.reversed && !r.allocations[0]?.reversal_of && <Button type="button" variant="secondary" onClick={() => { setCorrecting(r.name); setCorrectionReason(''); setReceiptError('') }}>Rettifica incasso</Button>}
-        {correcting === r.name && <form className="action-form" onSubmit={event => { event.preventDefault(); setSaving(true); setReceiptError(''); finance('operational_receipts.reverse', {patient: patient.name, center, receipt: r.name, reason: correctionReason, request_key: correctionKey.current}, true).then(() => { correctionKey.current = requestKey(); setCorrecting(''); setReload(n => n + 1) }).catch(e => setReceiptError(errorText(e))).finally(() => setSaving(false)) }}><p>La rettifica annulla l’intera registrazione e ripristina i residui. Non effettua un rimborso.</p><Field label="Motivo della rettifica" required><textarea required maxLength={2000} value={correctionReason} onChange={e => setCorrectionReason(e.target.value)} /></Field><FormError error={receiptError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setCorrecting('')}>Annulla</Button><Button type="submit" disabled={saving}>Conferma rettifica</Button></div></form>}
-      </div>)}</>}
+      {historyError && <p className="inline-error" role="alert">Impossibile caricare i movimenti di pagamento. Riprova.</p>}
+      {receipts.length > 0 && <><h3>Movimenti di pagamento</h3><div className="table-wrap"><table><thead><tr><th>Data</th><th>Servizio / seduta</th><th>Importo</th><th>Metodo</th><th>Dettaglio</th></tr></thead><tbody>{receipts.flatMap(r => r.allocations.map((item, index) => <tr key={`${r.name}-${index}`}><td>{displayDate(r.receipt_date)}</td><td><strong>{demoText(item.service_label) || 'Seduta'}</strong><br /><small>{item.appointment_date ? displayDate(item.appointment_date) : 'Data non disponibile'}</small>{item.appointment && <button type="button" className="patient-back" onClick={event => onOpenSession(item.appointment!, event.currentTarget)}>{knownAppointments.includes(item.appointment) ? 'Vai alla seduta' : 'Vai alle sedute'}</button>}</td><td>{money(item.cents / 100)}</td><td>{r.mode_of_payment}</td><td><details><summary>Visualizza</summary><p>{item.reversal_of ? 'Rettifica del registro, non un rimborso' : r.reversed ? 'Incasso rettificato' : 'Incasso'}</p><p>Riferimento: {r.name} · Operatore: {r.actor} · Causale: {r.reason}</p>{item.reversal_of && <p>Incasso originale: {item.reversal_of}</p>}{canWrite && !r.reversed && !item.reversal_of && index === 0 && <Button type="button" variant="secondary" onClick={() => { setCorrecting(r.name); setCorrectionReason(''); setReceiptError('') }}>Rettifica incasso</Button>}</details></td></tr>))}</tbody></table></div>{receipts.map(r => correcting === r.name && <form key={r.name} className="action-form" onSubmit={event => { event.preventDefault(); setSaving(true); setReceiptError(''); finance('operational_receipts.reverse', {patient: patient.name, center, receipt: r.name, reason: correctionReason, request_key: correctionKey.current}, true).then(() => { correctionKey.current = requestKey(); setCorrecting(''); setReload(n => n + 1) }).catch(e => setReceiptError(errorText(e))).finally(() => setSaving(false)) }}><p>La rettifica annulla l’intera registrazione e ripristina i residui. Non effettua un rimborso.</p><Field label="Motivo della rettifica" required><textarea required maxLength={2000} value={correctionReason} onChange={e => setCorrectionReason(e.target.value)} /></Field><FormError error={receiptError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setCorrecting('')}>Annulla</Button><Button type="submit" disabled={saving}>Conferma rettifica</Button></div></form>)}</>}
       <h3>Sedute da saldare e posizioni operative</h3>
       <p className="scope-note">
         Sedute svolte o addebitate in attesa di saldo o fatturazione nel centro.

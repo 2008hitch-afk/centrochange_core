@@ -435,3 +435,20 @@
 .booking-skip{position:absolute;left:-9999px;top:0}.booking-skip:focus{z-index:1000;left:12px;top:12px;background:white;color:#164366;padding:12px;border-radius:10px}
 @media(max-width:900px){.booking-layout{grid-template-columns:minmax(0,1fr);max-width:730px;gap:24px}.booking-summary{position:static;order:2}.booking-progress{margin-bottom:26px}}
 @media(max-width:540px){.booking-top{height:68px;padding:0 18px}.booking-top-caption{font-size:0}.booking-top-caption svg{width:20px;height:20px}.booking-layout{padding:24px 16px 0;gap:20px}.booking-progress{gap:10px}.booking-progress-item{font-size:0}.booking-progress-item[aria-current=step]{font-size:12px}.booking-progress-num{font-size:12px}.booking-stage h1{font-size:28px}.booking-intro{font-size:14px}.booking-mode,.booking-director{padding:16px;border-radius:14px;gap:12px}.booking-calendar-form{grid-template-columns:1fr;gap:14px;padding:16px;border-radius:14px}.booking-calendar-form .field input{height:46px;min-height:46px;max-height:46px;padding:0 14px}.booking-calendar-form .booking-search{width:100%;height:46px;min-height:46px;max-height:46px}.booking-option-icon{width:45px;height:45px;flex-basis:45px}.booking-option-copy strong{font-size:14px}.booking-option-copy small{font-size:12px}.booking-option-check{width:21px;height:21px}.booking-slot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.booking-form-row{grid-template-columns:1fr}.booking-actions{gap:10px;margin-top:24px}.booking-primary,.booking-secondary,.booking-search{font-size:13.5px;min-height:46px;padding:11px 16px;border-radius:12px}.booking-summary{padding:20px;border-radius:16px}.booking-success{padding:24px 20px;border-radius:16px}.booking-footer{margin-top:32px}}
+
+/* Centro Change operational hierarchy, aligned with the approved concept. */
+.sidebar{background:#1c4176;border-right-color:#183761}
+.sidebar .brand strong,.sidebar .sidebar-foot strong{color:#fff}
+.sidebar .brand small,.sidebar .sidebar-label,.sidebar .sidebar-foot small{color:#c5d7ef}
+.sidebar .nav-item{color:#e0ebf9}
+.sidebar .nav-item:hover{background:#28568e;color:#fff}
+.sidebar .nav-item.active{background:#377de1;color:#fff}
+.sidebar .nav-dot{background:#fff}
+.sidebar .sidebar-foot{border-top-color:#496a95}
+.patient-tab-payments .table-wrap{overflow-x:auto;border:1px solid #dce6f2;border-radius:12px}
+.patient-tab-payments table{width:100%;border-collapse:collapse;text-align:left}
+.patient-tab-payments th{background:#eff5fc;color:#435978;font-size:12px;padding:12px}
+.patient-tab-payments td{padding:12px;border-top:1px solid #e7edf5;vertical-align:top}
+.patient-tab-payments td small{display:block;color:#60738e;margin-top:3px}
+.patient-tab-payments details summary{cursor:pointer;color:#2765b4;font-weight:600}
+.patient-tab-payments td .patient-back{display:block;margin-top:6px}

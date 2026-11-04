@@ -306,7 +306,7 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
   const amountDue = selectedPackage ? 0 : listPrice
 
   const submit = () => {
-    const payload = { patient, practitioner, center, appointment_type: service, appointment_date: day, appointment_time: clock, patient_package: packageName || null, reason }
+    const payload = { patient, practitioner, center, appointment_type: service, appointment_date: day, appointment_time: clock, patient_package: packageName || null, reason: reason.trim() || 'Prenotazione ordinaria' }
     const key = JSON.stringify(payload)
     return run(() => schedule('booking.book', { ...payload, request_key: keys.current[key] ??= requestKey() }, true), 'Prenotazione registrata.')
   }
@@ -326,7 +326,7 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
       <div style={{ marginTop: 4, fontSize: 12, color: '#64748b' }}>La tariffa di listino verrà registrata come snapshot economico per questa seduta.</div>
     )}
   </div>
-  <Field label="Motivo" required><textarea value={reason} onChange={e => setReason(e.target.value)} required maxLength={2000} rows={3} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Annulla</Button><Button disabled={busy || !patient || !practitioner || !service} type="submit">{busy ? 'Salvataggio…' : 'Conferma prenotazione'}</Button></div></form></Modal>
+  <Field label="Nota organizzativa (facoltativa)"><textarea value={reason} onChange={e => setReason(e.target.value)} maxLength={2000} rows={3} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Annulla</Button><Button disabled={busy || !patient || !practitioner || !service} type="submit">{busy ? 'Salvataggio…' : 'Conferma prenotazione'}</Button></div></form></Modal>
 }
 
 
@@ -648,7 +648,9 @@ export function ServiceCatalog({ boot, center }: { boot: Boot; center: string })
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<(typeof boot.services)[number] | null>(null)
   const search = query.trim().toLocaleLowerCase('it-IT')
-  const services = boot.services.filter(service => `${demoText(service.cc_service_label)} ${service.cc_service_label ?? ''} ${service.name}`.toLocaleLowerCase('it-IT').includes(search))
+  const matching = boot.services.filter(service => `${demoText(service.cc_service_label)} ${service.cc_service_label ?? ''} ${service.name}`.toLocaleLowerCase('it-IT').includes(search))
+  const firstMeeting = matching.filter(service => /^Primo Incontro (?:Online|in Sede) con Direttore \+ Prima Seduta$/i.test(String(service.cc_service_label || service.name)) && Number(service.duration) === 20 && Number(service.cc_price_snapshot) === 0)
+  const services = firstMeeting.length === 2 && firstMeeting.some(s => /Online/i.test(String(s.cc_service_label || s.name))) && firstMeeting.some(s => /in Sede/i.test(String(s.cc_service_label || s.name))) ? matching.filter(service => !firstMeeting.includes(service)).concat([{...firstMeeting[0], cc_service_label: 'Primo colloquio conoscitivo · in sede oppure online'}]) : matching
 
   if (selected) {
     return <article className="panel service-detail-page" role="dialog" aria-label={demoText(selected.cc_service_label || selected.name)}>

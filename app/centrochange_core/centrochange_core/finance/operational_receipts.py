@@ -42,8 +42,18 @@ def history(patient, center):
     patient_context(patient, center)
     rows = _rows(patient, center)
     reversed_names = {item.get('reversal_of') for row in rows for item in json.loads(row.allocations) if item.get('reversal_of')}
-    return [{**dict(row), 'allocations': json.loads(row.allocations),
-             'reversed': row.name in reversed_names} for row in rows]
+    result = []
+    for row in rows:
+        allocations = json.loads(row.allocations)
+        for allocation in allocations:
+            appointment = frappe.db.get_value('Patient Appointment', allocation['appointment'],
+                ['patient', 'cc_center', 'appointment_date', 'cc_service_label'], as_dict=True)
+            if not appointment or appointment.patient != patient or appointment.cc_center != center:
+                frappe.throw('La storia degli incassi richiede una verifica autorizzata.', frappe.PermissionError)
+            allocation['appointment_date'] = appointment.appointment_date
+            allocation['service_label'] = appointment.cc_service_label
+        result.append({**dict(row), 'allocations': allocations, 'reversed': row.name in reversed_names})
+    return result
 
 
 @frappe.whitelist(methods=['POST'])

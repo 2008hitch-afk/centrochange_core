@@ -33,7 +33,7 @@ export function demoText(value: unknown): string {
   if (labels[original] != null) return labels[original]
   const fixture = /^CC-HTTP-[A-Za-z0-9]{10}\s+(SESSION|PACKAGE)$/i.exec(original.trim())
   if (fixture) return fixture[1].toUpperCase() === 'SESSION' ? 'Servizio di prova' : 'Pacchetto di prova'
-  return original
+  return original.replace(/\s*\+\s*Prima Seduta\b/gi, '')
 }
 
 // Patient and Customer may share an identifier. A demo alias is not a real
