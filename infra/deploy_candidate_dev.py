@@ -98,6 +98,11 @@ def verify_candidate_image(image_ref, expected_digest=None, expected_source_sha=
 
 
 def deploy(candidate_image, expected_digest=None, expected_source_sha=None, allow_superseded=False):
+    # This legacy entrypoint starts all six services concurrently and cannot
+    # hold a verified write freeze across migration, backup and image switching.
+    # Fail closed until the coordinated recovery guard is integrated and tested.
+    # Do not add an override: bypassing it can hide committed operational receipts.
+    raise RuntimeError('Deploy sospeso: guardia di rilascio e recupero incassi non ancora integrate.')
     log("=== INITIATING CONDITIONAL DEV INSTALLATION ===")
     verified_meta = verify_candidate_image(
         candidate_image,
