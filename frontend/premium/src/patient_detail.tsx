@@ -218,7 +218,10 @@ function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport }: {
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const [receiptError, setReceiptError] = useState('')
-  const [receipts, setReceipts] = useState<Array<{name: string; receipt_date: string; mode_of_payment: string; allocations: Array<{cents: number}>}>>([])
+  const [receipts, setReceipts] = useState<Array<{name: string; receipt_date: string; mode_of_payment: string; reason: string; actor: string; reversed: boolean; allocations: Array<{cents: number; reversal_of?: string}>}>>([])
+  const [correcting, setCorrecting] = useState('')
+  const [correctionReason, setCorrectionReason] = useState('')
+  const correctionKey = useRef(requestKey())
   const receiptKey = useRef(requestKey())
 
   useEffect(() => {
@@ -310,7 +313,10 @@ function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport }: {
         <Field label="Causale" required><textarea required value={reason} onChange={e => setReason(e.target.value)} maxLength={2000} /></Field>
         <FormError error={receiptError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setRecording(false)}>Annulla</Button><Button disabled={saving} type="submit">{saving ? 'Registrazione…' : 'Conferma incasso'}</Button></div>
       </form>}
-      {receipts.length > 0 && <><h3>Incassi registrati</h3>{receipts.map(r => <p key={r.name}>{displayDate(r.receipt_date)} · {money(r.allocations.reduce((sum, a) => sum + a.cents, 0) / 100)} · {r.mode_of_payment}</p>)}</>}
+      {receipts.length > 0 && <><h3>Incassi registrati</h3>{receipts.map(r => <div key={r.name}><p>{displayDate(r.receipt_date)} · {money(r.allocations.reduce((sum, a) => sum + a.cents, 0) / 100)} · {r.mode_of_payment} {r.allocations[0]?.reversal_of ? `· Rettifica del registro · Incasso originale ${r.allocations[0].reversal_of}` : r.reversed ? '· Rettificato' : ''}</p><p>Riferimento: {r.name} · Operatore: {r.actor} · Causale: {r.reason}</p>
+        {canWrite && !r.reversed && !r.allocations[0]?.reversal_of && <Button type="button" variant="secondary" onClick={() => { setCorrecting(r.name); setCorrectionReason(''); setReceiptError('') }}>Rettifica incasso</Button>}
+        {correcting === r.name && <form className="action-form" onSubmit={event => { event.preventDefault(); setSaving(true); setReceiptError(''); finance('operational_receipts.reverse', {patient: patient.name, center, receipt: r.name, reason: correctionReason, request_key: correctionKey.current}, true).then(() => { correctionKey.current = requestKey(); setCorrecting(''); setReload(n => n + 1) }).catch(e => setReceiptError(errorText(e))).finally(() => setSaving(false)) }}><p>La rettifica annulla l’intera registrazione e ripristina i residui. Non effettua un rimborso.</p><Field label="Motivo della rettifica" required><textarea required maxLength={2000} value={correctionReason} onChange={e => setCorrectionReason(e.target.value)} /></Field><FormError error={receiptError} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setCorrecting('')}>Annulla</Button><Button type="submit" disabled={saving}>Conferma rettifica</Button></div></form>}
+      </div>)}</>}
       <h3>Sedute da saldare e posizioni operative</h3>
       <p className="scope-note">
         Sedute svolte o addebitate in attesa di saldo o fatturazione nel centro.

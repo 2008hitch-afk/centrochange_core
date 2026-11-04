@@ -15,6 +15,8 @@ def req(path,data=None,headers=None):
     except urllib.error.HTTPError as e: return e.code,e.read().decode()
 path='/api/method/centrochange_core.finance.operational_receipts.history?'+urllib.parse.urlencode({'patient':patient,'center':center})
 assert req(path)[0] in (401,403,417)
+reverse_path='/api/method/centrochange_core.finance.operational_receipts.reverse'
+assert req(reverse_path,json.dumps({'patient':patient,'center':center,'receipt':'missing','reason':'Guest','request_key':'guest'}).encode(),{'Content-Type':'application/json'})[0] in (401,403,417)
 status,_=req('/api/method/login',urllib.parse.urlencode({'usr':user['name'],'pwd':user['password']}).encode(),{'Content-Type':'application/x-www-form-urlencoded'})
 assert status==200
 status,html=req('/premium'); assert status==200
@@ -27,7 +29,13 @@ status,_=req('/api/method/centrochange_core.finance.operational_receipts.record'
 assert status in (400,401,403,417),status
 status,reply=req('/api/method/centrochange_core.finance.operational_receipts.record',body,{'Content-Type':'application/json','X-Frappe-CSRF-Token':csrf})
 assert status==200,(status,reply)
-assert not json.loads(reply)['message']['replay']
+receipt=json.loads(reply)['message']; assert not receipt['replay']
 status,reply=req('/api/method/centrochange_core.finance.operational_receipts.record',body,{'Content-Type':'application/json','X-Frappe-CSRF-Token':csrf})
 assert status==200 and json.loads(reply)['message']['replay']
-print('PASS HTTP guest denied, session scoped read, CSRF denied without token, receipt and replay accepted')
+correction=json.dumps({'patient':patient,'center':center,'receipt':receipt['name'],'reason':'Synthetic HTTP correction','request_key':'cc156-http-reverse'}).encode()
+assert req(reverse_path,correction,{'Content-Type':'application/json'})[0] in (400,401,403,417)
+status,reply=req(reverse_path,correction,{'Content-Type':'application/json','X-Frappe-CSRF-Token':csrf})
+assert status==200 and not json.loads(reply)['message']['replay'],(status,reply)
+status,reply=req(reverse_path,correction,{'Content-Type':'application/json','X-Frappe-CSRF-Token':csrf})
+assert status==200 and json.loads(reply)['message']['replay']
+print('PASS HTTP guest denied, CSRF denied, receipt and correction replay accepted')

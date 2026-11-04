@@ -41,7 +41,65 @@ def has_allocation(appointment):
 def history(patient, center):
     patient_context(patient, center)
     rows = _rows(patient, center)
-    return [{**dict(row), 'allocations': json.loads(row.allocations)} for row in rows]
+    reversed_names = {item.get('reversal_of') for row in rows for item in json.loads(row.allocations) if item.get('reversal_of')}
+    return [{**dict(row), 'allocations': json.loads(row.allocations),
+             'reversed': row.name in reversed_names} for row in rows]
+
+
+@frappe.whitelist(methods=['POST'])
+@atomic
+def reverse(patient, center, receipt, reason, request_key):
+    """Correct a whole operational receipt; does not execute a monetary refund."""
+    lock(); require_synthetic(); patient_context(patient, center, True)
+    if not reason or not reason.strip() or len(reason) > 2000 or not request_key or len(request_key) > 140:
+        frappe.throw('Indica causale e identificativo validi.')
+    original = frappe.get_doc('CC Operational Receipt', receipt, for_update=True)
+    if original.patient != patient or original.center != center:
+        frappe.throw('Incasso non disponibile per questo paziente.', frappe.PermissionError)
+    entries = json.loads(original.allocations)
+    if not entries or any(not isinstance(x.get('cents'), int) or x['cents'] <= 0 or x.get('reversal_of') for x in entries):
+        frappe.throw('Seleziona un incasso originale da rettificare.')
+    key = sha256((frappe.session.user + '\0' + request_key).encode()).hexdigest()
+    fingerprint = sha256(serialize(['reverse', patient, center, receipt, reason]).encode()).hexdigest()
+    existing = frappe.db.get_value('CC Operational Receipt', key, 'request_hash', for_update=True)
+    if existing:
+        if existing != fingerprint:
+            frappe.throw('La richiesta è già stata usata con dati diversi.')
+        return {'name': key, 'replay': True}
+    rows = _rows(patient, center)
+    if any(item.get('reversal_of') == receipt for row in rows for item in json.loads(row.allocations)):
+        frappe.throw('Questo incasso è già stato rettificato.')
+    previous = allocated(patient, center)
+    changed = []
+    for item in entries:
+        doc = frappe.get_doc('Patient Appointment', item['appointment'], for_update=True)
+        if doc.patient != patient or doc.cc_center != center or previous.get(doc.name, 0) < item['cents']:
+            frappe.throw('La posizione della seduta richiede una verifica autorizzata.')
+        if frappe.db.sql('''select i.name from `tabSales Invoice Item` i join `tabSales Invoice` p on p.name=i.parent
+            join `tabCC Economic Source Link` s on s.name=i.cc_economic_source
+            where s.appointment=%s and p.docstatus<2 and p.is_return=0 limit 1 for update''', (doc.name,)):
+            frappe.throw('La seduta è collegata a una fattura: verifica la posizione contabile.')
+        if int(doc.cc_paid or 0) and previous.get(doc.name, 0) == cents(doc.cc_price_snapshot):
+            changed.append(doc)
+    correction = [{'appointment': x['appointment'], 'cents': -x['cents'], 'reversal_of': receipt} for x in entries]
+    with internal_write('cc_operation_write'):
+        frappe.get_doc({'doctype':'CC Operational Receipt', 'request_key':key, 'request_hash':fingerprint,
+            'patient':patient, 'center':center, 'receipt_date':frappe.utils.today(),
+            'mode_of_payment':original.mode_of_payment, 'reason':reason.strip(), 'actor':frappe.session.user,
+            'allocations':json.dumps(correction)}).insert(ignore_permissions=True)
+    from centrochange_core.operations.lifecycle import _patch
+    for doc in changed:
+        sequence = int(doc.cc_settlement_revision or 0) + 1
+        with internal_write('cc_operation_write'):
+            event = frappe.get_doc({'doctype':'CC Settlement', 'appointment':doc.name, 'paid':0,
+                'sequence':sequence, 'mode_of_payment':None, 'actor':frappe.session.user,
+                'event_time':frappe.utils.now_datetime(), 'reason':reason.strip()}).insert(ignore_permissions=True)
+            _patch(doc, {'cc_paid':0, 'cc_settlement_revision':sequence})
+        append('OPERATIONAL_SETTLEMENT', doc.doctype, doc.name, None,
+            {'paid':0, 'settlement':event.name, 'receipt_correction':key}, reason)
+    append('OPERATIONAL_RECEIPT_CORRECTED', 'CC Operational Receipt', key, None,
+        {'original_receipt':receipt, 'allocations':correction}, reason)
+    return {'name':key, 'replay':False}
 
 
 @frappe.whitelist(methods=['POST'])
@@ -134,8 +192,10 @@ def center_records(center):
             patient_context(row.patient, center)
         except frappe.PermissionError:
             continue
+        entries = json.loads(row.allocations)
         result.append({'name':row.name,'patient':row.patient,
             'patient_label':frappe.db.get_value('Patient',row.patient,'patient_name'),
             'receipt_date':row.receipt_date,'mode_of_payment':row.mode_of_payment,
-            'amount':sum(a['cents'] for a in json.loads(row.allocations))/100})
+            'reversal_of':entries[0].get('reversal_of') if entries else None,
+            'amount':sum(a['cents'] for a in entries)/100})
     return result

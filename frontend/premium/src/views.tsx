@@ -906,7 +906,7 @@ function OperationalReceiptList({ center }: { center: string }) {
     finance<Row[]>('operational_receipts.center_records', { center }).then(r => { if (live) { if (Array.isArray(r)) setRows(r); else setError('Risposta degli incassi non valida.') } }).catch(() => { if (live) setError('Impossibile caricare gli incassi operativi.') })
     return () => { live = false }
   }, [center])
-  return <div><h3>Incassi operativi</h3><p className="scope-note">Registrazioni operative non contabilizzate; nessuna fattura viene generata automaticamente.</p>{error && <p role="alert">{error}</p>}{rows.length > 0 ? <DataTable rows={rows} columns={[{key:'receipt_date',label:'Data',render:displayDate},{key:'patient_label',label:'Paziente',render:demoText},{key:'mode_of_payment',label:'Metodo'},{key:'amount',label:'Importo',render:v => money(v)}]} /> : !error && <p>Nessun incasso operativo registrato.</p>}</div>
+  return <div><h3>Incassi operativi</h3><p className="scope-note">Registrazioni operative non contabilizzate; nessuna fattura viene generata automaticamente.</p>{error && <p role="alert">{error}</p>}{rows.length > 0 ? <DataTable rows={rows} columns={[{key:'receipt_date',label:'Data',render:displayDate},{key:'patient_label',label:'Paziente',render:demoText},{key:'reversal_of',label:'Operazione',render:v => v ? `Rettifica del registro — non è un rimborso · ${v}` : 'Incasso'},{key:'mode_of_payment',label:'Metodo'},{key:'amount',label:'Importo',render:v => money(v)}]} /> : !error && <p>Nessun incasso operativo registrato.</p>}</div>
 }
 
 export function FinanceView({ boot, center, feedback }: { boot: FinanceBoot; center: string; feedback: Feedback }) {

@@ -2940,12 +2940,14 @@ test('ISSUE-156: card apre pagamenti e registra un importo parziale su due sedut
   await mockApi(page)
   let balance = 176
   let posted: any = null
+  let corrected: any = null
   await page.route('**/api/method/centrochange_core.finance.collections.position*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { blocked: false, debts: [
     { doctype: 'Patient Appointment', name: 'APP-A', amount: balance === 176 ? 88 : 38, currency: 'EUR', appointment_date: '2026-10-01', due_date: '2026-10-01' },
     { doctype: 'Patient Appointment', name: 'APP-B', amount: balance === 176 ? 88 : 38, currency: 'EUR', appointment_date: '2026-10-02', due_date: '2026-10-02' }
   ] } }) }))
-  await page.route('**/api/method/centrochange_core.finance.operational_receipts.history*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: posted ? [{ name:'R1', receipt_date:today, mode_of_payment:'POS', allocations:[{cents:5000},{cents:5000}] }] : [] }) }))
+  await page.route('**/api/method/centrochange_core.finance.operational_receipts.history*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: posted ? [{ name:'R1', receipt_date:today, mode_of_payment:'POS', reversed:!!corrected, allocations:[{cents:5000},{cents:5000}] }, ...(corrected ? [{name:'R2',receipt_date:today,mode_of_payment:'POS',allocations:[{cents:-5000,reversal_of:'R1'},{cents:-5000,reversal_of:'R1'}]}] : [])] : [] }) }))
   await page.route('**/api/method/centrochange_core.finance.operational_receipts.record', async route => { posted = route.request().postDataJSON(); balance = 76; await route.fulfill({ contentType:'application/json', body: JSON.stringify({ message: { name:'R1', replay:false } }) }) })
+  await page.route('**/api/method/centrochange_core.finance.operational_receipts.reverse', async route => { corrected = route.request().postDataJSON(); balance = 176; await route.fulfill({ contentType:'application/json', body: JSON.stringify({ message: { name:'R2', replay:false } }) }) })
   await page.goto('./#Agenda')
   await page.locator('.week-event').first().click()
   await page.getByRole('button', { name: /Registra incasso \/ Apri situazione/ }).click()
@@ -2959,4 +2961,11 @@ test('ISSUE-156: card apre pagamenti e registra un importo parziale su due sedut
   await expect(panel.getByText('Incassi registrati')).toBeVisible()
   await expect(panel).toContainText('76,00')
   expect(posted.allocations).toEqual([{appointment:'APP-A',amount:'50'}, {appointment:'APP-B',amount:'50'}])
+  await panel.getByRole('button', { name:'Rettifica incasso' }).click()
+  await expect(panel).toContainText('Non effettua un rimborso')
+  await panel.getByLabel('Motivo della rettifica').fill('Correzione di prova')
+  await panel.getByRole('button', { name:'Conferma rettifica' }).click()
+  await expect(panel).toContainText('Rettificato')
+  await expect(panel).toContainText('176,00')
+  expect(corrected.receipt).toBe('R1')
 })

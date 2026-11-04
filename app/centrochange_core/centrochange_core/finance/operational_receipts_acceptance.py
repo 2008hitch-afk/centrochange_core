@@ -17,6 +17,14 @@ def run():
     frappe.db.savepoint('cc156_acceptance')
     try:
         frappe.set_user(manager)
+        # Restored UAT fixtures may have advanced since the fresh CI seed.
+        # Re-close a reopened session via the normal lifecycle; never patch its
+        # state directly or bypass the approved daily closure rule.
+        from datetime import timedelta
+        from centrochange_core.operations import lifecycle
+        draft_doc = frappe.get_doc('Patient Appointment', draft_appointment)
+        if draft_doc.cc_closure_state == 'Reopened':
+            lifecycle.close(draft_appointment, 0, 'Synthetic acceptance: close reopened fixture')
         initial_history = len(receipts.history(patient,center))
         initial = collections.position(patient, center)
         assert initial['blocked'] is False
@@ -53,10 +61,25 @@ def run():
             {'appointment':appointment,'amount':1}, {'appointment':draft_appointment,'amount':1}]})
         assert not multi['replay']
         assert len(receipts.history(patient,center)) == initial_history+2
-        receipts.record(**{**payload,'request_key':'cc156-final', 'allocations':[
+        correction = receipts.reverse(patient, center, multi['name'], 'Synthetic correction', 'cc156-correction')
+        assert not correction['replay']
+        assert receipts.reverse(patient, center, multi['name'], 'Synthetic correction', 'cc156-correction')['replay']
+        try:
+            receipts.reverse(patient, center, multi['name'], 'Duplicate correction', 'cc156-duplicate-correction')
+            raise AssertionError('Duplicate correction accepted')
+        except frappe.ValidationError:
+            pass
+        assert round(float(next(d['amount'] for d in collections.position(patient,center)['debts'] if d['name']==appointment)),2) == round(before-partial,2)
+        assert receipts.history(patient,center)[-1]['allocations']
+        receipts.record(**{**payload,'request_key':'cc156-multi-replacement', 'allocations':[
+            {'appointment':appointment,'amount':1}, {'appointment':draft_appointment,'amount':1}]})
+        final = receipts.record(**{**payload,'request_key':'cc156-final', 'allocations':[
             {'appointment':appointment,'amount':round(before-partial-1,2)}]})
         assert frappe.db.get_value('Patient Appointment',appointment,'cc_paid') == 1
         assert not any(d['name']==appointment for d in collections.position(patient,center)['debts'])
+        receipts.reverse(patient, center, final['name'], 'Synthetic full-paid correction', 'cc156-final-correction')
+        assert frappe.db.get_value('Patient Appointment',appointment,'cc_paid') == 0
+        assert round(float(next(d['amount'] for d in collections.position(patient,center)['debts'] if d['name']==appointment)),2) == round(before-partial-1,2)
         from centrochange_core.security.audit import internal_write
         from centrochange_core.operations.automation import enqueue_notice
         from centrochange_core.operations import notifications
@@ -82,18 +105,74 @@ def run():
             raise AssertionError('Professional history access accepted')
         except frappe.PermissionError:
             pass
-        from datetime import timedelta
-        from centrochange_core.operations import lifecycle
+        try:
+            receipts.reverse(patient,center,result['name'],'Unauthorized correction','cc156-denied')
+            raise AssertionError('Professional correction accepted')
+        except frappe.PermissionError:
+            pass
         pending = data['appointments']['Alfa da prenotare']
+        frappe.set_user(manager)
+        recovered = frappe.db.get_value('Patient Appointment', pending, 'cc_closure_state') == 'Auto Locked'
+        if recovered:
+            lifecycle.reopen(pending, 'Synthetic acceptance: authorised late recovery')
+        frappe.set_user(data['fixture']['users']['a']['name'])
         pending_doc = frappe.get_doc('Patient Appointment', pending)
-        from unittest.mock import patch
-        with patch('centrochange_core.operations.lifecycle.now_utc', return_value=lifecycle.start_utc(pending_doc)+timedelta(hours=2)):
+        frappe.db.savepoint('cc156_unpaid_closure')
+        if recovered:
+            lifecycle.close(pending, 0, 'Synthetic unpaid closure')
+        else:
+            from unittest.mock import patch
+            with patch('centrochange_core.operations.lifecycle.now_utc', return_value=lifecycle.start_utc(pending_doc)+timedelta(hours=2)):
+                lifecycle.close(pending, 0, 'Synthetic unpaid closure')
+        frappe.set_user(manager)
+        unpaid = next(d for d in collections.position(patient,center)['debts'] if d['name']==pending)
+        assert float(unpaid['amount']) == float(pending_doc.cc_price_snapshot)
+        receipts.record(patient, center, frappe.utils.today(), method, 'Synthetic later partial receipt',
+                        'cc156-after-unpaid', [{'appointment':pending,'amount':1}])
+        assert float(next(d for d in collections.position(patient,center)['debts'] if d['name']==pending)['amount']) == float(pending_doc.cc_price_snapshot)-1
+        assert collections.position(patient,center)['blocked'] is False
+        from datetime import datetime
+        from types import SimpleNamespace
+        from zoneinfo import ZoneInfo
+        from centrochange_core.scheduling.booking import book, validate_slot
+        found = None
+        today = datetime.now(ZoneInfo('Europe/Rome')).date()
+        for offset in range(1, 22):
+            for hour in range(8, 19):
+                for minute in (0, 30):
+                    candidate = SimpleNamespace(patient=patient, practitioner=pending_doc.practitioner,
+                        cc_center=center, appointment_date=today+timedelta(days=offset),
+                        appointment_time=f'{hour:02d}:{minute:02d}:00', duration=pending_doc.duration, name=None)
+                    try:
+                        validate_slot(candidate)
+                        found = candidate
+                        break
+                    except frappe.ValidationError:
+                        continue
+                if found: break
+            if found: break
+        assert found, 'No synthetic future slot available for booking with an outstanding balance'
+        booked = book(patient, pending_doc.practitioner, center, pending_doc.appointment_type,
+                      found.appointment_date, found.appointment_time, 'cc156-outstanding-booking',
+                      'Synthetic booking with outstanding balance')
+        assert frappe.db.exists('Patient Appointment', booked['name'])
+        frappe.db.rollback(save_point='cc156_unpaid_closure')
+        frappe.set_user(data['fixture']['users']['a']['name'])
+        if recovered:
             lifecycle.close(pending, 1, 'Synthetic professional paid closure', method)
+        else:
+            # Fresh CI seed simulates the original same-day closure window.
+            from unittest.mock import patch
+            with patch('centrochange_core.operations.lifecycle.now_utc', return_value=lifecycle.start_utc(pending_doc)+timedelta(hours=2)):
+                lifecycle.close(pending, 1, 'Synthetic professional paid closure', method)
         frappe.set_user(manager)
         assert receipts.allocated(patient,center)[pending] == int(float(pending_doc.cc_price_snapshot)*100)
         assert frappe.db.get_value('Patient Appointment',pending,'cc_paid') == 1
         assert {dt:frappe.db.count(dt) for dt in accounting} == accounting
-        return {'partial_multi_complete_and_replay':'PASS','draft_invoice_and_overpayment_denied':'PASS','professional_denied':'PASS','no_accounting_documents':'PASS','notification_target_and_dedup':'PASS','professional_paid_closure_uses_receipt':'PASS'}
+        return {'partial_multi_complete_and_replay':'PASS','receipt_corrections_and_residuals':'PASS',
+            'unpaid_closure_later_partial_and_booking':'PASS','draft_invoice_and_overpayment_denied':'PASS',
+            'professional_denied':'PASS','no_accounting_documents':'PASS','notification_target_and_dedup':'PASS',
+            'professional_paid_closure_uses_receipt':'PASS'}
     finally:
         frappe.flags.cc_test_clock = None
         frappe.set_user('Administrator')
@@ -116,6 +195,45 @@ def _concurrent_worker(site, user, payload, barrier, queue):
         queue.put('rejected')
     finally:
         child.destroy()
+
+
+def _concurrent_reverse_worker(site, user, payload, barrier, queue):
+    import frappe as child
+    from centrochange_core.finance import operational_receipts as child_receipts
+    child.init(site=site); child.connect(); child.set_user(user)
+    try:
+        barrier.wait(timeout=20)
+        result = child_receipts.reverse(**payload)
+        child.db.commit()
+        queue.put('replay' if result['replay'] else 'accepted')
+    except Exception:
+        child.db.rollback(); queue.put('rejected')
+    finally:
+        child.destroy()
+
+
+def concurrent_reversal(label='Alfa non incassata 2'):
+    """The preceding concurrent test leaves one replay-protected receipt to correct."""
+    import multiprocessing
+    from hashlib import sha256
+    demo.guard()
+    data = demo.read(); user = data['fixture']['users']['m']['name']
+    key = f'cc156-{label}-concurrent-replay'
+    receipt = sha256((user + '\0' + key).encode()).hexdigest()
+    appointment = data['appointments'][label]
+    patient = frappe.db.get_value('Patient Appointment', appointment, 'patient')
+    center = data['fixture']['centers'][0]
+    assert frappe.db.exists('CC Operational Receipt', receipt)
+    ctx = multiprocessing.get_context('spawn'); barrier = ctx.Barrier(2); queue = ctx.Queue()
+    processes = [ctx.Process(target=_concurrent_reverse_worker, args=(frappe.local.site, user,
+        {'patient':patient,'center':center,'receipt':receipt,'reason':'Synthetic concurrent correction',
+         'request_key':f'cc156-concurrent-correction-{i}'}, barrier, queue)) for i in range(2)]
+    for process in processes: process.start()
+    for process in processes:
+        process.join(timeout=60)
+        assert process.exitcode == 0, 'Concurrent correction worker failed'
+    assert sorted(queue.get(timeout=5) for _ in processes) == ['accepted','rejected']
+    return {'concurrent_correction_exactly_once':'PASS'}
 
 
 def concurrent(label='Alfa non incassata 2'):
