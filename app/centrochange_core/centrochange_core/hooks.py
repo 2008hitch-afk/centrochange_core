@@ -188,3 +188,12 @@ after_request.append("centrochange_core.operations.client_landing.redirect_launc
 doc_events["User"]["on_update"] = [doc_events["User"]["on_update"], "centrochange_core.operations.client_landing.configure_user"]
 before_request.append("centrochange_core.operations.website_brand.login_language")
 after_request.append("centrochange_core.operations.client_landing.redirect_legacy_operational_routes")
+
+# Public spelling used by customers; the canonical Frappe page remains the
+# existing underscore route and retains its established feature-flag routing.
+website_redirects = [{
+    "source": "/primo-incontro",
+    "target": "/primo_incontro",
+    "redirect_http_status": 302,
+    "forward_query_parameters": True,
+}]
