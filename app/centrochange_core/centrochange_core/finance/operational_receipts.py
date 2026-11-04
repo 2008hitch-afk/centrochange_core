@@ -47,11 +47,18 @@ def history(patient, center):
         allocations = json.loads(row.allocations)
         for allocation in allocations:
             appointment = frappe.db.get_value('Patient Appointment', allocation['appointment'],
-                ['patient', 'cc_center', 'appointment_date', 'cc_service_label'], as_dict=True)
+                ['patient', 'cc_center', 'appointment_date', 'appointment_time', 'practitioner',
+                 'practitioner_name', 'cc_closure_state', 'cc_service_label'], as_dict=True)
             if not appointment or appointment.patient != patient or appointment.cc_center != center:
                 frappe.throw('La storia degli incassi richiede una verifica autorizzata.', frappe.PermissionError)
+            if not frappe.has_permission('Patient Appointment', 'read', allocation['appointment']):
+                continue
             allocation['appointment_date'] = appointment.appointment_date
             allocation['service_label'] = appointment.cc_service_label
+            allocation['session'] = {'name': allocation['appointment'], 'patient': patient, 'cc_center': center,
+                'appointment_date': appointment.appointment_date, 'appointment_time': str(appointment.appointment_time),
+                'practitioner': appointment.practitioner, 'practitioner_name': appointment.practitioner_name,
+                'cc_closure_state': appointment.cc_closure_state, 'cc_service_label': appointment.cc_service_label}
         result.append({**dict(row), 'allocations': allocations, 'reversed': row.name in reversed_names})
     return result
 

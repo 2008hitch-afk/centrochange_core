@@ -39,6 +39,16 @@ def run():
         position = collections.position(patient, center)
         assert round(float(next(d['amount'] for d in position['debts'] if d['name']==appointment)),2) == round(before-partial,2)
         assert len(receipts.history(patient,center)) == initial_history+1
+        recorded = next(row for row in receipts.history(patient, center) if row['name'] == result['name'])
+        allocation = recorded['allocations'][0]
+        assert allocation['session']['name'] == appointment
+        assert allocation['session']['patient'] == patient and allocation['session']['cc_center'] == center
+        assert allocation['session']['appointment_date'] and allocation['session']['cc_service_label']
+        for role in ('f', 't'):
+            frappe.set_user(data['fixture']['users'][role]['name'])
+            limited = next(row for row in receipts.history(patient, center) if row['name'] == result['name'])
+            assert all('session' not in item and 'service_label' not in item for item in limited['allocations'])
+        frappe.set_user(manager)
         try:
             receipts.record(**{**payload,'request_key':'cc156-draft','allocations':[{'appointment':draft_appointment,'amount':1}]})
             raise AssertionError('Draft invoice accepted')

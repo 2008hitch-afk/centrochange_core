@@ -609,3 +609,19 @@ test('GOAL75: cronologia mantiene sincronizzata la sede con la URL', async ({ pa
   await expect.poll(() => new URL(page.url()).searchParams.get('center')).toBe('CENTRO-A')
   await expect(selector).toHaveValue('CENTRO-A')
 })
+
+test('Professionista: modifica precompilata e auditata dal profilo', async ({ page }) => {
+  const writes: Write[] = []
+  await mock(page, writes)
+  await page.goto('./?practitioner=PR-001#Professionisti')
+  await page.getByRole('button', { name: 'Modifica professionista', exact: true }).click()
+  const form = page.locator('.professional-detail-page form')
+  await expect(form.getByLabel(/^Nome/)).toHaveValue('Professionista')
+  await expect(form.getByLabel('Cognome', { exact: true })).toHaveValue('Sintetico')
+  await form.getByLabel(/^Nome/).fill('Nome sintetico')
+  await form.getByLabel('Motivo della modifica').fill('Correzione sintetica')
+  await form.getByRole('button', { name: 'Salva modifiche' }).click()
+  await expect.poll(() => writes.find(w => w.method.endsWith('profiles.practitioner_save'))).toBeTruthy()
+  const payload = writes.find(w => w.method.endsWith('profiles.practitioner_save'))!.body
+  expect(payload).toMatchObject({ center, name:'PR-001', first_name:'Nome sintetico', expected_version:'v1', reason:'Correzione sintetica' })
+})

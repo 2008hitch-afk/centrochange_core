@@ -2945,7 +2945,7 @@ test('ISSUE-156: card apre pagamenti e registra un importo parziale su due sedut
     { doctype: 'Patient Appointment', name: 'APP-A', amount: balance === 176 ? 88 : 38, currency: 'EUR', appointment_date: '2026-10-01', due_date: '2026-10-01' },
     { doctype: 'Patient Appointment', name: 'APP-B', amount: balance === 176 ? 88 : 38, currency: 'EUR', appointment_date: '2026-10-02', due_date: '2026-10-02' }
   ] } }) }))
-  await page.route('**/api/method/centrochange_core.finance.operational_receipts.history*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: posted ? [{ name:'R1', receipt_date:today, mode_of_payment:'POS', reversed:!!corrected, allocations:[{cents:5000},{cents:5000}] }, ...(corrected ? [{name:'R2',receipt_date:today,mode_of_payment:'POS',allocations:[{cents:-5000,reversal_of:'R1'},{cents:-5000,reversal_of:'R1'}]}] : [])] : [] }) }))
+  await page.route('**/api/method/centrochange_core.finance.operational_receipts.history*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: posted ? [{ name:'R1', receipt_date:today, mode_of_payment:'POS', reversed:!!corrected, allocations:[{cents:5000,appointment:'APP-A',appointment_date:'2026-10-01',service_label:'Seduta sintetica',session:{name:'APP-A',appointment_date:'2026-10-01',appointment_time:'09:00',practitioner:'PR-001',cc_service_label:'Seduta sintetica'}},{cents:5000,appointment:'APP-B'}] }, ...(corrected ? [{name:'R2',receipt_date:today,mode_of_payment:'POS',allocations:[{cents:-5000,reversal_of:'R1'},{cents:-5000,reversal_of:'R1'}]}] : [])] : [] }) }))
   await page.route('**/api/method/centrochange_core.finance.operational_receipts.record', async route => { posted = route.request().postDataJSON(); balance = 76; await route.fulfill({ contentType:'application/json', body: JSON.stringify({ message: { name:'R1', replay:false } }) }) })
   await page.route('**/api/method/centrochange_core.finance.operational_receipts.reverse', async route => { corrected = route.request().postDataJSON(); balance = 176; await route.fulfill({ contentType:'application/json', body: JSON.stringify({ message: { name:'R2', replay:false } }) }) })
   await page.goto('./#Agenda')
@@ -2969,4 +2969,6 @@ test('ISSUE-156: card apre pagamenti e registra un importo parziale su due sedut
   await expect(panel).toContainText('Incasso rettificato')
   await expect(panel).toContainText('176,00')
   expect(corrected.receipt).toBe('R1')
+  await panel.getByRole('button', {name:'Vai alla seduta'}).first().click()
+  await expect(page.locator('.patient-appointment-detail')).toContainText('Seduta sintetica')
 })
