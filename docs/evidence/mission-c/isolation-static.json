@@ -1,0 +1,16 @@
+{
+  "pass": true,
+  "project": "centrochange-c109",
+  "volumes": [
+    "centrochange-c109-c-fit-assets",
+    "centrochange-c109-c-fit-db-data",
+    "centrochange-c109-c-fit-redis-cache-data",
+    "centrochange-c109-c-fit-redis-queue-data",
+    "centrochange-c109-c-fit-sites"
+  ],
+  "networks": [
+    "centrochange-c109-c-fit-http",
+    "centrochange-c109-c-fit-net"
+  ],
+  "aggregate_memory": 2147483648
+}

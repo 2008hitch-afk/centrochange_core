@@ -1,0 +1,6 @@
+import pathlib,subprocess,json,os,time
+r=pathlib.Path(__file__).parent;assert not (r/'safety-stop.json').exists();assert time.time()-(r/'monitor-heartbeat').stat().st_mtime<15
+backend='centrochange-c109-c-fit-backend-1'
+code="import frappe,json\nfrappe.init(site='b99.local',sites_path='/home/frappe/frappe-bench/sites');frappe.connect();frappe.set_user('Administrator')\nfrappe.reload_doc('centro_change_core','page','cc_unified_desk',force=True)\nfrappe.reload_doc('centro_change_core','sidebar','centro_change',force=True)\nfrappe.db.commit();frappe.clear_cache()\nprint(json.dumps({'page_exists':bool(frappe.db.exists('Page','cc-unified-desk')),'synthetic':frappe.conf.get('cc_synthetic_dev'),'apps':frappe.get_installed_apps()}))\nfrappe.destroy()\n"
+p=subprocess.run(['docker','exec','-i','-e','FRAPPE_STREAM_LOGGING=1','-w','/home/frappe/frappe-bench',backend,'env/bin/python'],input=code,capture_output=True,text=True);(r/'page-sync.log').write_text(p.stdout+p.stderr);print(p.returncode,p.stdout[-500:]);assert p.returncode==0
+raw=subprocess.check_output(['docker','exec',backend,'cat','/home/frappe/frappe-bench/sites/b99.local/private/uat/demo.json']);fixture=json.loads(raw);(r/'qa-fixture.json').write_bytes(raw);os.chmod(r/'qa-fixture.json',0o600);print('Fixture keys:',list(fixture));print('Roles:',list(fixture.get('users',{})))

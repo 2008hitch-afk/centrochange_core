@@ -1,0 +1,33 @@
+{
+  "mission": "C109-C2-C3",
+  "status": "ACTIVE_ISOLATED_EXPERIMENT",
+  "authority": "issue109 / PR110 / Owner C1 C2 C3 instruction",
+  "activated_at": "2026-10-09T16:04:11.534973+00:00",
+  "hard_stop": "2026-10-09T19:04:11.534973+00:00",
+  "validation_stop": "2026-10-09T18:19:11.534973+00:00",
+  "project": "centrochange-c109",
+  "port": "127.0.0.1:8109",
+  "site": "b99.local (exclusive cloned database/site, never source runtime)",
+  "source": "d50299f8d9ad32640259ff1c3a1fded47db5c447 + versioned Page delta",
+  "ram_caps": {
+    "copy_image": 134217728,
+    "runtime": 2147483648,
+    "browser": 536870912,
+    "aggregate_runtime_browser": 2684354560
+  },
+  "disk_budget_bytes": 3221225472,
+  "disk_minimum_bytes": 4294967296,
+  "live_free_bytes": 13830729728,
+  "source_volumes_measured": "423.4MB DB +39.73MB assets +0.873MB sites",
+  "stops": [
+    "host/new container OOM",
+    "memory PSI full >=1% or some >=5% for 3 samples",
+    "MemAvailable <768MiB immediate / <1GiB 3 samples",
+    "RC22 health/event anomaly",
+    "disk reserve <4GiB",
+    "deadline",
+    "isolation violation"
+  ],
+  "recovery": "stop only Compose-labelled C109 containers; retain volumes/code/evidence. No RC22 or R1-R5 rollback needed because no resources shared.",
+  "no_promotion": true
+}

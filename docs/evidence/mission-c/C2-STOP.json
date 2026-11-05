@@ -1,0 +1,12 @@
+{
+  "mission": "C109",
+  "status": "STOPPED_GUARDRAIL_OOM",
+  "at": "2026-10-09T17:00:05.380880+00:00",
+  "guardrail": "No OOM accepted; host oom_kill delta=1; C109 QA container State.OOMKilled=true",
+  "container": "centrochange-c109-browser-1791565006",
+  "browser_memory_limit_bytes": 536870912,
+  "automatic_action": "Stopped only C109-labelled running containers; no restart",
+  "all_C109_stopped": true,
+  "protected_runtime_changes": [],
+  "activation_original_retained": true
+}

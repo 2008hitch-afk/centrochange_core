@@ -1,0 +1,116 @@
+{
+  "checks": [
+    {
+      "name": "Desk cards exactly match canonical appointments",
+      "status": "PASS",
+      "cards": 9,
+      "records": 9
+    },
+    {
+      "name": "Desk geometry desktop",
+      "status": "PASS",
+      "drift": 0,
+      "wrongDay": 0,
+      "days": 7,
+      "widthSpread": 0,
+      "overflow": false
+    },
+    {
+      "name": "Desk next week",
+      "status": "PASS"
+    },
+    {
+      "name": "Desk previous week",
+      "status": "PASS"
+    },
+    {
+      "name": "Desk detail Seduta Storico Note",
+      "status": "PASS"
+    },
+    {
+      "name": "Desk patient no-result lookup has no stale options",
+      "status": "PASS"
+    },
+    {
+      "name": "Desk patient keyboard selects canonical name",
+      "status": "PASS",
+      "canonical_selected": true
+    },
+    {
+      "name": "Desk patient list nonempty",
+      "status": "PASS",
+      "patients": 7
+    },
+    {
+      "name": "Desk patient history opens",
+      "status": "PASS"
+    },
+    {
+      "name": "Desk Finance drill-down exactly matches canonical invoices",
+      "status": "PASS",
+      "rows": 3,
+      "native_documents": 3
+    },
+    {
+      "name": "Desk native invoice detail has canonical residue",
+      "status": "PASS"
+    },
+    {
+      "name": "Desk geometry mobile",
+      "status": "PASS",
+      "drift": 0,
+      "wrongDay": 0,
+      "days": 7,
+      "widthSpread": 0,
+      "overflow": false
+    },
+    {
+      "name": "Desk geometry tablet",
+      "status": "PASS",
+      "drift": 0,
+      "wrongDay": 0,
+      "days": 7,
+      "widthSpread": 0,
+      "overflow": false
+    },
+    {
+      "name": "Webapp cards exactly match same canonical appointments",
+      "status": "PASS"
+    },
+    {
+      "name": "Webapp mobile no document overflow",
+      "status": "PASS"
+    },
+    {
+      "name": "Both Finance entries use same canonical projection",
+      "status": "PASS"
+    },
+    {
+      "name": "a Desk authorized row visibility",
+      "status": "PASS"
+    },
+    {
+      "name": "b Desk authorized row visibility",
+      "status": "PASS"
+    },
+    {
+      "name": "c Desk authorized row visibility",
+      "status": "PASS"
+    },
+    {
+      "name": "m Desk authorized row visibility",
+      "status": "FAIL"
+    }
+  ],
+  "errors": [],
+  "timings": [
+    {
+      "surface": "Desk warm login + first meaningful view",
+      "ms": 3876
+    },
+    {
+      "surface": "Webapp warm first meaningful view (already authenticated)",
+      "ms": 271
+    }
+  ]
+}
