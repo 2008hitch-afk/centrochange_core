@@ -60,19 +60,49 @@ def patient_detail(center, name):
     doc.check_permission('read')
     active=_patient(center, doc, allow_historical=True)
     return {**{field: doc.get(field) for field in ('name', 'patient_name', 'first_name', 'last_name', 'email', 'mobile', 'phone', 'modified')},
+            **({'cc_ts_preference': doc.get('cc_ts_preference')} if is_manager() else {}),
             'active_assignment':active}
 
 
 @frappe.whitelist(methods=['POST'])
-def patient_save(center, name, first_name, last_name, email, expected_version, request_key, reason, mobile=None, phone=None, **extra):
+def patient_save(center, name, first_name, last_name, email, expected_version, request_key, reason, mobile=None, phone=None, ts_preference=None, **extra):
     deny_extra(extra)
     email = bounded(email, 'Email', 140, required=False).lower() if email is not None else None
     if email and not frappe.utils.validate_email_address(email):
         frappe.throw('Email non valida')
-    return mutate('patient', center, 'Patient', name,
-                  {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False) if last_name is not None else None, 'email': email, **({'mobile': bounded(mobile, 'Cellulare', 140, required=False)} if mobile is not None else {}), **({'phone': bounded(phone, 'Telefono', 140, required=False)} if phone is not None else {})},
-                  ('first_name', 'last_name', 'email') + (('mobile',) if mobile is not None else ()) + (('phone',) if phone is not None else ()), expected_version, request_key, reason,
-                  lambda doc: _patient(center, doc))
+    if ts_preference is not None and ts_preference not in ('', 'No Opposition', 'Opposed'):
+        frappe.throw('Preferenza TS non valida')
+    values = {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False) if last_name is not None else None, 'email': email,
+              **({'mobile': bounded(mobile, 'Cellulare', 140, required=False)} if mobile is not None else {}),
+              **({'phone': bounded(phone, 'Telefono', 140, required=False)} if phone is not None else {}),
+              **({'cc_ts_preference': ts_preference} if ts_preference is not None else {})}
+    def audit_preference(doc):
+        previous = doc.get_doc_before_save()
+        old = (previous.get('cc_ts_preference') or '') if previous else ''
+        new = doc.get('cc_ts_preference') or ''
+        if ts_preference is not None and old != new:
+            from centrochange_core.security.audit import append
+            append('PATIENT_TS_PREFERENCE_CHANGED', 'Patient', doc.name, {'preference': old}, {'preference': new}, reason)
+    if ts_preference is None:
+        return mutate('patient', center, 'Patient', name, values, tuple(values), expected_version, request_key, reason, lambda doc: _patient(center, doc))
+    from centrochange_core.security.audit import internal_write
+    with internal_write('cc_ts_preference_write'):
+        return mutate('patient', center, 'Patient', name, values, tuple(values), expected_version, request_key, reason,
+                      lambda doc: _patient(center, doc), after_save=audit_preference)
+
+
+@frappe.whitelist(methods=['GET'])
+def patient_ts_history(center, name):
+    manager(center)
+    doc = frappe.get_doc('Patient', bounded(name, 'Paziente'))
+    doc.check_permission('read')
+    _patient(center, doc, allow_historical=True)
+    events = frappe.get_all('CC Audit Event', filters={'event_type':'PATIENT_TS_PREFERENCE_CHANGED', 'reference_doctype':'Patient', 'reference_name':doc.name},
+        fields=['actor', 'event_time', 'before_state', 'after_state'], order_by='event_time desc, name desc', limit_page_length=100)
+    return [{'actor': row.actor, 'event_time': row.event_time,
+             'before': frappe.parse_json(row.before_state or '{}').get('preference', ''),
+             'after': frappe.parse_json(row.after_state or '{}').get('preference', '')} for row in events]
+
 
 
 @frappe.whitelist(methods=['GET'])
@@ -119,13 +149,39 @@ def practitioner_detail(center, name):
     doc = frappe.get_doc('Healthcare Practitioner', bounded(name, 'Professionista'))
     doc.check_permission('read')
     _practitioner(center, doc)
-    return {field: doc.get(field) for field in ('name', 'practitioner_name', 'first_name', 'last_name', 'user_id', 'status', 'modified')}
+    return {field: doc.get(field) for field in ('name', 'practitioner_name', 'first_name', 'middle_name', 'last_name', 'user_id', 'status', 'gender', 'mobile_phone', 'residence_phone', 'office_phone', 'practitioner_type', 'hospital', 'department', 'designation', 'email_id', 'modified')}
 
 
 @frappe.whitelist(methods=['POST'])
-def practitioner_save(center, name, first_name, last_name, expected_version, request_key, reason, **extra):
+def practitioner_save(center, name, first_name, last_name, expected_version, request_key, reason,
+                      middle_name=None, mobile_phone=None, residence_phone=None, office_phone=None,
+                      practitioner_type=None, hospital=None, gender=None, department=None, **extra):
     deny_extra(extra)
-    return mutate('practitioner', center, 'Healthcare Practitioner', name,
-                  {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False) if last_name is not None else None},
-                  ('first_name', 'last_name'), expected_version, request_key, reason,
-                  lambda doc: _practitioner(center, doc))
+    values = {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False) if last_name is not None else None}
+    for field, label in (('middle_name','Secondo nome'), ('mobile_phone','Cellulare'), ('residence_phone','Telefono'), ('office_phone','Telefono ufficio'), ('hospital','Struttura')):
+        value = locals()[field]
+        if value is not None:
+            values[field] = bounded(value, label, 140, required=False)
+    for field, doctype, value in (('gender','Gender',gender), ('department','Medical Department',department)):
+        if value is not None:
+            value = bounded(value, 'Riferimento', 140, required=False)
+            if value and not frappe.db.exists(doctype, value):
+                frappe.throw('Riferimento professionale non valido')
+            values[field] = value or None
+    if practitioner_type is not None:
+        if practitioner_type not in ('', 'Internal', 'External'):
+            frappe.throw('Tipo professionista non valido')
+        values['practitioner_type'] = practitioner_type
+    return mutate('practitioner', center, 'Healthcare Practitioner', name, values, tuple(values), expected_version, request_key, reason, lambda doc: _practitioner(center, doc))
+
+
+@frappe.whitelist(methods=['GET'])
+def practitioner_history(center, name):
+    manager(center)
+    doc = frappe.get_doc('Healthcare Practitioner', bounded(name, 'Professionista'))
+    doc.check_permission('read')
+    _practitioner(center, doc)
+    events = frappe.get_all('CC Audit Event', filters={'event_type':'PREMIUM_MASTER_UPDATED', 'reference_doctype':'Healthcare Practitioner', 'reference_name':doc.name},
+        fields=['actor','event_time','before_state'], order_by='event_time desc, name desc', limit_page_length=100)
+    return [{'actor':row.actor, 'event_time':row.event_time,
+             'fields':list(frappe.parse_json(row.before_state or '{}').get('before', {}).keys())} for row in events]

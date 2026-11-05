@@ -51,7 +51,7 @@ export async function archiveDetail(center: string, kind: ArchiveKind, name: str
 export async function saveArchive(center: string, kind: ArchiveKind, record: ArchiveRecord, draft: Row, reason: string, key = requestKey()) {
   if (!record.modified) throw new Error('Versione della scheda assente. Ricarica la pagina.')
   const base = { center, name: record.name, expected_version: record.modified, request_key: key, reason }
-  if (kind === 'Patient') return ops<ArchiveRecord>('profiles.patient_save', { ...base, first_name: draft.first_name, last_name: draft.last_name ?? null, email: draft.email ?? null, ...(draft.mobile !== undefined ? { mobile: draft.mobile ?? "" } : {}), ...(draft.phone !== undefined ? { phone: draft.phone ?? "" } : {}) }, true)
+  if (kind === 'Patient') return ops<ArchiveRecord>('profiles.patient_save', { ...base, first_name: draft.first_name, last_name: draft.last_name ?? null, email: draft.email ?? null, ...(draft.mobile !== undefined ? { mobile: draft.mobile ?? "" } : {}), ...(draft.phone !== undefined ? { phone: draft.phone ?? "" } : {}), ...(draft.cc_ts_preference !== undefined ? { ts_preference: draft.cc_ts_preference ?? "" } : {}) }, true)
   if (kind === 'Healthcare Practitioner') return ops<ArchiveRecord>('profiles.practitioner_save', { ...base, first_name: draft.first_name, last_name: draft.last_name ?? null }, true)
   if (kind === 'Item') return call<ArchiveRecord>('catalog.item_save', { ...base, item_name: draft.item_name }, true)
   if (kind === 'Item Price') return call<ArchiveRecord>('catalog.price_save', { ...base, price_list_rate: draft.price_list_rate }, true)

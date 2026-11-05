@@ -192,12 +192,13 @@ test('AUDIT-04 scheda paziente: profilo autorizzato, note e storico', async ({ p
   await drawer.getByRole('button', { name: 'Modifica scheda' }).click()
   const edit = page.getByRole('dialog', { name: 'Modifica paziente' })
   await edit.getByRole('textbox', { name: /^Nome \*/ }).fill('Persona')
+  await edit.getByLabel('Preferenza anagrafica Sistema Tessera Sanitaria').selectOption('Opposed')
   await edit.getByRole('textbox', { name: 'Cellulare' }).fill('12345')
   await edit.getByRole('textbox', { name: 'Telefono' }).fill('67890')
   await edit.getByRole('textbox', { name: 'Motivo' }).fill('Correzione sintetica')
   await edit.getByRole('button', { name: 'Salva' }).click()
   await expect.poll(() => writes.some(write => write.method.endsWith('operations.profiles.patient_save'))).toBe(true)
-  expect(writes.find(write => write.method.endsWith('operations.profiles.patient_save'))?.body).toMatchObject({ center: 'CENTRO-A', name: 'PAT-001', expected_version: '2026-10-23 12:00:00', first_name: 'Persona', mobile: '12345', phone: '67890' })
+  expect(writes.find(write => write.method.endsWith('operations.profiles.patient_save'))?.body).toMatchObject({ center: 'CENTRO-A', name: 'PAT-001', expected_version: '2026-10-23 12:00:00', first_name: 'Persona', mobile: '12345', phone: '67890', ts_preference: 'Opposed' })
   await drawer.getByRole('button', { name: 'Riepilogo', exact: true }).click()
   await drawer.getByRole('textbox', { name: 'Testo della nota' }).fill('Osservazione di prova')
   await drawer.getByRole('button', { name: 'Aggiungi nota' }).click()
@@ -464,6 +465,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
       message = { rows: (bootState.practitioners ?? boot.practitioners).filter(row => row.practitioner_name.toLocaleLowerCase('it-IT').includes(search)), has_more: false }
     }
     else if (method.endsWith('operations.profiles.practitioner_detail')) message = { name: 'PR-001', practitioner_name: 'Dott.ssa Rossi', status: 'Active' }
+    else if (method.endsWith('operations.profiles.patient_ts_history')) message = []
     else if (method.endsWith('operations.profiles.patient_detail')) message = { name: 'PAT-001', patient_name: 'Paziente Sintetico', first_name: 'Paziente', last_name: 'Sintetico', email: 'paziente@example.invalid', modified: '2026-10-23 12:00:00' }
     else if (method.endsWith('operations.workspace.patient_search')) message = { patients: boot.patients, truncated: false }
     else if (method.endsWith('operations.workspace.patient_history')) message = { appointments: [{ ...appointment, ...appointmentState }], packages: [], organizational_notes: [{ name: 'NOTE-002', content: 'Nota sintetica rettificata', creation: today + ' 12:00:00', authored_by: 'direzione@example.invalid', corrects: 'NOTE-001' }, { name: 'NOTE-001', content: 'Nota sintetica', creation: today + ' 11:00:00', authored_by: 'direzione@example.invalid', corrects: null }], private_notes: [], settlements: [] }

@@ -20,6 +20,8 @@ class PatientMixin:
 		previous = self.get_doc_before_save()
 		if self.customer != (previous.customer if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
 			frappe.throw('Il collegamento paziente-cliente richiede il servizio Finance tracciato.',frappe.PermissionError)
+		if (self.get('cc_ts_preference') or '') != ((previous.get('cc_ts_preference') or '') if previous else '') and not frappe.flags.get('cc_ts_preference_write'):
+			frappe.throw('La preferenza TS richiede il servizio anagrafico tracciato.', frappe.PermissionError)
 		if not frappe.flags.get('cc_patient_intake_write') and any((self.get(k) or None)!=((previous.get(k) or None) if previous else None) for k in ('cc_intake_key','cc_intake_hash')):
 			frappe.throw('L’identità del paziente richiede il servizio di ingresso tracciato.',frappe.PermissionError)
 		from centrochange_core.scheduling.public_booking import SERVICE_USER

@@ -336,3 +336,12 @@ Il confronto con il modello dati esistente precede qualsiasi proposta futura: Pa
 - Alla fine di ogni sessione Codex aggiorna nel commento della issue attiva: commit/branch, risultato, test, evidenza, blocchi, prossimo passo concreto; il prossimo agente deve poter riprendere senza chat.
 - Le PR aperte (compresa #150) non vengono automaticamente fuse per accelerare l'audit. Le decisioni di merge, uso server, cambio schema/policy, dati reali, provider e produzione mantengono i propri gate.
 - Questo documento si aggiorna **insieme** alle prove dell'area, non prima di averle ottenute.
+
+### Anagrafiche operative e preferenza TS — lavoro in corso
+
+| ID | Stato candidato | Evidenza e limiti |
+| --- | --- | --- |
+| CC-CAP-049 | PARTIAL | Preferenza anagrafica distinta dalle scelte per singola spesa, senza invio automatico; persistenza, audit e negazione scrittura diretta verificati su clone sintetico Frappe. Migrazione e collaudo UAT non eseguiti. |
+| CC-CAP-005 | PARTIAL | Test API di accesso limitato allo storico su clone; restano da completare copertura e collaudo dei campi anagrafici professionali e della rimozione delle voci duplicate dagli Archivi. |
+
+Il candidato non è accettato né autorizzato al rilascio. UAT rilevato su `2005f6c`; non dedurre accettazione Owner dalle prove su clone.

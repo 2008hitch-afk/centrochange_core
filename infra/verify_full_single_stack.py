@@ -69,6 +69,7 @@ REVIEWED_BACKEND_DELTAS = {'centrochange_core/finance/receivables.py',
                            'centrochange_core/security/dev_acceptance.py',
                            'centrochange_core/security/fixture_cleanup.py',
                            'centrochange_core/security/install.py',
+                           'centrochange_core/security/mixins.py',
                            'centrochange_core/operations/website_brand.py',
                            'centrochange_core/templates/cc_web_base.html',
                            'centrochange_core/translations/it.csv'}

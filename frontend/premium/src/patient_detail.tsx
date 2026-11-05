@@ -9,9 +9,10 @@ import { PatientPackages } from './patient_packages'
 import { saveArchive } from './scoped_api'
 import { Button, Chip, Empty, Field, FormError, Modal, Metric, DataTable, type Feedback } from './ui'
 
-type Profile = Row & { name: string; modified: string; first_name: string; last_name: string; email: string; mobile: string; phone: string; active_assignment: boolean }
+type Profile = Row & { name: string; modified: string; first_name: string; last_name: string; email: string; mobile: string; phone: string; cc_ts_preference?: string | null; active_assignment: boolean }
 type History = { appointments: Row[]; truncated: boolean; settlements: Row[]; organizational_notes: Row[]; private_notes: Row[]; packages: Row[]; assignment_events?: Row[]; total_appointments?: number; page?: number; total_pages?: number }
 const patientIdentityPart = (value: unknown) => { const text = String(value ?? '').trim(); return /^(?:CC-(?:HTTP|MVP-POS)-|SYNTHETIC[-_]|PAT-[A-Z0-9-]+$)/i.test(text) ? '' : text }
+const tsPreferenceLabel = (value: unknown) => value === 'No Opposition' ? 'Non si oppone alla trasmissione' : value === 'Opposed' ? 'Si oppone alla trasmissione' : 'Informazione non registrata'
 const errorText = (cause: unknown) => cause instanceof Error ? cause.message : 'Operazione non riuscita.'
 const receiptMethodLabel = (value: unknown) => /^CC-MVP-POS-/i.test(String(value ?? '')) ? 'Carta POS' : /^CC-[A-Z0-9-]+/i.test(String(value ?? '')) ? 'Metodo non disponibile' : paymentMethodLabel(value)
 
@@ -36,6 +37,8 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
   const [corrects, setCorrects] = useState<string | null>(null)
   const [noteBusy, setNoteBusy] = useState(false)
   const [appointment, setAppointment] = useState<Row | null>(null)
+  const [tsHistory, setTsHistory] = useState<Row[]>([])
+  const [tsHistoryError, setTsHistoryError] = useState('')
 
   const canViewPayments = Boolean(
     financeBoot &&
@@ -76,6 +79,14 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
       .finally(() => { if (live) setLoading(false) })
     return () => { live = false }
   }, [center, patient.name, reload, historyPage])
+
+  useEffect(() => {
+    if (!manager) return
+    let live = true
+    setTsHistory([]); setTsHistoryError('')
+    ops<Row[]>('profiles.patient_ts_history', {center, name: patient.name}).then(rows => { if (!Array.isArray(rows)) throw new Error('Storico TS non disponibile'); if (live) setTsHistory(rows) }).catch(cause => { if (live) setTsHistoryError(errorText(cause)) })
+    return () => { live = false }
+  }, [center, patient.name, reload, manager])
 
   useEffect(() => {
     if (!appointment) return
@@ -149,7 +160,7 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
     </section> : <>
     {loading && <p role="status">Caricamento scheda paziente…</p>}
     {error && <p className="inline-error" role="alert">{error}</p>}
-    {profile && <section className="detail-section patient-tab-summary"><h3>Anagrafica</h3>{historical && <p className="scope-note" role="status">Nessuna assegnazione attiva in questo centro. La scheda è consultabile come storico; per riprendere le operazioni, registra una nuova assegnazione autorizzata.</p>}<dl className="property-list"><div><dt>Nome</dt><dd>{patientIdentityPart(profile.first_name) || '—'}</dd></div><div><dt>Cognome</dt><dd>{patientIdentityPart(profile.last_name) || '—'}</dd></div><div><dt>Email</dt><dd>{profile.email || '—'}</dd></div><div><dt>Telefono</dt><dd>{profile.phone || '—'}</dd></div><div><dt>Cellulare</dt><dd>{profile.mobile || '—'}</dd></div><div><dt>Opposizione Sistema Tessera Sanitaria</dt><dd>Stato paziente non disponibile</dd></div></dl>{manager && !historical && <Button variant="secondary" onClick={() => { saveKey.current = requestKey(); setDraft({ ...profile, first_name: patientIdentityPart(profile.first_name), last_name: patientIdentityPart(profile.last_name) }); setReason(''); setError('') }}>Modifica scheda</Button>}</section>}
+    {profile && <section className="detail-section patient-tab-summary"><h3>Anagrafica</h3>{historical && <p className="scope-note" role="status">Nessuna assegnazione attiva in questo centro. La scheda è consultabile come storico; per riprendere le operazioni, registra una nuova assegnazione autorizzata.</p>}<dl className="property-list"><div><dt>Nome</dt><dd>{patientIdentityPart(profile.first_name) || '—'}</dd></div><div><dt>Cognome</dt><dd>{patientIdentityPart(profile.last_name) || '—'}</dd></div><div><dt>Email</dt><dd>{profile.email || '—'}</dd></div><div><dt>Telefono</dt><dd>{profile.phone || '—'}</dd></div><div><dt>Cellulare</dt><dd>{profile.mobile || '—'}</dd></div>{manager && <div><dt>Preferenza anagrafica Sistema Tessera Sanitaria</dt><dd>{tsPreferenceLabel(profile.cc_ts_preference)}</dd></div>}</dl>{manager && <p className="scope-note">La preferenza anagrafica non modifica le scelte registrate per singole spese e non attiva trasmissioni.</p>}{manager && <details><summary>Storico preferenza TS</summary>{tsHistoryError && <p className="inline-error" role="alert">{tsHistoryError}</p>}{tsHistory.map((event, index) => <p key={index}>{displayDate(event.event_time)} · {auditActorName(event.actor)}: {tsPreferenceLabel(event.before)} → {tsPreferenceLabel(event.after)}</p>)}{!tsHistoryError && !tsHistory.length && <p>Nessuna variazione registrata.</p>}</details>}{manager && !historical && <Button variant="secondary" onClick={() => { saveKey.current = requestKey(); setDraft({ ...profile, first_name: patientIdentityPart(profile.first_name), last_name: patientIdentityPart(profile.last_name) }); setReason(''); setError('') }}>Modifica scheda</Button>}</section>}
     {profile && history && <div className="patient-tab-assignments"><PatientAssignments boot={boot} patient={patient.name} center={center} feedback={feedback} onSuccess={refresh} /></div>}
     {history && <><section className="detail-section patient-tab-sessions"><h3>Sedute {history.total_appointments ? `(${history.total_appointments})` : ''}</h3>
       {history.total_pages && history.total_pages > 1 ? (
@@ -167,7 +178,7 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
     </>}
     {canViewPayments && <PatientPaymentsTab patient={patient} center={center} boot={boot} canWrite={Boolean(financeBoot?.can_write)} onOpenReport={onOpenReport} onOpenSession={(row, button) => openAppointment(row, button)} />}
     </>}
-  </article>{draft && <Modal title="Modifica paziente" onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); void save() }}><Field label="Nome" required><input required value={draft.first_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, first_name: event.target.value }) }} /></Field><Field label="Cognome"><input value={draft.last_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, last_name: event.target.value }) }} /></Field><Field label="Email"><input type="email" value={draft.email ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, email: event.target.value }) }} /></Field><Field label="Cellulare"><input type="tel" value={draft.mobile ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, mobile: event.target.value }) }} /></Field><Field label="Telefono"><input type="tel" value={draft.phone ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, phone: event.target.value }) }} /></Field><Field label="Motivo" required><textarea required maxLength={500} value={reason} onChange={event => { saveKey.current = requestKey(); setReason(event.target.value) }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
+  </article>{draft && <Modal title="Modifica paziente" onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); void save() }}><Field label="Nome" required><input required value={draft.first_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, first_name: event.target.value }) }} /></Field><Field label="Cognome"><input value={draft.last_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, last_name: event.target.value }) }} /></Field><Field label="Email"><input type="email" value={draft.email ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, email: event.target.value }) }} /></Field><Field label="Cellulare"><input type="tel" value={draft.mobile ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, mobile: event.target.value }) }} /></Field><Field label="Telefono"><input type="tel" value={draft.phone ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, phone: event.target.value }) }} /></Field><Field label="Preferenza anagrafica Sistema Tessera Sanitaria"><select value={draft.cc_ts_preference ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, cc_ts_preference: event.target.value }) }}><option value="">Informazione non registrata</option><option value="No Opposition">Non si oppone alla trasmissione</option><option value="Opposed">Si oppone alla trasmissione</option></select></Field><Field label="Motivo" required><textarea required maxLength={500} value={reason} onChange={event => { saveKey.current = requestKey(); setReason(event.target.value) }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
 }
 
 function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport, onOpenSession }: {
