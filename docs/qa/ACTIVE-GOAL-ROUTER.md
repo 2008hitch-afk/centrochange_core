@@ -1,5 +1,27 @@
 # Centro Change — REGISTRO OPERATIVO VIGENTE / instradamento GOAL e AUDIT
 
+## PRECEDENZA OWNER 05/11/2026 — STATO OPERATIVO VIGENTE
+<!-- OWNER_CURRENT_2026_11_05 -->
+
+**Questa è la sezione di riferimento attuale.** Tutti i checkpoint datati 03/11 o prima riportati più sotto sono **STORICI / NON VIGENTI**. SHA, CI, release e deploy devono sempre essere verificati live, senza inferirli dalle vecchie note.
+
+**Lavoro corrente:** interfacce Premium Pazienti/Professionisti e incassi nel [tracker #156](https://github.com/2008hitch-afk/centrochange_core/issues/156), sviluppate sulla [PR draft #203](https://github.com/2008hitch-afk/centrochange_core/pull/203), che dipende dalla [PR draft #202 AUDIT-11](https://github.com/2008hitch-afk/centrochange_core/pull/202). La [PR draft #204](https://github.com/2008hitch-afk/centrochange_core/pull/204) riguarda alias pubblico separato su base #202. Le vecchie PR aperte non sono automaticamente candidate correnti.
+
+**MODELLO ACCESSI OWNER CONFERMATO:**
+- **Amministratore / Manager = FULL PERMISSION**, utilizzato da segreteria e direzione. L'account della segretaria NON è una quarta categoria limitata. Tecnici: Administrator e/o CC Manager. Dall'interfaccia Professionisti questo account può creare e modificare anagrafica e account Frappe PERSONALE del professionista, associando centro, ruolo e abilitazione. Può gestire pazienti, agenda, pagamenti e tutte le funzioni autorizzate.
+- **Professionista:** account individuale, dati e attività di propria competenza; mai condividere un account.
+- **Commercialista:** account dedicato alle attività contabili e fiscali pertinenti, NON Full Permission (ruolo tecnico da verificare: CC Finance).
+- Il vecchio ruolo tecnico CC Secretariat nel codice/documenti NON va interpretato come il profilo limitato della segretaria previsto dal cliente.
+
+**INTERFACCE UNICHE:** Pazienti crea/modifica tutte le anagrafiche pazienti (inclusa preferenza opposizione Sistema TS persistente, con storico; non registrata è uno stato distinto); Professionisti crea/modifica anagrafiche professionisti e relativi account Frappe personali, senza passare da Archivi/Desk. Archivi conserva funzioni amministrative/fiscali, NON duplica queste anagrafiche.
+
+**DECISIONE REVOCATA:** la creazione di un professionista operativo SENZA account Frappe come flusso definitivo è stata rifiutata dall'Owner. Gli account reali verranno creati prima della consegna utilizzando i dati/email che l'Owner fornirà; ora solo prove sintetiche, niente inviti/credenziali reali automatici.
+
+**STATO DISTINTO:** decisione Owner = approvata; implementazione PR #203 = ancora da verificare/accettare; UAT ultimo riferimento comunicato dall'esecutore = 2005f6cbb989c2760fce50898581e75ac330eb0a, NON controllato live in questo intervento; produzione = nessuna modifica. Non promuovere PASS della matrice o OWNER_ACCEPTED per la sola CI. Nessuna autorizzazione implicita a deploy/merge.
+
+---
+
+
 ## PRECEDENZA 03/11/2026 — FACTORY BROWNFIELD #199
 
 Questo checkpoint prevale sulle fotografie storiche del 26–27 ottobre riportate in seguito, ma va sempre confrontato con Issue, PR e CI **LIVE**.
