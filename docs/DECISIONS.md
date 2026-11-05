@@ -1,5 +1,23 @@
 # Technical Decision Log — Centro Change
 
+## OWNER-2026-11-05 — MODELLO ACCOUNT E ANAGRAFICHE (VIGENTE)
+<!-- OWNER_CURRENT_2026_11_05 -->
+
+La presente decisione Owner prevale sulle ipotesi incompatibili precedenti; NON equivale a prova tecnica o autorizzazione al deploy.
+
+1. **Amministratore/Manager: Full Permission**, usato da segretaria e direzione (Administrator e/o CC Manager come riferimenti tecnici). La segretaria NON usa un quarto profilo limitato separato. Il ruolo legacy CC Secretariat va riconciliato senza concedere accessi impropri.
+2. **Professionista:** account Frappe individuale e permessi limitati alle informazioni autorizzate nel centro; mai account condivisi.
+3. **Commercialista:** account dedicato alle funzioni contabili/fiscali, non Full Permission (CC Finance da verificare con policy esistenti).
+4. Dalla sola UI **Professionisti**, il Full Permission crea/modifica anagrafica E account personale del professionista, con email, centro, ruolo, collegamento e abilitazione/disabilitazione. **Revocata** come modalità finale la creazione di professionisti operativi privi di account. Non creare/invitare account reali senza dati/autorizzazione Owner.
+5. Dalla sola UI **Pazienti**, il Full Permission crea/modifica anagrafica e preferenza opposizione Sistema TS con stato non registrato, persistenza/audit e separazione dalle opposizioni sui singoli documenti; nessuna trasmissione automatica.
+6. **Archivi** resta destinato agli archivi amministrativi/fiscali; niente duplicati operativi di Pazienti e Professionisti.
+7. L'Owner fornirà i dati reali dei professionisti prima della consegna. Ora solo test sintetici. La [PR #203](https://github.com/2008hitch-afk/centrochange_core/pull/203) è da verificare e accettare separatamente prima di aggiornare UAT; produzione invariata.
+
+Vedere [indice operativo](qa/ACTIVE-GOAL-ROUTER.md), [matrice funzionale](qa/FUNCTIONAL-COVERAGE-MATRIX.md), [tracker #156](https://github.com/2008hitch-afk/centrochange_core/issues/156).
+
+---
+
+
 Questo file registra **decisioni tecniche proposte o confermate** nel repository tecnico. Non sostituisce la validazione cliente dei requisiti funzionali.
 
 ## TD-001 — Piattaforma
