@@ -342,6 +342,6 @@ Il confronto con il modello dati esistente precede qualsiasi proposta futura: Pa
 | ID | Stato candidato | Evidenza e limiti |
 | --- | --- | --- |
 | CC-CAP-049 | PARTIAL | Preferenza anagrafica distinta dalle scelte per singola spesa, senza invio automatico; persistenza, audit e negazione scrittura diretta verificati su clone sintetico Frappe. Migrazione e collaudo UAT non eseguiti. |
-| CC-CAP-005 | PARTIAL | Test API di accesso limitato allo storico su clone; restano da completare copertura e collaudo dei campi anagrafici professionali e della rimozione delle voci duplicate dagli Archivi. |
+| CC-CAP-005 | PARTIAL | Test API di accesso limitato allo storico su clone; le voci Pazienti e Professionisti sono state rimosse dalla navigazione Archivi nel candidato; il collaudo completo dei campi anagrafici e delle creazioni rimane aperto. |
 
 Il candidato non è accettato né autorizzato al rilascio. UAT rilevato su `2005f6c`; non dedurre accettazione Owner dalle prove su clone.

@@ -86,9 +86,15 @@ def patient_save(center, name, first_name, last_name, email, expected_version, r
     if ts_preference is None:
         return mutate('patient', center, 'Patient', name, values, tuple(values), expected_version, request_key, reason, lambda doc: _patient(center, doc))
     from centrochange_core.security.audit import internal_write
+    def validate_preference_write(doc):
+        _patient(center, doc)
+        # mutate() has already checked manager, center and native document write
+        # permission. The scoped whitelist is the only path allowed to update
+        # this permlevel-1 field; native APIs must not expose it to other roles.
+        doc.flags.ignore_permissions = True
     with internal_write('cc_ts_preference_write'):
         return mutate('patient', center, 'Patient', name, values, tuple(values), expected_version, request_key, reason,
-                      lambda doc: _patient(center, doc), after_save=audit_preference)
+                      validate_preference_write, after_save=audit_preference)
 
 
 @frappe.whitelist(methods=['GET'])

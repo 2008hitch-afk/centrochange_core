@@ -536,8 +536,6 @@ async function openSection(page: Page, name: string) {
 }
 
 const archiveCases = [
-  { group: 'Anagrafiche', label: 'Pazienti', first: 'Nome e cognome', sample: 'Persona di prova', fields: { 'Email': 'persona@example.invalid' } },
-  { group: 'Anagrafiche', label: 'Professionisti', first: 'Nome professionista', sample: 'Dott. Verdi', fields: { 'Specializzazione': 'Psicologia' } },
   { group: 'Catalogo', label: 'Articoli', first: 'Nome articolo', sample: 'Colloquio di prova', fields: { 'Categoria': 'Servizi' } },
   { group: 'Catalogo', label: 'Tariffe', first: 'Articolo', sample: 'ITEM-001', fields: { 'Listino': 'Listino Centro', 'Importo EUR': '90', 'Valida dal': today } },
   { group: 'Catalogo', label: 'Tipi seduta', first: 'Tipo seduta', sample: 'Colloquio di prova', fields: { 'Durata in minuti': '50' } },
@@ -580,20 +578,20 @@ test('archivio: ricerca, validazione, errore e accesso per ruolo', async ({ page
   await mockApi(page)
   await page.goto('./')
   await openSection(page, 'Archivi')
-  await page.getByRole('searchbox', { name: 'Cerca in pazienti' }).fill('nessun risultato')
+  await page.getByRole('searchbox', { name: 'Cerca in articoli' }).fill('nessun risultato')
   await expect(page.getByText('Nessuna scheda trovata')).toBeVisible()
-  await page.getByRole('searchbox', { name: 'Cerca in pazienti' }).fill('')
+  await page.getByRole('searchbox', { name: 'Cerca in articoli' }).fill('')
   await page.getByRole('button', { name: 'Nuova scheda' }).click()
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Chiudi' })).toBeFocused()
   await page.keyboard.press('Shift+Tab')
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Rivedi modifica di prova' })).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Chiudi' })).toBeFocused()
-  await page.getByRole('dialog').getByLabel('Email').fill('non-valida')
+  await page.getByRole('dialog').getByLabel('Nome articolo').fill('')
   await page.getByRole('dialog').getByRole('button', { name: 'Rivedi modifica di prova' }).click()
   await expect(page.getByRole('dialog', { name: 'Conferma modifica di prova' })).toHaveCount(0)
-  await page.getByRole('dialog').getByLabel('Nome e cognome').fill('Persona errore')
-  await page.getByRole('dialog').getByLabel('Email').fill('ok@example.invalid')
+  await page.getByRole('dialog').getByLabel('Nome articolo').fill('Articolo errore')
+  await page.getByRole('dialog').getByLabel('Categoria').fill('Servizi')
   await page.evaluate(() => sessionStorage.setItem('cc-synthetic-fail', '1'))
   await page.getByRole('dialog').getByRole('button', { name: 'Rivedi modifica di prova' }).click()
   await page.getByRole('button', { name: 'Conferma nella preview' }).click()

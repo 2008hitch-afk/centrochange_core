@@ -388,6 +388,18 @@ class ScopedApiTest(unittest.TestCase):
             profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-PRO', 'motivo', mobile='111', phone='222')
         self.assertEqual(self.db.doc.writes, 0)
 
+    def test_ts_preference_rejects_unknown_values_and_hides_from_professional(self):
+        spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
+        profiles = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(profiles)
+        self.db.doc = FakeDoc('Patient', 'PAT-A', cc_ts_preference='Opposed')
+        with self.assertRaises(Invalid):
+            profiles.patient_save('A', 'PAT-A', 'Persona', '', '', 'v1', 'K-TS', 'motivo', ts_preference='consent')
+        self.assertEqual(self.db.doc.writes, 0)
+        self.assertEqual(profiles.patient_detail('A', 'PAT-A')['cc_ts_preference'], 'Opposed')
+        self.role_allowed = False
+        self.assertNotIn('cc_ts_preference', profiles.patient_detail('A', 'PAT-A'))
+
     def test_profile_optional_nulls_are_preserved(self):
         spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
         profiles = importlib.util.module_from_spec(spec)
