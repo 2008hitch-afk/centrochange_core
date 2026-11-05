@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Finance readable date/fiscal-subject/professional/amount/state and canonical selection",
+    "a economics API denied",
+    "b economics API denied",
+    "c economics API denied"
+  ],
+  "errors": []
+}

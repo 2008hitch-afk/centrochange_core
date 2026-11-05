@@ -1,0 +1,12 @@
+[
+  {
+    "suite": "finance-browser-final-retest",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/finance-browser-final-retest.log"
+  },
+  {
+    "suite": "threshold-browser-final-retest",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/threshold-browser-final-retest.log"
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "rc22_image": "centrochange-uat:goal02-20261008-rc22",
+  "containers_unchanged": true,
+  "container_count": 6,
+  "restart_counts_unchanged": true,
+  "started_at_unchanged": true,
+  "mounts_unchanged": true,
+  "rc22_owner_rows_sha256_before": "6d60ef5cc5a73550e935736465269c64fea283bdbe5e61cc1e966db9f4bf2d58",
+  "rc22_owner_rows_sha256_after": "6d60ef5cc5a73550e935736465269c64fea283bdbe5e61cc1e966db9f4bf2d58",
+  "rc22_counts_unchanged": true,
+  "lab_rows_sha256_before": "e2dab8007c196043d108dd11744832b32e2c44ea460660bb0a740609c6ab4cf3",
+  "lab_rows_sha256_after": "e2dab8007c196043d108dd11744832b32e2c44ea460660bb0a740609c6ab4cf3",
+  "lab_counts_unchanged": true,
+  "shared_runtime_commands": "read-only fingerprint and docker inspect only; no health jobs/cache clear/login/migrate/restart on RC22",
+  "verified_after_final_tests": true
+}

@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "checks": [
+    "public booking form loads real available slots; submission validated by rollback backend flow",
+    "management confirmation administration entry visible",
+    "Finance confirmation administration API denied"
+  ],
+  "errors": []
+}

@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "python_ast": 172,
+  "javascript_syntax": 34,
+  "six_hooks_static_test": "PASS"
+}

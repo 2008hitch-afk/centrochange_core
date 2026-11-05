@@ -1,0 +1,10 @@
+[
+  {
+    "suite": "browser-audit",
+    "status": "PASS"
+  },
+  {
+    "suite": "browser-bank_trace",
+    "status": "PASS"
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "checks": [
+    "m HTTP native/API/fiscal export/query/direct-page/private-note/audit/recovery boundaries",
+    "s HTTP native/API/fiscal export/query/direct-page/private-note/audit/recovery boundaries",
+    "f HTTP native/API/fiscal export/query/direct-page/private-note/audit/recovery boundaries",
+    "t HTTP native/API/fiscal export/query/direct-page/private-note/audit/recovery boundaries",
+    "a HTTP native/API/fiscal export/query/direct-page/private-note/audit/recovery boundaries",
+    "b HTTP native/API/fiscal export/query/direct-page/private-note/audit/recovery boundaries",
+    "c HTTP native/API/fiscal export/query/direct-page/private-note/audit/recovery boundaries",
+    "Guest internal reporting denied and neutral 404"
+  ],
+  "errors": [],
+  "permission_delta": "NONE",
+  "mutations": "NONE"
+}

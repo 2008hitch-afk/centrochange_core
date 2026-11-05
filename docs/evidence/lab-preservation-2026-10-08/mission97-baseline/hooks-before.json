@@ -1,0 +1,29 @@
+{
+  "app_hooks": [
+    "centrochange_core.operations.website_brand.client_language",
+    "centrochange_core.operations.website_brand.login_language"
+  ],
+  "effective_hooks": [
+    "frappe.recorder.record",
+    "frappe.monitor.start",
+    "frappe.rate_limiter.apply",
+    "frappe.integrations.oauth2.set_cors_for_privileged_requests",
+    "centrochange_core.operations.website_brand.client_language",
+    "centrochange_core.operations.website_brand.login_language"
+  ],
+  "http_ping_status": 200,
+  "invoked": [
+    "centrochange_core.operations.website_brand.client_language",
+    "centrochange_core.operations.website_brand.login_language"
+  ],
+  "expected": [
+    "centrochange_core.finance.request_guard.before_request",
+    "centrochange_core.security.diagnostics.before_request",
+    "centrochange_core.security.api.before_request",
+    "centrochange_core.operations.notes.request_guard",
+    "centrochange_core.operations.website_brand.client_language",
+    "centrochange_core.operations.website_brand.login_language"
+  ],
+  "status": "CONFIRMED_RUNTIME_GAP",
+  "instrumentation": "process-local unittest.mock wrappers around original functions; real pinned WSGI initialization; no app/server patch"
+}

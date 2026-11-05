@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "synthetic_fiscal_transactions": 4,
+  "TS_simulated_and_SdI_synthetic_profiles": true,
+  "simulation_only": true,
+  "configured_outgoing_email_accounts": 0,
+  "email_queue_count": 0,
+  "mute_emails": 1,
+  "retained_expectation_chain": true,
+  "rolled_back_closed_session_move_retained_original": true,
+  "beta_native_outstanding": 0.0,
+  "theta_native_outstanding": 100.0
+}

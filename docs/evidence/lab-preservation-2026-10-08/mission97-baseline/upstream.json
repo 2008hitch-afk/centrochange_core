@@ -1,0 +1,13 @@
+{
+  "official_commit": "6a329d068416768ec47ccd3326b9cc95a8d7bf99",
+  "tag": "v16.31.0",
+  "sha256": {
+    "frappe/app.py": "5701c5f2a9556e8874860546828b5dcc2f85533cf52383381f1d2012bf04f2ec",
+    "frappe/__init__.py": "37c71569cc11c8b4dde82a58fa8277640680e69c3de0460b66a162025fde36fe"
+  },
+  "runtime_sha256": {
+    "frappe/app.py": "5701c5f2a9556e8874860546828b5dcc2f85533cf52383381f1d2012bf04f2ec",
+    "frappe/__init__.py": "37c71569cc11c8b4dde82a58fa8277640680e69c3de0460b66a162025fde36fe"
+  },
+  "pinned_source_bytes_equal": true
+}

@@ -1,0 +1,646 @@
+{
+  "source_commit": "e85fce588de6012a47da302710b9f9c615211279",
+  "containers": [
+    {
+      "id": "7f04f8c5c7e0a25c72295ac7338c80d2fab653d97e331dbf26d4cefc22fd73fe",
+      "name": "/centrochange-m97-lab-frontend-1",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.848975464Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "3a9f233fc180364d48f60bd69e0438f31bda9b4ed9e3686588bc19cac7c880ef",
+          "Source": "/var/lib/docker/volumes/3a9f233fc180364d48f60bd69e0438f31bda9b4ed9e3686588bc19cac7c880ef/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "8097"
+          }
+        ]
+      }
+    },
+    {
+      "id": "6a849fffd78ca854418afc1b2baf08698f62fcdeea6173c585e57e9e2a07b403",
+      "name": "/centrochange-m97-lab-queue-short-1",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.535809461Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "99aadcc90053d035bc3f0db6db9ef16f1bd37afb81ef278da2a16ea54e929164",
+          "Source": "/var/lib/docker/volumes/99aadcc90053d035bc3f0db6db9ef16f1bd37afb81ef278da2a16ea54e929164/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "3a5876a78059de3a90880e4d48bd396e42e9754ef2a390809cd964969d5b2b68",
+      "name": "/centrochange-m97-lab-queue-long-1",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.373990686Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "04196602bc67ea70cd15cf16315f924bdf6f6b4e0641fd95744dbca8815153dd",
+          "Source": "/var/lib/docker/volumes/04196602bc67ea70cd15cf16315f924bdf6f6b4e0641fd95744dbca8815153dd/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "a18479b73dd36862e2f69aee3c3a2c5d7013c2e702496ba0d71466378aab4a9e",
+      "name": "/centrochange-m97-lab-websocket-1",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.268425689Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "951c00ca88ec93beea98956288bd0610bf5ce55bff6ee54ef2c5bdecc09272a8",
+          "Source": "/var/lib/docker/volumes/951c00ca88ec93beea98956288bd0610bf5ce55bff6ee54ef2c5bdecc09272a8/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "7db1d0456443510685f422b03b480802798a6d12c08fb39ea386c847718cf596",
+      "name": "/centrochange-m97-lab-scheduler-1",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.145829503Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "7cb3a272dbfb701bcc8a6fcd4079e92cac3c714b1ea7e5e5fd9575078246d538",
+          "Source": "/var/lib/docker/volumes/7cb3a272dbfb701bcc8a6fcd4079e92cac3c714b1ea7e5e5fd9575078246d538/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "4045d2713e30d0cb7e783c875fb2fac275fba1edc56d75c23faf6bc3442ed1f0",
+      "name": "/centrochange-m97-lab-backend-1",
+      "image_id": "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+      "image_ref": "centrochange-m97:issue97-guards-v3",
+      "started": "2026-10-08T15:58:15.685583196Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "cf55264239fa58cfa47a46ce4ace3dbb7774044a98e9cf38cd852c52b570f2f6",
+          "Source": "/var/lib/docker/volumes/cf55264239fa58cfa47a46ce4ace3dbb7774044a98e9cf38cd852c52b570f2f6/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "35f137603a26b64f2399809f10b8fb9d223ead3a4c5fcbeab4e73554115ad737",
+      "name": "/centrochange-m97-lab-configurator-1",
+      "image_id": "sha256:e89e4dd0249ab1f06f84975bd074194cfead8478cb2ced5fa60a11ad587e51f8",
+      "image_ref": "centrochange-m97:issue97-guards-v1",
+      "started": "2026-10-08T15:48:11.090959237Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "dbbfb2f870e1754d6be288a66828d038937169db1e4cb6931adea83659df6bf7",
+          "Source": "/var/lib/docker/volumes/dbbfb2f870e1754d6be288a66828d038937169db1e4cb6931adea83659df6bf7/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "6c377b75d88fe8ca35790a5facde5f097bb48283f2dd4f0b5a8cfc7f29ba53e4",
+      "name": "/centrochange-m97-lab-redis-cache-1",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-08T15:41:50.941001883Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-redis-cache-data",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-redis-cache-data/_data",
+          "Destination": "/data",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "a7e923ba0afd73edfabb573085be4c63d37bc6486c03d0aa9bca37d85041e1bc",
+      "name": "/centrochange-m97-lab-redis-queue-1",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-08T15:41:50.791418861Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-redis-queue-data",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-redis-queue-data/_data",
+          "Destination": "/data",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "9ca884d963352954e8255d7a230c6542063201728a83a1beb8e8f47dbfe022f4",
+      "name": "/centrochange-m97-lab-db-1",
+      "image_id": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "image_ref": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "started": "2026-10-08T15:41:51.046003941Z",
+      "restart_count": 0,
+      "project": "centrochange-m97-lab",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "centrochange-m97-lab-db-data",
+          "Source": "/var/lib/docker/volumes/centrochange-m97-lab-db-data/_data",
+          "Destination": "/var/lib/mysql",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-m97-lab-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "4283499a973bf3ea00f5282300f2e4aa3c21ce1e294a00cc8217b7e0ed0cbecc",
+      "name": "/centrochange-dev-frontend-1",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.47472239Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "e414450c6f597d1b5996280256ecc82130da6a2a634b396eeb832bc7201c0539",
+          "Source": "/var/lib/docker/volumes/e414450c6f597d1b5996280256ecc82130da6a2a634b396eeb832bc7201c0539/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {
+        "8080/tcp": [
+          {
+            "HostIp": "127.0.0.1",
+            "HostPort": "8082"
+          }
+        ]
+      }
+    },
+    {
+      "id": "89282eabae30ece7a072e7f36a2420b0237e869b396e41bf4dfeeebc03968abe",
+      "name": "/centrochange-dev-websocket-1",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:04.993107542Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "a297b02ca574da5fd0ff4acbe2637b87dec97b29d2d9aee0168420760bc571d6",
+          "Source": "/var/lib/docker/volumes/a297b02ca574da5fd0ff4acbe2637b87dec97b29d2d9aee0168420760bc571d6/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "7775561c691d1d86c5da70c389b88e14081c64ca36f0b45efb3314a884fe5b4c",
+      "name": "/centrochange-dev-backend-1",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.219031103Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "a833b509cc6988761189bf01b4af67b1e254399e3301c3ffee4c6a2dcd300c73",
+          "Source": "/var/lib/docker/volumes/a833b509cc6988761189bf01b4af67b1e254399e3301c3ffee4c6a2dcd300c73/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "0734332e4210c36a44d508f445830e0779dfa02816e342ec6ad2953079e3d0ac",
+      "name": "/centrochange-dev-queue-short-1",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.103361463Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "27dc8d6c52119699ec481eb992c02066935d735cf0bbcdfed56246bc6752897f",
+          "Source": "/var/lib/docker/volumes/27dc8d6c52119699ec481eb992c02066935d735cf0bbcdfed56246bc6752897f/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "558a6968d87be9f2f6a20f91037613580a9c83c15b1f2fc744570be0f86e7bf1",
+      "name": "/centrochange-dev-scheduler-1",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.75962531Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "c137441faf6351b6931ff3ba6d6a28b697f99d78a5d88914f79389e3bbda237b",
+          "Source": "/var/lib/docker/volumes/c137441faf6351b6931ff3ba6d6a28b697f99d78a5d88914f79389e3bbda237b/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "a2bb4587bf3305f0822948acdb43dd3318e8250c7a3b6befbb3cf2b4d199372a",
+      "name": "/centrochange-dev-queue-long-1",
+      "image_id": "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+      "image_ref": "centrochange-uat:goal02-20261008-rc22",
+      "started": "2026-10-08T14:52:05.633041274Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "842c42f37e52e2ce04cd85a4cf6ea951a7ed47480a0a345fd49d9657b8af9532",
+          "Source": "/var/lib/docker/volumes/842c42f37e52e2ce04cd85a4cf6ea951a7ed47480a0a345fd49d9657b8af9532/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "7fed2d6b37cee05819caa768d89701a7714adc07f63c3de58aa991b2a62ce42c",
+      "name": "/centrochange-dev-configurator-1",
+      "image_id": "sha256:bf9ef2cc39aab0a37e3ac00f6d9e76dd70b323343cac3bc5a2e6b4f294a7b4a6",
+      "image_ref": "centrochange-uat:goal02-20261007-rc24",
+      "started": "2026-10-07T17:31:02.110148427Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "7ea725906e3dce8529d3ffae74db5abf46bbb56b8616c035e298da7b04d4d1fe",
+          "Source": "/var/lib/docker/volumes/7ea725906e3dce8529d3ffae74db5abf46bbb56b8616c035e298da7b04d4d1fe/_data",
+          "Destination": "/home/frappe/frappe-bench/logs",
+          "RW": true
+        },
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-sites",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-sites/_data",
+          "Destination": "/home/frappe/frappe-bench/sites",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "77ab007443ed74be2f7e92dba7604a217bee349eb1433eb3a38efcd8370ccdf4",
+      "name": "/centrochange-dev-redis-cache-1",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-05T17:43:30.311343189Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-redis-cache-data",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-redis-cache-data/_data",
+          "Destination": "/data",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "dab9deddfba35764654e784feb069a8f80291f08cb2c6b961d2f4349d48b0e89",
+      "name": "/centrochange-dev-redis-queue-1",
+      "image_id": "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "image_ref": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "started": "2026-10-05T17:43:30.413509793Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-redis-queue-data",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-redis-queue-data/_data",
+          "Destination": "/data",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    },
+    {
+      "id": "82fbeecff7286bac2b012857bbfe0eec7aa4c2e7f81be349b0fbaf5d732f6ae8",
+      "name": "/centrochange-dev-db-1",
+      "image_id": "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "image_ref": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "started": "2026-10-05T17:43:30.529568822Z",
+      "restart_count": 0,
+      "project": "centrochange-dev",
+      "mounts": [
+        {
+          "Type": "volume",
+          "Name": "centrochange-dev-db-data",
+          "Source": "/var/lib/docker/volumes/centrochange-dev-db-data/_data",
+          "Destination": "/var/lib/mysql",
+          "RW": true
+        }
+      ],
+      "networks": [
+        "centrochange-dev-net"
+      ],
+      "ports": {}
+    }
+  ],
+  "volumes": [
+    "3a9f233fc180364d48f60bd69e0438f31bda9b4ed9e3686588bc19cac7c880ef",
+    "6e730bf272d0961db673113b636c75d30a74f6bf775574500395c90319473005",
+    "7cb3a272dbfb701bcc8a6fcd4079e92cac3c714b1ea7e5e5fd9575078246d538",
+    "7ea725906e3dce8529d3ffae74db5abf46bbb56b8616c035e298da7b04d4d1fe",
+    "8e525a7e9404a11976cc49e12e016a1efb60250ccc48650a6bef3f7ad6051ab6",
+    "27dc8d6c52119699ec481eb992c02066935d735cf0bbcdfed56246bc6752897f",
+    "33c347c9077ee92295bed284cfa2dc134e46d81cb514e591de99ec697798ade0",
+    "40a1a44fda1661b5d9a841c1d7481933efd973a6d947c911f36876462407e715",
+    "73e8bbb788e3b86d1911b869d31591dfce33dc3871c6f0784c027cd090befcfb",
+    "99aadcc90053d035bc3f0db6db9ef16f1bd37afb81ef278da2a16ea54e929164",
+    "122ac34a215c73d7fbae1482b6fb09fbc5bde46747e5fee3c7925c9f489bd69e",
+    "207a0f9a7a7f9252ed8f9cb8c6372c977a32018d6c3750055014cce2aaa6c119",
+    "383e59b488b98b954c7d5e29a363ca2cac3b4f083dff91c3a3e6b0eccd30c73e",
+    "0677cc71461ea198f3a3a9e19defac3cdc9a44320d38c45cf00a87dd12cba001",
+    "842c42f37e52e2ce04cd85a4cf6ea951a7ed47480a0a345fd49d9657b8af9532",
+    "951c00ca88ec93beea98956288bd0610bf5ce55bff6ee54ef2c5bdecc09272a8",
+    "5198cf4a8ef97040d33da5a84cf0eff5f3d2b04db644d68e31a635a18dc72ad7",
+    "07867cc083ebccfb67a58a76901e7c5f1afa045c1dafd056695c325a685dc121",
+    "04196602bc67ea70cd15cf16315f924bdf6f6b4e0641fd95744dbca8815153dd",
+    "a297b02ca574da5fd0ff4acbe2637b87dec97b29d2d9aee0168420760bc571d6",
+    "a833b509cc6988761189bf01b4af67b1e254399e3301c3ffee4c6a2dcd300c73",
+    "c137441faf6351b6931ff3ba6d6a28b697f99d78a5d88914f79389e3bbda237b",
+    "ce546a8ca213d9147f981e882f02e3cb1da884eddedccccd3d44b5e74dd39903",
+    "centrochange-dev-db-data",
+    "centrochange-dev-redis-cache-data",
+    "centrochange-dev-redis-queue-data",
+    "centrochange-dev-sites",
+    "centrochange-m97-lab-db-data",
+    "centrochange-m97-lab-redis-cache-data",
+    "centrochange-m97-lab-redis-queue-data",
+    "centrochange-m97-lab-sites",
+    "cf55264239fa58cfa47a46ce4ace3dbb7774044a98e9cf38cd852c52b570f2f6",
+    "d1af146b3495288364deba5a5466a76fb62fc86bfad89866bc7c7421f942b1ab",
+    "dbbfb2f870e1754d6be288a66828d038937169db1e4cb6931adea83659df6bf7",
+    "e41fc36360557e707c72f56833dfb88fdbe28462b18f43a4630ece92acf9ecb2",
+    "e414450c6f597d1b5996280256ecc82130da6a2a634b396eeb832bc7201c0539"
+  ],
+  "networks": [
+    "e7897aed3163 bridge",
+    "8e3fb9ceff67 centrochange-dev-net",
+    "bbad2fcd2e60 centrochange-m97-lab-net",
+    "6fcb01c4eb3f host",
+    "bce73810263a none"
+  ],
+  "images": [
+    "sha256:e89e4dd0249ab1f06f84975bd074194cfead8478cb2ced5fa60a11ad587e51f8 centrochange-m97:issue97-guards-v1 sha256:e89e4dd0249ab1f06f84975bd074194cfead8478cb2ced5fa60a11ad587e51f8",
+    "sha256:9bed9eb7dd939e91c3233a516b2a49188a4322fac994b24f67e21c006352fcd0 centrochange-m97:issue97-guards-v2 sha256:9bed9eb7dd939e91c3233a516b2a49188a4322fac994b24f67e21c006352fcd0",
+    "sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888 centrochange-m97:issue97-guards-v3 sha256:7fc1313f42bada8df12848af9ac94b7e719e3a99265880bcd4239fc3a6c84888",
+    "sha256:4ec3e81be8b6900f457ffae4fe1b2708119623d44fdcd051f7b7fbe10e8fd1b8 centrochange-browser-qa:1.58.2 sha256:4ec3e81be8b6900f457ffae4fe1b2708119623d44fdcd051f7b7fbe10e8fd1b8",
+    "sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c centrochange-uat:goal02-20261008-rc22 sha256:4ce7cbb0bcfbfb9062d4c086e5f0fb8ff51e5025647df4265b4d5630efd97b8c",
+    "sha256:3859ce61f8030b234ffb010d2f5ac6125b3a2d09e291e7911482829639fe433a centrochange-uat:goal02-20261008-rc21 sha256:3859ce61f8030b234ffb010d2f5ac6125b3a2d09e291e7911482829639fe433a",
+    "sha256:98604bf0889b1f13c0feea88251495a388d36f4761d72c1a496e3861d96c025e centrochange-uat:goal02-20261008-rc20 sha256:98604bf0889b1f13c0feea88251495a388d36f4761d72c1a496e3861d96c025e",
+    "sha256:78ca167109a6ffe448beb134dfc8a37f9d646dc984a04ec249dc736baa0de856 centrochange-uat:goal02-20261008-rc19 sha256:78ca167109a6ffe448beb134dfc8a37f9d646dc984a04ec249dc736baa0de856",
+    "sha256:a28de87455463094259c0ea16fd60f1ada51af4733848339cff4bfafec308786 centrochange-uat:goal02-20261008-rc18 sha256:a28de87455463094259c0ea16fd60f1ada51af4733848339cff4bfafec308786",
+    "sha256:f84737355f27926e961b9230c52115a55bd7774856aa285f25ca5beef9511c9d centrochange-uat:goal02-20261008-rc17 sha256:f84737355f27926e961b9230c52115a55bd7774856aa285f25ca5beef9511c9d",
+    "sha256:4ddcb9c6e7a7227091915a7e88668739da95c769d48e5853994c656fb52224c5 centrochange-uat:goal02-20261008-rc16 sha256:4ddcb9c6e7a7227091915a7e88668739da95c769d48e5853994c656fb52224c5",
+    "sha256:cfa7f1b30d02fd3b91f93a820c595ca1e449977d719d3406356233f7df2af3d6 centrochange-uat:goal02-20261008-rc15 sha256:cfa7f1b30d02fd3b91f93a820c595ca1e449977d719d3406356233f7df2af3d6",
+    "sha256:23c0857e5840638b96ada23f4db6472a32840026cf5246c6e6ea44399f43a537 centrochange-uat:goal02-20261008-rc14 sha256:23c0857e5840638b96ada23f4db6472a32840026cf5246c6e6ea44399f43a537",
+    "sha256:a8d061861b5284df0f1e7ccab8a9a2c75a6bdd6327ec9048ce7f3a25625d07d1 centrochange-uat:goal02-20261008-rc13 sha256:a8d061861b5284df0f1e7ccab8a9a2c75a6bdd6327ec9048ce7f3a25625d07d1",
+    "sha256:51b28d4c5316d6c14e80164fe4f616b92332fbd170cef78490beeac898ae4f96 centrochange-uat:goal02-20261008-rc12 sha256:51b28d4c5316d6c14e80164fe4f616b92332fbd170cef78490beeac898ae4f96",
+    "sha256:b8f035a533153162404def6c8d831f6ad647b9de6433fe4e9cda04bb741d0221 centrochange-uat:goal02-20261008-rc11 sha256:b8f035a533153162404def6c8d831f6ad647b9de6433fe4e9cda04bb741d0221",
+    "sha256:c7f804752a8c7cbc27d45ad2f660521243a9e961bac263cdc9ae2d9f2d06aa34 centrochange-uat:goal02-20261008-rc10 sha256:c7f804752a8c7cbc27d45ad2f660521243a9e961bac263cdc9ae2d9f2d06aa34",
+    "sha256:374b1160f8c19ba2b3777d1bd3a776f169fcce473524c0c771edcd0fa9ba8b8d centrochange-uat:goal02-20261008-rc9 sha256:374b1160f8c19ba2b3777d1bd3a776f169fcce473524c0c771edcd0fa9ba8b8d",
+    "sha256:ddc36b2c5c50be7acefc54fe325fb4740ff001eb942763dc93c3bd25d3028db6 centrochange-uat:goal02-20261008-rc8 sha256:ddc36b2c5c50be7acefc54fe325fb4740ff001eb942763dc93c3bd25d3028db6",
+    "sha256:86fe2053c411f8cc03729d4b58571aab7aa39ae4feb51217851d6c868bb444ba centrochange-uat:goal02-20261008-rc7 sha256:86fe2053c411f8cc03729d4b58571aab7aa39ae4feb51217851d6c868bb444ba",
+    "sha256:6bb2d92056fe8bf864e4815c0adb2394ddc5e6dfae0a8b190670be94d29563fd centrochange-uat:goal02-20261008-rc6 sha256:6bb2d92056fe8bf864e4815c0adb2394ddc5e6dfae0a8b190670be94d29563fd",
+    "sha256:0c36deaa54cfb7b9387b647f0cbfb95732ab398487e5f88675d6d713aed0da16 centrochange-uat:goal02-20261008-rc5 sha256:0c36deaa54cfb7b9387b647f0cbfb95732ab398487e5f88675d6d713aed0da16",
+    "sha256:f625cd677ff1a66cc1bde79503d68245a6f57352672a9a6d6f9f2bed0097956f centrochange-uat:goal02-20261008-rc4 sha256:f625cd677ff1a66cc1bde79503d68245a6f57352672a9a6d6f9f2bed0097956f",
+    "sha256:f8f3f05f6b1ab8a38db1ccc3aa8db1ff1728391c7780e20026be0e52d8c4cc26 centrochange-uat:goal02-20261008-rc3 sha256:f8f3f05f6b1ab8a38db1ccc3aa8db1ff1728391c7780e20026be0e52d8c4cc26",
+    "sha256:f80939603f954a99ec9c0736d3373402d343a5804a9f39ab8688db40d0fafa2a centrochange-uat:goal02-20261008-rc2 sha256:f80939603f954a99ec9c0736d3373402d343a5804a9f39ab8688db40d0fafa2a",
+    "sha256:8c9ceb2d55be2956fbf133c8b3c5c4df9404346e05f086c1d672b5a6e55954e6 centrochange-uat:goal02-20261008-rc1 sha256:8c9ceb2d55be2956fbf133c8b3c5c4df9404346e05f086c1d672b5a6e55954e6",
+    "sha256:905a46a5c307dd1ae12dd8077383028419c5791885fcffd463b1dbb1a08b48ea centrochange-uat:goal02-20261007-rc31 sha256:905a46a5c307dd1ae12dd8077383028419c5791885fcffd463b1dbb1a08b48ea",
+    "sha256:99fa6142b0e4b85cefb10807e3d85e795e865e86811da32292a3b708452dff39 centrochange-uat:goal02-20261007-rc30 sha256:99fa6142b0e4b85cefb10807e3d85e795e865e86811da32292a3b708452dff39",
+    "sha256:3682394a66a77fa0dfacf15ab462912e9c35b6839f98387db2877a5417eb0a0d centrochange-uat:goal02-20261007-rc29 sha256:3682394a66a77fa0dfacf15ab462912e9c35b6839f98387db2877a5417eb0a0d",
+    "sha256:a277909437719efad38b6f0e995fb16f3b8fa30e6ba02b83c3f42965249c2ac8 centrochange-uat:goal02-20261007-rc28 sha256:a277909437719efad38b6f0e995fb16f3b8fa30e6ba02b83c3f42965249c2ac8",
+    "sha256:18eecc22def1842db149c40f3fae3bd9f7c9a8bd617f65266c35e01e2cebf20c centrochange-uat:goal02-20261007-rc27 sha256:18eecc22def1842db149c40f3fae3bd9f7c9a8bd617f65266c35e01e2cebf20c",
+    "sha256:f8e824ee7c26827f928d50dca30cc406bded3562e869ef0a1009179ee419080f centrochange-uat:goal02-20261007-rc26 sha256:f8e824ee7c26827f928d50dca30cc406bded3562e869ef0a1009179ee419080f",
+    "sha256:2e004bd85d717d84772517b30b218d5ec6e7e95e23fece9a3c3b184cd5dda21f centrochange-uat:goal02-20261007-rc25 sha256:2e004bd85d717d84772517b30b218d5ec6e7e95e23fece9a3c3b184cd5dda21f",
+    "sha256:bf9ef2cc39aab0a37e3ac00f6d9e76dd70b323343cac3bc5a2e6b4f294a7b4a6 centrochange-uat:goal02-20261007-rc24 sha256:bf9ef2cc39aab0a37e3ac00f6d9e76dd70b323343cac3bc5a2e6b4f294a7b4a6",
+    "sha256:9e239dfeced1ee446c9de1b7e52b6860a95ea498e0fca158c66a6d6cf5aedf7e centrochange-uat:goal02-20261007-rc23 sha256:9e239dfeced1ee446c9de1b7e52b6860a95ea498e0fca158c66a6d6cf5aedf7e",
+    "sha256:526eda22a453cbab07c489bb8809eb350a321e2402e133cf6da6be9a1ac2052f centrochange-uat:goal02-20261007-rc22 sha256:526eda22a453cbab07c489bb8809eb350a321e2402e133cf6da6be9a1ac2052f",
+    "sha256:2bf41bc76df72da8308f09879b4dab1e60049d24214134dec1c4b86319a93b12 centrochange-uat:goal02-20261007-rc21 sha256:2bf41bc76df72da8308f09879b4dab1e60049d24214134dec1c4b86319a93b12",
+    "sha256:84577a39a87378606bcfdf2fc060c91f7ba436b2393c8a3de07a380da385dd8a centrochange-uat:goal02-20261007-rc20 sha256:84577a39a87378606bcfdf2fc060c91f7ba436b2393c8a3de07a380da385dd8a",
+    "sha256:92b8ba90bb75f3ef442e4bae9da4d21eb27f803404935c84b3bf450e69c5e324 centrochange-uat:goal02-20261007-rc19 sha256:92b8ba90bb75f3ef442e4bae9da4d21eb27f803404935c84b3bf450e69c5e324",
+    "sha256:fba77e83bf421853a873b36bcafdd08a2a1d51087a521296c2239b49f7e6721b centrochange-uat:goal02-20261007-rc18 sha256:fba77e83bf421853a873b36bcafdd08a2a1d51087a521296c2239b49f7e6721b",
+    "sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c mariadb:<none> sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+    "sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9 redis:<none> sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9"
+  ]
+}

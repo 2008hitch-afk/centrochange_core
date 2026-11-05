@@ -1,0 +1,7 @@
+{
+  "project": "centrochange-m97-lab",
+  "site": "mission97.local",
+  "port": 8097,
+  "isolated_mounts_network_ports": true,
+  "shared_uat_mutated": false
+}

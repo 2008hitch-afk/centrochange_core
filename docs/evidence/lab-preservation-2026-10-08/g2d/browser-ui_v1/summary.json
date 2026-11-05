@@ -1,0 +1,275 @@
+{
+  "status": "PASS",
+  "checks": [
+    "single input dropdown: Patient keyboard / Professional click, exact canonical values, no results, Escape, loading/error/retry/stale async, native modal focus and mobile containment"
+  ],
+  "matrix": [
+    {
+      "surface": "agenda",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "Pazienti",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "Disponibilit",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "Report",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "Notifiche",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "Gestioneaccessi",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "finance-Riepilogo",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "finance-Fatturepazienti",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "finance-XMLricevuti",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "finance-Fatturefornitori",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "finance-Banca",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "finance-Professionisti",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "finance-Codaamministrativa",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "finance-SdI",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "finance-TS",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "professional",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "patient-report",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "audit",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "validation",
+      "shell": "PASS",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "public",
+      "shell": "PUBLIC_AUTH_ERROR_PATTERN",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "login",
+      "shell": "PUBLIC_AUTH_ERROR_PATTERN",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "404",
+      "shell": "PUBLIC_AUTH_ERROR_PATTERN",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "error",
+      "shell": "PUBLIC_AUTH_ERROR_PATTERN",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    },
+    {
+      "surface": "403",
+      "shell": "PUBLIC_AUTH_ERROR_PATTERN",
+      "tabler": "PASS",
+      "responsive": "PASS",
+      "italian_human_labels": "REVIEWED_WITH_SCREENSHOT",
+      "debranding": "PASS",
+      "desk_leakage": "NONE",
+      "permission_gate": "#77 server suite",
+      "business_gate": "rollback full suite"
+    }
+  ],
+  "errors": [],
+  "mutations": "NONE",
+  "browser": "Playwright pinned; Browser plugin absent"
+}

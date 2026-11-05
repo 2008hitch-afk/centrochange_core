@@ -1,0 +1,348 @@
+{
+  "status": "PASS",
+  "phase": "after",
+  "checks": [
+    {
+      "role": "a",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "a",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 403,
+      "exception_type": "PermissionError",
+      "result": "PASS"
+    },
+    {
+      "role": "a",
+      "surface": "erpnext.accounts.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "a",
+      "surface": "erpnext.regional.italy.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "a",
+      "surface": "known native accounting helper denied before query",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "a",
+      "surface": "cmd form native report guard",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "a",
+      "surface": "private-note native document API",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "b",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "b",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 403,
+      "exception_type": "PermissionError",
+      "result": "PASS"
+    },
+    {
+      "role": "b",
+      "surface": "erpnext.accounts.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "b",
+      "surface": "erpnext.regional.italy.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "b",
+      "surface": "known native accounting helper denied before query",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "b",
+      "surface": "cmd form native report guard",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "b",
+      "surface": "private-note native document API",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "c",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "c",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 403,
+      "exception_type": "PermissionError",
+      "result": "PASS"
+    },
+    {
+      "role": "c",
+      "surface": "erpnext.accounts.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "c",
+      "surface": "erpnext.regional.italy.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "c",
+      "surface": "known native accounting helper denied before query",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "c",
+      "surface": "cmd form native report guard",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "c",
+      "surface": "private-note native document API",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "s",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "s",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 403,
+      "exception_type": "PermissionError",
+      "result": "PASS"
+    },
+    {
+      "role": "s",
+      "surface": "erpnext.accounts.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "s",
+      "surface": "erpnext.regional.italy.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "s",
+      "surface": "known native accounting helper denied before query",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "s",
+      "surface": "cmd form native report guard",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "s",
+      "surface": "private-note native document API",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "f",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "f",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 403,
+      "exception_type": "PermissionError",
+      "result": "PASS"
+    },
+    {
+      "role": "f",
+      "surface": "erpnext.accounts.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "f",
+      "surface": "erpnext.regional.italy.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "f",
+      "surface": "known native accounting helper denied before query",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "f",
+      "surface": "cmd form native report guard",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "f",
+      "surface": "private-note native document API",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "t",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "t",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 403,
+      "exception_type": "PermissionError",
+      "result": "PASS"
+    },
+    {
+      "role": "t",
+      "surface": "erpnext.accounts.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "t",
+      "surface": "erpnext.regional.italy.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "t",
+      "surface": "known native accounting helper denied before query",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "t",
+      "surface": "cmd form native report guard",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "t",
+      "surface": "private-note native document API",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "m",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "m",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 404,
+      "exception_type": "DoesNotExistError",
+      "result": "PASS"
+    },
+    {
+      "role": "m",
+      "surface": "erpnext.accounts.m97_nonexistent",
+      "status": 417,
+      "result": "PASS"
+    },
+    {
+      "role": "m",
+      "surface": "erpnext.regional.italy.m97_nonexistent",
+      "status": 417,
+      "result": "PASS"
+    },
+    {
+      "role": "m",
+      "surface": "private-note native document API",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "guest",
+      "surface": "authenticated/public ping",
+      "status": 200,
+      "result": "PASS"
+    },
+    {
+      "role": "guest",
+      "surface": "native nonexistent query report (no financial data requested)",
+      "status": 403,
+      "exception_type": "PermissionError",
+      "result": "PASS"
+    },
+    {
+      "role": "guest",
+      "surface": "erpnext.accounts.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "guest",
+      "surface": "erpnext.regional.italy.m97_nonexistent",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "guest",
+      "surface": "known native accounting helper denied before query",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "guest",
+      "surface": "cmd form native report guard",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "guest",
+      "surface": "private-note native document API",
+      "status": 403,
+      "result": "PASS"
+    },
+    {
+      "role": "c-disabled-retained-session",
+      "surface": "actual HTTP ping denied after isolated principal disable",
+      "status": 403,
+      "result": "PASS"
+    }
+  ],
+  "synthetic_only": true,
+  "business_mutations": "NONE",
+  "raw_responses_recorded": false,
+  "isolated_principal_fixture": "User.enabled toggled only for c retained-session negative test; restored in finally, original modified field retained; no role/grant changes"
+}

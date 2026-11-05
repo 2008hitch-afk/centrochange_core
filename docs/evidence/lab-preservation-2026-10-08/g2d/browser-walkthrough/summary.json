@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "checks": [
+    "native login retains authentication, neutral Centro Change identity, no upstream logo/footer",
+    "accepted Agenda retained; readable detail, history/notes and no private-note managerial bypass",
+    "Direction operational Patients/availability/report/notifications/access management; active state and readable account selection",
+    "all nine Finance surfaces, no technical branding or Desk navigation",
+    "reports/audit/missing page desktop/mobile no document overflow or upstream branding",
+    "authorized native invoice print Italian/neutral, no Desk links; print media screenshot; no new print permission",
+    "public booking stale route reply cannot enable old slots; readable mobile form",
+    "logout returns neutral native login"
+  ],
+  "errors": [],
+  "owner_visual_acceptance": "REQUIRED",
+  "identity_approval": "OWNER_APPROVED_2026-10-08",
+  "mutations": "NONE"
+}

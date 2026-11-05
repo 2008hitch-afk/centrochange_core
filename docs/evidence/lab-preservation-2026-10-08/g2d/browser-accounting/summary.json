@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "checks": [
+    "native expense accounts translated while canonical selected account retained; cancelled invoice historical residue explicit",
+    "native docstatus rendered as Italian accounting states"
+  ],
+  "errors": [],
+  "mutations": "NONE"
+}

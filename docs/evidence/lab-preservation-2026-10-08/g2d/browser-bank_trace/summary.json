@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "checks": [
+    "reconciled movement retains Beta invoice, 60 EUR and subject; no misleading empty list or second-match action"
+  ],
+  "errors": []
+}

@@ -1,0 +1,5 @@
+{
+  "source_commit": "ee0573a42d631d97ccd5a77567ae3961de6a926c",
+  "image": "centrochange-m97:issue97-guards-v3",
+  "git_archive": true
+}

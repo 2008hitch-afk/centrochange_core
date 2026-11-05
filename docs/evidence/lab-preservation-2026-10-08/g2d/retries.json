@@ -1,0 +1,22 @@
+[
+  {
+    "suite": "security-retest",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/security-retest.log"
+  },
+  {
+    "suite": "public-retest",
+    "status": "PASS",
+    "log": "<G2D_EVIDENCE>/public-retest.log"
+  },
+  {
+    "suite": "finance-browser-retest",
+    "status": "FAIL",
+    "log": "<G2D_EVIDENCE>/finance-browser-retest.log"
+  },
+  {
+    "suite": "threshold-browser-retest",
+    "status": "FAIL",
+    "log": "<G2D_EVIDENCE>/threshold-browser-retest.log"
+  }
+]
