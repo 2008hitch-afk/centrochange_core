@@ -110,6 +110,12 @@ def patient_ts_history(center, name):
              'after': frappe.parse_json(row.after_state or '{}').get('preference', '')} for row in events]
 
 
+@frappe.whitelist(methods=['GET'])
+def patient_creation_options(center):
+    manager(center)
+    return {'genders': frappe.get_all('Gender', pluck='name', order_by='name')}
+
+
 
 @frappe.whitelist(methods=['GET'])
 def practitioners(center, limit=50, offset=0, search=''):

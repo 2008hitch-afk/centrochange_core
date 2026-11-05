@@ -176,6 +176,30 @@ const boot = { center: 'CENTRO-A', centers: [{ name: 'CENTRO-A', branch: 'Centro
 const financeBoot = { center: 'CENTRO-A', centers: boot.centers, can_write: true, is_manager: true, customers: [], suppliers: [], accounts: [{ name: 'EXP-001', root_type: 'Expense', is_group: 0, disabled: 0 }, { name: 'TAX-001', account_type: 'Tax', is_group: 0, disabled: 0 }], practitioners: boot.practitioners, items: [{ name: 'ITEM-001', item_name: 'Prima visita', is_purchase_item: 1, disabled: 0, is_stock_item: 0 }], assignees: [], simulation_only: true, fiscal_verified: false }
 const appointment = { name: 'APP-001', patient: 'PAT-001', patient_name: 'Paziente Sintetico', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', cc_center: 'CENTRO-A', appointment_date: today, appointment_time: '09:00:00', duration: 60, status: 'Open', cc_closure_state: 'Pending', cc_economic_state: 'Due', cc_paid: 0, cc_performed: 0, cc_service_label: 'Prima visita', cc_price_snapshot: 80, cc_currency_snapshot: 'EUR' }
 
+test('Nuovo paziente usa il servizio controllato e apre la scheda', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_creation_options*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { genders: ['Female'] } }) }))
+  let payload: Record<string, unknown> | undefined
+  await page.route('**/api/method/centrochange_core.operations.workspace.create_patient', route => {
+    payload = route.request().postDataJSON()
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { name: 'PAT-001', replay: false } }) })
+  })
+  await page.goto('./#Pazienti')
+  await page.getByRole('button', { name: 'Nuovo paziente' }).click()
+  const form = page.getByRole('dialog', { name: 'Nuovo paziente' })
+  await form.getByLabel(/^Nome/).fill('SYNTHETIC Test')
+  await form.getByLabel('Cognome').fill('Prova')
+  await form.getByLabel('Sesso anagrafico').selectOption('Female')
+  await form.getByLabel('Identificativo sintetico').fill('SYNTHETIC-TEST-001')
+  await form.getByLabel('Email').fill('test@example.invalid')
+  await form.getByLabel('Telefono').fill('000123')
+  await form.getByLabel('Cellulare').fill('000456')
+  await form.getByLabel('Motivo').fill('Prova sintetica')
+  await form.getByRole('button', { name: 'Crea paziente' }).click()
+  await expect(page.locator('.patient-detail-page')).toBeVisible()
+  expect(payload).toMatchObject({ center: 'CENTRO-A', first_name: 'SYNTHETIC Test', uid: 'SYNTHETIC-TEST-001', phone: '000123', mobile: '000456', practitioner: null })
+})
+
 test('AUDIT-04 scheda paziente: profilo autorizzato, note e storico', async ({ page }, info) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)
@@ -536,6 +560,8 @@ async function openSection(page: Page, name: string) {
 }
 
 const archiveCases = [
+  { group: 'Anagrafiche', label: 'Pazienti', first: 'Nome e cognome', sample: 'Persona di prova', fields: { 'Email': 'persona@example.invalid' } },
+  { group: 'Anagrafiche', label: 'Professionisti', first: 'Nome professionista', sample: 'Dott. Verdi', fields: { 'Specializzazione': 'Psicologia' } },
   { group: 'Catalogo', label: 'Articoli', first: 'Nome articolo', sample: 'Colloquio di prova', fields: { 'Categoria': 'Servizi' } },
   { group: 'Catalogo', label: 'Tariffe', first: 'Articolo', sample: 'ITEM-001', fields: { 'Listino': 'Listino Centro', 'Importo EUR': '90', 'Valida dal': today } },
   { group: 'Catalogo', label: 'Tipi seduta', first: 'Tipo seduta', sample: 'Colloquio di prova', fields: { 'Durata in minuti': '50' } },
@@ -578,20 +604,20 @@ test('archivio: ricerca, validazione, errore e accesso per ruolo', async ({ page
   await mockApi(page)
   await page.goto('./')
   await openSection(page, 'Archivi')
-  await page.getByRole('searchbox', { name: 'Cerca in articoli' }).fill('nessun risultato')
+  await page.getByRole('searchbox', { name: 'Cerca in pazienti' }).fill('nessun risultato')
   await expect(page.getByText('Nessuna scheda trovata')).toBeVisible()
-  await page.getByRole('searchbox', { name: 'Cerca in articoli' }).fill('')
+  await page.getByRole('searchbox', { name: 'Cerca in pazienti' }).fill('')
   await page.getByRole('button', { name: 'Nuova scheda' }).click()
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Chiudi' })).toBeFocused()
   await page.keyboard.press('Shift+Tab')
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Rivedi modifica di prova' })).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Chiudi' })).toBeFocused()
-  await page.getByRole('dialog').getByLabel('Nome articolo').fill('')
+  await page.getByRole('dialog').getByLabel('Email').fill('non-valida')
   await page.getByRole('dialog').getByRole('button', { name: 'Rivedi modifica di prova' }).click()
   await expect(page.getByRole('dialog', { name: 'Conferma modifica di prova' })).toHaveCount(0)
-  await page.getByRole('dialog').getByLabel('Nome articolo').fill('Articolo errore')
-  await page.getByRole('dialog').getByLabel('Categoria').fill('Servizi')
+  await page.getByRole('dialog').getByLabel('Nome e cognome').fill('Persona errore')
+  await page.getByRole('dialog').getByLabel('Email').fill('ok@example.invalid')
   await page.evaluate(() => sessionStorage.setItem('cc-synthetic-fail', '1'))
   await page.getByRole('dialog').getByRole('button', { name: 'Rivedi modifica di prova' }).click()
   await page.getByRole('button', { name: 'Conferma nella preview' }).click()

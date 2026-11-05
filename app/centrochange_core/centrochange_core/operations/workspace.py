@@ -286,29 +286,35 @@ def schedules(center):
 
 
 @frappe.whitelist(methods=['POST'])
-def create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name=None,email=None):
+def create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name=None,email=None,mobile=None,phone=None):
     # Reuse the central native Patient and assignment services; no clinical master is added.
     from centrochange_core.security.audit import atomic
-    return atomic(_create_patient)(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email)
+    return atomic(_create_patient)(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email,mobile,phone)
 
 
-def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email):
+def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email,mobile=None,phone=None):
     from hashlib import sha256
     from centrochange_core.security.audit import append,internal_write,serialize
     from centrochange_core.security.lifecycle import lock,set_assignment
     from centrochange_core.security.guards import require_operations
     from centrochange_core.finance.guards import require_synthetic
     lock();require_operations(center);require_synthetic()
+    if frappe.db.get_single_value('Healthcare Settings', 'send_registration_msg'):
+        frappe.throw('Creazione demo sospesa: la notifica SMS di registrazione è attiva.')
+    supplied_mobile = mobile is not None
+    supplied_phone = phone is not None
     first_name=str(first_name or '').strip();last_name=str(last_name or '').strip();uid=str(uid or '').strip();email=str(email or '').strip().lower() or None
+    mobile=str(mobile or '').strip();phone=str(phone or '').strip()
     if not first_name.startswith(('SYNTHETIC','CC-HTTP-')) or not uid.startswith(('SYNTHETIC-','CC-HTTP-')):
         frappe.throw('Nel DEV sono ammesse solo identità esplicitamente sintetiche.')
-    if len(first_name)>140 or len(last_name)>140 or len(uid)>140 or not frappe.db.exists('Gender',sex):
+    if len(first_name)>140 or len(last_name)>140 or len(uid)>140 or len(mobile)>140 or len(phone)>140 or not frappe.db.exists('Gender',sex):
         frappe.throw('Compila i dati identificativi nei limiti previsti e seleziona un sesso valido.')
     if email and (not email.endswith('@example.invalid') or len(email)>140 or not frappe.utils.validate_email_address(email)):
         frappe.throw('È consentita solo una email demo valida del dominio example.invalid.')
     if not request_key or len(request_key)>160:frappe.throw('Indica un identificativo valido per la creazione del paziente.')
     key=sha256(serialize([frappe.session.user,center,request_key]).encode()).hexdigest()
-    payload={'center':center,'first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,'email':email,'practitioner':practitioner}
+    payload={'center':center,'first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,'email':email,'practitioner':practitioner,
+             **({'mobile': mobile} if supplied_mobile else {}), **({'phone': phone} if supplied_phone else {})}
     digest=sha256(serialize(payload).encode()).hexdigest()
     old=frappe.db.get_value('Patient',{'cc_intake_key':key},['name','cc_intake_hash'],as_dict=True,for_update=True)
     if old:
@@ -319,7 +325,7 @@ def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,la
     if frappe.db.exists('Patient',{'uid':uid}):
         frappe.throw('L’identità esiste già: cerca l’UID esatto e assegna esplicitamente il paziente.')
     with internal_write('cc_patient_intake_write'):
-        doc=frappe.get_doc({'doctype':'Patient','first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,'email':email,
+        doc=frappe.get_doc({'doctype':'Patient','first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,'email':email,'mobile':mobile,'phone':phone,
             'invite_user':0,'cc_intake_key':key,'cc_intake_hash':digest}).insert(ignore_permissions=True)
     set_assignment(doc.name,center,practitioner,1,reason)
     append('PATIENT_INTAKE_CREATED','Patient',doc.name,None,{'center':center,'payload_hash':digest},reason)

@@ -70,14 +70,39 @@ async function openArchives(page: Page) {
   await expect(page.getByRole('heading', { name: 'Archivi' })).toBeVisible()
 }
 
-test('Archivi mantiene catalogo e finanza senza duplicare le anagrafiche operative', async ({ page }) => {
+test('anagrafica sintetica: il nome in elenco e dettaglio non diventa alias cliente', async ({ page }) => {
   await mock(page, [])
+  const row = { name: 'PAT-SYNTH', patient_name: 'CC-HTTP-AbCd123456 Beta', first_name: 'CC-HTTP-AbCd123456 Beta', last_name: '', email: '', modified: 'v1' }
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { ...boot, demo_labels: { [row.first_name]: 'Cliente 3' } } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.patients*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [row], has_more: false } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: row }) }))
   await openArchives(page)
-  const nav = page.getByRole('navigation', { name: 'Tipi di archivio' })
-  await expect(nav.getByRole('button', { name: 'Pazienti', exact: true })).toHaveCount(0)
-  await expect(nav.getByRole('button', { name: 'Professionisti', exact: true })).toHaveCount(0)
-  await expect(nav.getByRole('button', { name: 'Articoli', exact: true })).toBeVisible()
-  await expect(nav.getByRole('button', { name: 'Fatture pazienti', exact: true })).toBeVisible()
+  const list = page.locator('.archive-panel tbody')
+  await expect(list).toContainText('Dato di prova BETA')
+  await expect(list).not.toContainText('Cliente 3')
+  await list.locator('tr').first().click()
+  await expect(page.locator('.archive-detail-page')).toContainText('Dato di prova BETA')
+})
+
+test('AUDIT-05: archivio professionisti usa alias solo in lettura, editor mantiene il dato canonico', async ({ page }, info) => {
+  await mock(page, [])
+  const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', last_name: '', status: 'Active' }
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioners*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { rows: [row], has_more: false } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route =>
+    route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: row }) }))
+  await openArchives(page)
+  await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name: 'Professionisti', exact: true }).click()
+  await expect(page.locator('tbody')).toContainText('Professionista di prova A')
+  await expect(page.locator('tbody')).not.toContainText('CC-HTTP-AbCd123456 a')
+  await page.locator('tbody tr').click()
+  const drawer = page.locator('.archive-detail-page')
+  await expect(drawer.getByRole('heading', { name: 'Dettaglio' })).toBeVisible()
+  await expect(drawer.getByRole('heading', { name: 'Professionista di prova A' })).toHaveCount(1)
+  await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
+  await page.screenshot({ path: info.outputPath(`professionisti-archivio-${info.project.name}.png`), fullPage: true })
+  await drawer.getByRole('button', { name: 'Modifica scheda' }).click()
+  await expect(page.locator('.archive-edit').getByRole('textbox', { name: /^Nome/ })).toHaveValue('')
 })
 
 test('regressioni DECISION-064: Agenda unica e intervallo pagamenti ammesso', async ({ page }) => {
@@ -149,11 +174,11 @@ test('anteprima scorrevole e riferimento operazione integro', async ({ page }) =
   await expect(page.locator('.archive-detail-page')).toContainText('CC-HTTP-UAT0000001-ref')
 })
 
-test('API catalogo: 9 liste, dettaglio, salvataggio con CSRF e anteprima stampa', async ({ page }, testInfo) => {
+test('API catalogo: 11 liste, dettaglio, salvataggio con CSRF e anteprima stampa', async ({ page }, testInfo) => {
   const writes: Write[] = []
   await mock(page, writes)
   await openArchives(page)
-  for (const name of ['Articoli', 'Tariffe', 'Tipi seduta', 'Servizi del centro', 'Modelli pacchetto', 'Fatture pazienti', 'Fatture professionisti', 'Pagamenti', 'Movimenti bancari']) {
+  for (const name of ['Pazienti', 'Professionisti', 'Articoli', 'Tariffe', 'Tipi seduta', 'Servizi del centro', 'Modelli pacchetto', 'Fatture pazienti', 'Fatture professionisti', 'Pagamenti', 'Movimenti bancari']) {
     await page.getByRole('navigation', { name: 'Tipi di archivio' }).getByRole('button', { name, exact: true }).click()
     await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
     await page.locator('.archive-panel tbody tr').first().click()
@@ -224,11 +249,16 @@ for (const task of [
   expect(writes[0].method).toContain(task.method)
 })
 
-test('API scoped: professionista non ha accesso agli archivi amministrativi', async ({ page }) => {
+test('API scoped: professionista vede solo profilo, nessuna scrittura o finanza', async ({ page }) => {
   const writes: Write[] = []
   await mock(page, writes, 'CC Professional')
-  await page.goto('./#Archivi')
-  await expect(page.getByRole('button', { name: 'Archivi', exact: true })).toHaveCount(0)
+  await openArchives(page)
+  const nav = page.getByRole('navigation', { name: 'Tipi di archivio' })
+  await expect(nav.getByRole('button', { name: 'Articoli' })).toHaveCount(0)
+  await expect(nav.getByRole('button', { name: 'Pagamenti' })).toHaveCount(0)
+  await nav.getByRole('button', { name: 'Professionisti' }).click()
+  await page.locator('.archive-panel tbody tr').first().click()
+  await expect(page.getByRole('button', { name: 'Modifica scheda' })).toHaveCount(0)
   expect(writes).toEqual([])
 })
 
@@ -268,6 +298,8 @@ test('API scoped: validazione e 403 non confermano una modifica', async ({ page 
 })
 
 for (const task of [
+  { section: 'Pazienti', field: 'Nome', value: 'Persona aggiornata', method: 'operations.profiles.patient_save' },
+  { section: 'Professionisti', field: 'Nome', value: 'Professionista aggiornata', method: 'operations.profiles.practitioner_save' },
   { section: 'Tariffe', field: 'Tariffa', value: '92', method: 'catalog.price_save' },
   { section: 'Tipi seduta', field: 'Durata (min)', value: '50', method: 'catalog.appointment_type_save' },
   { section: 'Servizi del centro', field: 'Stato', value: '0', method: 'catalog.service_save' },
@@ -344,21 +376,21 @@ test('API scoped: archivi finanziari paginazione server-side oltre 500 record e 
 
 test('ricerca server-side mantiene un risultato trovato per codice anche se il nome visibile è diverso', async ({ page }) => {
   await mock(page, [])
-  await page.route('**/api/method/centrochange_core.operations.workspace.patient_search*', async route => {
-    const query = new URL(route.request().url()).searchParams.get('query') ?? ''
+  await page.route('**/api/method/centrochange_core.operations.profiles.patients*', async route => {
+    const query = new URL(route.request().url()).searchParams.get('search') ?? ''
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ message: {
-        patients: query === 'PAT-REMOTE-520' ? [{ name: 'PAT-REMOTE-520', patient_name: 'Mario Rossi', first_name: 'Mario', last_name: 'Rossi', modified: 'v1' }] : [],
-        truncated: false
+        rows: query === 'PAT-REMOTE-520' ? [{ name: 'PAT-REMOTE-520', patient_name: 'Mario Rossi', first_name: 'Mario', last_name: 'Rossi', modified: 'v1' }] : [],
+        has_more: false
       } })
     })
   })
-  await page.goto('./#Pazienti')
-  await page.getByLabel('Cerca pazienti').fill('PAT-REMOTE-520')
-  await expect(page.locator('tbody tr')).toHaveCount(1)
-  await expect(page.locator('tbody tr').first()).toContainText('Mario Rossi')
+  await openArchives(page)
+  await page.getByLabel('Cerca in pazienti').fill('PAT-REMOTE-520')
+  await expect(page.locator('.archive-panel tbody tr')).toHaveCount(1)
+  await expect(page.locator('.archive-panel tbody tr').first()).toContainText('Mario Rossi')
 })
 
 test('GOAL-75: scheda Paziente usa pagina e schede, conserva il collegamento e ritorna alla ricerca', async ({ page }, info) => {
@@ -475,14 +507,23 @@ test('GOAL75: registro distingue note e motivi automatici preservando il testo l
   await expect(detail).toContainText('ORGANIZATIONAL_NOTE_CREATED')
 })
 
-test('Professionista: modifica operativa senza passare da Archivi', async ({ page }) => {
+test('GOAL75: collegamento canonico dal profilo alla scheda archivio, senza overlay', async ({ page }, info) => {
   await mock(page, [])
   await page.goto('./?practitioner=PR-001#Professionisti')
-  await expect(page.getByRole('link', { name: 'Modifica professionista negli Archivi' })).toHaveCount(0)
-  await page.getByRole('button', { name: 'Modifica professionista' }).click()
-  await expect(page.getByRole('textbox', { name: /^Nome/ })).toHaveValue('Professionista')
-  await expect(page.getByRole('textbox', { name: 'Cognome', exact: true })).toHaveValue('Sintetico')
-  await expect(page.getByLabel('Motivo della modifica')).toBeVisible()
+  const link = page.getByRole('link', { name: 'Modifica professionista negli Archivi' })
+  await expect(link).toBeVisible()
+  await link.click()
+  await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
+  await page.getByRole('button', { name: 'Modifica scheda' }).click()
+  await expect(page.locator('.archive-edit')).toBeVisible()
+  await expect(page.locator('.archive-edit h2')).toBeFocused()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.screenshot({ path: info.outputPath(`archivio-edit-${info.project.name}.png`), fullPage: true })
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.archive-edit')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Modifica scheda' })).toBeFocused()
+  await page.getByRole('button', { name: 'Torna agli archivi' }).click()
+  await expect(page.getByRole('navigation', { name: 'Tipi di archivio' })).toBeVisible()
 })
 
 test('GOAL75: movimento bancario deep link usa la proiezione autorizzata anche oltre la prima pagina', async ({ page }) => {
@@ -541,13 +582,13 @@ test('GOAL75: collegamento anagrafico conserva la sede scelta', async ({ page })
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { name: 'PR-001', practitioner_name: 'Professionista Sintetico', first_name: 'Professionista', last_name: 'Sintetico', status: 'Active', modified: 'v1' } }) })
   })
   await page.goto('./?center=CENTRO-B&practitioner=PR-001#Professionisti')
-  await page.getByRole('button', { name: 'Modifica professionista' }).click()
-  await expect(page.locator('.professional-detail-page')).toContainText('Professionista Sintetico')
+  await page.getByRole('link', { name: 'Modifica professionista negli Archivi' }).click()
+  await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
   expect(new URL(page.url()).searchParams.get('center')).toBe('CENTRO-B')
-  expect(detailCenters.length).toBeGreaterThanOrEqual(1)
+  expect(detailCenters.length).toBeGreaterThanOrEqual(2)
   expect(detailCenters.every(value => value === 'CENTRO-B')).toBe(true)
   await page.reload()
-  await expect(page.locator('.professional-detail-page')).toContainText('Professionista Sintetico')
+  await expect(page.locator('.archive-detail-page')).toContainText('Professionista Sintetico')
   expect(detailCenters.every(value => value === 'CENTRO-B')).toBe(true)
 })
 

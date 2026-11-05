@@ -9,6 +9,8 @@ type ArchiveKind = 'Sales Invoice' | 'Purchase Invoice' | 'Payment Entry' | 'Ban
 type Definition = { kind: ArchiveKind; label: string; group: string; id: string; fields: ArchiveField[] }
 
 const definitions: Definition[] = [
+  { kind: 'Patient', label: 'Pazienti', group: 'Anagrafiche', id: 'PAT', fields: [{ key: 'patient_name', label: 'Nome e cognome', required: true }, { key: 'email', label: 'Email', type: 'email' }, { key: 'phone', label: 'Telefono' }] },
+  { kind: 'Healthcare Practitioner', label: 'Professionisti', group: 'Anagrafiche', id: 'PR', fields: [{ key: 'practitioner_name', label: 'Nome professionista', required: true }, { key: 'specialty', label: 'Specializzazione' }, { key: 'email', label: 'Email', type: 'email' }] },
   { kind: 'Item', label: 'Articoli', group: 'Catalogo', id: 'ITEM', fields: [{ key: 'item_name', label: 'Nome articolo', required: true }, { key: 'item_group', label: 'Categoria', required: true }, { key: 'disabled', label: 'Stato', type: 'select', options: ['Attivo', 'Disattivato'] }] },
   { kind: 'Item Price', label: 'Tariffe', group: 'Catalogo', id: 'PRICE', fields: [{ key: 'item_code', label: 'Articolo', required: true }, { key: 'price_list', label: 'Listino', required: true }, { key: 'price_list_rate', label: 'Importo EUR', type: 'number', required: true, min: 0 }, { key: 'valid_from', label: 'Valida dal', type: 'date', required: true }] },
   { kind: 'Appointment Type', label: 'Tipi seduta', group: 'Catalogo', id: 'TYPE', fields: [{ key: 'appointment_type', label: 'Tipo seduta', required: true }, { key: 'duration', label: 'Durata in minuti', type: 'number', required: true, min: 1 }] },
@@ -42,7 +44,7 @@ const labelFor = (definition: Definition, row: Row) => String(row[definition.fie
 
 /** Only active in Vite development with VITE_CC_SYNTHETIC_UI=1. Never calls Frappe or persists. */
 export function MasterArchive({ boot, financeBoot, center }: { boot: Boot; financeBoot: FinanceBoot | null; center: string }) {
-  const [kind, setKind] = useState<ArchiveKind>('Item')
+  const [kind, setKind] = useState<ArchiveKind>('Patient')
   const [records, setRecords] = useState(seed)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Row | null>(null)

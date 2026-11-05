@@ -11,6 +11,8 @@ type FieldSpec = { key: string; label: string; edit?: boolean; required?: boolea
 type Spec = { kind: ArchiveKind; label: string; group: string; fields: FieldSpec[] }
 const status: FieldSpec = { key: 'enabled', label: 'Stato', edit: true, kind: 'select', values: [{ value: '1', label: 'Attivo' }, { value: '0', label: 'Disattivato' }] }
 const specs: Spec[] = [
+  { kind: 'Patient', label: 'Pazienti', group: 'Anagrafiche', fields: [{ key: 'patient_name', label: 'Paziente' }, { key: 'first_name', label: 'Nome', edit: true, required: true }, { key: 'last_name', label: 'Cognome', edit: true }, { key: 'email', label: 'Email', edit: true, kind: 'email' }] },
+  { kind: 'Healthcare Practitioner', label: 'Professionisti', group: 'Anagrafiche', fields: [{ key: 'practitioner_name', label: 'Professionista' }, { key: 'first_name', label: 'Nome', edit: true, required: true }, { key: 'last_name', label: 'Cognome', edit: true }, { key: 'status', label: 'Stato' }] },
   { kind: 'Item', label: 'Articoli', group: 'Catalogo', fields: [{ key: 'item_name', label: 'Articolo', edit: true, required: true }, { key: 'item_group', label: 'Gruppo' }, { key: 'stock_uom', label: 'Unità' }, { key: 'disabled', label: 'Stato' }] },
   { kind: 'Item Price', label: 'Tariffe', group: 'Catalogo', fields: [{ key: 'item_code', label: 'Articolo' }, { key: 'price_list', label: 'Listino' }, { key: 'price_list_rate', label: 'Tariffa', edit: true, required: true, kind: 'number' }, { key: 'currency', label: 'Valuta' }, { key: 'valid_from', label: 'Valida dal' }] },
   { kind: 'Appointment Type', label: 'Tipi seduta', group: 'Catalogo', fields: [{ key: 'appointment_type', label: 'Tipo seduta' }, { key: 'default_duration', label: 'Durata (min)', edit: true, required: true, kind: 'number' }, { key: 'cc_service_item', label: 'Articolo' }] },
@@ -74,7 +76,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   const [kind, setKind] = useState<ArchiveKind>(() => {
     const params = new URLSearchParams(location.search)
     const requested = params.get('archive_kind')
-    return visible.find(item => item.kind === requested)?.kind ?? visible[0]?.kind ?? 'Sales Invoice'
+    return visible.find(item => item.kind === requested)?.kind ?? (params.get('archive') === 'practitioner' && boot?.roles.includes('CC Manager') ? 'Healthcare Practitioner' : boot ? 'Patient' : 'Sales Invoice')
   })
   const [rows, setRows] = useState<ArchiveRecord[]>([])
   const [loadedKey, setLoadedKey] = useState('')
@@ -224,7 +226,7 @@ export function ScopedArchive({ boot, financeBoot, center }: { boot: Boot | null
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const id = params.get('archive_record')
-    const requested = params.get('archive_kind') ?? ''
+    const requested = params.get('archive_kind') ?? (params.get('archive') === 'practitioner' && manager ? 'Healthcare Practitioner' : '')
     if (!id || requested !== kind || !visible.some(item => item.kind === kind)) return
     void open({ name: id } as ArchiveRecord, false)
   }, [center, manager, kind])
