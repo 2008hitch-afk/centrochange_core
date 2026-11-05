@@ -1,5 +1,12 @@
 # Centro Change Core
 
+## PRECEDENZA OWNER 06/11/2026 — NUOVO PROFESSIONISTA COMPLETAMENTE ATTIVO
+
+**Decisione vigente, successiva al checkpoint del 05/11:** dalla UI **Professionisti** l'**Amministratore/Manager Full Permission** (anche la segretaria) crea **e attiva in un solo flusso** un nuovo professionista e il suo account Frappe personale. Risultato operativo: `User.enabled=1`, ruolo `CC Professional`, appartenenza al centro attiva, `Healthcare Practitioner` attivo e collegato, permessi riconciliati, onboarding delle credenziali sicuro. Il modello «crea nuovo account inattivo e richiedi ulteriore autorizzazione Owner per attivarlo» è **revocato / NON CONFORME**. Il Manager autorizzato può anche disattivare e riattivare dall'interfaccia Professionisti. Nessuna approvazione Owner per ogni nuovo professionista **dopo la consegna**; restano separati i gate Owner di deploy e le credenziali/dati reali iniziali forniti prima della consegna. Sviluppo attuale: **solo utenti sintetici, no inviti reali**. PR [#203: correzione richiesta](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943); codice ancora da aggiornare e verificare, nessuna nuova accettazione.
+
+---
+
+
 ## PRIMA DI PROCEDERE — STATO VIGENTE 05/11/2026
 <!-- OWNER_CURRENT_2026_11_05 -->
 
