@@ -36,7 +36,7 @@ class PractitionerCenterGuardTest(unittest.TestCase):
 
     def test_accountless_direct_scope_does_not_grant_other_center(self):
         doc = types.SimpleNamespace(user_id=None, get=lambda key: 'A' if key == 'cc_profile_center' else None)
-        self.assertTrue(self.guards.practitioner_in_center(doc, 'A'))
+        self.assertFalse(self.guards.practitioner_in_center(doc, 'A'))
         self.assertFalse(self.guards.practitioner_in_center(doc, 'B'))
 
     def test_disabled_linked_user_does_not_bypass_guard(self):

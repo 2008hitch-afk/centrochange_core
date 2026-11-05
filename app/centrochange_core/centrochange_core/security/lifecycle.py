@@ -145,6 +145,8 @@ def set_practitioner_state(practitioner, active, reason):
 	if active not in (0, 1) or doc.user_id in ("Guest", "Administrator"):
 		frappe.throw("Serve un account operativo valido e collegato.")
 	if not doc.user_id:
+		if active:
+			frappe.throw('Per attivare il professionista collega prima un account personale abilitato.', frappe.PermissionError)
 		if not doc.get('cc_profile_center'):
 			frappe.throw('Serve un centro anagrafico autorizzato.')
 		before = {'status': doc.status, 'enabled': None}
@@ -158,6 +160,10 @@ def set_practitioner_state(practitioner, active, reason):
 	user = frappe.get_doc("User", doc.user_id, for_update=True)
 	if "CC Professional" not in roles(user.name):
 		frappe.throw("L’account non appartiene a un professionista Centro Change.")
+	if active and not user.enabled:
+		frappe.throw("L'account personale non è abilitato: occorre la prevista autorizzazione prima dell'attivazione.", frappe.PermissionError)
+	if active and doc.get('cc_profile_center') and not frappe.db.exists('CC Center Membership', {'user':user.name, 'center':doc.get('cc_profile_center'), 'active':1}):
+		frappe.throw('L’account personale non è autorizzato per il centro.', frappe.PermissionError)
 	before = {"status": doc.status, "enabled": user.enabled}
 	after = {"status": "Active" if active else "Disabled", "enabled": active}
 	if before == after:

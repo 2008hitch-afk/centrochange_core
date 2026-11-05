@@ -109,8 +109,8 @@ def practitioner_names_for_center(center):
 
 def practitioner_in_center(doc, center):
 	if doc.user_id:
-		return bool(enabled(doc.user_id) and (doc.get('cc_profile_center') == center or center in centers(doc.user_id)))
-	return bool(doc.get('cc_profile_center') == center)
+		return bool(enabled(doc.user_id) and center in centers(doc.user_id))
+	return False
 
 
 def roles(user=None):

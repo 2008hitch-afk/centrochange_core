@@ -51,6 +51,8 @@ class PractitionerMixin:
 			require_manager()
 		elif (previous.user_id != self.user_id or previous.status != self.status) and not frappe.flags.get("cc_permission_write"):
 			frappe.throw("Le modifiche allo stato del professionista richiedono il servizio autorizzato.", frappe.PermissionError)
+		if self.status == "Active" and not self.user_id:
+			frappe.throw("Un professionista attivo richiede un account personale abilitato.")
 		if self.user_id and (not enabled(self.user_id) and self.status == "Active"):
 			frappe.throw("Un professionista attivo richiede un account abilitato.")
 		super().validate()

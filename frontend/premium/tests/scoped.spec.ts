@@ -569,26 +569,28 @@ test('GOAL75: cronologia mantiene sincronizzata la sede con la URL', async ({ pa
   await expect(selector).toHaveValue('CENTRO-A')
 })
 
-test('Nuovo professionista: creazione nel centro senza account', async ({ page }) => {
+test('Nuovo professionista: creazione con account personale autorizzato', async ({ page }) => {
   await mock(page, [])
   let payload: Record<string, unknown> | undefined
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_access_candidates*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: [{name:'professionista@example.invalid', label:'Professionista Prova'}] }) }))
   await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_create', route => {
     payload = route.request().postDataJSON()
     return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { name: 'PR-NEW', modified: 'v1' } }) })
   })
-  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { name: 'PR-NEW', practitioner_name: 'Professionista Prova', first_name: 'Professionista', last_name: 'Prova', status: 'Active', user_id: null, email_id: 'professionista@example.invalid', modified: 'v1' } }) }))
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: { name: 'PR-NEW', practitioner_name: 'Professionista Prova', first_name: 'Professionista', last_name: 'Prova', status: 'Active', user_id: 'professionista@example.invalid', email_id: 'professionista@example.invalid', modified: 'v1' } }) }))
   await page.goto('./#Professionisti')
   await page.getByRole('button', { name: 'Nuovo professionista' }).click()
   const form = page.getByRole('dialog', { name: 'Nuovo professionista' })
   await form.getByLabel(/^Nome/).fill('Professionista')
   await form.getByLabel('Cognome').fill('Prova')
   await form.getByLabel('Email').fill('professionista@example.invalid')
+  await form.getByLabel('Account personale').selectOption('professionista@example.invalid')
   await form.getByLabel('Cellulare').fill('000123')
   await form.getByLabel('Motivo').fill('Prova sintetica')
   await form.getByRole('button', { name: 'Crea professionista' }).click()
-  await expect(page.getByText('Accesso personale non attivato')).toBeVisible()
+  await expect(page.getByText('Accesso personale collegato')).toBeVisible()
   expect(payload).toMatchObject({ center, first_name:'Professionista', last_name:'Prova', email:'professionista@example.invalid', mobile_phone:'000123' })
-  expect(payload).not.toHaveProperty('user_id')
+  expect(payload).toHaveProperty('user', 'professionista@example.invalid')
 })
 
 test('Professionista: modifica precompilata e auditata dal profilo', async ({ page }) => {
