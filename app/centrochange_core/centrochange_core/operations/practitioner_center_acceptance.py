@@ -83,14 +83,27 @@ def run():
         assert frappe.db.get_value('User', pending_doc.user_id, 'enabled')
         assert frappe.db.exists('CC Center Membership', {'user':pending_doc.user_id, 'center':center, 'active':1})
         assert practitioner_in_center(pending_doc, center)
+        acl = {'user':pending_doc.user_id, 'allow':'Healthcare Practitioner', 'for_value':pending_doc.name}
+        assert frappe.db.exists('User Permission', acl)
         profiles.practitioner_set_state(center, pending_doc.name, 0, str(pending_doc.modified), 'Synthetic disable')
         pending_doc.reload()
         assert not frappe.db.get_value('User', pending_doc.user_id, 'enabled')
+        assert not frappe.db.exists('User Permission', acl)
         assert not _get_user_for_update_password(token, None).get('user')
         profiles.practitioner_set_state(center, pending_doc.name, 1, str(pending_doc.modified), 'Synthetic reactivation')
         pending_doc.reload()
         assert pending_doc.status == 'Active' and frappe.db.get_value('User', pending_doc.user_id, 'enabled')
+        assert frappe.db.exists('User Permission', acl)
         assert set(frappe.get_roles(pending_doc.user_id)) <= {'CC Professional','All','Guest','Desk User'}
+        from centrochange_core.security.lifecycle import replace_principal
+        for forbidden in (elevated, user, other_user):
+            try:
+                replace_principal(pending_doc.name, forbidden, 'Synthetic forbidden association')
+            except (frappe.PermissionError, frappe.ValidationError):
+                pass
+            else:
+                raise AssertionError('Direct association bypassed role, identity or center checks')
+        assert frappe.db.get_value('Healthcare Practitioner', pending_doc.name, 'user_id') == pending_args['email']
         from unittest.mock import patch
         frappe.in_test = False
         callback_count = len(frappe.db.after_commit._functions)
