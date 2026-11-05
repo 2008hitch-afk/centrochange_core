@@ -197,8 +197,6 @@ def practitioner_save(center, name, first_name, last_name, expected_version, req
         from centrochange_core.security.audit import append
         linked = frappe.get_all('Dynamic Link', filters={'parenttype':'Contact', 'link_doctype':'Healthcare Practitioner', 'link_name':doc.name}, pluck='parent')
         contact = frappe.get_doc('Contact', doc.practitioner_primary_contact, for_update=True) if doc.practitioner_primary_contact else None
-        if not contact and linked:
-            frappe.throw('Esiste già un contatto collegato: verifica il contatto principale prima di modificarlo.')
         if contact and str(contact.modified) != str(contact_version or ''):
             frappe.throw('Il contatto è stato modificato da un altro utente. Ricarica la scheda e riprova.')
         if not contact and contact_version:
@@ -206,6 +204,8 @@ def practitioner_save(center, name, first_name, last_name, expected_version, req
         old = (contact.email_id or '').strip().lower() if contact else ''
         if old == email:
             return
+        if not contact and linked:
+            frappe.throw('Esiste già un contatto collegato: verifica il contatto principale prima di modificarlo.')
         if contact:
             contact.check_permission('write')
             if {(row.link_doctype, row.link_name) for row in contact.links} != {('Healthcare Practitioner', doc.name)}:
