@@ -598,7 +598,7 @@ export function Patients({ boot, center, feedback, refreshBoot, financeBoot, onO
 }
 
 function NewProfessional({ center, onClose, onCreated }: { center: string; onClose: () => void; onCreated: (practitioner: Practitioner) => void }) {
-  const [draft, setDraft] = useState({ first_name: '', middle_name: '', last_name: '', email: '', user: '', mobile_phone: '', residence_phone: '', office_phone: '', practitioner_type: '', hospital: '', gender: '', department: '', designation: '', reason: '' })
+  const [draft, setDraft] = useState({ first_name: '', middle_name: '', last_name: '', email: '', user: '', account_mode: 'existing', mobile_phone: '', residence_phone: '', office_phone: '', practitioner_type: '', hospital: '', gender: '', department: '', designation: '', reason: '' })
   const [accounts, setAccounts] = useState<{name:string; label:string}[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -609,17 +609,17 @@ function NewProfessional({ center, onClose, onCreated }: { center: string; onClo
     event.preventDefault(); setBusy(true); setError('')
     try {
       const result = await ops<{ name: string }>('profiles.practitioner_create', { center, ...draft, request_key: key.current }, true)
-      onCreated({ name: result.name, practitioner_name: [draft.first_name, draft.last_name].filter(Boolean).join(' '), first_name: draft.first_name, last_name: draft.last_name, status: 'Active' })
+      onCreated({ name: result.name, practitioner_name: [draft.first_name, draft.last_name].filter(Boolean).join(' '), first_name: draft.first_name, last_name: draft.last_name, status: draft.account_mode === 'new' ? 'Disabled' : 'Active' })
     } catch (e) { setError(getError(e)) } finally { setBusy(false) }
   }
   return <Modal title="Nuovo professionista" onClose={onClose}><form onSubmit={event => void submit(event)}>
-    <p className="scope-note">Seleziona un account personale già abilitato e autorizzato per il centro. Nessun invito viene inviato.</p>
+    <p className="scope-note">Associa un account personale autorizzato oppure prepara un nuovo account inattivo. Nessun invito viene inviato.</p>
     <Field label="Nome" required><input required maxLength={140} value={draft.first_name} onChange={e => change('first_name', e.target.value)} /></Field>
     <Field label="Secondo nome"><input maxLength={140} value={draft.middle_name} onChange={e => change('middle_name', e.target.value)} /></Field>
     <Field label="Cognome" required><input required maxLength={140} value={draft.last_name} onChange={e => change('last_name', e.target.value)} /></Field>
     <Field label="Email" required><input required type="email" maxLength={140} value={draft.email} onChange={e => change('email', e.target.value)} /></Field>
-    <Field label="Account personale" required><select required value={draft.user} onChange={e => change('user', e.target.value)}><option value="">Seleziona</option>{accounts.map(account => <option key={account.name} value={account.name}>{account.label} — {account.name}</option>)}</select></Field>
-    {!accounts.length && <p className="scope-note">Non ci sono account personali disponibili e autorizzati per il centro.</p>}
+    <Field label="Gestione account" required><select value={draft.account_mode} onChange={e => change('account_mode', e.target.value)}><option value="existing">Associa account autorizzato</option><option value="new">Prepara nuovo account inattivo</option></select></Field>
+    {draft.account_mode === 'existing' ? <><Field label="Account personale" required><select required value={draft.user} onChange={e => change('user', e.target.value)}><option value="">Seleziona</option>{accounts.map(account => <option key={account.name} value={account.name}>{account.label} — {account.name}</option>)}</select></Field>{!accounts.length && <p className="scope-note">Non ci sono account personali disponibili e autorizzati per il centro.</p>}</> : <p className="scope-note">Il professionista resta non attivo: l’abilitazione richiede l’autorizzazione prevista.</p>}
     <Field label="Cellulare"><input type="tel" maxLength={140} value={draft.mobile_phone} onChange={e => change('mobile_phone', e.target.value)} /></Field>
     <Field label="Telefono"><input type="tel" maxLength={140} value={draft.residence_phone} onChange={e => change('residence_phone', e.target.value)} /></Field>
     <Field label="Telefono ufficio"><input type="tel" maxLength={140} value={draft.office_phone} onChange={e => change('office_phone', e.target.value)} /></Field>

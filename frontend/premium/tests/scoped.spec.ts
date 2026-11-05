@@ -593,6 +593,29 @@ test('Nuovo professionista: creazione con account personale autorizzato', async 
   expect(payload).toHaveProperty('user', 'professionista@example.invalid')
 })
 
+test('Nuovo professionista: account nuovo resta inattivo', async ({ page }) => {
+  await mock(page, [])
+  let payload: Record<string, unknown> | undefined
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_access_candidates*', route => route.fulfill({contentType:'application/json', body:JSON.stringify({message:[]})}))
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_create', route => {
+    payload = route.request().postDataJSON()
+    return route.fulfill({contentType:'application/json', body:JSON.stringify({message:{name:'PR-PENDING', modified:'v1'}})})
+  })
+  await page.route('**/api/method/centrochange_core.operations.profiles.practitioner_detail*', route => route.fulfill({contentType:'application/json', body:JSON.stringify({message:{name:'PR-PENDING', first_name:'Prova', last_name:'Sintetica', status:'Disabled', user_id:'prova@example.invalid', modified:'v1'}})}))
+  await page.goto('./#Professionisti')
+  await page.getByRole('button', {name:'Nuovo professionista'}).click()
+  const form = page.getByRole('dialog', {name:'Nuovo professionista'})
+  await form.getByLabel(/^Nome/).fill('Prova')
+  await form.getByLabel('Cognome').fill('Sintetica')
+  await form.getByLabel('Email').fill('prova@example.invalid')
+  await form.getByLabel('Gestione account').selectOption('new')
+  await expect(form.getByText(/resta non attivo/)).toBeVisible()
+  await form.getByLabel('Motivo').fill('Prova sintetica')
+  await form.getByRole('button', {name:'Crea professionista'}).click()
+  await expect.poll(() => payload?.account_mode).toBe('new')
+  await expect(page.getByText('Non attivo', {exact:true}).first()).toBeVisible()
+})
+
 test('Professionista: modifica precompilata e auditata dal profilo', async ({ page }) => {
   const writes: Write[] = []
   await mock(page, writes)

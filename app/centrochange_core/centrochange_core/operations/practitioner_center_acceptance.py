@@ -61,7 +61,22 @@ def run():
         else:
             raise AssertionError('Shared account accepted')
         assert counts == {doctype: frappe.db.count(doctype) for doctype in counts}
-        return {'personal_account':'PASS', 'center_isolation':'PASS', 'missing_and_duplicate_denied':'PASS', 'audit_and_replay':'PASS', 'no_user_invoice_or_email':'PASS'}
+        pending_args = {**args, 'user':None, 'email':'ci.pending@example.invalid', 'account_mode':'new', 'request_key':'CI-PENDING'}
+        pending = profiles.practitioner_create(**pending_args)
+        assert profiles.practitioner_create(**pending_args)['replay']
+        pending_doc = frappe.get_doc('Healthcare Practitioner', pending['name'])
+        assert pending_doc.user_id == pending_args['email'] and pending_doc.status == 'Disabled'
+        assert not frappe.db.get_value('User', pending_doc.user_id, 'enabled')
+        assert frappe.db.exists('CC Center Membership', {'user':pending_doc.user_id, 'center':center, 'active':1})
+        assert not practitioner_in_center(pending_doc, center)
+        try:
+            profiles.practitioner_set_state(center, pending_doc.name, 1, str(pending_doc.modified), 'Synthetic unauthorized activation')
+        except frappe.PermissionError:
+            pass
+        else:
+            raise AssertionError('Inactive account activated without authorization')
+        assert frappe.db.count('Email Queue') == counts['Email Queue']
+        return {'personal_account':'PASS', 'pending_account':'PASS', 'center_isolation':'PASS', 'missing_and_duplicate_denied':'PASS', 'audit_and_replay':'PASS', 'no_invoice_or_email':'PASS'}
     finally:
         frappe.in_test = previous_test_mode
         frappe.set_user('Administrator')
