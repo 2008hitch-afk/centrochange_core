@@ -1,5 +1,17 @@
 # Centro Change Core
 
+## PRIMA DI PROCEDERE — STATO VIGENTE 05/11/2026
+<!-- OWNER_CURRENT_2026_11_05 -->
+
+**LEGGERE [REGISTRO OPERATIVO](docs/qa/ACTIVE-GOAL-ROUTER.md), [DECISIONE OWNER RUOLI](docs/DECISIONS.md) e [MATRICE FUNZIONALE](docs/qa/FUNCTIONAL-COVERAGE-MATRIX.md).** Tutti gli altri paragrafi sottostanti che si proclamano «stato attivo/corrente/più recente» sono snapshot STORICI alla propria data.
+
+Tre tipi di account: **Amministratore/Manager Full Permission (anche segretaria)**; **Professionista personale**; **Commercialista contabile limitato**. Full Permission gestisce tutta l'anagrafica paziente in Pazienti e crea/modifica professionista E account Frappe dalla pagina Professionisti. Archivi non duplica queste funzionalità.
+
+PR aperte relative al percorso corrente: [#202](https://github.com/2008hitch-afk/centrochange_core/pull/202), [#203](https://github.com/2008hitch-afk/centrochange_core/pull/203), [#204](https://github.com/2008hitch-afk/centrochange_core/pull/204). Draft, non automaticamente merged né deployed. Vecchie PR aperte non equivalgono a lavoro attivo.
+
+---
+
+
 Repository tecnico della soluzione **Centro Change** costruita su Frappe Framework / ERPNext con app custom `centrochange_core` e sito web nell'ecosistema Frappe.
 
 ## STATO ATTIVO PIÙ RECENTE — 27/10/2026: CORE #173 ACCETTATA NEL PERIMETRO UAT, MERGE NON AUTORIZZATO
