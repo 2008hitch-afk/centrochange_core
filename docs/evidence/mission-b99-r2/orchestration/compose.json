@@ -1,0 +1,418 @@
+{
+  "name": "centrochange-b99-rehearsal",
+  "networks": {
+    "centrochange-b99-rehearsal-r2-net": {
+      "name": "centrochange-b99-rehearsal-r2-net",
+      "driver": "bridge",
+      "internal": true
+    },
+    "centrochange-b99-rehearsal-r2-http": {
+      "name": "centrochange-b99-rehearsal-r2-http",
+      "driver": "bridge"
+    }
+  },
+  "services": {
+    "r2-backend": {
+      "restart": "no",
+      "command": null,
+      "entrypoint": null,
+      "environment": {
+        "GUNICORN_THREADS": "2",
+        "GUNICORN_TIMEOUT": "120",
+        "GUNICORN_WORKERS": "1"
+      },
+      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "networks": {
+        "centrochange-b99-rehearsal-r2-net": {
+          "aliases": [
+            "backend"
+          ]
+        }
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-b99-rehearsal-r2-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "r2-db": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-cache": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-queue": {
+          "condition": "service_healthy"
+        }
+      },
+      "mem_limit": "768m",
+      "memswap_limit": "768m",
+      "labels": {
+        "centrochange.mission": "B99-R2"
+      }
+    },
+    "r2-db": {
+      "restart": "no",
+      "command": [
+        "--character-set-server=utf8mb4",
+        "--collation-server=utf8mb4_unicode_ci",
+        "--skip-character-set-client-handshake"
+      ],
+      "entrypoint": null,
+      "environment": {
+        "MYSQL_ROOT_PASSWORD": "${B99_DB_PASSWORD:?required}"
+      },
+      "image": "mariadb:11.8.8@sha256:24e76fcec8c003a0362d0dd53f4806e7e79458d7fdeaf47437760e19496f5a9c",
+      "networks": {
+        "centrochange-b99-rehearsal-r2-net": {
+          "aliases": [
+            "db"
+          ]
+        }
+      },
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-b99-rehearsal-r2-db-data",
+          "target": "/var/lib/mysql",
+          "volume": {}
+        }
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "healthcheck.sh",
+          "--connect",
+          "--innodb_initialized"
+        ],
+        "timeout": "5s",
+        "interval": "5s",
+        "retries": 10,
+        "start_period": "2m0s"
+      },
+      "depends_on": {},
+      "mem_limit": "384m",
+      "memswap_limit": "384m",
+      "labels": {
+        "centrochange.mission": "B99-R2"
+      }
+    },
+    "r2-frontend": {
+      "restart": "no",
+      "command": [
+        "nginx-entrypoint.sh"
+      ],
+      "entrypoint": null,
+      "environment": {
+        "BACKEND": "backend:8000",
+        "FRAPPE_SITE_NAME_HEADER": "b99.local",
+        "SOCKETIO": "websocket:9000",
+        "UPSTREAM_REAL_IP_ADDRESS": "127.0.0.1",
+        "UPSTREAM_REAL_IP_HEADER": "X-Forwarded-For",
+        "UPSTREAM_REAL_IP_RECURSIVE": "off"
+      },
+      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "networks": {
+        "centrochange-b99-rehearsal-r2-net": {
+          "aliases": [
+            "frontend"
+          ]
+        },
+        "centrochange-b99-rehearsal-r2-http": {}
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-b99-rehearsal-r2-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "r2-backend": {
+          "condition": "service_started",
+          "required": true
+        },
+        "r2-websocket": {
+          "condition": "service_started",
+          "required": true
+        }
+      },
+      "ports": [
+        {
+          "mode": "ingress",
+          "host_ip": "127.0.0.1",
+          "target": 8080,
+          "published": "8099",
+          "protocol": "tcp"
+        }
+      ],
+      "mem_limit": "32m",
+      "memswap_limit": "32m",
+      "labels": {
+        "centrochange.mission": "B99-R2"
+      }
+    },
+    "r2-queue-long": {
+      "restart": "no",
+      "command": [
+        "bench",
+        "worker",
+        "--queue",
+        "long,default,short"
+      ],
+      "entrypoint": null,
+      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "networks": {
+        "centrochange-b99-rehearsal-r2-net": {
+          "aliases": [
+            "queue-long"
+          ]
+        }
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-b99-rehearsal-r2-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "r2-db": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-cache": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-queue": {
+          "condition": "service_healthy"
+        }
+      },
+      "mem_limit": "224m",
+      "memswap_limit": "224m",
+      "labels": {
+        "centrochange.mission": "B99-R2"
+      }
+    },
+    "r2-queue-short": {
+      "restart": "no",
+      "command": [
+        "bench",
+        "worker",
+        "--queue",
+        "short,default"
+      ],
+      "entrypoint": null,
+      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "networks": {
+        "centrochange-b99-rehearsal-r2-net": {
+          "aliases": [
+            "queue-short"
+          ]
+        }
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-b99-rehearsal-r2-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "r2-db": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-cache": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-queue": {
+          "condition": "service_healthy"
+        }
+      },
+      "mem_limit": "224m",
+      "memswap_limit": "224m",
+      "labels": {
+        "centrochange.mission": "B99-R2"
+      }
+    },
+    "r2-redis-cache": {
+      "restart": "no",
+      "command": null,
+      "entrypoint": null,
+      "image": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "networks": {
+        "centrochange-b99-rehearsal-r2-net": {
+          "aliases": [
+            "redis-cache"
+          ]
+        }
+      },
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-b99-rehearsal-r2-redis-cache-data",
+          "target": "/data",
+          "volume": {}
+        }
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ],
+        "timeout": "3s",
+        "interval": "5s",
+        "retries": 10
+      },
+      "depends_on": {},
+      "mem_limit": "32m",
+      "memswap_limit": "32m",
+      "labels": {
+        "centrochange.mission": "B99-R2"
+      }
+    },
+    "r2-redis-queue": {
+      "restart": "no",
+      "command": null,
+      "entrypoint": null,
+      "image": "redis:8.6.5-alpine@sha256:cd218f4b106a332c5c992e38a9480bfb9d7e9f8f7b0ec9a0023bfa36d9a408f9",
+      "networks": {
+        "centrochange-b99-rehearsal-r2-net": {
+          "aliases": [
+            "redis-queue"
+          ]
+        }
+      },
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-b99-rehearsal-r2-redis-queue-data",
+          "target": "/data",
+          "volume": {}
+        }
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ],
+        "timeout": "3s",
+        "interval": "5s",
+        "retries": 10
+      },
+      "depends_on": {},
+      "mem_limit": "32m",
+      "memswap_limit": "32m",
+      "labels": {
+        "centrochange.mission": "B99-R2"
+      }
+    },
+    "r2-scheduler": {
+      "restart": "no",
+      "command": [
+        "bench",
+        "schedule"
+      ],
+      "entrypoint": null,
+      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "networks": {
+        "centrochange-b99-rehearsal-r2-net": {
+          "aliases": [
+            "scheduler"
+          ]
+        }
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-b99-rehearsal-r2-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "r2-db": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-cache": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-queue": {
+          "condition": "service_healthy"
+        }
+      },
+      "mem_limit": "128m",
+      "memswap_limit": "128m",
+      "labels": {
+        "centrochange.mission": "B99-R2"
+      }
+    },
+    "r2-websocket": {
+      "restart": "no",
+      "command": [
+        "node",
+        "/home/frappe/frappe-bench/apps/frappe/socketio.js"
+      ],
+      "entrypoint": null,
+      "image": "sha256:f8fe936c0b25c7855d266421fad0ae73679b3aa3173e91059e7c81a3fb20fc80",
+      "networks": {
+        "centrochange-b99-rehearsal-r2-net": {
+          "aliases": [
+            "websocket"
+          ]
+        }
+      },
+      "pull_policy": "never",
+      "volumes": [
+        {
+          "type": "volume",
+          "source": "centrochange-b99-rehearsal-r2-sites",
+          "target": "/home/frappe/frappe-bench/sites",
+          "volume": {}
+        }
+      ],
+      "depends_on": {
+        "r2-db": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-cache": {
+          "condition": "service_healthy"
+        },
+        "r2-redis-queue": {
+          "condition": "service_healthy"
+        }
+      },
+      "mem_limit": "96m",
+      "memswap_limit": "96m",
+      "labels": {
+        "centrochange.mission": "B99-R2"
+      }
+    }
+  },
+  "volumes": {
+    "centrochange-b99-rehearsal-r2-db-data": {
+      "name": "centrochange-b99-rehearsal-r2-db-data"
+    },
+    "centrochange-b99-rehearsal-r2-redis-cache-data": {
+      "name": "centrochange-b99-rehearsal-r2-redis-cache-data"
+    },
+    "centrochange-b99-rehearsal-r2-redis-queue-data": {
+      "name": "centrochange-b99-rehearsal-r2-redis-queue-data"
+    },
+    "centrochange-b99-rehearsal-r2-sites": {
+      "name": "centrochange-b99-rehearsal-r2-sites"
+    }
+  }
+}

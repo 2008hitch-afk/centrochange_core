@@ -1,0 +1,128 @@
+[
+  {
+    "name": "/centrochange-b99-rehearsal-bootstrap-current",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-redis-cache-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-redis-queue-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-b99-rehearsal-db-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-frontend-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-websocket-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-backend-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-queue-short-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-scheduler-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-queue-long-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-configurator-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-redis-cache-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-redis-queue-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  },
+  {
+    "name": "/centrochange-dev-db-1",
+    "checks": {
+      "identity_state": true,
+      "mounts": true,
+      "networks": true,
+      "ports": true
+    }
+  }
+]

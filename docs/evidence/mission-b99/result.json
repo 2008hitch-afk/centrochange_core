@@ -1,0 +1,43 @@
+{
+  "status": "BLOCKED",
+  "source_commit": "e85fce588de6012a47da302710b9f9c615211279",
+  "activation_commit": "db9e630cfc99729c9264be1ee2939686b866cf84",
+  "authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6069834579",
+  "started": {
+    "started_at": "2026-10-08T22:02:05.791546+00:00",
+    "activation_commit": "db9e630cfc99729c9264be1ee2939686b866cf84"
+  },
+  "stop_reason": "PSI_MEMORY_THRESHOLD_EXCEEDED_3_SAMPLES",
+  "memory": {
+    "max_b99_sampled_bytes": 442142720,
+    "min_available_bytes": 5522546688,
+    "psi_some_avg10_max": 6.5,
+    "psi_full_avg10_max": 2.97,
+    "host_oom_delta": 0,
+    "build_executed": false,
+    "cgroup_aggregate_cap_bytes": 2080374784
+  },
+  "stages": {
+    "activation": "PASS",
+    "isolation": "PASS",
+    "CURRENT_bootstrap": "INTERRUPTED_BY_SAFETY_STOP",
+    "checkpoint": "NOT_EXECUTED",
+    "image_archive": "INCOMPLETE_UNVERIFIED",
+    "TARGET_build": "NOT_EXECUTED",
+    "TARGET_upgrade": "NOT_EXECUTED",
+    "regression_39_suites": "NOT_EXECUTED",
+    "real_rollback": "NOT_EXECUTED"
+  },
+  "protected_metadata_unchanged": true,
+  "RC22_HTTP": {
+    "ping": 200,
+    "login": 200,
+    "centrochange": 200
+  },
+  "labs_m97_g2d": "STOPPED_UNCHANGED",
+  "B99_final": "4_CONTAINERS_STOPPED_4_VOLUMES_PRESERVED",
+  "application_changes": false,
+  "root_cause": "PSI_TRIGGER_VERIFIED_UNDERLYING_CAUSE_NOT_PROVEN",
+  "archive_bytes": 2953838592,
+  "checked_at": "2026-10-08T22:05:54.591535+00:00"
+}

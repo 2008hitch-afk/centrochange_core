@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "DRAFT_PROPOSED_NOT_ACTIVE",
+  "status": "OWNER_AUTHORIZED_R2_STOPPED_BLOCKED",
   "issue": "https://github.com/2008hitch-afk/centrochange_core/issues/99",
   "authorization": [
     "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6068177100",
@@ -132,14 +132,14 @@
     ]
   },
   "mandatory_pre_mutation_gates": {
-    "structured_manifest_versioned_and_reviewed": "DOCUMENT_DRAFT_PR_ONLY_REVIEW_AND_ACTIVATION_PENDING",
+    "structured_manifest_versioned_and_reviewed": "OWNER_AUTHORIZED_ACTIVE_ON_OPERATIONAL_BRANCH",
     "authorization_scope_and_time": "PRESENT_WITH_CONDITIONAL_START",
     "immutable_source_and_upstream_pins": "VERIFIED",
-    "CAP037_original_plan": "UNAVAILABLE_404",
-    "capacity_bounded_peak_memory_disk_and_rollback_reserve": "BLOCKED_CONSERVATIVE_BUDGET_NOT_MET",
-    "exclusive_mutation_guard": "NOT_CERTIFIED",
-    "resolved_compose_resource_disjointness": "STATIC_STRUCTURE_PASS_EXECUTION_PARAMETERS_AND_SEQUENCING_PENDING",
-    "offline_current_image_checkpoint_recoverability": "NOT_YET_CREATED"
+    "CAP037_original_plan": "SNAPSHOT_11_OF_11_BLOBS_VERIFIED",
+    "capacity_bounded_peak_memory_disk_and_rollback_reserve": "PRUDENT_BUDGET_COVERED_CGROUP_LIMITED_TRIAL_RUNTIME_MONITOR_REQUIRED",
+    "exclusive_mutation_guard": "OWNER_CONFIRMED_ONLY_ACTIVE_SESSION_COOPERATIVE_LEASE_REQUIRED",
+    "resolved_compose_resource_disjointness": "STATIC_PASS_ASSERT_EFFECTIVE_CONFIG_BEFORE_START",
+    "offline_current_image_checkpoint_recoverability": "MANDATORY_BEFORE_TARGET_SITE_MUTATION"
   },
   "checkpoint": {
     "components": [
@@ -237,5 +237,41 @@
     "observed_disk_gib": 20.88,
     "observed_available_memory_gib": 3.68,
     "rule": "Do not build to measure on shared host without a separately approved sufficient resource envelope; do not prune or stop existing environments."
+  },
+  "activation": {
+    "authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6069834579",
+    "recorded_at": "2026-10-08T22:00:05.811060+00:00",
+    "source_commit": "e85fce588de6012a47da302710b9f9c615211279",
+    "start_deadline": "2026-10-09T00:14:00+02:00",
+    "hard_stop": "2026-10-09T06:14:00+02:00",
+    "maximum_seconds": 21600,
+    "rollback_reserve_seconds": 10800,
+    "build_memory_bytes": 2147483648,
+    "lab_browser_memory_bytes": 2684354560,
+    "build_parallelism": 1,
+    "CAP037_snapshot_commit": "df8adf3551a234bb7edb23a9f8e546ee71b1e19f",
+    "protected_labs_state": "STOPPED_PRESERVED_OWNER_AUTHORIZED"
+  },
+  "execution_result": {
+    "status": "BLOCKED",
+    "reason": "PSI_MEMORY_SAFETY_STOP",
+    "report": "docs/evidence/mission-b99/REPORT.md",
+    "resume_allowed_now": false,
+    "activation_commit": "db9e630cfc99729c9264be1ee2939686b866cf84"
+  },
+  "activation_r2": {
+    "authorization": "https://github.com/2008hitch-afk/centrochange_core/issues/99#issuecomment-6076948191",
+    "recorded_at": "2026-10-09T08:03:49.482574+00:00",
+    "rollback_by": "2026-10-09T15:01:00+02:00",
+    "hard_stop": "2026-10-09T18:01:00+02:00",
+    "budget_disk_gib": 32,
+    "build_memory_bytes": 2147483648,
+    "lab_browser_memory_bytes": 2684354560,
+    "build_parallelism": 1,
+    "R1_resources": "PRESERVE_ALL",
+    "R2_volume_prefix": "centrochange-b99-rehearsal-r2-",
+    "CURRENT_QA_archive_sha256": "b108212acb4c56ece80ba3058da652bad03323417f75f03e80fd67184f729411",
+    "outcome": "BLOCKED_PSI_MEMORY_GUARDRAIL",
+    "stopped_at_utc": "2026-10-09T08:21:27Z"
   }
 }
