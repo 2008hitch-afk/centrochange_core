@@ -59,19 +59,19 @@ def patient_detail(center, name):
     doc = frappe.get_doc('Patient', bounded(name, 'Paziente'))
     doc.check_permission('read')
     active=_patient(center, doc, allow_historical=True)
-    return {**{field: doc.get(field) for field in ('name', 'patient_name', 'first_name', 'last_name', 'email', 'modified')},
+    return {**{field: doc.get(field) for field in ('name', 'patient_name', 'first_name', 'last_name', 'email', 'mobile', 'phone', 'modified')},
             'active_assignment':active}
 
 
 @frappe.whitelist(methods=['POST'])
-def patient_save(center, name, first_name, last_name, email, expected_version, request_key, reason, **extra):
+def patient_save(center, name, first_name, last_name, email, expected_version, request_key, reason, mobile=None, phone=None, **extra):
     deny_extra(extra)
     email = bounded(email, 'Email', 140, required=False).lower() if email is not None else None
     if email and not frappe.utils.validate_email_address(email):
         frappe.throw('Email non valida')
     return mutate('patient', center, 'Patient', name,
-                  {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False) if last_name is not None else None, 'email': email},
-                  ('first_name', 'last_name', 'email'), expected_version, request_key, reason,
+                  {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False) if last_name is not None else None, 'email': email, **({'mobile': bounded(mobile, 'Cellulare', 140, required=False)} if mobile is not None else {}), **({'phone': bounded(phone, 'Telefono', 140, required=False)} if phone is not None else {})},
+                  ('first_name', 'last_name', 'email') + (('mobile',) if mobile is not None else ()) + (('phone',) if phone is not None else ()), expected_version, request_key, reason,
                   lambda doc: _patient(center, doc))
 
 

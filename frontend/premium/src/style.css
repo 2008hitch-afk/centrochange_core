@@ -452,3 +452,10 @@
 .patient-tab-payments td small{display:block;color:#60738e;margin-top:3px}
 .patient-tab-payments details summary{cursor:pointer;color:#2765b4;font-weight:600}
 .patient-tab-payments td .patient-back{display:block;margin-top:6px}
+
+/* Patient sections follow the three task-oriented tabs. */
+.patient-detail-page[data-active-tab=Riepilogo] :is(.patient-tab-sessions,.patient-tab-notes,.patient-tab-packages){display:block}
+.patient-detail-page[data-active-tab=Assegnazioni] :is(.patient-tab-notes,.patient-tab-packages,.patient-tab-sessions){display:none}
+.patient-tab-payments .receipt-detail{min-width:7rem;max-width:24rem;overflow-wrap:anywhere;white-space:normal}.patient-tab-payments .receipt-detail p{margin:.5rem 0}.patient-tab-payments td{min-width:0}
+
+.receipt-detail{overflow-wrap:anywhere;word-break:break-word}.receipt-detail p{margin:.5rem 0}

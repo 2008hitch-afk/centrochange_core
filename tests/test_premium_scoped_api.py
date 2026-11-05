@@ -360,7 +360,9 @@ class ScopedApiTest(unittest.TestCase):
         profiles = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(profiles)
         self.db.doc = FakeDoc('Patient', 'PAT-A', first_name='Persona', last_name='Prova', email='a@example.invalid', customer='CUS-A')
-        result = profiles.patient_save('A', 'PAT-A', 'Persona nuova', 'Prova', 'b@example.invalid', 'v1', 'K-PAT', 'motivo')
+        result = profiles.patient_save('A', 'PAT-A', 'Persona nuova', 'Prova', 'b@example.invalid', 'v1', 'K-PAT', 'motivo', mobile='12345', phone='67890')
+        self.assertEqual(self.db.doc.get('mobile'), '12345')
+        self.assertEqual(self.db.doc.get('phone'), '67890')
         self.assertEqual(result['name'], 'PAT-A')
         self.assertEqual(self.db.doc.get('customer'), 'CUS-A')
         self.assertEqual(self.db.doc.writes, 1)
@@ -383,7 +385,7 @@ class ScopedApiTest(unittest.TestCase):
             profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-EXTRA', 'motivo', customer='CUS-B')
         self.role_allowed = False
         with self.assertRaises(Denied):
-            profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-PRO', 'motivo')
+            profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-PRO', 'motivo', mobile='111', phone='222')
         self.assertEqual(self.db.doc.writes, 0)
 
     def test_profile_optional_nulls_are_preserved(self):
