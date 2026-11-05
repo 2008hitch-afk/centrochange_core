@@ -1,5 +1,14 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## PRECEDENZA OWNER 06/11/2026 — CC-CAP-002 E PERMESSI DI ATTIVAZIONE
+
+**Nuova decisione Owner (prevale sul 05/11):** Amministratore/Manager Full Permission, segretaria inclusa, dalla sola UI **Professionisti** deve **creare e attivare completamente** in un'unica operazione un nuovo `User` Frappe personale con `enabled=1`, ruolo `CC Professional`, membership centro attiva, Healthcare Practitioner Active/collegato e ACL riconciliate; deve poter disattivare/riattivare dalla stessa scheda. È **revocato** il flusso di creazione finale «account nuovo inattivo, attivazione tramite ulteriore autorizzazione Owner». Nessuna approvazione Owner per ogni nuovo professionista dopo il rilascio; credenziali personali tramite onboarding sicuro. Prove sintetiche durante lo sviluppo, nessuna email reale né autorizzazione implicita a deploy.
+
+**Applicazione alla matrice:** CC-CAP-002, CC-EXT-004 e CC-EXT-009 = provisioning completo end-to-end; CC-CAP-033 e CC-CAP-038 = ACL/segregazione server-side, Manager autorizzato e divieto escalation. **PR #203 ancora NON CONFORME e da verificare su nuova SHA**: [requisito vincolante](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). Gli stati storici PASS/PARTIAL/Owner del CSV **non cambiano** fino a collaudo/accettazione; non dedurre il PASS dalla CI precedente.
+
+---
+
+
 ## PRECEDENZA OWNER 05/11/2026 — AGGIORNAMENTO SEMANTICO REQUISITI
 <!-- OWNER_CURRENT_2026_11_05 -->
 
