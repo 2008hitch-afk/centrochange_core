@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "capability_id": "CC-CAP-037",
+  "isolated": {
+    "compose_project": "centrochange-cap037-REQUIRED_RUN_ID",
+    "site": "centrochange-cap037.local",
+    "http_port": 18082,
+    "workdir": "/tmp/centrochange-cap037-REQUIRED_RUN_ID"
+  },
+  "target": {
+    "erpnext_image": "frappe/erpnext:REQUIRED_TAG@sha256:REQUIRED_64_HEX_DIGEST",
+    "frappe": {
+      "version": "REQUIRED_VERSION",
+      "commit": "REQUIRED_40_HEX_COMMIT"
+    },
+    "erpnext": {
+      "version": "REQUIRED_VERSION",
+      "commit": "REQUIRED_40_HEX_COMMIT"
+    },
+    "builder": {
+      "tag": "REQUIRED_TAG",
+      "commit": "REQUIRED_40_HEX_COMMIT"
+    },
+    "healthcare": {
+      "name": "healthcare",
+      "commit": "REQUIRED_40_HEX_COMMIT"
+    },
+    "centrochange_core": {
+      "commit": "REQUIRED_40_HEX_COMMIT"
+    }
+  },
+  "policy": {
+    "require_target_differs_from_current": true,
+    "require_clean_git": true,
+    "forbid_shared_project": "centrochange-dev",
+    "forbid_shared_site": "centrochange.local",
+    "forbid_shared_resource_prefix": "centrochange-dev-",
+    "raw_evidence_outside_git": true,
+    "allow_manual_sql_fix": false,
+    "allow_container_source_edit": false,
+    "allow_uncommitted_patch": false
+  }
+}
