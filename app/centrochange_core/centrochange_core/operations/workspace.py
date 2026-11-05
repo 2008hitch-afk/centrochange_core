@@ -232,7 +232,7 @@ def bootstrap(center=None):
     require_actor()
     available=operational_centers()
     if not available:
-        return {'centers':[],'patients':[],'practitioners':[],'services':[],'payment_methods':[],'roles':roles(),'demo_labels':{}}
+        return {'centers':[],'patients':[],'practitioners':[],'services':[],'payment_methods':[],'roles':roles(),'is_manager':is_manager(),'demo_labels':{}}
     center=center or available[0].name
     require_center(center)
     if center not in [row.name for row in available]:
@@ -266,7 +266,7 @@ def bootstrap(center=None):
             packages.append({**row,'label':frappe.db.get_value('CC Package Template',row.template,'title'),**_balance(row.name)})
     from centrochange_core.uat.display import operational_aliases
     return {'center':center,'centers':available,'patients':patients,'practitioners':practitioners,'services':services,
-        'packages':packages,'payment_methods':current_rows('Mode of Payment',{'enabled':1},pluck='name'),'roles':roles(),
+        'packages':packages,'payment_methods':current_rows('Mode of Payment',{'enabled':1},pluck='name'),'roles':roles(),'is_manager':is_manager(),
         'demo_labels':operational_aliases(center,patients,practitioners,services,packages,available,is_manager())}
 
 

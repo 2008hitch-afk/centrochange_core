@@ -1,7 +1,26 @@
 """Existing operational identities, scoped to an authorized center context."""
 import frappe
+from centrochange_core.security.audit import atomic
 from centrochange_core.scoped_api import bounded, create, deny_extra, manager, mutate, page
 from centrochange_core.security.guards import is_manager, patient_contexts, practitioner_for, require_center, require_operational_center, roles
+
+
+def _atomic_provision(function):
+    """Rollback Frappe 16 savepoint callbacks as well as database writes."""
+    from functools import wraps
+    secured = atomic(function)
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        hooks = [getattr(frappe.db, name) for name in ('before_commit', 'after_commit', 'before_rollback', 'after_rollback')]
+        counts = [len(hook._functions) for hook in hooks]
+        try:
+            return secured(*args, **kwargs)
+        except Exception:
+            for hook, count in zip(hooks, counts):
+                while len(hook._functions) > count:
+                    hook._functions.pop()
+            raise
+    return wrapped
 
 
 def _patient(center, doc, allow_historical=False):
@@ -159,7 +178,8 @@ def practitioners(center, limit=50, offset=0, search=''):
 
 
 @frappe.whitelist(methods=['POST'])
-def practitioner_create(center, first_name, last_name, email, request_key, reason, user=None, account_mode='existing', mobile_phone=None, residence_phone=None, office_phone=None,
+@_atomic_provision
+def practitioner_create(center, first_name, last_name, email, request_key, reason, user=None, account_mode='new', mobile_phone=None, residence_phone=None, office_phone=None,
                         middle_name=None, practitioner_type=None, hospital=None, gender=None, department=None, designation=None, **extra):
     deny_extra(extra)
     from hashlib import sha256
@@ -172,13 +192,15 @@ def practitioner_create(center, first_name, last_name, email, request_key, reaso
         frappe.throw('Email non valida')
     if account_mode not in ('existing', 'new'):
         frappe.throw('Modalità account non valida')
+    if account_mode == 'new' and int(frappe.get_system_settings('reset_password_link_expiry_duration') or 0) <= 0:
+        frappe.throw('Configura una scadenza positiva per il link di primo accesso.')
     user = email if account_mode == 'new' else bounded(user, 'Account personale')
     if practitioner_type not in (None, '', 'Internal', 'External'):
         frappe.throw('Tipo professionista non valido')
     for value, doctype in ((gender, 'Gender'), (department, 'Medical Department'), (designation, 'Designation')):
         if value and not frappe.db.exists(doctype, bounded(value, 'Riferimento', 140)):
             frappe.throw('Riferimento professionale non valido')
-    values = {'first_name':first_name, 'last_name':last_name, 'status':'Disabled' if account_mode == 'new' else 'Active', 'cc_profile_center':center, 'user_id':user,
+    values = {'first_name':first_name, 'last_name':last_name, 'status':'Active', 'cc_profile_center':center, 'user_id':user,
               'mobile_phone':bounded(mobile_phone, 'Cellulare', 140, required=False),
               'residence_phone':bounded(residence_phone, 'Telefono', 140, required=False),
               'office_phone':bounded(office_phone, 'Telefono ufficio', 140, required=False),
@@ -225,14 +247,15 @@ def practitioner_create(center, first_name, last_name, email, request_key, reaso
             doc.reload()
     # Generic create's request fingerprint must cover the contact email too.
     def validate_account(_data):
-        from centrochange_core.security.guards import enabled
+        from centrochange_core.security.guards import enabled, personal_professional
         if account_mode == 'new':
             if frappe.db.exists('User', user):
                 frappe.throw('Esiste già un account con questa email: selezionalo se autorizzato.')
             return
-        if (user in ('Administrator', 'Guest') or not enabled(user) or 'CC Professional' not in roles(user)
+        if (user in ('Administrator', 'Guest') or not enabled(user) or not personal_professional(user)
                 or not frappe.db.exists('CC Center Membership', {'user':user, 'center':center, 'active':1})
-                or frappe.db.exists('Healthcare Practitioner', {'user_id':user})):
+                or frappe.db.exists('Healthcare Practitioner', {'user_id':user})
+                or (frappe.db.get_value('User', user, 'email') or '').strip().lower() != email):
             frappe.throw('Serve un account personale attivo e disponibile, autorizzato per il centro.', frappe.PermissionError)
     def prepare(doc):
         if account_mode == 'new':
@@ -240,14 +263,25 @@ def practitioner_create(center, first_name, last_name, email, request_key, reaso
             from centrochange_core.security.audit import append
             with internal_write('cc_user_roles_write'):
                 frappe.get_doc({'doctype':'User', 'email':user, 'first_name':first_name, 'last_name':last_name,
-                    'enabled':0, 'send_welcome_email':0, 'roles':[{'role':'CC Professional'}]}).insert(ignore_permissions=True)
+                    'enabled':1, 'send_welcome_email':0, 'roles':[{'role':'CC Professional'}]}).insert(ignore_permissions=True)
             set_membership(user, center, 1, reason)
-            append('PRACTITIONER_ACCOUNT_PREPARED', 'User', user, None, {'enabled':0, 'center':center}, reason)
+            append('PRACTITIONER_ACCOUNT_PREPARED', 'User', user, None, {'enabled':1, 'center':center}, reason)
         doc.flags.ignore_permissions = True
     with internal_write('cc_practitioner_center_write'):
-        return create('practitioner-create', center, 'Healthcare Practitioner', values, tuple(values), request_key, reason,
+        result = create('practitioner-create', center, 'Healthcare Practitioner', values, tuple(values), request_key, reason,
                       validate=validate_account, after_insert=after_insert, replay_guard=lambda doc: _practitioner(center, doc),
                       prepare_insert=prepare, fingerprint_extra={'email':email, 'account_mode':account_mode})
+        if account_mode == 'new' and not result['replay']:
+            # The bearer link is returned once only, never persisted in audit or
+            # emitted in logs. A retry can use Frappe's standard password reset.
+            from urllib.parse import urlsplit
+            reset = urlsplit(frappe.get_doc('User', user)._reset_password(send_email=False))
+            if reset.path != '/update-password' or not reset.query.startswith('key='):
+                frappe.throw('Impossibile preparare il primo accesso in sicurezza.')
+            result['first_access_url'] = '/cc-first-access#' + reset.query
+            if getattr(frappe.local, 'request', None):
+                frappe.local.response_headers['Cache-Control'] = 'private, no-store, no-cache, max-age=0'
+        return result
 
 
 @frappe.whitelist(methods=['GET'])
@@ -257,6 +291,7 @@ def practitioner_detail(center, name):
     _practitioner(center, doc)
     result = {field: doc.get(field) for field in ('name', 'practitioner_name', 'first_name', 'middle_name', 'last_name', 'user_id', 'status', 'gender', 'mobile_phone', 'residence_phone', 'office_phone', 'practitioner_type', 'hospital', 'department', 'designation', 'email_id', 'modified')}
     result['contact_modified'] = str(frappe.db.get_value('Contact', doc.get('practitioner_primary_contact'), 'modified') or '') if doc.get('practitioner_primary_contact') else ''
+    result['account_enabled'] = bool(frappe.db.get_value('User', doc.user_id, 'enabled')) if doc.user_id else False
     return result
 
 
@@ -375,10 +410,10 @@ def practitioner_access_candidates(center, name=None):
         doc = frappe.get_doc('Healthcare Practitioner', bounded(name, 'Professionista'))
         doc.check_permission('read')
         _practitioner(center, doc)
-    from centrochange_core.security.guards import enabled
+    from centrochange_core.security.guards import enabled, personal_professional
     users = frappe.get_all('CC Center Membership', filters={'center':center, 'active':1}, pluck='user')
     return [{'name':user, 'label':frappe.db.get_value('User', user, 'full_name') or user} for user in users
-            if user and user not in ('Administrator', 'Guest') and enabled(user) and 'CC Professional' in roles(user)
+            if user and user not in ('Administrator', 'Guest') and enabled(user) and personal_professional(user)
             and not frappe.db.exists('Healthcare Practitioner', {'user_id':user})]
 
 
@@ -397,5 +432,7 @@ def practitioner_link_user(center, name, user, expected_version, reason):
             frappe.throw('Scheda modificata da un altro utente. Ricarica e riprova.')
         if not frappe.db.exists('CC Center Membership', {'user':bounded(user, 'Utente'), 'center':center, 'active':1}):
             frappe.throw('L’utente deve avere un’appartenenza attiva a questo centro.', frappe.PermissionError)
+        if not doc.email_id or doc.email_id.strip().lower() != (frappe.db.get_value('User', user, 'email') or '').strip().lower():
+            frappe.throw('L’email del profilo deve corrispondere all’account personale.', frappe.PermissionError)
         return replace_principal(doc.name, user, bounded(reason, 'Motivo', 500))
     return run()

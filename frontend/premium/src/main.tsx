@@ -25,6 +25,9 @@ function fromHash(): View {
   catch { return 'Agenda' }
 }
 
+// React uses CC Manager as its existing UI capability label; the server remains authoritative.
+const uiCapabilities = (boot: Boot): Boot => boot.is_manager && !boot.roles.includes('CC Manager') ? {...boot, roles:[...boot.roles, 'CC Manager']} : boot
+
 function App() {
   const [view, setView] = useState<View>(fromHash)
   const [boot, setBoot] = useState<Boot | null>(null)
@@ -66,7 +69,7 @@ function App() {
     setLoading(true); setError(''); setBoot(null); setFinanceBoot(null)
     Promise.allSettled([ops<Boot>('workspace.bootstrap', center ? { center } : {}), finance<FinanceBoot>('reporting.bootstrap', center ? { center } : {})]).then(([o, f]) => {
       if (!live) return
-      if (o.status === 'fulfilled') setBoot(o.value)
+      if (o.status === 'fulfilled') setBoot(uiCapabilities(o.value))
       if (f.status === 'fulfilled') setFinanceBoot(f.value)
       if (!center) { const selected = o.status === 'fulfilled' ? o.value.center : f.status === 'fulfilled' ? f.value.center : ''; if (selected) { const url = new URL(location.href); url.searchParams.set('center', selected); history.replaceState(null, '', url); hydratedCenter.current = selected; setCenter(selected) } }
       if (o.status === 'rejected' && f.status === 'rejected') setError('Nessuna area disponibile per questo account. Verifica assegnazione e ruolo.')
@@ -131,7 +134,7 @@ function App() {
     setView('Report')
   }
   const feedback = (message: string, fail = false) => { if (fail) setError(message); else { setNotice(message); setError('') } }
-  const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(fresh) }
+  const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(uiCapabilities(fresh)) }
   const changeCenter = (next: string) => { if (next === center) return; const url = new URL(location.href); url.searchParams.set('center', next); url.searchParams.delete('patient'); url.searchParams.delete('tab'); url.searchParams.delete('practitioner'); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); history.replaceState(null, '', url); hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setCenter(next) }
   const logout = async () => {
     setLoggingOut(true); setUserMenuOpen(false)

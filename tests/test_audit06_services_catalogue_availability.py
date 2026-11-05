@@ -1,7 +1,8 @@
 """Offline unit and contract tests for AUDIT-06: Servizi, catalogo, prezzi e disponibilità.
 Covers CC-CAP-007, CC-CAP-011, CC-CAP-012, CC-CAP-013, CC-EXT-010.
 """
-from datetime import date, time
+from datetime import date, datetime, time
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 import importlib.util
 import json
@@ -610,7 +611,7 @@ class Audit06ServicesCatalogueAvailabilityTests(unittest.TestCase):
         self.assertEqual(snap['cc_price_snapshot'], Decimal('70.00'))
         self.assertEqual(snap['cc_currency_snapshot'], 'EUR')
         self.assertEqual(snap['duration'], 50)
-        self.assertEqual(snap['cc_booking_date'], date.today())
+        self.assertEqual(snap['cc_booking_date'], datetime.now(ZoneInfo('Europe/Rome')).date())
 
     def test_cap013_historical_appointment_preserves_snapshot_on_catalog_update(self):
         """Demonstrates CC-CAP-013: booked appointment snapshot is immutable; catalog updates do not mutate history."""

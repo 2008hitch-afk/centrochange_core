@@ -9,6 +9,9 @@ def sensitive_request():
         return True
     request=getattr(frappe.local,'request',None)
     path=getattr(request,'path','')
+    confidential_methods = ('frappe.core.doctype.user.user.update_password', 'centrochange_core.operations.profiles.practitioner_create')
+    if any(method in path or (getattr(frappe.local,'form_dict',{}) or {}).get('cmd') == method for method in confidential_methods):
+        return True
     if 'centrochange_core.operations.notes.add_note' in path or any('centrochange_core.finance.'+name in path for name in ('incoming','sdi','ts','fiscal')):
         return True
     # API payloads can encode native documents as JSON. Do not retain clinical request bodies.

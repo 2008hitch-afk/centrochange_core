@@ -121,6 +121,12 @@ def roles(user=None):
 	return frappe.get_roles(user)
 
 
+def personal_professional(user):
+	"""A newly associated principal must not carry administrative privileges."""
+	user_roles = set(roles(user))
+	return 'CC Professional' in user_roles and not user_roles.difference({'CC Professional', 'All', 'Guest', 'Desk User'})
+
+
 def patient_contexts(user=None):
 	"""Exact patient/center pairs, never a Cartesian product of independent scopes."""
 	user=user or frappe.session.user
