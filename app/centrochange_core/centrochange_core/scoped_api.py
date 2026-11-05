@@ -112,7 +112,7 @@ def mutate(operation, center, doctype, name, values, allowed, expected_version, 
     return run()
 
 
-def create(operation, center, doctype, values, allowed, request_key, reason, validate=None, after_insert=None, replay_guard=None):
+def create(operation, center, doctype, values, allowed, request_key, reason, validate=None, after_insert=None, replay_guard=None, prepare_insert=None, fingerprint_extra=None):
     """Native insert with the same serialized, audit-backed replay boundary."""
     @atomic
     def run():
@@ -121,7 +121,10 @@ def create(operation, center, doctype, values, allowed, request_key, reason, val
         data = exact_fields(values, allowed)
         reason_text = bounded(reason, 'Motivo', 500)
         digest = replay_key(operation, request_key)
-        fingerprint = sha256(serialize([center, doctype, data]).encode()).hexdigest()
+        fingerprint_data = [center, doctype, data]
+        if fingerprint_extra is not None:
+            fingerprint_data.append(fingerprint_extra)
+        fingerprint = sha256(serialize(fingerprint_data).encode()).hexdigest()
         events = frappe.db.get_values('CC Audit Event',
             {'event_type': 'PREMIUM_MASTER_CREATED', 'actor': frappe.session.user,
              'before_state': ['like', '%' + digest + '%']},
@@ -141,6 +144,8 @@ def create(operation, center, doctype, values, allowed, request_key, reason, val
             validate(data)
         doc = frappe.get_doc({'doctype': doctype, **data})
         doc.check_permission('create')
+        if prepare_insert:
+            prepare_insert(doc)
         doc.insert()
         if after_insert:
             after_insert(doc)

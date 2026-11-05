@@ -242,10 +242,12 @@ def bootstrap(center=None):
             fields=['name','patient_name','first_name','last_name'],page_length=500,order_by='patient_name')
     except frappe.PermissionError:
         patients=[]
-    memberships=current_rows('CC Center Membership',{'center':center,'active':1},pluck='user')
-    filters={'status':'Active','user_id':['in',memberships or ['']]}
+    from centrochange_core.security.guards import practitioner_names_for_center
+    names=practitioner_names_for_center(center)
+    filters={'status':'Active','name':['in',names or ['']]}
     if 'CC Professional' in roles() and not is_manager():
-        filters['name']=practitioner_for() or ''
+        own=practitioner_for()
+        filters['name']=['in',[own] if own in names else ['']]
     practitioners=current_rows('Healthcare Practitioner',filters,fields=['name','practitioner_name'])
     profiles=current_rows('CC Center Service',{'center':center,'enabled':1},pluck='appointment_type')
     from centrochange_core.scheduling.booking import snapshot

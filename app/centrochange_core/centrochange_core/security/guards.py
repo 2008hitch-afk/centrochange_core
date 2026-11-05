@@ -99,6 +99,20 @@ def current_rows(doctype, filters=None, fields=None, pluck=None):
 		for_update=bool(frappe.flags.get("cc_permission_current_read")))
 
 
+def practitioner_names_for_center(center):
+	"""Include direct profiles and legacy user memberships without granting access."""
+	users = [user for user in current_rows('CC Center Membership', {'center': center, 'active': 1}, pluck='user') if user]
+	legacy = current_rows('Healthcare Practitioner', {'user_id': ['in', users]}, pluck='name') if users else []
+	direct = current_rows('Healthcare Practitioner', {'cc_profile_center': center}, pluck='name')
+	return list(set(legacy) | set(direct))
+
+
+def practitioner_in_center(doc, center):
+	if doc.user_id:
+		return bool(enabled(doc.user_id) and (doc.get('cc_profile_center') == center or center in centers(doc.user_id)))
+	return bool(doc.get('cc_profile_center') == center)
+
+
 def roles(user=None):
 	user=user or frappe.session.user
 	if frappe.flags.get("cc_permission_current_read"):

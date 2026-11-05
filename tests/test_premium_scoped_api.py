@@ -108,6 +108,7 @@ class ScopedApiTest(unittest.TestCase):
         self.guards.is_manager = lambda: self.role_allowed
         self.guards.patient_contexts = lambda: {('PAT-A', 'A')}
         self.guards.practitioner_for = lambda: 'PRO-A'
+        self.guards.practitioner_names_for_center = lambda center: ['PRO-A'] if center == 'A' else []
         self.guards.roles = lambda: ['CC Manager'] if self.role_allowed else ['CC Professional']
         self.lifecycle = types.ModuleType('centrochange_core.security.lifecycle')
         self.lifecycle.lock = lambda: setattr(self, 'locked', self.locked + 1)
@@ -233,6 +234,13 @@ class ScopedApiTest(unittest.TestCase):
         self.assertEqual(len(self.db.events), 1)
         with self.assertRaises(Invalid):
             self.api.create('create', 'A', 'Item', {'item_name': 'Altro'}, ('item_name',), 'KC', 'motivo')
+
+    def test_create_replay_rejects_changed_contact(self):
+        args = ('create', 'A', 'Item', {'item_name': 'Nuovo'}, ('item_name',), 'KC-EMAIL', 'motivo')
+        self.api.create(*args, fingerprint_extra={'email':'uno@example.invalid'})
+        self.assertTrue(self.api.create(*args, fingerprint_extra={'email':'uno@example.invalid'})['replay'])
+        with self.assertRaises(Invalid):
+            self.api.create(*args, fingerprint_extra={'email':'due@example.invalid'})
 
     def test_payment_read_scope_and_print_permission(self):
         utils = types.ModuleType('frappe.utils')
@@ -432,7 +440,7 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe.get_all = lambda doctype, **kwargs: ['pro@example.invalid']
         result = profiles.practitioners('A', 20, 0, 'Rossi')
         self.assertEqual(result['rows'][0].name, 'PRO-A')
-        self.assertEqual(observed['filters']['user_id'], ['in', ['pro@example.invalid']])
+        self.assertEqual(observed['filters']['name'], ['in', ['PRO-A']])
         self.assertEqual(observed['page_length'], 21)
         self.assertEqual(observed['or_filters']['first_name'], ['like', '%Rossi%'])
         with self.assertRaises(Invalid):

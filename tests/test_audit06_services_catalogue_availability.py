@@ -229,6 +229,7 @@ class Audit06ServicesCatalogueAvailabilityTests(unittest.TestCase):
         self.guards.enabled = lambda user=None: True
         self.guards.roles = lambda user=None: self.user_roles
         self.guards.centers = lambda user=None: [self.current_center]
+        self.guards.practitioner_in_center = lambda doc, center: bool(doc.user_id and center in self.guards.centers(doc.user_id))
         self.guards.practitioner_for = lambda user=None: 'PRO-1'
         self.guards.patient_contexts = lambda: {('PAT-1', self.current_center)}
         self.guards.current_rows = lambda doctype, filters=None, fields=None, pluck=None: fake_get_all(doctype, filters, pluck, fields)

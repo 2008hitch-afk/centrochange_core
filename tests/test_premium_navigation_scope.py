@@ -50,6 +50,7 @@ class NavigationScopeTests(unittest.TestCase):
         guards.operational_centers = lambda: self.centers if self.manager else self.centers[:1]
         guards.patient_contexts = lambda: {(name, center) for center, names in self.assignments.items() for name in names}
         guards.practitioner_for = lambda: 'PRO-A'
+        guards.practitioner_names_for_center = lambda center: [row.name for row in self.practitioners if row.user_id in self.memberships[center]]
         notes = types.ModuleType('centrochange_core.operations.notes')
         notes.require_context = lambda *args: None
         booking = types.ModuleType('centrochange_core.scheduling.booking')
@@ -95,9 +96,8 @@ class NavigationScopeTests(unittest.TestCase):
             return self.memberships[filters['center']]
         if doctype == 'Healthcare Practitioner':
             return [row for row in self.practitioners
-                    if row.user_id in filters['user_id'][1]
-                    and row.status == filters['status']
-                    and (not filters.get('name') or row.name == filters['name'])]
+                    if row.name in filters['name'][1]
+                    and row.status == filters['status']]
         if doctype == 'Mode of Payment':
             return []
         return []

@@ -43,6 +43,8 @@ class PractitionerMixin:
 	def validate(self):
 		self.user_id = self.user_id or None
 		previous = self.get_doc_before_save()
+		if (self.get('cc_profile_center') or '') != ((previous.get('cc_profile_center') or '') if previous else '') and not frappe.flags.get('cc_practitioner_center_write'):
+			frappe.throw('Il centro anagrafico richiede il servizio autorizzato.', frappe.PermissionError)
 		if self.supplier != (previous.supplier if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
 			frappe.throw('Il collegamento professionista-fornitore richiede il servizio Finance tracciato.',frappe.PermissionError)
 		if not previous:

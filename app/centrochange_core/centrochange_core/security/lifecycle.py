@@ -98,7 +98,8 @@ def set_assignment(patient, center, practitioner=None, active=1, reason=None):
 		frappe.throw("Lo stato dell’assegnazione non è valido.")
 	if practitioner and active:
 		identity = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
-		if identity.status != "Active" or not identity.user_id or not enabled(identity.user_id) or center not in centers(identity.user_id):
+		from centrochange_core.security.guards import practitioner_in_center
+		if identity.status != "Active" or not practitioner_in_center(identity, center):
 			frappe.throw("Il professionista deve essere attivo e assegnato a questa sede.")
 	filters = {"patient": patient, "center": center, "practitioner": practitioner or ["is", "not set"]}
 	name = frappe.db.get_value("CC Patient Assignment", filters, for_update=True)
@@ -141,8 +142,19 @@ def set_practitioner_state(practitioner, active, reason):
 	require_manager()
 	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 	active = _active_value(active)
-	if active not in (0, 1) or doc.user_id in (None, "", "Guest", "Administrator"):
+	if active not in (0, 1) or doc.user_id in ("Guest", "Administrator"):
 		frappe.throw("Serve un account operativo valido e collegato.")
+	if not doc.user_id:
+		if not doc.get('cc_profile_center'):
+			frappe.throw('Serve un centro anagrafico autorizzato.')
+		before = {'status': doc.status, 'enabled': None}
+		after = {'status': 'Active' if active else 'Disabled', 'enabled': None}
+		if before != after:
+			with internal_write('cc_permission_write'):
+				doc.status = after['status']
+				doc.save(ignore_permissions=True)
+			append('PRACTITIONER_STATE', doc.doctype, doc.name, before, after, reason)
+		return after
 	user = frappe.get_doc("User", doc.user_id, for_update=True)
 	if "CC Professional" not in roles(user.name):
 		frappe.throw("L’account non appartiene a un professionista Centro Change.")
@@ -168,6 +180,9 @@ def replace_principal(practitioner, new_user, reason):
 	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 	if new_user in ("Administrator", "Guest") or not enabled(new_user) or "CC Professional" not in roles(new_user):
 		frappe.throw("Il sostituto deve essere un professionista Centro Change attivo.")
+	profile_center = doc.get("cc_profile_center")
+	if profile_center and not frappe.db.exists("CC Center Membership", {"user": new_user, "center": profile_center, "active": 1}):
+		frappe.throw("L’account deve essere autorizzato per il centro del professionista.", frappe.PermissionError)
 	old_user = doc.user_id
 	if old_user == new_user:
 		return {"user": new_user}
