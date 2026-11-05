@@ -155,6 +155,14 @@ class ScopedApiTest(unittest.TestCase):
             self.mutate(value='Diverso')
         self.assertEqual(self.db.doc.writes, 1)
 
+    def test_same_key_rejects_changed_contact_fingerprint(self):
+        args = ('item', 'A', 'Item', 'ITEM-A', {'item_name': 'Nuovo nome'}, ('item_name',), 'v1', 'CONTACT-KEY', 'motivo')
+        self.api.mutate(*args, fingerprint_extra={'email': 'uno@example.invalid'})
+        self.assertTrue(self.api.mutate(*args, fingerprint_extra={'email': 'uno@example.invalid'})['replay'])
+        with self.assertRaises(Invalid):
+            self.api.mutate(*args, fingerprint_extra={'email': 'altro@example.invalid'})
+        self.assertEqual(self.db.doc.writes, 1)
+
     def test_stale_version_denied_without_write(self):
         with self.assertRaises(Invalid):
             self.mutate(version='stale')

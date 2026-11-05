@@ -161,14 +161,20 @@ def practitioner_detail(center, name):
     doc = frappe.get_doc('Healthcare Practitioner', bounded(name, 'Professionista'))
     doc.check_permission('read')
     _practitioner(center, doc)
-    return {field: doc.get(field) for field in ('name', 'practitioner_name', 'first_name', 'middle_name', 'last_name', 'user_id', 'status', 'gender', 'mobile_phone', 'residence_phone', 'office_phone', 'practitioner_type', 'hospital', 'department', 'designation', 'email_id', 'modified')}
+    result = {field: doc.get(field) for field in ('name', 'practitioner_name', 'first_name', 'middle_name', 'last_name', 'user_id', 'status', 'gender', 'mobile_phone', 'residence_phone', 'office_phone', 'practitioner_type', 'hospital', 'department', 'designation', 'email_id', 'modified')}
+    result['contact_modified'] = str(frappe.db.get_value('Contact', doc.get('practitioner_primary_contact'), 'modified') or '') if doc.get('practitioner_primary_contact') else ''
+    return result
 
 
 @frappe.whitelist(methods=['POST'])
 def practitioner_save(center, name, first_name, last_name, expected_version, request_key, reason,
                       middle_name=None, mobile_phone=None, residence_phone=None, office_phone=None,
-                      practitioner_type=None, hospital=None, gender=None, department=None, **extra):
+                      practitioner_type=None, hospital=None, gender=None, department=None, email=None, contact_version=None, **extra):
     deny_extra(extra)
+    if email is not None:
+        email = bounded(email, 'Email', 140, required=False).lower()
+        if email and not frappe.utils.validate_email_address(email):
+            frappe.throw('Email non valida')
     values = {'first_name': bounded(first_name, 'Nome'), 'last_name': bounded(last_name, 'Cognome', required=False) if last_name is not None else None}
     for field, label in (('middle_name','Secondo nome'), ('mobile_phone','Cellulare'), ('residence_phone','Telefono'), ('office_phone','Telefono ufficio'), ('hospital','Struttura')):
         value = locals()[field]
@@ -184,7 +190,58 @@ def practitioner_save(center, name, first_name, last_name, expected_version, req
         if practitioner_type not in ('', 'Internal', 'External'):
             frappe.throw('Tipo professionista non valido')
         values['practitioner_type'] = practitioner_type
-    return mutate('practitioner', center, 'Healthcare Practitioner', name, values, tuple(values), expected_version, request_key, reason, lambda doc: _practitioner(center, doc))
+    def save_email(doc):
+        if email is None:
+            return
+        from hashlib import sha256
+        from centrochange_core.security.audit import append
+        linked = frappe.get_all('Dynamic Link', filters={'parenttype':'Contact', 'link_doctype':'Healthcare Practitioner', 'link_name':doc.name}, pluck='parent')
+        contact = frappe.get_doc('Contact', doc.practitioner_primary_contact, for_update=True) if doc.practitioner_primary_contact else None
+        if not contact and linked:
+            frappe.throw('Esiste già un contatto collegato: verifica il contatto principale prima di modificarlo.')
+        if contact and str(contact.modified) != str(contact_version or ''):
+            frappe.throw('Il contatto è stato modificato da un altro utente. Ricarica la scheda e riprova.')
+        if not contact and contact_version:
+            frappe.throw('Il contatto è stato modificato da un altro utente. Ricarica la scheda e riprova.')
+        old = (contact.email_id or '').strip().lower() if contact else ''
+        if old == email:
+            return
+        if contact:
+            contact.check_permission('write')
+            if {(row.link_doctype, row.link_name) for row in contact.links} != {('Healthcare Practitioner', doc.name)}:
+                frappe.throw('Il contatto è condiviso: non è possibile modificarlo da questa scheda.')
+        if email:
+            matches = frappe.get_all('Contact Email', filters={'email_id':email}, pluck='parent')
+            if any(parent != (contact.name if contact else None) for parent in matches):
+                frappe.throw('Questa email è già presente in un altro contatto: verifica prima la possibile duplicazione.')
+        if not contact:
+            contact = frappe.get_doc({'doctype':'Contact', 'first_name':doc.first_name, 'last_name':doc.last_name,
+                                      'links':[{'link_doctype':'Healthcare Practitioner','link_name':doc.name}]})
+            contact.check_permission('create')
+        # Keep all addresses as secondary where native Contact supports an
+        # empty primary; a sole address must be removed or Frappe reselects it.
+        if not email:
+            if len(contact.email_ids) == 1:
+                contact.email_ids = []
+            else:
+                for row in contact.email_ids:
+                    row.is_primary = 0
+        else:
+            found = False
+            for row in contact.email_ids:
+                row.is_primary = int(row.email_id.lower() == email)
+                found |= bool(row.is_primary)
+            if not found:
+                contact.append('email_ids', {'email_id':email, 'is_primary':1})
+        contact.insert() if contact.is_new() else contact.save()
+        doc.practitioner_primary_contact = contact.name
+        doc.email_id = contact.email_id or ''
+        doc.save()
+        digest = lambda value: sha256(value.encode()).hexdigest()
+        append('PRACTITIONER_CONTACT_UPDATED', doc.doctype, doc.name, {'email_hash':digest(old)}, {'email_hash':digest(email)}, reason)
+    return mutate('practitioner', center, 'Healthcare Practitioner', name, values, tuple(values), expected_version, request_key, reason,
+                  lambda doc: _practitioner(center, doc), after_save=save_email if email is not None else None,
+                  fingerprint_extra={'email':email, 'contact_version':contact_version or ''} if email is not None else None)
 
 
 @frappe.whitelist(methods=['GET'])
@@ -193,7 +250,7 @@ def practitioner_history(center, name):
     doc = frappe.get_doc('Healthcare Practitioner', bounded(name, 'Professionista'))
     doc.check_permission('read')
     _practitioner(center, doc)
-    events = frappe.get_all('CC Audit Event', filters={'event_type':'PREMIUM_MASTER_UPDATED', 'reference_doctype':'Healthcare Practitioner', 'reference_name':doc.name},
-        fields=['actor','event_time','before_state'], order_by='event_time desc, name desc', limit_page_length=100)
+    events = frappe.get_all('CC Audit Event', filters={'event_type':['in', ['PREMIUM_MASTER_UPDATED', 'PRACTITIONER_CONTACT_UPDATED']], 'reference_doctype':'Healthcare Practitioner', 'reference_name':doc.name},
+        fields=['event_type','actor','event_time','before_state'], order_by='event_time desc, name desc', limit_page_length=100)
     return [{'actor':row.actor, 'event_time':row.event_time,
-             'fields':list(frappe.parse_json(row.before_state or '{}').get('before', {}).keys())} for row in events]
+             'fields':['email'] if row.event_type == 'PRACTITIONER_CONTACT_UPDATED' else list(frappe.parse_json(row.before_state or '{}').get('before', {}).keys())} for row in events]

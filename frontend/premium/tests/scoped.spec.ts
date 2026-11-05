@@ -619,9 +619,10 @@ test('Professionista: modifica precompilata e auditata dal profilo', async ({ pa
   await expect(form.getByLabel(/^Nome/)).toHaveValue('Professionista')
   await expect(form.getByLabel('Cognome', { exact: true })).toHaveValue('Sintetico')
   await form.getByLabel(/^Nome/).fill('Nome sintetico')
+  await form.getByLabel('Email', { exact: true }).fill('professionista@example.invalid')
   await form.getByLabel('Motivo della modifica').fill('Correzione sintetica')
   await form.getByRole('button', { name: 'Salva modifiche' }).click()
   await expect.poll(() => writes.find(w => w.method.endsWith('profiles.practitioner_save'))).toBeTruthy()
   const payload = writes.find(w => w.method.endsWith('profiles.practitioner_save'))!.body
-  expect(payload).toMatchObject({ center, name:'PR-001', first_name:'Nome sintetico', expected_version:'v1', reason:'Correzione sintetica' })
+  expect(payload).toMatchObject({ center, name:'PR-001', first_name:'Nome sintetico', email:'professionista@example.invalid', expected_version:'v1', reason:'Correzione sintetica' })
 })
