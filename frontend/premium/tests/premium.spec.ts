@@ -334,6 +334,8 @@ test('AUDIT-04 assegnazioni ricercabili e riassegnazione usa servizio scoped', a
   await page.locator('tbody tr').first().click()
   const drawer = page.locator('.patient-detail-page')
   await drawer.getByRole('button', { name: 'Assegnazioni', exact: true }).click()
+  await expect(drawer.getByRole('heading', { name: 'Professionisti assegnati' })).toBeVisible()
+  expect(await drawer.evaluate(root => Boolean(root.querySelector('.patient-tab-assignments h3')?.textContent?.includes('Professionisti assegnati')))).toBe(true)
   await drawer.getByRole('button', { name: 'Riassegna' }).click()
   await drawer.getByRole('combobox', { name: 'Professionista attuale' }).fill('Rossi')
   await drawer.getByRole('option', { name: 'Dott.ssa Rossi' }).click()
