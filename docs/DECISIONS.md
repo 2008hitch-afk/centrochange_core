@@ -1,5 +1,16 @@
 # Technical Decision Log — Centro Change
 
+## OWNER-2026-11-06 — PROVISIONING E ATTIVAZIONE AUTOMATICA COMPLETA (VIGENTE, PREVALE SU 05/11)
+
+**Decisione Owner vincolante.** L'account **Amministratore/Manager Full Permission** (anche segretaria) crea dalla sola pagina **Professionisti** un professionista **già completamente attivo** con operazione unica e coerente: nuovo `User` Frappe personale **abilitato**, ruolo `CC Professional`, `CC Center Membership` attiva nella sede selezionata, `Healthcare Practitioner` **Active** e con `user_id` collegato, ACL e audit aggiornati. Anche il percorso di riattivazione/disattivazione avviene dalla stessa scheda. L'eventuale primo accesso prevede solo **onboarding nativo e sicuro delle credenziali**, non un'ulteriore autorizzazione Owner o un account lasciato in stato Disabled. Nessun account condiviso, privilegio amministrativo al professionista o permesso contabile in eccesso. Transactionality, idempotenza, rollback su errore, permessi server-side e isolamento centro sono obbligatori.
+
+**Decisione precedente revocata:** la modalità finale `account_mode=new → User.enabled=0 / Healthcare Practitioner.Disabled` in attesa di autorizzazione Owner **non soddisfa** il requisito. Dopo la consegna il Manager ha l'autorizzazione operativa per creare/attivare account personali senza una nuova approvazione dell'Owner per ogni inserimento. **Prima della consegna** l'Owner fornisce i dati/email reali per il provisioning iniziale; durante sviluppo/test solo identità sintetiche, niente inviti/credenziali reali. Il gate Owner per deploy/merge resta obbligatorio e distinto.
+
+**Attuazione:** [PR #203 — requisito e prove richiesti](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). L'implementazione corrente va corretta; CI precedente non dimostra conformità, non dichiarare `OWNER_ACCEPTED` né `PASS_LIVE` senza nuova verifica.
+
+---
+
+
 ## OWNER-2026-11-05 — MODELLO ACCOUNT E ANAGRAFICHE (VIGENTE)
 <!-- OWNER_CURRENT_2026_11_05 -->
 
