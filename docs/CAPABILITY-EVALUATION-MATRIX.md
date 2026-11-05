@@ -1,5 +1,12 @@
 # Centro Change — Capability Evaluation Matrix
 
+## DECISIONE OWNER 06/11/2026 — ATTIVAZIONE COMPLETA DEL NUOVO ACCOUNT
+
+Prevale sulle precedenti formulazioni: dalla sola pagina **Professionisti**, l'account **Amministratore/Manager Full Permission** crea e attiva in un passaggio nuovo `User` Frappe personale (`enabled=1`, `CC Professional`), centro e membership attivi, Healthcare Practitioner attivo/collegato, ACL coerenti e onboarding credenziali sicuro. Lo stesso Manager può disattivare/riattivare successivamente, senza autorizzazione Owner per ciascun inserimento dopo la consegna. **NON CONFORME** il flusso finale `new → Disabled`; [requisito PR #203](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). Test solo sintetici finché non vengono forniti i dati reali; decisione funzionale non equivale a implementazione, merge o deploy.
+
+---
+
+
 ## DECISIONE OWNER VIGENTE 05/11/2026 — RUOLI E INTERFACCE
 <!-- OWNER_CURRENT_2026_11_05 -->
 
