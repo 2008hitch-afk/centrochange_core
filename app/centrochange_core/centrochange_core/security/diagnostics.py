@@ -9,7 +9,7 @@ def sensitive_request():
         return True
     request=getattr(frappe.local,'request',None)
     path=getattr(request,'path','')
-    confidential_methods = ('frappe.core.doctype.user.user.update_password', 'centrochange_core.operations.profiles.practitioner_create')
+    confidential_methods = ('frappe.core.doctype.user.user.update_password', 'centrochange_core.operations.profiles.practitioner_create', 'centrochange_core.operations.profiles.practitioner_regenerate_access', 'centrochange_core.operations.profiles.practitioner_change_login_email')
     if any(method in path or (getattr(frappe.local,'form_dict',{}) or {}).get('cmd') == method for method in confidential_methods):
         return True
     if 'centrochange_core.operations.notes.add_note' in path or any('centrochange_core.finance.'+name in path for name in ('incoming','sdi','ts','fiscal')):

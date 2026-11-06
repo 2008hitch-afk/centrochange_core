@@ -207,6 +207,7 @@ class Audit06ServicesCatalogueAvailabilityTests(unittest.TestCase):
 
         self.audit = types.ModuleType('centrochange_core.security.audit')
         self.audit.atomic = lambda fn: fn
+        self.audit.retry_deadlock_once = lambda fn: fn
         self.audit.serialize = lambda v: json.dumps(v, sort_keys=True, default=str, separators=(',', ':'))
         self.audit.append = lambda event, doctype, name, before, after, reason: self.db.events.append((event, doctype, name, before, after, reason))
 

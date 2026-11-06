@@ -99,6 +99,7 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe.utils = types.SimpleNamespace(validate_email_address=lambda value: '@' in value)
         self.audit = types.ModuleType('centrochange_core.security.audit')
         self.audit.atomic = lambda fn: fn
+        self.audit.retry_deadlock_once = lambda fn: fn
         self.audit.serialize = lambda value: json.dumps(value, sort_keys=True, default=str, separators=(',', ':'))
         self.audit.append = lambda event, doctype, name, before, after, reason: self.db.events.append((event, before, after))
         self.guards = types.ModuleType('centrochange_core.security.guards')

@@ -83,13 +83,47 @@ def run():
         assert frappe.db.get_value('User', pending_doc.user_id, 'enabled')
         assert frappe.db.exists('CC Center Membership', {'user':pending_doc.user_id, 'center':center, 'active':1})
         assert practitioner_in_center(pending_doc, center)
+        rotate_args = {'center':center, 'name':pending_doc.name, 'expected_version':str(pending_doc.modified), 'request_key':'CI-ROTATE', 'reason':'Synthetic rotation'}
+        rotated = profiles.practitioner_regenerate_access(**rotate_args)
+        assert rotated['first_access_url'] and not rotated['replay']
+        assert profiles.practitioner_regenerate_access(**rotate_args) == {'name':pending_doc.name, 'replay':True}
+        from centrochange_core.security.audit import append
+        for index in range(101):
+            append('PRACTITIONER_ACCESS_LINK_ROTATED', pending_doc.doctype, pending_doc.name,
+                   {'request_key_hash':'synthetic-' + str(index)}, {'center':center}, 'Synthetic history')
+        assert profiles.practitioner_regenerate_access(**rotate_args) == {'name':pending_doc.name, 'replay':True}
+        rotated_token = parse_qs(urlsplit(rotated['first_access_url']).fragment)['key'][0]
+        assert not _get_user_for_update_password(token, None).get('user')
+        assert _get_user_for_update_password(rotated_token, None).user == pending_doc.user_id
+        try:
+            profiles.practitioner_regenerate_access(**{**rotate_args, 'request_key':'CI-ROTATE-AGAIN'})
+        except frappe.ValidationError:
+            pass
+        else:
+            raise AssertionError('Rotation cooldown bypassed')
+        frappe.set_user('Administrator')
+        try:
+            profiles.practitioner_regenerate_access(**{**rotate_args, 'request_key':'CI-OTHER-MANAGER-ROTATE'})
+        except frappe.ValidationError:
+            pass
+        else:
+            raise AssertionError('Rotation cooldown bypassed by another manager')
+        for principal in (data['fixture']['users']['a']['name'], data['fixture']['users']['t']['name'], 'Guest'):
+            frappe.set_user(principal)
+            try:
+                profiles.practitioner_regenerate_access(**{**rotate_args, 'request_key':'CI-UNAUTHORIZED-ROTATE'})
+            except frappe.PermissionError:
+                pass
+            else:
+                raise AssertionError('Unauthorized account rotated a key')
+        frappe.set_user(manager)
         acl = {'user':pending_doc.user_id, 'allow':'Healthcare Practitioner', 'for_value':pending_doc.name}
         assert frappe.db.exists('User Permission', acl)
         profiles.practitioner_set_state(center, pending_doc.name, 0, str(pending_doc.modified), 'Synthetic disable')
         pending_doc.reload()
         assert not frappe.db.get_value('User', pending_doc.user_id, 'enabled')
         assert not frappe.db.exists('User Permission', acl)
-        assert not _get_user_for_update_password(token, None).get('user')
+        assert not _get_user_for_update_password(rotated_token, None).get('user')
         profiles.practitioner_set_state(center, pending_doc.name, 1, str(pending_doc.modified), 'Synthetic reactivation')
         pending_doc.reload()
         assert pending_doc.status == 'Active' and frappe.db.get_value('User', pending_doc.user_id, 'enabled')
@@ -105,6 +139,39 @@ def run():
                 raise AssertionError('Direct association bypassed role, identity or center checks')
         assert frappe.db.get_value('Healthcare Practitioner', pending_doc.name, 'user_id') == pending_args['email']
         from unittest.mock import patch
+        rename_args = {'center':center, 'name':pending_doc.name, 'email':'ci.renamed@example.invalid',
+                       'expected_version':str(pending_doc.modified), 'request_key':'CI-RENAME', 'reason':'Synthetic rename'}
+        for principal in (data['fixture']['users']['a']['name'], data['fixture']['users']['t']['name'], 'Guest'):
+            frappe.set_user(principal)
+            try:
+                profiles.practitioner_change_login_email(**rename_args)
+            except frappe.PermissionError:
+                pass
+            else:
+                raise AssertionError('Unauthorized account changed a login email')
+        frappe.set_user(manager)
+        with patch('centrochange_core.security.lifecycle.reconcile_user', side_effect=frappe.ValidationError('Synthetic rename failure')):
+            try:
+                profiles.practitioner_change_login_email(**rename_args)
+            except frappe.ValidationError:
+                pass
+            else:
+                raise AssertionError('Rename failure was ignored')
+        assert frappe.db.exists('User', pending_args['email']) and not frappe.db.exists('User', rename_args['email'])
+        assert frappe.db.get_value('Healthcare Practitioner', pending_doc.name, 'user_id') == pending_args['email']
+        try:
+            profiles.practitioner_change_login_email(**{**rename_args, 'email':user, 'request_key':'CI-DUPLICATE-LOGIN'})
+        except frappe.ValidationError:
+            pass
+        else:
+            raise AssertionError('Duplicate login accepted')
+        changed = profiles.practitioner_change_login_email(**rename_args)
+        assert not changed['replay'] and profiles.practitioner_change_login_email(**rename_args)['replay']
+        assert not frappe.db.exists('User', pending_args['email']) and frappe.db.exists('User', rename_args['email'])
+        assert frappe.db.get_value('Healthcare Practitioner', pending_doc.name, 'user_id') == rename_args['email']
+        assert frappe.db.exists('CC Center Membership', {'user':rename_args['email'], 'center':center, 'active':1})
+        assert frappe.db.exists('User Permission', {'user':rename_args['email'], 'allow':'Healthcare Practitioner', 'for_value':pending_doc.name})
+        assert frappe.db.exists('CC Audit Event', {'event_type':'PRACTITIONER_LOGIN_EMAIL_CHANGED', 'reference_name':pending_doc.name})
         frappe.in_test = False
         callback_count = len(frappe.db.after_commit._functions)
         with patch('centrochange_core.security.lifecycle.set_membership', side_effect=frappe.ValidationError('Synthetic injected failure')):

@@ -1,6 +1,6 @@
 """Existing operational identities, scoped to an authorized center context."""
 import frappe
-from centrochange_core.security.audit import atomic
+from centrochange_core.security.audit import atomic, retry_deadlock_once
 from centrochange_core.scoped_api import bounded, create, deny_extra, manager, mutate, page
 from centrochange_core.security.guards import is_manager, patient_contexts, practitioner_for, require_center, require_operational_center, roles
 
@@ -292,7 +292,129 @@ def practitioner_detail(center, name):
     result = {field: doc.get(field) for field in ('name', 'practitioner_name', 'first_name', 'middle_name', 'last_name', 'user_id', 'status', 'gender', 'mobile_phone', 'residence_phone', 'office_phone', 'practitioner_type', 'hospital', 'department', 'designation', 'email_id', 'modified')}
     result['contact_modified'] = str(frappe.db.get_value('Contact', doc.get('practitioner_primary_contact'), 'modified') or '') if doc.get('practitioner_primary_contact') else ''
     result['account_enabled'] = bool(frappe.db.get_value('User', doc.user_id, 'enabled')) if doc.user_id else False
+    result['login_email'] = frappe.db.get_value('User', doc.user_id, 'email') if doc.user_id else None
     return result
+
+
+@frappe.whitelist(methods=['POST'])
+@_atomic_provision
+def practitioner_regenerate_access(center, name, expected_version, request_key, reason):
+    """Rotate a personal first-access key; the bearer is returned only once."""
+    from hashlib import sha256
+    from urllib.parse import urlsplit
+    from centrochange_core.security.audit import append, serialize
+    from centrochange_core.security.guards import enabled, personal_professional, practitioner_in_center
+    from centrochange_core.security.lifecycle import lock
+    from centrochange_core.scoped_api import replay_key
+    manager(center)
+    require_operational_center(center)
+    lock()
+    doc = frappe.get_doc('Healthcare Practitioner', bounded(name, 'Professionista'), for_update=True)
+    doc.check_permission('write')
+    _practitioner(center, doc)
+    user = doc.user_id
+    if not user or doc.status != 'Active' or not enabled(user) or not personal_professional(user) or not practitioner_in_center(doc, center):
+        frappe.throw('Serve un account personale attivo e autorizzato per il centro.', frappe.PermissionError)
+    if int(frappe.get_system_settings('reset_password_link_expiry_duration') or 0) <= 0:
+        frappe.throw('Configura una scadenza positiva per il link di primo accesso.')
+    reason = bounded(reason, 'Motivo', 500)
+    key = replay_key('practitioner-first-access', request_key)
+    fingerprint = sha256(serialize([center, doc.name, user, expected_version]).encode()).hexdigest()
+    events = frappe.get_all('CC Audit Event', filters={'event_type':'PRACTITIONER_ACCESS_LINK_ROTATED', 'actor':frappe.session.user, 'before_state':['like','%' + key + '%']}, fields=['actor','before_state'], limit_page_length=0)
+    for event in events:
+        data = frappe.parse_json(event.before_state or '{}')
+        if event.actor == frappe.session.user and data.get('request_key_hash') == key:
+            if data.get('fingerprint') != fingerprint:
+                frappe.throw('Chiave richiesta già usata con dati diversi.')
+            return {'name':doc.name, 'replay':True}
+    if not expected_version or str(doc.modified) != str(expected_version):
+        frappe.throw('Scheda modificata da un altro utente. Ricarica e riprova.')
+    latest = frappe.get_all('CC Audit Event', filters={'event_type':'PRACTITIONER_ACCESS_LINK_ROTATED', 'reference_doctype':'Healthcare Practitioner', 'reference_name':doc.name}, fields=['event_time'], order_by='event_time desc', limit_page_length=1)
+    if latest and frappe.utils.get_datetime(latest[0].event_time) > frappe.utils.add_to_date(frappe.utils.now_datetime(), seconds=-60):
+        frappe.throw('Attendi un minuto prima di rigenerare un altro link per questo professionista.')
+    reset = urlsplit(frappe.get_doc('User', user, for_update=True)._reset_password(send_email=False))
+    if reset.path != '/update-password' or not reset.query.startswith('key='):
+        frappe.throw('Impossibile preparare il primo accesso in sicurezza.')
+    append('PRACTITIONER_ACCESS_LINK_ROTATED', doc.doctype, doc.name,
+           {'request_key_hash':key, 'fingerprint':fingerprint}, {'center':center}, reason)
+    if getattr(frappe.local, 'request', None):
+        frappe.local.response_headers['Cache-Control'] = 'private, no-store, no-cache, max-age=0'
+    return {'name':doc.name, 'replay':False, 'first_access_url':'/cc-first-access#' + reset.query}
+
+
+@frappe.whitelist(methods=['POST'])
+@retry_deadlock_once
+@_atomic_provision
+def practitioner_change_login_email(center, name, email, expected_version, request_key, reason):
+    """Rename the native User, including Frappe links and credentials, under one transaction."""
+    from hashlib import sha256
+    from centrochange_core.security.audit import append, serialize
+    from centrochange_core.security.guards import enabled, personal_professional, practitioner_in_center
+    from centrochange_core.security.lifecycle import lock, reconcile_user
+    from centrochange_core.scoped_api import replay_key
+    manager(center)
+    require_operational_center(center)
+    lock()
+    doc = frappe.get_doc('Healthcare Practitioner', bounded(name, 'Professionista'), for_update=True)
+    doc.check_permission('write')
+    _practitioner(center, doc)
+    new_email = bounded(email, 'Email di accesso', 140).lower()
+    if not frappe.utils.validate_email_address(new_email):
+        frappe.throw('Email di accesso non valida.')
+    reason = bounded(reason, 'Motivo', 500)
+    digest = replay_key('practitioner-login-email', request_key)
+    fingerprint = sha256(serialize([center, doc.name, new_email, expected_version]).encode()).hexdigest()
+    events = frappe.get_all('CC Audit Event', filters={'event_type':'PRACTITIONER_LOGIN_EMAIL_CHANGED', 'actor':frappe.session.user, 'before_state':['like','%' + digest + '%']}, fields=['before_state'], limit_page_length=0)
+    for event in events:
+        previous = frappe.parse_json(event.before_state or '{}')
+        if previous.get('request_key_hash') == digest:
+            if previous.get('fingerprint') != fingerprint:
+                frappe.throw('Chiave richiesta già usata con dati diversi.')
+            return {'name':doc.name, 'login_email':new_email, 'replay':True}
+    if not expected_version or str(doc.modified) != str(expected_version):
+        frappe.throw('Scheda modificata da un altro utente. Ricarica e riprova.')
+    old = doc.user_id
+    if not old or old in ('Administrator', 'Guest') or doc.status != 'Active' or not enabled(old) or not personal_professional(old) or not practitioner_in_center(doc, center):
+        frappe.throw('Serve un account personale attivo e autorizzato per il centro.', frappe.PermissionError)
+    if old.lower() == new_email:
+        frappe.throw('La nuova email di accesso coincide con quella attuale.')
+    if frappe.db.exists('User', new_email):
+        frappe.throw('Esiste già un account con questa email.')
+    other_contacts = frappe.get_all('Contact Email', filters={'email_id':new_email}, pluck='parent')
+    if any(contact != doc.practitioner_primary_contact for contact in other_contacts):
+        frappe.throw('Questa email appartiene già a un altro contatto.')
+    frappe.get_doc('User', old, for_update=True)
+    # User.after_rename performs a nested native rename of the user's private
+    # Notification Settings without forwarding ignore_permissions. Grant only
+    # this manager a transaction-local share, then remove it before commit.
+    temporary_share = None
+    if frappe.db.exists('Notification Settings', old) and not frappe.has_permission('Notification Settings', 'write', doc=old):
+        if frappe.db.exists('DocShare', {'user':frappe.session.user, 'share_doctype':'Notification Settings', 'share_name':old}):
+            frappe.throw('Le autorizzazioni esistenti del contatto richiedono verifica amministrativa.')
+        share = frappe.get_doc({'doctype':'DocShare', 'user':frappe.session.user,
+            'share_doctype':'Notification Settings', 'share_name':old, 'read':1, 'write':1})
+        share.flags.ignore_share_permission = True
+        temporary_share = share.insert(ignore_permissions=True).name
+    # Pinned Frappe 16 User.after_rename clears sessions through a helper that
+    # otherwise commits mid-rename. Frappe itself uses this transaction guard
+    # for document hooks. Cache invalidation is conservative if rollback occurs.
+    frappe.db._disable_transaction_control += 1
+    try:
+        from frappe.model.rename_doc import rename_doc
+        rename_doc('User', old, new_email, force=True, merge=False, ignore_permissions=True,
+                   show_alert=False, rebuild_search=False)
+    finally:
+        frappe.db._disable_transaction_control -= 1
+    if temporary_share:
+        frappe.delete_doc('DocShare', temporary_share, ignore_permissions=True, flags={'ignore_share_permission':True})
+    renamed = frappe.get_doc('User', new_email, for_update=True)
+    renamed.reset_password_key = None
+    renamed.save(ignore_permissions=True)
+    reconcile_user(new_email)
+    append('PRACTITIONER_LOGIN_EMAIL_CHANGED', doc.doctype, doc.name,
+           {'request_key_hash':digest, 'fingerprint':fingerprint, 'login_email':old}, {'login_email':new_email, 'center':center}, reason)
+    frappe.db.after_commit.add(lambda: (frappe.clear_cache(user=old), frappe.clear_cache(user=new_email)))
+    return {'name':doc.name, 'login_email':new_email, 'replay':False}
 
 
 @frappe.whitelist(methods=['POST'])
@@ -379,9 +501,9 @@ def practitioner_history(center, name):
     doc = frappe.get_doc('Healthcare Practitioner', bounded(name, 'Professionista'))
     doc.check_permission('read')
     _practitioner(center, doc)
-    events = frappe.get_all('CC Audit Event', filters={'event_type':['in', ['PREMIUM_MASTER_CREATED', 'PREMIUM_MASTER_UPDATED', 'PRACTITIONER_CONTACT_UPDATED', 'PRACTITIONER_STATE', 'PRINCIPAL_REPLACED']], 'reference_doctype':'Healthcare Practitioner', 'reference_name':doc.name},
+    events = frappe.get_all('CC Audit Event', filters={'event_type':['in', ['PREMIUM_MASTER_CREATED', 'PREMIUM_MASTER_UPDATED', 'PRACTITIONER_CONTACT_UPDATED', 'PRACTITIONER_STATE', 'PRINCIPAL_REPLACED', 'PRACTITIONER_ACCESS_LINK_ROTATED', 'PRACTITIONER_LOGIN_EMAIL_CHANGED']], 'reference_doctype':'Healthcare Practitioner', 'reference_name':doc.name},
         fields=['event_type','actor','event_time','before_state'], order_by='event_time desc, name desc', limit_page_length=100)
-    event_fields = {'PREMIUM_MASTER_CREATED':['creazione'], 'PRACTITIONER_CONTACT_UPDATED':['email'], 'PRACTITIONER_STATE':['stato'], 'PRINCIPAL_REPLACED':['accesso']}
+    event_fields = {'PREMIUM_MASTER_CREATED':['creazione'], 'PRACTITIONER_CONTACT_UPDATED':['email'], 'PRACTITIONER_STATE':['stato'], 'PRINCIPAL_REPLACED':['accesso'], 'PRACTITIONER_ACCESS_LINK_ROTATED':['accesso'], 'PRACTITIONER_LOGIN_EMAIL_CHANGED':['email di accesso']}
     return [{'actor':row.actor, 'event_time':row.event_time,
              'fields':event_fields.get(row.event_type, list(frappe.parse_json(row.before_state or '{}').get('before', {}).keys()))} for row in events]
 
