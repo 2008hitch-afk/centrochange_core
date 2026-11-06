@@ -283,6 +283,7 @@ export function FinanceReportsPage({
             columns={[
               { key: 'customer_label', label: 'Soggetto fiscale', render: (value, row) => demoCustomer(row.key, value) },
               { key: 'state', label: 'Stato' },
+              { key: 'operational', label: 'Incassi operativi nel periodo', render: v => (v as Row | undefined)?.cash_cents == null ? 'Non disponibile' : money(Number((v as Row).cash_cents) / 100) },
               { key: 'totals', label: 'Residuo contabile', render: v => money((v as Row | undefined)?.outstanding) },
               { key: 'totals', label: 'Scaduto', render: v => money((v as Row | undefined)?.overdue) },
               { key: 'next_due_date', label: 'Prossima scadenza', render: displayDate },

@@ -21,6 +21,7 @@ REFS = {'builder': '37e958bc4f801d06d0438c21b97b42c45c4eaa51',
         'healthcare': 'dda107b26e3a0fe1dbd65c7257371235de054a04'}
 PREMIUM_ADDED = {
     'centrochange_core/finance/operational_receipts.py',
+    'centrochange_core/finance/report_operational.py',
     'centrochange_core/finance/operational_receipts_acceptance.py',
     'centrochange_core/centro_change_core/doctype/cc_operational_receipt/__init__.py',
     'centrochange_core/centro_change_core/doctype/cc_operational_receipt/cc_operational_receipt.py',
@@ -47,6 +48,7 @@ PREMIUM_ADDED = {
     'centrochange_core/public/js/login_v1.js',
 }
 REVIEWED_BACKEND_DELTAS = {'centrochange_core/finance/receivables.py',
+                           'centrochange_core/finance/patient_reporting.py',
                            'centrochange_core/operations/notifications.py',
                            'centrochange_core/hooks.py',
                            'centrochange_core/security/permissions.py',

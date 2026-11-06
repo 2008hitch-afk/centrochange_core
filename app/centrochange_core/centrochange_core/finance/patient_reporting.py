@@ -87,6 +87,30 @@ def _project(center,start,end,group):
         for debt in p['debts']:
             d=dict(debt);d['patient']=p['patient']
             debt_map.setdefault((d['doctype'],d['name']),d)
+    # Operational receipts are a separate register from ERPNext Payment Entries.
+    # Keep their dated cash total separate to avoid counting the same transaction twice.
+    from centrochange_core.finance import operational_receipts, report_operational
+    receipt_rows = []
+    for patient in group['patients']:
+        if not patient['active'] and not is_manager():
+            continue
+        for receipt in operational_receipts._rows(patient['name'], center):
+            entries = frappe.parse_json(receipt.allocations)
+            if not isinstance(entries, list):
+                frappe.throw('I movimenti operativi richiedono una riconciliazione prima del report.')
+            for entry in entries:
+                appointment = frappe.db.get_value('Patient Appointment', entry.get('appointment'),
+                    ['patient', 'cc_center'], as_dict=True) if isinstance(entry, dict) and entry.get('appointment') else None
+                if not appointment or appointment.patient != patient['name'] or appointment.cc_center != center:
+                    frappe.throw('I movimenti operativi richiedono una riconciliazione prima del report.', frappe.PermissionError)
+            receipt_rows.append(receipt)
+    try:
+        operational = report_operational.summarize(safe_sessions, receipt_rows, start, end)
+    except (ValueError, TypeError, KeyError):
+        frappe.throw('I movimenti operativi richiedono una riconciliazione prima del report.')
+    for session in safe_sessions:
+        session['operational_payment'] = operational['sessions'][session['name']]
+    operational_total = {'cash_cents': operational['cash_cents']}
     outstanding=sum(r.outstanding_amount for r in open_rows);overdue_amount=sum(r['outstanding_amount'] for r in overdue)
     blocked=any(p['blocked'] for p in positions);deferred=any(r['deferral'] and r.outstanding_amount>0 for r in open_rows) or any(d['override'] for d in debt_map.values())
     due_dates=[frappe.utils.getdate(r['effective_due_date']) for r in open_rows if r['effective_due_date'] and r.outstanding_amount>0]
@@ -97,7 +121,7 @@ def _project(center,start,end,group):
     return {**group,'accounting_mapping_available':bool(customer),'center':center,'start':start,'end':end,'as_of':now.isoformat(),'counts':counts,'sessions':safe_sessions,
         'totals':{'invoiced':sum(r['grand_total'] for r in invoices) if customer else None,'collected':sum(r['collected_amount'] for r in payments) if customer else None,'outstanding':outstanding if customer else None,'overdue':overdue_amount if customer else None,'open_invoices':len(open_rows)},
         'invoices':invoices,'payments':payments,'open_invoices':list(map(dict,open_rows)),'overdue_invoices':overdue,'next_due_date':min(dates) if dates else None,'deferred':bool(deferred),'blocked':blocked,'state':state,
-        'collections':{'debts':list(debt_map.values()),'patients':[{'patient':p['patient'],'blocked':p['blocked'],'agreement':p['agreement']} for p in positions]},
+        'operational':operational_total, 'collections':{'debts':list(debt_map.values()),'patients':[{'patient':p['patient'],'blocked':p['blocked'],'agreement':p['agreement']} for p in positions]},
         'scope_note':'Sedute per data seduta; fatturato lordo firmato e incassi netti Payment Entry per data contabile nel periodo. Incassi includono anticipi/rimborsi, non allocazioni alle fatture. Residuo firmato (inclusi crediti aperti, senza allocazione) e scaduto dei debiti positivi sono la posizione nativa corrente di tutte le fatture aperte del Customer nel centro, anche fuori periodo; non un saldo storico. Debiti operativi e blocco collections restano separati. Soggetto fiscale condiviso: nessuna allocazione a singolo Patient.'}
 
 
@@ -115,7 +139,7 @@ def patient_view(center,start,end,key=None,patient=None):
     rows=[]
     for g in sorted(groups.values(),key=lambda r:r['customer_label'] or r['key']):
         p=_project(center,start,end,g)
-        rows.append({k:p[k] for k in ['key','customer','customer_label','patients','shared','counts','totals','next_due_date','deferred','blocked','state']})
+        rows.append({k:p[k] for k in ['key','customer','customer_label','patients','shared','counts','totals','operational','next_due_date','deferred','blocked','state']})
     return {'center':center,'start':start,'end':end,'rows':rows,'grouping':'One row per Customer; unmapped Patient has no inferred accounting balance.'}
 
 
