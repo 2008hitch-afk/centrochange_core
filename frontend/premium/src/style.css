@@ -72,7 +72,7 @@
 .period-presets button{border:1px solid #dfe7ef;background:#fff;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:#344b65}
 .period-presets button:hover{background:#f8fbfe;border-color:#b9d5ec}
 .period-presets button.selected{background:#2787ca;color:#fff;border-color:#2787ca;font-weight:600}
-.report-drilldown{margin-top:24px;padding-top:16px;border-top:1px solid #e8edf3}
+.report-drilldown{margin-top:24px;padding:16px 20px 20px;border-top:1px solid #e8edf3}
 .report-drilldown-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
 .report-drilldown-header h3{margin:0;font-size:14px;color:#284462}
 .clickable-row{cursor:pointer}
