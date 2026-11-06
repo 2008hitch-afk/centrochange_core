@@ -251,10 +251,21 @@ def bootstrap(center=None):
     practitioners=current_rows('Healthcare Practitioner',filters,fields=['name','practitioner_name'])
     profiles=current_rows('CC Center Service',{'center':center,'enabled':1},pluck='appointment_type')
     from centrochange_core.scheduling.booking import snapshot
+    from centrochange_core.scheduling.public_offer import configured_type, validate_free_offer, PublicOfferError
+    public_center=bool(frappe.db.exists('CC Public Booking Route',{'center':center,'enabled':1}))
     services=[]
     for profile in profiles:
         try:
-            services.append({'name':profile,**snapshot(profile,center)})
+            service={'name':profile,**snapshot(profile,center)}
+            for mode in ('sede','online'):
+                try:
+                    if (public_center and profile == configured_type(frappe.conf.get('cc_public_first_meeting_types'), mode)
+                            and frappe.db.get_value('Appointment Type',profile,'cc_first_meeting')):
+                        validate_free_offer(service,mode)
+                        service['public_first_meeting_mode']=mode
+                except PublicOfferError:
+                    pass
+            services.append(service)
         except frappe.ValidationError:
             # Incomplete catalog is unavailable, never silently priced at zero.
             pass

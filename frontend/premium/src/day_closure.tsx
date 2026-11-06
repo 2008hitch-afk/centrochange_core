@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { Check, CalendarDays, Clock, User, AlertCircle, ChevronRight, AlertTriangle } from 'lucide-react'
 import { type Boot, type Row, call, displayDate, romeToday, time } from './api'
 import { type Feedback, Button, Chip, DateInput, Empty, Field, FormError, Modal } from './ui'
-import { demoPatient, demoText } from './demo_labels'
+import { demoPatient, demoText, serviceLabel } from './demo_labels'
 import { paymentMethodLabel } from './views'
 import { economyName } from './display_names'
 
@@ -269,7 +269,7 @@ export function DayClosureModal({
                         <span className="patient-name">
                           <User size={14} /> {demoPatient(s.patient, s.patient_name, s.patient_first_name, s.patient_last_name)}
                         </span>
-                        <span className="session-service">{demoText(s.cc_service_label) || 'Seduta'}</span>
+                        <span className="session-service">{serviceLabel(s.cc_service_label) || 'Seduta'}</span>
                       </div>
                       <div className="card-meta">
                         <span className="session-time">

@@ -1034,23 +1034,43 @@ test('AUDIT-04 UX-04-09: combobox unico supporta tastiera, filtro, clear e valid
   await expect.poll(() => writes.find(write => write.method.endsWith('scheduling.booking.book'))?.body.patient).toBe('PAT-002')
 })
 
-test('catalogo consultivo mostra servizi e professionisti dal centro autorizzato', async ({ page }, testInfo) => {
+test('catalogo mostra due servizi distinti e raggruppa le modalità prima della ricerca', async ({ page }) => {
   await mockApi(page)
+  const services = [
+    { name: 'TYPE-S', cc_service_label: 'Primo Incontro in Sede con Direttore + Prima Seduta', public_first_meeting_mode: 'sede', cc_price_snapshot: 0, cc_currency_snapshot: 'EUR', duration: 20 },
+    { name: 'TYPE-O', cc_service_label: 'Primo Incontro Online con Direttore + Prima Seduta', public_first_meeting_mode: 'online', cc_price_snapshot: 0, cc_currency_snapshot: 'EUR', duration: 20 },
+    { name: 'TYPE-P', cc_service_label: 'Seduta successiva', cc_price_snapshot: 44, cc_currency_snapshot: 'EUR', duration: 45 },
+    { name: 'TYPE-P2', cc_service_label: 'Seduta', cc_price_snapshot: 44, cc_currency_snapshot: 'EUR', duration: 45 },
+  ]
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => route.fulfill({ json: { message: { ...boot, services } } }))
   await page.goto('./')
   await openSection(page, 'Servizi')
-  await expect(page.getByRole('heading', { name: 'Servizi e professionisti' })).toBeVisible()
-  await expect(page.getByRole('row', { name: /Prima visita/ })).toContainText('60 min')
-  await expect(page.getByRole('row', { name: /Prima visita/ })).toContainText('80,00')
-  await expect(page.getByText('Dott.ssa Rossi')).toBeVisible()
-  await page.getByRole('row', { name: /Prima visita/ }).click()
-  const detail = page.getByRole('dialog', { name: 'Prima visita' })
-  await expect(detail.getByText('ITEM-001')).toBeVisible()
-  await expect(detail.getByText('80,00')).toBeVisible()
-  await detail.getByRole('button', { name: 'Chiudi' }).click()
-  if (testInfo.project.name === 'mobile') expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
-  await page.screenshot({ path: `test-results/${testInfo.project.name}-services.png`, fullPage: true })
+  await expect(page.getByRole('row', { name: /Primo colloquio conoscitivo/ })).toContainText('20 min')
+  await expect(page.getByRole('row', { name: /Primo colloquio conoscitivo/ })).toContainText('Gratis')
+  await expect(page.getByRole('row', { name: /^Seduta/ })).toHaveCount(1)
+  await expect(page.getByRole('row', { name: /^Seduta/ })).toContainText('44,00')
+  await expect(page.getByText('+ Prima Seduta', { exact: false })).toHaveCount(0)
+  await page.getByRole('row', { name: /^Seduta/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Seduta' })).toBeVisible()
+  await page.getByRole('dialog', { name: 'Seduta' }).getByRole('button', { name: 'Chiudi' }).click()
+  if (page.viewportSize()?.width === 390) expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  await page.getByRole('searchbox', { name: 'Cerca servizi' }).fill('online')
+  await expect(page.getByRole('row', { name: /Primo colloquio conoscitivo/ })).toHaveCount(1)
+  await expect(page.getByText('+ Prima Seduta', { exact: false })).toHaveCount(0)
   await page.getByRole('searchbox', { name: 'Cerca servizi' }).fill('inesistente')
-  await expect(page.getByRole('row', { name: /Prima visita/ })).toHaveCount(0)
+  await expect(page.getByRole('row', { name: /Primo colloquio conoscitivo/ })).toHaveCount(0)
+})
+
+test('catalogo segnala configurazione incompleta senza inventare servizi', async ({ page }) => {
+  await mockApi(page)
+  const services = [{ name: 'TYPE-S', cc_service_label: 'Primo Incontro in Sede con Direttore + Prima Seduta', public_first_meeting_mode: 'sede', cc_price_snapshot: 0, cc_currency_snapshot: 'EUR', duration: 20 },
+    { name: 'TYPE-P', cc_service_label: 'Seduta successiva', cc_price_snapshot: 45, cc_currency_snapshot: 'EUR', duration: 45 }]
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => route.fulfill({ json: { message: { ...boot, services } } }))
+  await page.goto('./')
+  await openSection(page, 'Servizi')
+  await expect(page.getByText('Modalità del colloquio configurate: in sede.')).toBeVisible()
+  await expect(page.getByText('Seduta 45 minuti / 44 € non disponibile: verifica il catalogo.')).toBeVisible()
+  await expect(page.getByRole('row', { name: /^Seduta/ })).toHaveCount(0)
 })
 
 test('cambio centro svuota immediatamente i dati del centro precedente', async ({ page }) => {
@@ -1059,14 +1079,14 @@ test('cambio centro svuota immediatamente i dati del centro precedente', async (
     const selected = new URL(route.request().url()).searchParams.get('center')
     const data = selected === 'CENTRO-B'
       ? { ...boot, center: 'CENTRO-B', centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }], patients: [], practitioners: [], services: [] }
-      : { ...boot, centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }] }
+      : { ...boot, services: [{ name: 'TYPE-P', cc_service_label: 'Seduta successiva', duration: 45, cc_price_snapshot: 44, cc_currency_snapshot: 'EUR' }], centers: [{ name: 'CENTRO-A', branch: 'Centro A' }, { name: 'CENTRO-B', branch: 'Centro B' }] }
     await route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: data }) })
   })
   await page.goto('./')
   await openSection(page, 'Servizi')
-  await expect(page.getByRole('row', { name: /Prima visita/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /^Seduta/ })).toBeVisible()
   await page.getByRole('combobox', { name: 'Centro' }).selectOption('CENTRO-B')
-  await expect(page.getByRole('row', { name: /Prima visita/ })).toHaveCount(0)
+  await expect(page.getByRole('row', { name: /^Seduta/ })).toHaveCount(0)
   await expect(page.getByText('Nessun elemento')).toBeVisible()
 })
 
@@ -2592,6 +2612,7 @@ test('CORE #173: Popover calendario su toolbar destra rimane allineato a destra 
 
 test('AUDIT-06: UX-A06-01, UX-A06-02, UX-A06-06, UX-A06-11 Servizi, professionisti del centro e drawer', async ({ page }, testInfo) => {
   await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => route.fulfill({ json: { message: { ...boot, services: [{ name: 'TYPE-P', cc_service_label: 'Seduta successiva', duration: 45, cc_price_snapshot: 44, cc_currency_snapshot: 'EUR' }] } } }))
   await page.goto('./')
 
   // UX-A06-06: Single center context badge in topbar
@@ -2616,11 +2637,11 @@ test('AUDIT-06: UX-A06-01, UX-A06-02, UX-A06-06, UX-A06-11 Servizi, professionis
 
   // Clear search
   await page.getByRole('searchbox', { name: 'Cerca servizi' }).fill('')
-  await expect(page.getByRole('row', { name: /Prima visita/ })).toBeVisible()
+  await expect(page.getByRole('row', { name: /^Seduta/ })).toBeVisible()
 
   // UX-A06-02: Open drawer and verify no duplicate title in detail-summary
-  await page.getByRole('row', { name: /Prima visita/ }).click()
-  const drawer = page.getByRole('dialog', { name: 'Prima visita' })
+  await page.getByRole('row', { name: /^Seduta/ }).click()
+  const drawer = page.getByRole('dialog', { name: 'Seduta' })
   await expect(drawer).toBeVisible()
   // detail-summary has only Chip and Center, no redundant <h3>
   const summaryHeadings = drawer.locator('.detail-summary h3')

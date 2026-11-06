@@ -1,5 +1,9 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## DECISIONE OWNER 06/11/2026 — DUE SERVIZI, DUE PRENOTAZIONI
+
+Per i requisiti di catalogo e prenotazione vigenti: primo colloquio conoscitivo gratuito di 20 minuti (in sede oppure online, prenotabile dal pubblico) e seduta distinta di 45 minuti / 44 € (prenotata successivamente dal Manager). Le modalità sono configurazioni tecniche del colloquio, non servizi aggiuntivi. Nessuna seconda prenotazione automatica. La CI e le prove sintetiche non equivalgono a `PASS_LIVE UAT` o `OWNER_ACCEPTED`.
+
 ## RIESAME TECNICO 06/11/2026 — RECUPERO E IDENTITÀ PROFESSIONISTI
 
 La candidata #203 contiene rigenerazione auditata del primo accesso e modifica separata della email di accesso tramite rename Frappe; le verifiche sintetiche non costituiscono collaudo UAT né accettazione Owner. Le annotazioni di non conformità sottostanti descrivono i candidati precedenti. Stati e accettazioni storiche del CSV restano invariati.
