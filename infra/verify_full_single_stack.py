@@ -22,6 +22,7 @@ REFS = {'builder': '37e958bc4f801d06d0438c21b97b42c45c4eaa51',
 PREMIUM_ADDED = {
     'centrochange_core/finance/operational_receipts.py',
     'centrochange_core/finance/report_operational.py',
+    'centrochange_core/finance/report_dashboard.py',
     'centrochange_core/finance/operational_receipts_acceptance.py',
     'centrochange_core/centro_change_core/doctype/cc_operational_receipt/__init__.py',
     'centrochange_core/centro_change_core/doctype/cc_operational_receipt/cc_operational_receipt.py',

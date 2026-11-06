@@ -144,7 +144,7 @@ def patient_view(center,start,end,key=None,patient=None):
 
 
 @frappe.whitelist(methods=['GET'])
-def patient_export(center,start,end,key=None,patient=None):
+def patient_export(center,start,end,key=None,patient=None,payment_state=None,customer_search=None):
     import csv
     from io import StringIO
     from centrochange_core.operations.reporting import safe_cell
@@ -154,7 +154,13 @@ def patient_export(center,start,end,key=None,patient=None):
         return frappe.utils.formatdate(value,'dd/MM/yyyy') if value else ''
     def write(row):writer.writerow([safe_cell(v) for v in row])
     if 'rows' in data:
-        for row in data['rows']:write(['Posizione cliente',row['key'],'corrente',row['customer_label'],row['totals']['outstanding'],'EUR',date_it(row['next_due_date']),'',''])
+        allowed={'Tutti','Saldata','Parziale','Da incassare','Non dovuto','Da definire','In programma'}
+        if payment_state and payment_state not in allowed:frappe.throw('Stato pagamento non valido.')
+        search=(customer_search or '').strip().casefold()
+        for row in data['rows']:
+            if not row.get('customer') or (search and search not in (row.get('customer_label') or '').casefold()):continue
+            if payment_state and payment_state!='Tutti' and not row['operational']['state_counts'].get(payment_state):continue
+            write(['Posizione cliente',row['key'],'corrente',row['customer_label'],row['totals']['outstanding'],'EUR',date_it(row['next_due_date']),'',''])
     else:
         for row in data['sessions']:write(['Seduta',row['name'],date_it(row['appointment_date']),row['patient_label'],row['cc_price_snapshot'],row['cc_currency_snapshot'],'','',''])
         for row in data['invoices']:write(['Fatturato',row['name'],date_it(row['posting_date']),row['customer'],row['grand_total'],row['currency'],date_it(row['due_date']),'',''])

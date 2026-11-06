@@ -16,6 +16,7 @@ type Props = {
   initialPatient?: string
   buttonLabel?: string
   onClose?: () => void
+  dashboard?: boolean
 }
 
 const url = (method: string, args: Row) =>
@@ -36,6 +37,7 @@ export function FinanceReportsPage({
   initialMode = 'customers',
   initialPatient = '',
   onClose,
+  dashboard = false,
 }: Props) {
   const [mode, setMode] = useState<'patients' | 'customers' | 'professionals'>(
     initialPatient ? 'patients' : initialMode
@@ -48,7 +50,7 @@ export function FinanceReportsPage({
   const [paymentFilter, setPaymentFilter] = useState('Tutti')
   const [practitioner, setPractitioner] = useState('')
   const [detail, setDetail] = useState<Row | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -156,12 +158,15 @@ export function FinanceReportsPage({
   }), [groups, customerSearch, paymentFilter])
   const customerMetrics = useMemo(() => {
     const sum = (field: string) => customerRows.reduce((total, row) => total + Number((row.totals as Row | undefined)?.[field] ?? 0), 0)
+    const sessions = customerRows.reduce((total, row) => total + Number((row.counts as Row | undefined)?.sessions ?? 0), 0)
+    const remainingKnown = customerRows.every(row => (row.operational as Row | undefined)?.session_remaining_cents != null)
+    const remaining = customerRows.reduce((total, row) => total + Number((row.operational as Row | undefined)?.session_remaining_cents ?? 0), 0) / 100
     const performed = customerRows.reduce((total, row) => total + Number((row.counts as Row | undefined)?.performed ?? 0), 0)
     const pending = customerRows.reduce((total, row) => total + Number((row.counts as Row | undefined)?.pending ?? 0), 0)
     const known = customerRows.every(row => (row.operational as Row | undefined)?.cash_cents != null)
     const received = customerRows.reduce((total, row) => total + Number((row.operational as Row | undefined)?.cash_cents ?? 0), 0) / 100
     const states = ['Saldata', 'Parziale', 'Da incassare', 'Non dovuto'].map(state => ({state, count: customerRows.reduce((total, row) => total + Number(((row.operational as Row | undefined)?.state_counts as Row | undefined)?.[state] ?? 0), 0)}))
-    return {outstanding: sum('outstanding'), overdue: sum('overdue'), performed, pending, known, received, states}
+    return {outstanding: sum('outstanding'), overdue: sum('overdue'), performed, pending, sessions, remainingKnown, remaining, known, received, states}
   }, [customerRows])
 
   const counts = detail?.counts as Row | undefined
@@ -198,7 +203,7 @@ export function FinanceReportsPage({
 
   return (
     <section className="panel finance-reports-page" role="dialog" aria-label="Report dettagliati">
-      <header className="patient-page-header">
+      {!dashboard && <header className="patient-page-header">
         {onClose && (
           <button type="button" className="patient-back" onClick={onClose} aria-label="Chiudi">
             ← Torna al riepilogo
@@ -208,9 +213,9 @@ export function FinanceReportsPage({
         <p className="scope-note" style={{ margin: '6px 0 0' }}>
           Periodo: {displayDate(start)} – {displayDate(end)} · Centro: {centerNameFor(center, boot.centers)}
         </p>
-      </header>
+      </header>}
 
-      <div className="detail-section">
+      {!dashboard && <div className="detail-section">
         <div className="segmented" aria-label="Modalità report dettagliati">
           <button
             type="button"
@@ -244,7 +249,7 @@ export function FinanceReportsPage({
             Per professionista
           </button>
         </div>
-      </div>
+      </div>}
 
       {mode === 'patients' && (
         <div className="detail-section">
@@ -291,7 +296,7 @@ export function FinanceReportsPage({
         </div>
       )}
 
-      {mode === 'customers' && (
+      {mode === 'customers' && !loading && !error && (
         <div className="detail-section">
           <h3>Report cliente</h3>
           <p className="scope-note">Ogni cliente fiscale può essere collegato a più pazienti. Incassi operativi e residui delle fatture restano distinti.</p>
@@ -302,13 +307,15 @@ export function FinanceReportsPage({
           {paymentFilter !== 'Tutti' && <p className="scope-note">Il filtro seleziona i clienti che hanno almeno una seduta nello stato scelto; i totali restano riferiti all’intero cliente.</p>}
           <div className="finance-report-metrics">
             <Metric label="Clienti visualizzati" value={String(customerRows.length)} />
-            <Metric label="Sedute svolte" value={String(customerMetrics.performed)} tone="green" />
+            <Metric label="Sedute nel periodo" value={String(customerMetrics.sessions)} tone="green" />
+            <Metric label="Da incassare sulle sedute" value={customerMetrics.remainingKnown ? money(customerMetrics.remaining) : 'Da verificare'} tone="amber" />
             <Metric label="Incassi operativi nel periodo" value={customerMetrics.known ? money(customerMetrics.received) : 'Non disponibile'} tone="blue" />
             <Metric label="Residuo fatture" value={money(customerMetrics.outstanding)} tone="amber" />
             <Metric label="Scaduto (di cui residuo fatture)" value={money(customerMetrics.overdue)} tone="amber" />
             <Metric label="Esiti da registrare" value={String(customerMetrics.pending)} />
           </div>
-          <section className="customer-status-chart" aria-label="Situazione delle sedute"><h3>Situazione delle sedute</h3>{customerMetrics.states.every(item => item.count === 0) ? <p>Nessun dato nel periodo.</p> : customerMetrics.states.map(item => <div className="customer-chart-row" key={item.state}><span>{item.state}</span><div className="customer-chart-track"><span style={{ width: `${Math.round(100 * item.count / Math.max(1, ...customerMetrics.states.map(x => x.count)))}%` }} /></div><strong>{item.count}</strong></div>)}</section>
+          <div className="report-approved-charts"><section className="customer-status-chart" aria-label="Situazione dei pagamenti"><h3>Situazione dei pagamenti</h3>{customerMetrics.states.every(item => item.count === 0) ? <p>Nessun dato nel periodo.</p> : customerMetrics.states.map(item => <div className="customer-chart-row" key={item.state}><span>{item.state}</span><div className="customer-chart-track"><span style={{ width: `${Math.round(100 * item.count / Math.max(1, customerMetrics.sessions))}%` }} /></div><strong>{item.count}</strong></div>)}</section><section className="customer-status-chart" aria-label="Situazione delle sedute"><h3>Situazione delle sedute</h3>{customerMetrics.sessions === 0 ? <p>Nessun dato nel periodo.</p> : [{label:"Svolte", count:customerMetrics.performed},{label:"Esito da registrare",count:customerMetrics.pending}].map(item => <div className="customer-chart-row" key={item.label}><span>{item.label}</span><div className="customer-chart-track"><span style={{width:`${Math.round(100 * item.count / customerMetrics.sessions)}%`}} /></div><strong>{item.count}</strong></div>)}</section></div>
+          <a className="button secondary" href={url('patient_reporting.patient_export', {center, start, end, payment_state: paymentFilter, customer_search: customerSearch})}><Download size={16} /> Esporta CSV clienti</a>
           <DataTable
             rows={customerRows}
             columns={[

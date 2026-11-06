@@ -489,3 +489,12 @@
 .catalog-diagnostics summary { cursor: pointer; }
 
 .customer-status-chart{padding:20px;border:1px solid var(--line);border-radius:12px;margin:20px 0;background:#f8fbff}.customer-status-chart h3{margin:0 0 16px}.customer-chart-row{display:grid;grid-template-columns:minmax(100px,160px) minmax(0,1fr) auto;align-items:center;gap:12px;margin:10px 0}.customer-chart-track{height:10px;border-radius:8px;background:#e3edf7;overflow:hidden}.customer-chart-track>span{display:block;height:100%;border-radius:8px;background:#3899eb}
+.report-approved-filters { margin-bottom: 18px; }
+.report-approved-metrics { margin: 0 0 18px; }
+.report-approved-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.report-approved-charts .panel { min-width: 0; }
+@media (max-width: 760px) { .report-approved-charts { grid-template-columns: 1fr; } }
+.report-approved-filters,.report-approved-charts .panel,.report-approved-table { padding: 20px; }
+.report-donut {width:128px;height:128px;border-radius:50%;display:grid;place-items:center;margin:12px auto;}
+.report-donut span {width:80px;height:80px;border-radius:50%;background:white;display:grid;align-content:center;text-align:center;font-size:24px;font-weight:700;}
+.report-donut small {font-size:12px;font-weight:400;}

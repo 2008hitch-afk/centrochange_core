@@ -13,6 +13,7 @@ def summarize(sessions, receipts, start, end):
         raise ValueError('Invalid report period')
     allocation = {}
     period_cents = 0
+    period_allocation = {}
     for receipt in receipts:
         when = date.fromisoformat(str(receipt['receipt_date'])[:10])
         entries = receipt['allocations']
@@ -20,12 +21,15 @@ def summarize(sessions, receipts, start, end):
         if not isinstance(entries, list):
             raise ValueError('Invalid receipt allocations')
         for item in entries:
+            if not isinstance(item, dict):
+                raise ValueError('Invalid receipt allocation')
             amount, appointment = item.get('cents'), item.get('appointment')
             if not isinstance(amount, int) or isinstance(amount, bool) or not appointment:
                 raise ValueError('Invalid receipt allocation')
             allocation[appointment] = allocation.get(appointment, 0) + amount
             if first <= when <= last:
                 period_cents += amount
+                period_allocation[appointment] = period_allocation.get(appointment, 0) + amount
     result = {}
     for session in sessions:
         name = session['name']
@@ -53,8 +57,11 @@ def summarize(sessions, receipts, start, end):
         else:
             remaining = cents - paid
             status = 'Saldata' if remaining == 0 else 'Parziale' if paid else 'Da incassare'
-        result[name] = {'state': status, 'remaining_cents': remaining, 'allocated_cents': paid}
-    counts = {name: 0 for name in ('Saldata', 'Parziale', 'Da incassare', 'Non dovuto', 'Da definire')}
+        if status == 'Da incassare' and (session.get('category') == 'future' or session.get('cc_classified_future')):
+            status, remaining = 'In programma', 0
+        result[name] = {'state': status, 'remaining_cents': remaining, 'allocated_cents': paid,
+                        'period_cash_cents': period_allocation.get(name, 0)}
+    counts = {name: 0 for name in ('Saldata', 'Parziale', 'Da incassare', 'Non dovuto', 'Da definire', 'In programma')}
     for row in result.values():
         counts[row['state']] += 1
     return {'cash_cents': period_cents, 'sessions': result, 'state_counts': counts,

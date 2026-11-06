@@ -1,3 +1,4 @@
+import { ReportDashboard } from './report_dashboard'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Calendar, dayjsLocalizer, Views } from 'react-big-calendar'
 import dayjs from 'dayjs'
@@ -797,7 +798,7 @@ export function ServiceCatalog({ boot, center }: { boot: Boot; center: string })
 
 export { Availability } from './availability_view'
 
-export function Reports({ boot, center, feedback, financeBoot, initialPatient }: Context & {
+function LegacyReports({ boot, center, feedback, financeBoot, initialPatient }: Context & {
   financeBoot?: FinanceBoot | null;
   initialPatient?: string;
 }) {
@@ -1008,6 +1009,12 @@ export function Reports({ boot, center, feedback, financeBoot, initialPatient }:
     })()}</section>}
     {selectedAppointment && <AppointmentDetail row={selectedAppointment} boot={boot} center={center} onClose={() => setSelectedAppointment(null)} onSuccess={() => { setSelectedAppointment(null); setReload(x => x + 1) }} feedback={feedback} financeBoot={financeBoot} />}
   </>
+}
+
+export function Reports(props: Context & { financeBoot?: FinanceBoot | null; initialPatient?: string }) {
+  const [advanced, setAdvanced] = useState(false)
+  if (props.initialPatient) return <LegacyReports {...props} />
+  return advanced ? <><Button variant="secondary" onClick={() => setAdvanced(false)}>Torna ai report</Button><LegacyReports {...props} /></> : <><ReportDashboard boot={props.boot} financeBoot={props.financeBoot} center={props.center} feedback={props.feedback} /><Button variant="secondary" onClick={() => setAdvanced(true)}>Analisi avanzata</Button></>
 }
 
 type FinanceTab = 'Riepilogo' | 'Fatture pazienti' | 'XML ricevuti' | 'Fatture fornitori' | 'Banca' | 'Professionisti' | 'Coda amministrativa' | 'SdI' | 'TS'

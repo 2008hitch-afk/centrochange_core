@@ -15,6 +15,7 @@ class ReportOperationalTests(unittest.TestCase):
         self.assertEqual(data['cash_cents'], -500)
         self.assertEqual(data['sessions']['A']['state'], 'Parziale')
         self.assertEqual(data['sessions']['A']['remaining_cents'], 1900)
+        self.assertEqual(data['sessions']['A']['period_cash_cents'], -500)
         self.assertEqual(data['sessions']['B']['state'], 'Non dovuto')
         self.assertEqual(data['state_counts']['Parziale'], 1)
         self.assertEqual(data['session_remaining_cents'], 1900)
@@ -26,6 +27,23 @@ class ReportOperationalTests(unittest.TestCase):
         self.assertEqual(data['sessions']['B']['state'],'Saldata')
         self.assertIsNone(data['sessions']['B']['allocated_cents'])
         self.assertIsNone(data['session_remaining_cents'])
+    def test_cumulative_payment_allocations_remain_separate(self):
+        sessions = [dict(name=n, cc_price_snapshot=44, cc_currency_snapshot='EUR', cc_economic_state='Due', cc_paid=0) for n in ('A', 'B')]
+        receipts = [dict(receipt_date='2026-02-03', allocations='[{"appointment":"A","cents":4400},{"appointment":"B","cents":1000}]')]
+        result = module.summarize(sessions, receipts, '2026-02-01', '2026-02-28')
+        self.assertEqual(result['sessions']['A']['state'], 'Saldata')
+        self.assertEqual(result['sessions']['B']['state'], 'Parziale')
+        self.assertEqual(result['sessions']['B']['remaining_cents'], 3400)
+        self.assertEqual(result['cash_cents'], 5400)
+        self.assertEqual(result['sessions']['A']['period_cash_cents'], 4400)
+        self.assertEqual(result['sessions']['B']['period_cash_cents'], 1000)
+
+    def test_future_unpaid_session_does_not_create_operational_debt(self):
+        session = dict(name='F',cc_price_snapshot=44,cc_currency_snapshot='EUR',cc_economic_state='Due',cc_classified_future=True)
+        data = module.summarize([session], [], '2026-01-01', '2026-01-31')
+        self.assertEqual(data['sessions']['F']['state'], 'In programma')
+        self.assertEqual(data['session_remaining_cents'], 0)
+
     def test_reject_bad_data_and_mixed_currency(self):
         session=[dict(name='A',cc_price_snapshot=44,cc_currency_snapshot='USD',cc_economic_state='Due',cc_paid=0)]
         with self.assertRaises(ValueError): module.summarize(session, [], '2026-01-01', '2026-01-31')
