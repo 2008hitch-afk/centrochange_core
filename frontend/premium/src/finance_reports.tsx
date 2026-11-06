@@ -299,7 +299,7 @@ export function FinanceReportsPage({
       {mode === 'customers' && !loading && !error && (
         <div className="detail-section">
           <h3>Report cliente</h3>
-          <p className="scope-note">Ogni cliente fiscale può essere collegato a più pazienti. Incassi operativi e residui delle fatture restano distinti.</p>
+          <p className="scope-note">Situazione generale delle sedute e dei pagamenti dei clienti.</p>
           <div className="form-grid">
             <Field label="Cerca cliente"><input type="search" value={customerSearch} onChange={event => setCustomerSearch(event.target.value)} placeholder="Tutti i clienti" /></Field>
             <Field label="Clienti con sedute nello stato"><select value={paymentFilter} onChange={event => setPaymentFilter(event.target.value)}><option>Tutti</option><option>Saldata</option><option>Parziale</option><option>Da incassare</option></select></Field>
