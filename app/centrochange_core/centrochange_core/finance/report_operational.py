@@ -54,4 +54,9 @@ def summarize(sessions, receipts, start, end):
             remaining = cents - paid
             status = 'Saldata' if remaining == 0 else 'Parziale' if paid else 'Da incassare'
         result[name] = {'state': status, 'remaining_cents': remaining, 'allocated_cents': paid}
-    return {'cash_cents': period_cents, 'sessions': result}
+    counts = {name: 0 for name in ('Saldata', 'Parziale', 'Da incassare', 'Non dovuto', 'Da definire')}
+    for row in result.values():
+        counts[row['state']] += 1
+    return {'cash_cents': period_cents, 'sessions': result, 'state_counts': counts,
+            'session_remaining_cents': (None if any(row['remaining_cents'] is None for row in result.values())
+                                        else sum(row['remaining_cents'] for row in result.values()))}

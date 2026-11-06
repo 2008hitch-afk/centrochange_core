@@ -44,6 +44,8 @@ export function FinanceReportsPage({
   const [key, setKey] = useState('')
   const [patientId, setPatientId] = useState(initialPatient)
   const [patientSearch, setPatientSearch] = useState('')
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [paymentFilter, setPaymentFilter] = useState('Tutti')
   const [practitioner, setPractitioner] = useState('')
   const [detail, setDetail] = useState<Row | null>(null)
   const [loading, setLoading] = useState(false)
@@ -144,6 +146,23 @@ export function FinanceReportsPage({
     if (!q) return all.slice(0, 50)
     return all.filter(p => p.label.toLocaleLowerCase('it-IT').includes(q) || p.name.toLocaleLowerCase('it-IT').includes(q)).slice(0, 50)
   }, [groups, generalBoot, patientSearch])
+
+  const customerRows = useMemo(() => groups.filter(group => {
+    if (!group.customer) return false
+    const label = String(group.customer_label ?? '').toLocaleLowerCase('it-IT')
+    if (customerSearch && !label.includes(customerSearch.trim().toLocaleLowerCase('it-IT'))) return false
+    const states = (group.operational as Row | undefined)?.state_counts as Row | undefined
+    return paymentFilter === 'Tutti' || Number(states?.[paymentFilter] ?? 0) > 0
+  }), [groups, customerSearch, paymentFilter])
+  const customerMetrics = useMemo(() => {
+    const sum = (field: string) => customerRows.reduce((total, row) => total + Number((row.totals as Row | undefined)?.[field] ?? 0), 0)
+    const performed = customerRows.reduce((total, row) => total + Number((row.counts as Row | undefined)?.performed ?? 0), 0)
+    const pending = customerRows.reduce((total, row) => total + Number((row.counts as Row | undefined)?.pending ?? 0), 0)
+    const known = customerRows.every(row => (row.operational as Row | undefined)?.cash_cents != null)
+    const received = customerRows.reduce((total, row) => total + Number((row.operational as Row | undefined)?.cash_cents ?? 0), 0) / 100
+    const states = ['Saldata', 'Parziale', 'Da incassare', 'Non dovuto'].map(state => ({state, count: customerRows.reduce((total, row) => total + Number(((row.operational as Row | undefined)?.state_counts as Row | undefined)?.[state] ?? 0), 0)}))
+    return {outstanding: sum('outstanding'), overdue: sum('overdue'), performed, pending, known, received, states}
+  }, [customerRows])
 
   const counts = detail?.counts as Row | undefined
   const totals = detail?.totals as Row | undefined
@@ -274,14 +293,28 @@ export function FinanceReportsPage({
 
       {mode === 'customers' && (
         <div className="detail-section">
-          <h3>Soggetti fiscali intestatari (Customer)</h3>
-          <p className="scope-note">
-            Una riga per Customer. Il saldo e le fatture competono all'intestatario fiscale e non vengono ripartiti artificiosamente tra i singoli pazienti.
-          </p>
+          <h3>Report cliente</h3>
+          <p className="scope-note">Ogni cliente fiscale può essere collegato a più pazienti. Incassi operativi e residui delle fatture restano distinti.</p>
+          <div className="form-grid">
+            <Field label="Cerca cliente"><input type="search" value={customerSearch} onChange={event => setCustomerSearch(event.target.value)} placeholder="Tutti i clienti" /></Field>
+            <Field label="Clienti con sedute nello stato"><select value={paymentFilter} onChange={event => setPaymentFilter(event.target.value)}><option>Tutti</option><option>Saldata</option><option>Parziale</option><option>Da incassare</option></select></Field>
+          </div>
+          {paymentFilter !== 'Tutti' && <p className="scope-note">Il filtro seleziona i clienti che hanno almeno una seduta nello stato scelto; i totali restano riferiti all’intero cliente.</p>}
+          <div className="finance-report-metrics">
+            <Metric label="Clienti visualizzati" value={String(customerRows.length)} />
+            <Metric label="Sedute svolte" value={String(customerMetrics.performed)} tone="green" />
+            <Metric label="Incassi operativi nel periodo" value={customerMetrics.known ? money(customerMetrics.received) : 'Non disponibile'} tone="blue" />
+            <Metric label="Residuo fatture" value={money(customerMetrics.outstanding)} tone="amber" />
+            <Metric label="Scaduto (di cui residuo fatture)" value={money(customerMetrics.overdue)} tone="amber" />
+            <Metric label="Esiti da registrare" value={String(customerMetrics.pending)} />
+          </div>
+          <section className="customer-status-chart" aria-label="Situazione delle sedute"><h3>Situazione delle sedute</h3>{customerMetrics.states.every(item => item.count === 0) ? <p>Nessun dato nel periodo.</p> : customerMetrics.states.map(item => <div className="customer-chart-row" key={item.state}><span>{item.state}</span><div className="customer-chart-track"><span style={{ width: `${Math.round(100 * item.count / Math.max(1, ...customerMetrics.states.map(x => x.count)))}%` }} /></div><strong>{item.count}</strong></div>)}</section>
           <DataTable
-            rows={groups}
+            rows={customerRows}
             columns={[
               { key: 'customer_label', label: 'Soggetto fiscale', render: (value, row) => demoCustomer(row.key, value) },
+              { key: 'patients', label: 'Pazienti collegati', render: v => (v as Array<{name:string; label:string}> ?? []).map(patient => demoPatient(patient.name, patient.label)).join(', ') || '—' },
+              { key: 'counts', label: 'Sedute', render: v => String((v as Row | undefined)?.sessions ?? 0) },
               { key: 'state', label: 'Stato' },
               { key: 'operational', label: 'Incassi operativi nel periodo', render: v => (v as Row | undefined)?.cash_cents == null ? 'Non disponibile' : money(Number((v as Row).cash_cents) / 100) },
               { key: 'totals', label: 'Residuo contabile', render: v => money((v as Row | undefined)?.outstanding) },

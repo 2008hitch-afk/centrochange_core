@@ -487,3 +487,5 @@
 
 .catalog-diagnostics { margin: 16px 22px 0; color: #596d80; font-size: 13px; }
 .catalog-diagnostics summary { cursor: pointer; }
+
+.customer-status-chart{padding:20px;border:1px solid var(--line);border-radius:12px;margin:20px 0;background:#f8fbff}.customer-status-chart h3{margin:0 0 16px}.customer-chart-row{display:grid;grid-template-columns:minmax(100px,160px) minmax(0,1fr) auto;align-items:center;gap:12px;margin:10px 0}.customer-chart-track{height:10px;border-radius:8px;background:#e3edf7;overflow:hidden}.customer-chart-track>span{display:block;height:100%;border-radius:8px;background:#3899eb}

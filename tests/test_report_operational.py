@@ -16,6 +16,8 @@ class ReportOperationalTests(unittest.TestCase):
         self.assertEqual(data['sessions']['A']['state'], 'Parziale')
         self.assertEqual(data['sessions']['A']['remaining_cents'], 1900)
         self.assertEqual(data['sessions']['B']['state'], 'Non dovuto')
+        self.assertEqual(data['state_counts']['Parziale'], 1)
+        self.assertEqual(data['session_remaining_cents'], 1900)
     def test_pending_unknown_and_legacy_paid_do_not_invent_cash(self):
         sessions = [dict(name='A',cc_price_snapshot=44,cc_currency_snapshot='EUR',cc_economic_state='Pending',cc_paid=0),dict(name='B',cc_price_snapshot=44,cc_currency_snapshot='EUR',cc_economic_state='Due',cc_paid=1)]
         data=module.summarize(sessions, [], '2026-01-01', '2026-01-31')
@@ -23,6 +25,7 @@ class ReportOperationalTests(unittest.TestCase):
         self.assertEqual(data['sessions']['A']['state'],'Da definire')
         self.assertEqual(data['sessions']['B']['state'],'Saldata')
         self.assertIsNone(data['sessions']['B']['allocated_cents'])
+        self.assertIsNone(data['session_remaining_cents'])
     def test_reject_bad_data_and_mixed_currency(self):
         session=[dict(name='A',cc_price_snapshot=44,cc_currency_snapshot='USD',cc_economic_state='Due',cc_paid=0)]
         with self.assertRaises(ValueError): module.summarize(session, [], '2026-01-01', '2026-01-31')

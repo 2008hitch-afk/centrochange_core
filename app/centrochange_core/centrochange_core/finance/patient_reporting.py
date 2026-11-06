@@ -110,7 +110,7 @@ def _project(center,start,end,group):
         frappe.throw('I movimenti operativi richiedono una riconciliazione prima del report.')
     for session in safe_sessions:
         session['operational_payment'] = operational['sessions'][session['name']]
-    operational_total = {'cash_cents': operational['cash_cents']}
+    operational_total = {key: operational[key] for key in ('cash_cents', 'state_counts', 'session_remaining_cents')}
     outstanding=sum(r.outstanding_amount for r in open_rows);overdue_amount=sum(r['outstanding_amount'] for r in overdue)
     blocked=any(p['blocked'] for p in positions);deferred=any(r['deferral'] and r.outstanding_amount>0 for r in open_rows) or any(d['override'] for d in debt_map.values())
     due_dates=[frappe.utils.getdate(r['effective_due_date']) for r in open_rows if r['effective_due_date'] and r.outstanding_amount>0]
