@@ -149,7 +149,11 @@ def patient_export(center,start,end,key=None,patient=None,payment_state=None,cus
     from io import StringIO
     from centrochange_core.operations.reporting import safe_cell
     data=patient_view(center,start,end,key,patient);output=StringIO(newline='');writer=csv.writer(output)
-    writer.writerow(['Tipo','Riferimento','Data','Soggetto','Importo','Valuta','Scadenza','Scadenza effettiva','Metodo di pagamento'])
+    dashboard_export = payment_state is not None and not key and not patient
+    if dashboard_export:
+        writer.writerow(['Cliente fiscale','Pazienti collegati','Sedute','Stato','Incassi operativi nel periodo EUR','Residuo fatture EUR','Scaduto fatture EUR','Prossima scadenza'])
+    else:
+        writer.writerow(['Tipo','Riferimento','Data','Soggetto','Importo','Valuta','Scadenza','Scadenza effettiva','Metodo di pagamento'])
     def date_it(value):
         return frappe.utils.formatdate(value,'dd/MM/yyyy') if value else ''
     def write(row):writer.writerow([safe_cell(v) for v in row])
@@ -160,7 +164,10 @@ def patient_export(center,start,end,key=None,patient=None,payment_state=None,cus
         for row in data['rows']:
             if not row.get('customer') or (search and search not in (row.get('customer_label') or '').casefold()):continue
             if payment_state and payment_state!='Tutti' and not row['operational']['state_counts'].get(payment_state):continue
-            write(['Posizione cliente',row['key'],'corrente',row['customer_label'],row['totals']['outstanding'],'EUR',date_it(row['next_due_date']),'',''])
+            if dashboard_export:
+                write([row['customer_label'], ', '.join(p['label'] for p in row['patients']), row['counts']['sessions'], row['state'], row['operational']['cash_cents']/100, row['totals']['outstanding'], row['totals']['overdue'], date_it(row['next_due_date'])])
+            else:
+                write(['Posizione cliente',row['key'],'corrente',row['customer_label'],row['totals']['outstanding'],'EUR',date_it(row['next_due_date']),'',''])
     else:
         for row in data['sessions']:write(['Seduta',row['name'],date_it(row['appointment_date']),row['patient_label'],row['cc_price_snapshot'],row['cc_currency_snapshot'],'','',''])
         for row in data['invoices']:write(['Fatturato',row['name'],date_it(row['posting_date']),row['customer'],row['grand_total'],row['currency'],date_it(row['due_date']),'',''])
