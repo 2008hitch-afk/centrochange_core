@@ -1767,7 +1767,7 @@ test('AUDIT-05 MUST-FIX 3 & 4: Report paginazione server-side e query isolata Pr
 
   await paginationBar.getByRole('button', { name: 'Successiva' }).click()
   await expect(paginationBar).toContainText('Pagina 2 di 3 (120 sedute totali)')
-  expect(sessionCalls.some(call => call.includes('page=2'))).toBe(true)
+  await expect.poll(() => sessionCalls.some(call => call.includes('page=2'))).toBe(true)
 
   await page.getByRole('button', { name: 'Report professionista' }).click()
   await page.getByRole('combobox', { name: 'Professionista report' }).selectOption('PR-001')

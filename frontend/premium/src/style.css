@@ -477,3 +477,7 @@
   .heading-action .button-group { flex-wrap: wrap; }
   .heading-action .button-group > * { flex: 1 1 140px; min-width: 0; }
 }
+
+@media (max-width: 1100px) { .page-heading { flex-wrap: wrap; } .heading-action { min-width: 0; max-width: 100%; } .heading-action .button-group { flex-wrap: wrap; } }
+
+@media (max-width: 1100px) { .panel-toolbar { flex-wrap: wrap; } .toolbar-left, .toolbar-right { flex-wrap: wrap; min-width: 0; max-width: 100%; } }
