@@ -96,6 +96,12 @@ def run():
         assert not _get_user_for_update_password(token, None).get('user')
         assert _get_user_for_update_password(rotated_token, None).user == pending_doc.user_id
         try:
+            profiles.practitioner_regenerate_access(**{**rotate_args, 'center':other, 'request_key':'CI-CROSS-CENTER-ROTATE'})
+        except frappe.PermissionError:
+            pass
+        else:
+            raise AssertionError('Cross-center key rotation accepted')
+        try:
             profiles.practitioner_regenerate_access(**{**rotate_args, 'request_key':'CI-ROTATE-AGAIN'})
         except frappe.ValidationError:
             pass
@@ -132,15 +138,36 @@ def run():
         from centrochange_core.security.lifecycle import replace_principal
         for forbidden in (elevated, user, other_user):
             try:
-                replace_principal(pending_doc.name, forbidden, 'Synthetic forbidden association')
+                replace_principal(pending_doc.name, forbidden, 'Synthetic forbidden association', confirm_email=forbidden)
             except (frappe.PermissionError, frappe.ValidationError):
                 pass
             else:
                 raise AssertionError('Direct association bypassed role, identity or center checks')
         assert frappe.db.get_value('Healthcare Practitioner', pending_doc.name, 'user_id') == pending_args['email']
+        # Existing account association is based on explicit confirmation of
+        # its login email, independent of the professional contact email.
+        from centrochange_core.security.audit import internal_write
+        set_membership(other_user, center, 1, 'Synthetic association')
+        with internal_write('cc_practitioner_center_write'):
+            unlinked = frappe.get_doc({'doctype':'Healthcare Practitioner', 'first_name':'SYNTHETIC Unlinked',
+                'status':'Disabled', 'cc_profile_center':center}).insert(ignore_permissions=True)
+        try:
+            profiles.practitioner_link_user(center, unlinked.name, other_user, str(unlinked.modified), 'Synthetic mismatch', confirm_email='wrong@example.invalid')
+        except frappe.PermissionError:
+            pass
+        else:
+            raise AssertionError('Unconfirmed account association accepted')
+        profiles.practitioner_link_user(center, unlinked.name, other_user, str(unlinked.modified), 'Synthetic association', confirm_email=other_user)
+        assert frappe.db.get_value('Healthcare Practitioner', unlinked.name, 'user_id') == other_user
         from unittest.mock import patch
         rename_args = {'center':center, 'name':pending_doc.name, 'email':'ci.renamed@example.invalid',
                        'expected_version':str(pending_doc.modified), 'request_key':'CI-RENAME', 'reason':'Synthetic rename'}
+        try:
+            profiles.practitioner_change_login_email(**{**rename_args, 'center':other, 'request_key':'CI-CROSS-CENTER-RENAME'})
+        except frappe.PermissionError:
+            pass
+        else:
+            raise AssertionError('Cross-center login rename accepted')
         for principal in (data['fixture']['users']['a']['name'], data['fixture']['users']['t']['name'], 'Guest'):
             frappe.set_user(principal)
             try:

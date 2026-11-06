@@ -297,6 +297,7 @@ def practitioner_detail(center, name):
 
 
 @frappe.whitelist(methods=['POST'])
+@retry_deadlock_once
 @_atomic_provision
 def practitioner_regenerate_access(center, name, expected_version, request_key, reason):
     """Rotate a personal first-access key; the bearer is returned only once."""
@@ -388,13 +389,17 @@ def practitioner_change_login_email(center, name, email, expected_version, reque
     # Notification Settings without forwarding ignore_permissions. Grant only
     # this manager a transaction-local share, then remove it before commit.
     temporary_share = None
+    preserved_share = None
     if frappe.db.exists('Notification Settings', old) and not frappe.has_permission('Notification Settings', 'write', doc=old):
-        if frappe.db.exists('DocShare', {'user':frappe.session.user, 'share_doctype':'Notification Settings', 'share_name':old}):
-            frappe.throw('Le autorizzazioni esistenti del contatto richiedono verifica amministrativa.')
-        share = frappe.get_doc({'doctype':'DocShare', 'user':frappe.session.user,
-            'share_doctype':'Notification Settings', 'share_name':old, 'read':1, 'write':1})
+        existing_share = frappe.db.get_value('DocShare', {'user':frappe.session.user, 'share_doctype':'Notification Settings', 'share_name':old}, 'name', for_update=True)
+        share = frappe.get_doc('DocShare', existing_share, for_update=True) if existing_share else frappe.get_doc({'doctype':'DocShare', 'user':frappe.session.user,
+            'share_doctype':'Notification Settings', 'share_name':old})
+        if existing_share:
+            preserved_share = {field:share.get(field) for field in ('read','write','submit','share')}
+        share.read = 1
+        share.write = 1
         share.flags.ignore_share_permission = True
-        temporary_share = share.insert(ignore_permissions=True).name
+        temporary_share = (share.save(ignore_permissions=True) if existing_share else share.insert(ignore_permissions=True)).name
     # Pinned Frappe 16 User.after_rename clears sessions through a helper that
     # otherwise commits mid-rename. Frappe itself uses this transaction guard
     # for document hooks. Cache invalidation is conservative if rollback occurs.
@@ -406,7 +411,13 @@ def practitioner_change_login_email(center, name, email, expected_version, reque
     finally:
         frappe.db._disable_transaction_control -= 1
     if temporary_share:
-        frappe.delete_doc('DocShare', temporary_share, ignore_permissions=True, flags={'ignore_share_permission':True})
+        if preserved_share is None:
+            frappe.delete_doc('DocShare', temporary_share, ignore_permissions=True, flags={'ignore_share_permission':True})
+        else:
+            share = frappe.get_doc('DocShare', temporary_share, for_update=True)
+            share.flags.ignore_share_permission = True
+            share.update(preserved_share)
+            share.save(ignore_permissions=True)
     renamed = frappe.get_doc('User', new_email, for_update=True)
     renamed.reset_password_key = None
     renamed.save(ignore_permissions=True)
@@ -540,7 +551,7 @@ def practitioner_access_candidates(center, name=None):
 
 
 @frappe.whitelist(methods=['POST'])
-def practitioner_link_user(center, name, user, expected_version, reason):
+def practitioner_link_user(center, name, user, expected_version, reason, confirm_email=None):
     from centrochange_core.security.audit import atomic
     from centrochange_core.security.lifecycle import lock, replace_principal
     @atomic
@@ -554,7 +565,6 @@ def practitioner_link_user(center, name, user, expected_version, reason):
             frappe.throw('Scheda modificata da un altro utente. Ricarica e riprova.')
         if not frappe.db.exists('CC Center Membership', {'user':bounded(user, 'Utente'), 'center':center, 'active':1}):
             frappe.throw('L’utente deve avere un’appartenenza attiva a questo centro.', frappe.PermissionError)
-        if not doc.email_id or doc.email_id.strip().lower() != (frappe.db.get_value('User', user, 'email') or '').strip().lower():
-            frappe.throw('L’email del profilo deve corrispondere all’account personale.', frappe.PermissionError)
-        return replace_principal(doc.name, user, bounded(reason, 'Motivo', 500))
+        confirmed = bounded(confirm_email, 'Conferma email', 140, required=False) or None
+        return replace_principal(doc.name, user, bounded(reason, 'Motivo', 500), confirmed)
     return run()

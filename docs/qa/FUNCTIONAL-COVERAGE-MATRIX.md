@@ -1,5 +1,11 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## RIESAME TECNICO 06/11/2026 — RECUPERO E IDENTITÀ PROFESSIONISTI
+
+La candidata #203 contiene rigenerazione auditata del primo accesso e modifica separata della email di accesso tramite rename Frappe; le verifiche sintetiche non costituiscono collaudo UAT né accettazione Owner. Le annotazioni di non conformità sottostanti descrivono i candidati precedenti. Stati e accettazioni storiche del CSV restano invariati.
+
+---
+
 ## PRECEDENZA OWNER 06/11/2026 — CC-CAP-002 E PERMESSI DI ATTIVAZIONE
 
 **Nuova decisione Owner (prevale sul 05/11):** Amministratore/Manager Full Permission, segretaria inclusa, dalla sola UI **Professionisti** deve **creare e attivare completamente** in un'unica operazione un nuovo `User` Frappe personale con `enabled=1`, ruolo `CC Professional`, membership centro attiva, Healthcare Practitioner Active/collegato e ACL riconciliate; deve poter disattivare/riattivare dalla stessa scheda. È **revocato** il flusso di creazione finale «account nuovo inattivo, attivazione tramite ulteriore autorizzazione Owner». Nessuna approvazione Owner per ogni nuovo professionista dopo il rilascio; credenziali personali tramite onboarding sicuro. Prove sintetiche durante lo sviluppo, nessuna email reale né autorizzazione implicita a deploy.

@@ -183,7 +183,7 @@ def set_practitioner_state(practitioner, active, reason):
 
 @frappe.whitelist(methods=["POST"])
 @atomic
-def replace_principal(practitioner, new_user, reason):
+def replace_principal(practitioner, new_user, reason, confirm_email=None):
 	lock()
 	require_manager()
 	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
@@ -193,8 +193,12 @@ def replace_principal(practitioner, new_user, reason):
 	profile_center = doc.get("cc_profile_center")
 	if profile_center and not frappe.db.exists("CC Center Membership", {"user": new_user, "center": profile_center, "active": 1}):
 		frappe.throw("L’account deve essere autorizzato per il centro del professionista.", frappe.PermissionError)
-	if not doc.email_id or doc.email_id.strip().lower() != (frappe.db.get_value('User', new_user, 'email') or '').strip().lower():
-		frappe.throw("L’email del profilo deve corrispondere all’account personale.", frappe.PermissionError)
+	# Legacy callers can continue using the previous matching-contact proof;
+	# the operational UI supplies an explicit login confirmation when the
+	# independently maintained contact address is different.
+	confirmed = str(confirm_email or doc.email_id or '').strip().lower()
+	if not confirmed or confirmed != (frappe.db.get_value('User', new_user, 'email') or '').strip().lower():
+		frappe.throw("Conferma l'email dell'account personale selezionato.", frappe.PermissionError)
 	old_user = doc.user_id
 	if old_user == new_user:
 		return {"user": new_user}

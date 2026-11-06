@@ -197,7 +197,8 @@ def main():
         assert call(b,resource(own))['data']['name']==own
         checks.append('replacement session granted after commit')
         call(admin,'/api/method/centrochange_core.security.lifecycle.replace_principal',
-             {'practitioner':fixture['practitioners'][1],'new_user':fixture['users']['c']['name'],'reason':fixture['tag']})
+             {'practitioner':fixture['practitioners'][1],'new_user':fixture['users']['c']['name'],
+              'confirm_email':fixture['users']['c']['name'],'reason':fixture['tag']})
         denied('old principal replacement revoked',b,resource(own))
         assert call(c,resource(own))['data']['name']==own
         checks.append('replacement principal granted')

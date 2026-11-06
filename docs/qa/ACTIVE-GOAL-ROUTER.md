@@ -1,10 +1,16 @@
 # Centro Change — REGISTRO OPERATIVO VIGENTE / instradamento GOAL e AUDIT
 
+## RIESAME TECNICO 06/11/2026 — PR #202 → #203
+
+La #202 è stata riconciliata con le decisioni Owner di main senza merge. La candidata #203 deriva dalla nuova #202 e include creazione/attivazione, rigenerazione del link e gestione separata delle email; prove sintetiche e CI non sostituiscono review formale, verifica UAT o accettazione Owner. Nessun deploy o merge è autorizzato da questa nota.
+
+---
+
 ## PRECEDENZA OWNER 06/11/2026 — ATTIVAZIONE IMMEDIATA DA PROFESSIONISTI (VIGENTE)
 
 **Questa sezione prevale sulla decisione 05/11 qui sotto in caso di conflitto.** La creazione di un nuovo professionista da **Amministratore/Manager Full Permission (segreteria inclusa)** deve concludersi **con professionista e account Frappe personale abilitati e operativi nello stesso flusso**: `User.enabled=1`, ruolo `CC Professional`, membership del centro attiva, `Healthcare Practitioner.status=Active`, link personale e ACL riconciliate. La scheda Professionisti deve permettere successivamente anche disattivazione e riattivazione. Nessuna autorizzazione Owner separata per ogni nuovo profilo creato dal Manager dopo la consegna; onboarding credenziali solo tramite flusso nativo sicuro, senza password in chiaro. Restano vietati inviti reali/credenziali prima dei dati/autorizzazione iniziale Owner; usare prove sintetiche.
 
-**Non conforme nel codice corrente #203:** `account_mode=new` crea `User.enabled=0` e Practitioner Disabled; l'attivazione tramite `set_practitioner_state` rifiuta l'utente disabilitato. Codex deve correggere backend + UI + test, non solo la documentazione. [Decisione e acceptance criteria PR #203](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). PR ancora draft; niente merge/deploy/UAT/produzione senza gate separati.
+**Checkpoint storico sul candidato inattivo #203:** `account_mode=new` crea `User.enabled=0` e Practitioner Disabled; l'attivazione tramite `set_practitioner_state` rifiuta l'utente disabilitato. Codex deve correggere backend + UI + test, non solo la documentazione. [Decisione e acceptance criteria PR #203](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). PR ancora draft; niente merge/deploy/UAT/produzione senza gate separati.
 
 ---
 
