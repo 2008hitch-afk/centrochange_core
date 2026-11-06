@@ -2875,7 +2875,7 @@ test('AUDIT-07: notifiche Direzione ripulite da gergo Notification Log in-app e 
   })
 
   await page.goto('./#Notifiche')
-  const panel = page.locator('.panel').first()
+  const panel = page.locator('.panel').filter({ has: page.getByRole('heading', { name: 'Notifiche e comunicazioni interne' }) })
   await expect(panel).not.toContainText('Notification Log in-app')
   await expect(panel).toContainText('Le comunicazioni e i promemoria sono gestiti come avvisi interni all’applicazione; nessun fornitore email esterno è collegato.')
 
