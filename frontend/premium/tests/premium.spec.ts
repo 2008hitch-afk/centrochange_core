@@ -194,10 +194,11 @@ test('Nuovo paziente usa il servizio controllato e apre la scheda', async ({ pag
   await form.getByLabel('Email').fill('test@example.invalid')
   await form.getByLabel('Telefono').fill('000123')
   await form.getByLabel('Cellulare').fill('000456')
+  await form.getByLabel('Sistema Tessera Sanitaria — trasmissione spese').selectOption('Opposed')
   await form.getByLabel('Motivo').fill('Prova sintetica')
   await form.getByRole('button', { name: 'Crea paziente' }).click()
   await expect(page.locator('.patient-detail-page')).toBeVisible()
-  expect(payload).toMatchObject({ center: 'CENTRO-A', first_name: 'SYNTHETIC Test', uid: 'SYNTHETIC-TEST-001', phone: '000123', mobile: '000456', practitioner: null })
+  expect(payload).toMatchObject({ center: 'CENTRO-A', first_name: 'SYNTHETIC Test', uid: 'SYNTHETIC-TEST-001', phone: '000123', mobile: '000456', practitioner: null, ts_preference: 'Opposed' })
 })
 
 test('AUDIT-04 scheda paziente: profilo autorizzato, note e storico', async ({ page }, info) => {
@@ -3105,4 +3106,14 @@ test('dashboard report: commercialista accede solo al report cliente', async ({p
   await expect(page.getByRole('heading',{name:'Report cliente'}).first()).toBeVisible()
   await expect(page.getByRole('button',{name:'Report professionista'})).toHaveCount(0)
   await expect(page.getByRole('button',{name:'Pazienti',exact:true})).toHaveCount(0)
+})
+
+test('Nuovo professionista non richiede reparto o qualifica', async ({page}) => {
+  await mockApi(page)
+  await page.goto('./#Professionisti')
+  await page.getByRole('button', {name:'Nuovo professionista'}).click()
+  const dialog=page.getByRole('dialog', {name:'Nuovo professionista'})
+  await expect(dialog.getByLabel('Reparto')).toHaveCount(0)
+  await expect(dialog.getByLabel('Qualifica')).toHaveCount(0)
+  await expect(dialog.getByLabel('Email personale iniziale (contatto e accesso)')).toBeVisible()
 })
