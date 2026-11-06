@@ -170,7 +170,7 @@
 .summary-card.text-good strong { color: #16a34a; }
 .summary-card.text-neutral strong { color: #64748b; }
 .summary-card.text-warn strong { color: #d97706; }
-.day-closure-list { display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px; }
+.day-closure-list { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .day-closure-card { background: #fff; border: 1px solid #dce5ee; border-radius: 10px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
 .day-closure-card.is-closed { background: #f8fafc; opacity: 0.85; border-color: #e2e8f0; }
 .day-closure-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
@@ -459,3 +459,10 @@
 .patient-tab-payments .receipt-detail{min-width:7rem;max-width:24rem;overflow-wrap:anywhere;white-space:normal}.patient-tab-payments .receipt-detail p{margin:.5rem 0}.patient-tab-payments td{min-width:0}
 
 .receipt-detail{overflow-wrap:anywhere;word-break:break-word}.receipt-detail p{margin:.5rem 0}
+
+/* Shared reading density for patient and professional profiles. */
+.patient-tab-summary .property-list, .professional-detail-page .property-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; max-width: none; }
+.patient-tab-summary .property-list > div, .professional-detail-page .property-list > div { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; padding: 14px 16px; border: 1px solid #e3eaf1; border-radius: 10px; background: #f8fafc; }
+.patient-tab-summary .property-list dt, .professional-detail-page .property-list dt { width: auto; }
+.patient-tab-summary .property-list dd, .professional-detail-page .property-list dd { margin: 0; overflow-wrap: anywhere; }
+.professional-detail-page .modal .action-form { max-width: none; }

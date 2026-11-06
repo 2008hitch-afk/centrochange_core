@@ -301,7 +301,7 @@ function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport, onO
           tone={unpaidSessionsCount > 0 ? 'amber' : 'green'}
         />
         <Metric
-          label="Debito operativo"
+          label="Da incassare"
           value={money(operationalDebtTotal, 'EUR')}
           tone={operationalDebtTotal > 0 ? 'amber' : 'green'}
         />

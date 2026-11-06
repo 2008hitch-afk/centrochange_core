@@ -40,7 +40,7 @@ export function practitionerNameFor(identifier: string, practitioners: Practitio
 
 // Same presentation wording as the existing Frappe session printout.
 const closureNames: Record<string, string> = {
-  Pending: 'Da chiudere', Closed: 'Chiusa', 'Auto Locked': 'Bloccata', Reopened: 'Riaperta'
+  Pending: 'Da chiudere', Closed: 'Chiusa', 'Auto Locked': 'Esito da registrare', Reopened: 'Riaperta'
 }
 const economyNames: Record<string, string> = {
   Pending: 'Da definire', Due: 'Dovuta', 'Non Due': 'Non dovuta',

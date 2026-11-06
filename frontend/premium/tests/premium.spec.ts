@@ -842,7 +842,7 @@ test('AUDIT-05: selettore Report professionisti usa la stessa identità leggibil
   const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', status: 'Active' }
   await mockApi(page, [], true, {}, { practitioners: [row] })
   await page.goto('./#Report')
-  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  await page.getByRole('button', { name: 'Report professionista' }).click()
   const select = page.getByRole('combobox', { name: 'Professionista report' })
   await expect(select).toContainText('Professionista di prova A')
   await expect(select).not.toContainText('CC-HTTP-AbCd123456 a')
@@ -852,7 +852,7 @@ test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo'
   await mockApi(page, [], false, { cc_performed: 1 }, { roles: ['CC Secretariat'] })
   await page.goto('./')
   await openSection(page, 'Report')
-  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  await page.getByRole('button', { name: 'Report professionista' }).click()
   await page.getByLabel('Professionista report').selectOption('PR-001')
   await expect(page.locator('.professional-report').getByText('Sedute svolte')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Compensi e fatture autorizzati' })).toHaveCount(0)
@@ -1768,7 +1768,7 @@ test('AUDIT-05 MUST-FIX 3 & 4: Report paginazione server-side e query isolata Pr
   await expect(paginationBar).toContainText('Pagina 2 di 3 (120 sedute totali)')
   expect(sessionCalls.some(call => call.includes('page=2'))).toBe(true)
 
-  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  await page.getByRole('button', { name: 'Report professionista' }).click()
   await page.getByRole('combobox', { name: 'Professionista report' }).selectOption('PR-001')
 
   await expect.poll(() => sessionCalls.some(call => call.includes('practitioner=PR-001') && call.includes('kpi=all'))).toBe(true)
@@ -2268,7 +2268,7 @@ test('AUDIT-05: registro spiega Active=1 senza inventare il valore precedente', 
 test('AUDIT-05: CSV del singolo professionista usa export del server senza prima pagina', async ({ page }) => {
   await mockApi(page)
   await page.goto('./#Report')
-  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  await page.getByRole('button', { name: 'Report professionista' }).click()
   await page.getByRole('combobox', { name: 'Professionista report' }).selectOption('PR-001')
   const csv = page.locator('.professional-report a.button').filter({ hasText: 'Esporta CSV completo' })
   await expect(csv).toHaveAttribute('href', /operations\.reporting\.export_csv/)
@@ -2984,7 +2984,7 @@ test('AUDIT-08: Export CSV centro e professionista: pulsanti abilitati solo su p
   await expect(exportCenter).toHaveAttribute('href', /operations\.reporting\.export_csv/)
 
   // Open professional detail
-  await page.getByRole('button', { name: 'Dettaglio professionista' }).click()
+  await page.getByRole('button', { name: 'Report professionista' }).click()
   const exportProf = page.locator('a:has-text("Esporta CSV completo")')
   await expect(exportProf).toBeVisible()
 })

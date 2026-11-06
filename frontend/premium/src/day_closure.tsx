@@ -23,6 +23,8 @@ interface DayClosureSession {
   cc_economic_state: string
   cc_performed: number
   cc_paid: number
+  cc_price_snapshot?: number | string | null
+  has_ended?: number | boolean
   mode_of_payment?: string | null
 }
 
@@ -119,6 +121,16 @@ export function DayClosureModal({
     return sessions.filter(s => s.cc_closure_state !== 'Closed' && s.status !== 'Cancelled')
   }, [sessions])
 
+  const pendingByProfessional = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const session of actionableSessions) {
+      if (!session.has_ended) continue
+      const name = demoText(session.practitioner_name || session.practitioner)
+      counts.set(name, (counts.get(name) || 0) + 1)
+    }
+    return Array.from(counts, ([name, count]) => ({ name, count }))
+  }, [actionableSessions])
+
   // Count metrics
   const totalCount = sessions.length
   const performedCount = actionableSessions.filter(s => formStates[s.name]?.performed === true).length +
@@ -127,8 +139,9 @@ export function DayClosureModal({
     sessions.filter(s => s.cc_closure_state === 'Closed' && !s.cc_performed).length
   const paidCount = actionableSessions.filter(s => formStates[s.name]?.performed === true && formStates[s.name]?.paid).length +
     sessions.filter(s => s.cc_closure_state === 'Closed' && s.cc_paid).length
-  const unpaidCount = actionableSessions.filter(s => formStates[s.name]?.performed === true && !formStates[s.name]?.paid).length +
-    sessions.filter(s => s.cc_closure_state === 'Closed' && s.cc_performed && !s.cc_paid).length
+  const isDue = (s: DayClosureSession) => s.cc_price_snapshot != null && Number(s.cc_price_snapshot) > 0 && !['Non Due', 'Waived', 'Package Covered'].includes(s.cc_economic_state)
+  const unpaidCount = actionableSessions.filter(s => isDue(s) && formStates[s.name]?.performed === true && !formStates[s.name]?.paid).length +
+    sessions.filter(s => isDue(s) && s.cc_closure_state === 'Closed' && s.cc_performed && !s.cc_paid).length
 
   // Validation: are all actionable sessions assigned performed status?
   const isComplete = useMemo(() => {
@@ -255,6 +268,7 @@ export function DayClosureModal({
               </div>
             </div>
 
+            {boot.roles.includes('CC Manager') && pendingByProfessional.length > 0 && <section className="detail-section" aria-label="Esiti da verificare per professionista"><h3>Esiti da verificare · {displayDate(selectedDate)}</h3>{pendingByProfessional.map(item => <p key={item.name}><strong>{item.name}</strong> · {item.count} {item.count === 1 ? 'seduta senza esito' : 'sedute senza esito'}</p>)}</section>}
             <div className="day-closure-list">
               {sessions.map(s => {
                 const isClosed = s.cc_closure_state === 'Closed'
@@ -280,7 +294,7 @@ export function DayClosureModal({
                         ) : isCancelled ? (
                           <Chip tone="neutral">Annullata</Chip>
                         ) : isAutoLocked ? (
-                          <Chip tone="bad">Da completare in ritardo</Chip>
+                          <Chip tone="bad">Esito da registrare</Chip>
                         ) : (
                           <Chip tone="warn">Da chiudere</Chip>
                         )}

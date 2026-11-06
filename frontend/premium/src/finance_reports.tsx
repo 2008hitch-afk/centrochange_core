@@ -336,7 +336,7 @@ export function FinanceReportsPage({
               <Metric label="Sedute nel periodo" value={String(patientSessions.length)} />
               <Metric label="Sedute svolte" value={String(patientSessions.filter(s => s.category === 'performed').length)} tone="green" />
               <Metric label="Sedute da saldare" value={String(patientToSettleCount)} tone={patientToSettleCount > 0 ? 'amber' : 'green'} />
-              <Metric label="Debito operativo" value={money(patientDebts.reduce((sum, d) => sum + Number(d.amount || 0), 0))} tone={patientDebts.length > 0 ? 'amber' : 'blue'} />
+              <Metric label="Da incassare" value={money(patientDebts.reduce((sum, d) => sum + Number(d.amount || 0), 0))} tone={patientDebts.length > 0 ? 'amber' : 'blue'} />
             </div>
           </div>
 
