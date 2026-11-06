@@ -1699,24 +1699,21 @@ test('AUDIT-05 MUST-FIX 1b: Account Professionista non vede filtro Tutti i profe
   await expect(page.locator('.agenda-practitioner-label')).toContainText('Dott.ssa Rossi')
 })
 
-test('AUDIT-05 MUST-FIX 2: Report fail-closed senza fallback silenzioso a workspace.agenda', async ({ page }) => {
+test('Report professionista non espone dati o export se la richiesta fallisce', async ({ page }) => {
   let agendaCalled = false
   await mockApi(page)
   await page.route('**/api/method/centrochange_core.operations.workspace.agenda*', route => {
     agendaCalled = true
-    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ message: { appointments: [{ name: 'LEAK-APP' }], truncated: false } }) })
+    return route.fulfill({contentType:'application/json', body:JSON.stringify({message:{appointments:[{name:'LEAK-APP'}]}})})
   })
-  await page.route('**/api/method/centrochange_core.operations.reporting.sessions*', route => {
-    return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ exc: 'InternalServerError' }) })
-  })
-
+  await page.route('**/api/method/centrochange_core.finance.report_dashboard.professional*', route =>
+    route.fulfill({status:500,contentType:'application/json',body:JSON.stringify({exc:'InternalServerError'})}))
   await page.goto('./#Report')
-  await page.getByRole('button', {name:'Analisi avanzata'}).click()
-  await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
-
-  await expect(page.locator('.inline-error').last()).toContainText("Operazione non riuscita")
+  await expect(page.getByRole('heading',{name:'Report professionista'})).toBeVisible()
+  await expect(page.locator('.inline-error').last()).toBeVisible()
+  await expect(page.locator('.heading-action a').filter({hasText:'Esporta CSV'})).toHaveAttribute('aria-disabled','true')
+  await expect(page.getByText('LEAK-APP')).toHaveCount(0)
   expect(agendaCalled).toBe(false)
-  await expect(page.locator('.report-drilldown .button.secondary')).toHaveClass(/disabled/)
 })
 
 test('AUDIT-05 MUST-FIX 3 & 4: Report paginazione server-side e query isolata Professionisti', async ({ page }) => {
