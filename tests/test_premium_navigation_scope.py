@@ -37,7 +37,8 @@ class NavigationScopeTests(unittest.TestCase):
         self.frappe.whitelist = lambda **kwargs: lambda fn: fn
         self.frappe.get_list = self.get_list
         self.frappe.get_all = self.get_list
-        self.frappe.db = types.SimpleNamespace(get_value=lambda *args, **kwargs: None)
+        self.frappe.conf = {}
+        self.frappe.db = types.SimpleNamespace(get_value=lambda *args, **kwargs: None, exists=lambda *args, **kwargs: False)
         utils = types.ModuleType('frappe.utils')
         utils.getdate = lambda value: value
         utils.get_time = lambda value: value
@@ -55,6 +56,10 @@ class NavigationScopeTests(unittest.TestCase):
         notes.require_context = lambda *args: None
         booking = types.ModuleType('centrochange_core.scheduling.booking')
         booking.snapshot = lambda *args: {}
+        offer = types.ModuleType('centrochange_core.scheduling.public_offer')
+        offer.configured_type = lambda *args: None
+        offer.validate_free_offer = lambda *args: None
+        offer.PublicOfferError = ValueError
         packages = types.ModuleType('centrochange_core.operations.packages')
         packages._balance = lambda *args: {}
         packages.balance = lambda *args: {}
@@ -69,6 +74,7 @@ class NavigationScopeTests(unittest.TestCase):
             'centrochange_core.operations.notes': notes,
             'centrochange_core.scheduling': types.ModuleType('centrochange_core.scheduling'),
             'centrochange_core.scheduling.booking': booking,
+            'centrochange_core.scheduling.public_offer': offer,
             'centrochange_core.operations.packages': packages,
             'centrochange_core.uat': types.ModuleType('centrochange_core.uat'),
             'centrochange_core.uat.display': display,
