@@ -1038,8 +1038,8 @@ test('AUDIT-04 UX-04-09: combobox unico supporta tastiera, filtro, clear e valid
 test('catalogo mostra due servizi distinti e raggruppa le modalità prima della ricerca', async ({ page }) => {
   await mockApi(page)
   const services = [
-    { name: 'TYPE-S', cc_service_label: 'Primo Incontro in Sede con Direttore + Prima Seduta', public_first_meeting_mode: 'sede', cc_price_snapshot: 0, cc_currency_snapshot: 'EUR', duration: 20 },
-    { name: 'TYPE-O', cc_service_label: 'Primo Incontro Online con Direttore + Prima Seduta', public_first_meeting_mode: 'online', cc_price_snapshot: 0, cc_currency_snapshot: 'EUR', duration: 20 },
+    { name: 'TYPE-S', cc_service_label: 'Primo Incontro in Sede con Direttore + Prima Seduta', configured_first_meeting_mode: 'sede', cc_price_snapshot: 0, cc_currency_snapshot: 'EUR', duration: 20 },
+    { name: 'TYPE-O', cc_service_label: 'Primo Incontro Online con Direttore + Prima Seduta', configured_first_meeting_mode: 'online', cc_price_snapshot: 0, cc_currency_snapshot: 'EUR', duration: 20 },
     { name: 'TYPE-P', cc_service_label: 'Seduta successiva', cc_price_snapshot: 44, cc_currency_snapshot: 'EUR', duration: 45 },
     { name: 'TYPE-P2', cc_service_label: 'Seduta', cc_price_snapshot: 44, cc_currency_snapshot: 'EUR', duration: 45 },
   ]
@@ -1064,13 +1064,13 @@ test('catalogo mostra due servizi distinti e raggruppa le modalità prima della 
 
 test('catalogo segnala configurazione incompleta senza inventare servizi', async ({ page }) => {
   await mockApi(page)
-  const services = [{ name: 'TYPE-S', cc_service_label: 'Primo Incontro in Sede con Direttore + Prima Seduta', public_first_meeting_mode: 'sede', cc_price_snapshot: 0, cc_currency_snapshot: 'EUR', duration: 20 },
+  const services = [{ name: 'TYPE-S', cc_service_label: 'Primo Incontro in Sede con Direttore + Prima Seduta', configured_first_meeting_mode: 'sede', cc_price_snapshot: 0, cc_currency_snapshot: 'EUR', duration: 20 },
     { name: 'TYPE-P', cc_service_label: 'Seduta successiva', cc_price_snapshot: 45, cc_currency_snapshot: 'EUR', duration: 45 }]
   await page.route('**/api/method/centrochange_core.operations.workspace.bootstrap*', route => route.fulfill({ json: { message: { ...boot, services } } }))
   await page.goto('./')
   await openSection(page, 'Servizi')
-  await expect(page.getByText('Modalità del colloquio configurate: in sede.')).toBeVisible()
-  await expect(page.getByText('Seduta 45 minuti / 44 € non disponibile: verifica il catalogo.')).toBeVisible()
+  await page.getByText('Verifica configurazione servizi').click()
+  await expect(page.getByText('Seduta 45 minuti / 44 € non configurata correttamente nel catalogo.')).toBeVisible()
   await expect(page.getByRole('row', { name: /^Seduta/ })).toHaveCount(0)
 })
 

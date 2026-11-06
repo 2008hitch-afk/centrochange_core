@@ -259,10 +259,12 @@ def bootstrap(center=None):
             service={'name':profile,**snapshot(profile,center)}
             for mode in ('sede','online'):
                 try:
-                    if (public_center and profile == configured_type(frappe.conf.get('cc_public_first_meeting_types'), mode)
+                    if (profile == configured_type(frappe.conf.get('cc_public_first_meeting_types'), mode)
                             and frappe.db.get_value('Appointment Type',profile,'cc_first_meeting')):
                         validate_free_offer(service,mode)
-                        service['public_first_meeting_mode']=mode
+                        service['configured_first_meeting_mode']=mode
+                        if public_center:
+                            service['public_first_meeting_mode']=mode
                 except PublicOfferError:
                     pass
             services.append(service)
