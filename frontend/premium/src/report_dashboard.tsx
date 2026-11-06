@@ -4,11 +4,11 @@ import {Button, DataTable, DateInput, Empty, Field, Heading, Metric, type Feedba
 import {practitionerName} from './display_names'
 import {FinanceReportsPage} from './finance_reports'
 
-type Props = {boot: Boot; financeBoot?: FinanceBoot | null; center: string; feedback: Feedback}
+type Props = {boot: Boot; financeBoot?: FinanceBoot | null; center: string; feedback: Feedback; financeOnly?: boolean}
 const states = ['Tutti', 'Saldata', 'Parziale', 'Da incassare', 'Non dovuto', 'Da definire', 'In programma']
-export function ReportDashboard({boot, financeBoot, center, feedback}: Props) {
+export function ReportDashboard({boot, financeBoot, center, feedback, financeOnly = false}: Props) {
   const manager = Boolean(boot.is_manager || boot.roles.includes('CC Manager'))
-  const [view, setView] = useState<'professional' | 'customer'>('professional')
+  const [view, setView] = useState<'professional' | 'customer'>(financeOnly ? 'customer' : 'professional')
   const [practitioner, setPractitioner] = useState('')
   const [payment, setPayment] = useState('Tutti')
   const [start, setStart] = useState(romeToday().slice(0, 8) + '01')
@@ -35,7 +35,7 @@ export function ReportDashboard({boot, financeBoot, center, feedback}: Props) {
   const csv = '/api/method/centrochange_core.finance.report_dashboard.professional_export?' + new URLSearchParams({center,start,end,practitioner,payment_state:payment})
   const charts = [{title:'Sedute per stato esito',items:[{label:'Svolte',n:metrics.performed},{label:'Esito da registrare',n:metrics.pending}]}, ...(manager ? [{title:'Sedute per stato pagamento',items:[{label:'Saldata',n:metrics.paid},{label:'Parziale',n:metrics.partial},{label:'Da incassare',n:metrics.due}]}] : [])]
   return <>
-    <Heading title={view === 'professional' ? 'Report professionista' : 'Report cliente'} subtitle="Sedute, esiti e pagamenti nel periodo selezionato." action={<div className="button-group"><Button variant={view==='professional'?'primary':'secondary'} onClick={() => setView('professional')}>Report professionista</Button>{financeBoot && <Button variant={view==='customer'?'primary':'secondary'} onClick={() => setView('customer')}>Report cliente</Button>}{view==='professional' && manager && <a className="button secondary" href={valid && result && !loading && !error ? csv : undefined} aria-disabled={!valid || !result || loading || !!error}>Esporta CSV</a>}</div>} />
+    <Heading title={view === 'professional' ? 'Report professionista' : 'Report cliente'} subtitle="Sedute, esiti e pagamenti nel periodo selezionato." action={<div className="button-group">{!financeOnly && <Button variant={view==='professional'?'primary':'secondary'} onClick={() => setView('professional')}>Report professionista</Button>}{financeBoot && <Button variant={view==='customer'?'primary':'secondary'} onClick={() => setView('customer')}>Report cliente</Button>}{view==='professional' && manager && <a className="button secondary" href={valid && result && !loading && !error ? csv : undefined} aria-disabled={!valid || !result || loading || !!error}>Esporta CSV</a>}</div>} />
     <section className="panel report-approved-filters"><div className="form-grid">
       {view==='professional' && <Field label="Professionista"><select value={practitioner} onChange={e=>setPractitioner(e.target.value)}><option value="">Tutti i professionisti</option>{boot.practitioners.map(p=><option value={p.name} key={p.name}>{practitionerName(p)}</option>)}</select></Field>}
       <Field label="Dal"><DateInput value={start} onChange={setStart} onValidityChange={setStartValid} calendarLabel="data iniziale" required /></Field><Field label="Al"><DateInput value={end} onChange={setEnd} onValidityChange={setEndValid} calendarLabel="data finale" required /></Field>

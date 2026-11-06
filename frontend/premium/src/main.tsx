@@ -4,6 +4,7 @@ import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bel
 import { type Boot, type FinanceBoot, ops, finance, call } from './api'
 import { Agenda, Patients, Professionals, ServiceCatalog, Availability, Reports, FinanceView, Access, Notifications } from './views'
 import { AuditLog } from './audit_log'
+import { ReportDashboard } from './report_dashboard'
 import { MasterArchive, syntheticArchive } from './master_archive'
 import { ScopedArchive } from './scoped_archive'
 import { configureDemoLabels } from './demo_labels'
@@ -86,7 +87,7 @@ function App() {
     return () => removeEventListener('popstate', onPopState)
   }, [center])
   const roles = boot?.roles ?? []
-  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : (roles.includes('CC Manager') && !!boot) || !!financeBoot : v === 'Notifiche' ? roles.includes('CC Manager') || roles.includes('CC Professional') || roles.includes('CC Secretariat') : ['Gestione accessi', 'Registro modifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
+  const available = allViews.filter(v => v === 'Report' ? !!boot || !!financeBoot : v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : (roles.includes('CC Manager') && !!boot) || !!financeBoot : v === 'Notifiche' ? roles.includes('CC Manager') || roles.includes('CC Professional') || roles.includes('CC Secretariat') : ['Gestione accessi', 'Registro modifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
   const isPureProfessional = roles.includes('CC Professional') && !roles.includes('CC Manager') && !roles.includes('CC Secretariat') && !financeBoot?.can_write
   const adminViews = isPureProfessional ? ['Finanza', 'Gestione accessi', 'Registro modifiche'] : ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche']
   const currentView = available.includes(view) ? view : available[0]
@@ -164,6 +165,7 @@ function App() {
         {!loading && currentView === 'Servizi' && boot && <ServiceCatalog boot={boot} center={center} />}
         {!loading && currentView === 'Disponibilità' && boot && <Availability boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} financeBoot={financeBoot} initialPatient={reportPatient} />}
+        {!loading && currentView === 'Report' && !boot && financeBoot && <ReportDashboard financeOnly boot={{center, centers: financeBoot.centers, patients: [], practitioners: [], services: [], packages: [], payment_methods: [], roles: []}} financeBoot={financeBoot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Finanza' && financeBoot && <FinanceView boot={financeBoot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Archivi' && (boot || financeBoot) && (syntheticArchive ? boot && <MasterArchive boot={boot} financeBoot={financeBoot} center={center} /> : <ScopedArchive boot={boot} financeBoot={financeBoot} center={center} />)}
         {!loading && currentView === 'Gestione accessi' && boot && <Access boot={boot} center={center} feedback={feedback} />}

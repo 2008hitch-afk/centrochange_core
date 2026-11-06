@@ -3097,3 +3097,11 @@ test('dashboard report: stato vuoto senza overflow anche tablet', async ({page})
   await expect(page.getByText('Nessun dato nel periodo.').first()).toBeVisible()
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 })
+
+test('dashboard report: commercialista accede solo al report cliente', async ({page}) => {
+  await mockApi(page, [], true, {}, {}, null, {can_write:false,is_manager:false}, false)
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading',{name:'Report cliente'}).first()).toBeVisible()
+  await expect(page.getByRole('button',{name:'Report professionista'})).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Pazienti',exact:true})).toHaveCount(0)
+})
