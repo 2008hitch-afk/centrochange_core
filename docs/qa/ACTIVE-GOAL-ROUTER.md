@@ -1,16 +1,35 @@
 # Centro Change — REGISTRO OPERATIVO VIGENTE / instradamento GOAL e AUDIT
 
-## CURRENT CHECKPOINT — AUDIT-11 #201, PR #202 · 03/11/2026
+## PRECEDENZA OWNER 06/11/2026 — ATTIVAZIONE IMMEDIATA DA PROFESSIONISTI (VIGENTE)
 
-**Precedenza:** verificare GitHub LIVE, quindi [AUDIT-11 #201](https://github.com/2008hitch-afk/centrochange_core/issues/201), [PR #202](https://github.com/2008hitch-afk/centrochange_core/pull/202), e il tracker #156. Il branch dedicato `audit-11/public-first-meeting-two-mode` parte da `main=26d7dccdd2161291221039baf97be4e62bd5b9d4`. EMPV Factory v1.1 #199/#200 già integrata.
+**Questa sezione prevale sulla decisione 05/11 qui sotto in caso di conflitto.** La creazione di un nuovo professionista da **Amministratore/Manager Full Permission (segreteria inclusa)** deve concludersi **con professionista e account Frappe personale abilitati e operativi nello stesso flusso**: `User.enabled=1`, ruolo `CC Professional`, membership del centro attiva, `Healthcare Practitioner.status=Active`, link personale e ACL riconciliate. La scheda Professionisti deve permettere successivamente anche disattivazione e riattivazione. Nessuna autorizzazione Owner separata per ogni nuovo profilo creato dal Manager dopo la consegna; onboarding credenziali solo tramite flusso nativo sicuro, senza password in chiaro. Restano vietati inviti reali/credenziali prima dei dati/autorizzazione iniziale Owner; usare prove sintetiche.
 
-**MANDATO ATTIVO:** solo sviluppo isolato/UI/API/test/review dell'unico AUDIT-11, con offerta pubblica **In sede oppure Online → Marco oppure Francesca → slot 20 min GRATUITO → conferma**; la prima seduta completa sarà prenotata **successivamente dalla segreteria**, non dal Guest. Riferimento UX: screenshot/URL Fresha forniti dall'Owner, design originale Centro Change. Utilizzare `docs/qa/AUDIT11-BOOKING-CONTRACT.md`, standard SOP v1.1 e Issue #201; niente duplicazione di AGENTS/skill su altre PR.
-
-**DATA/CATALOG GATE:** oggi `CC Public Booking Route` definisce Marco/Francesca ma non le due modalità. Per non cambiare DocType/schema il nuovo codice richiede `cc_public_first_meeting_types` in configurazione **privata** con due Appointment Type distinti, collegati ad attivi `CC Center Service`, nomi servizio che distinguono sede/online, `cc_first_meeting=1`, 20 min, 0 EUR. Se assente → FAIL CLOSED. La configurazione **non è autorizzata né installata** sul runtime: non dichiarare booking LIVE PASS fino a gate separato; mai inferire tipi dal costo 44 € dello screenshot.
-
-**STOP:** NO DEV/STAGING/production deploy, NO merge, NO schema/ruoli/DocPerm, NO dati reali/profili, NO provider email reali. La PR #202 è DRAFT; CI sintetica non prova Frappe reale né accettazione Owner.
+**Non conforme nel codice corrente #203:** `account_mode=new` crea `User.enabled=0` e Practitioner Disabled; l'attivazione tramite `set_practitioner_state` rifiuta l'utente disabilitato. Codex deve correggere backend + UI + test, non solo la documentazione. [Decisione e acceptance criteria PR #203](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). PR ancora draft; niente merge/deploy/UAT/produzione senza gate separati.
 
 ---
+
+
+## PRECEDENZA OWNER 05/11/2026 — STATO OPERATIVO VIGENTE
+<!-- OWNER_CURRENT_2026_11_05 -->
+
+**Questa è la sezione di riferimento attuale.** Tutti i checkpoint datati 03/11 o prima riportati più sotto sono **STORICI / NON VIGENTI**. SHA, CI, release e deploy devono sempre essere verificati live, senza inferirli dalle vecchie note.
+
+**Lavoro corrente:** interfacce Premium Pazienti/Professionisti e incassi nel [tracker #156](https://github.com/2008hitch-afk/centrochange_core/issues/156), sviluppate sulla [PR draft #203](https://github.com/2008hitch-afk/centrochange_core/pull/203), che dipende dalla [PR draft #202 AUDIT-11](https://github.com/2008hitch-afk/centrochange_core/pull/202). La [PR draft #204](https://github.com/2008hitch-afk/centrochange_core/pull/204) riguarda alias pubblico separato su base #202. Le vecchie PR aperte non sono automaticamente candidate correnti.
+
+**MODELLO ACCESSI OWNER CONFERMATO:**
+- **Amministratore / Manager = FULL PERMISSION**, utilizzato da segreteria e direzione. L'account della segretaria NON è una quarta categoria limitata. Tecnici: Administrator e/o CC Manager. Dall'interfaccia Professionisti questo account può creare e modificare anagrafica e account Frappe PERSONALE del professionista, associando centro, ruolo e abilitazione. Può gestire pazienti, agenda, pagamenti e tutte le funzioni autorizzate.
+- **Professionista:** account individuale, dati e attività di propria competenza; mai condividere un account.
+- **Commercialista:** account dedicato alle attività contabili e fiscali pertinenti, NON Full Permission (ruolo tecnico da verificare: CC Finance).
+- Il vecchio ruolo tecnico CC Secretariat nel codice/documenti NON va interpretato come il profilo limitato della segretaria previsto dal cliente.
+
+**INTERFACCE UNICHE:** Pazienti crea/modifica tutte le anagrafiche pazienti (inclusa preferenza opposizione Sistema TS persistente, con storico; non registrata è uno stato distinto); Professionisti crea/modifica anagrafiche professionisti e relativi account Frappe personali, senza passare da Archivi/Desk. Archivi conserva funzioni amministrative/fiscali, NON duplica queste anagrafiche.
+
+**DECISIONE REVOCATA:** la creazione di un professionista operativo SENZA account Frappe come flusso definitivo è stata rifiutata dall'Owner. Gli account reali verranno creati prima della consegna utilizzando i dati/email che l'Owner fornirà; ora solo prove sintetiche, niente inviti/credenziali reali automatici.
+
+**STATO DISTINTO:** decisione Owner = approvata; implementazione PR #203 = ancora da verificare/accettare; UAT ultimo riferimento comunicato dall'esecutore = 2005f6cbb989c2760fce50898581e75ac330eb0a, NON controllato live in questo intervento; produzione = nessuna modifica. Non promuovere PASS della matrice o OWNER_ACCEPTED per la sola CI. Nessuna autorizzazione implicita a deploy/merge.
+
+---
+
 
 ## PRECEDENZA 03/11/2026 — FACTORY BROWNFIELD #199
 
@@ -199,3 +218,17 @@ Il lavoro attuale è il **percorso di audit funzionali Premium React, una interf
 7. A GOAL concluso, aggiornare **questo indice + checkpoint + CSV + Issue**, registrando stato e prossimo GOAL **solo se esplicitamente autorizzato**. Non lasciare PR/fixture/backend incompiuti o prod dichiarata per inferenza.
 
 **Nota di conservazione:** è vietato sovrascrivere retroattivamente prove e decisioni storiche; correggere i riferimenti di navigazione e aggiungere checkpoint successivi datati. Il branch che contiene questo indice è documentale (#174) e non conferisce di per sé permesso di merge.
+
+---
+
+## CHECKPOINT STORICO — AUDIT-11 #201, PR #202 · 03/11/2026
+
+**Precedenza:** verificare GitHub LIVE, quindi [AUDIT-11 #201](https://github.com/2008hitch-afk/centrochange_core/issues/201), [PR #202](https://github.com/2008hitch-afk/centrochange_core/pull/202), e il tracker #156. Il branch dedicato `audit-11/public-first-meeting-two-mode` parte da `main=26d7dccdd2161291221039baf97be4e62bd5b9d4`. EMPV Factory v1.1 #199/#200 già integrata.
+
+**MANDATO ATTIVO:** solo sviluppo isolato/UI/API/test/review dell'unico AUDIT-11, con offerta pubblica **In sede oppure Online → Marco oppure Francesca → slot 20 min GRATUITO → conferma**; la prima seduta completa sarà prenotata **successivamente dalla segreteria**, non dal Guest. Riferimento UX: screenshot/URL Fresha forniti dall'Owner, design originale Centro Change. Utilizzare `docs/qa/AUDIT11-BOOKING-CONTRACT.md`, standard SOP v1.1 e Issue #201; niente duplicazione di AGENTS/skill su altre PR.
+
+**DATA/CATALOG GATE:** oggi `CC Public Booking Route` definisce Marco/Francesca ma non le due modalità. Per non cambiare DocType/schema il nuovo codice richiede `cc_public_first_meeting_types` in configurazione **privata** con due Appointment Type distinti, collegati ad attivi `CC Center Service`, nomi servizio che distinguono sede/online, `cc_first_meeting=1`, 20 min, 0 EUR. Se assente → FAIL CLOSED. La configurazione **non è autorizzata né installata** sul runtime: non dichiarare booking LIVE PASS fino a gate separato; mai inferire tipi dal costo 44 € dello screenshot.
+
+**STOP:** NO DEV/STAGING/production deploy, NO merge, NO schema/ruoli/DocPerm, NO dati reali/profili, NO provider email reali. La PR #202 è DRAFT; CI sintetica non prova Frappe reale né accettazione Owner.
+
+---

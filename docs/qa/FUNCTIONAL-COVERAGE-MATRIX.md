@@ -1,5 +1,32 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## PRECEDENZA OWNER 06/11/2026 — CC-CAP-002 E PERMESSI DI ATTIVAZIONE
+
+**Nuova decisione Owner (prevale sul 05/11):** Amministratore/Manager Full Permission, segretaria inclusa, dalla sola UI **Professionisti** deve **creare e attivare completamente** in un'unica operazione un nuovo `User` Frappe personale con `enabled=1`, ruolo `CC Professional`, membership centro attiva, Healthcare Practitioner Active/collegato e ACL riconciliate; deve poter disattivare/riattivare dalla stessa scheda. È **revocato** il flusso di creazione finale «account nuovo inattivo, attivazione tramite ulteriore autorizzazione Owner». Nessuna approvazione Owner per ogni nuovo professionista dopo il rilascio; credenziali personali tramite onboarding sicuro. Prove sintetiche durante lo sviluppo, nessuna email reale né autorizzazione implicita a deploy.
+
+**Applicazione alla matrice:** CC-CAP-002, CC-EXT-004 e CC-EXT-009 = provisioning completo end-to-end; CC-CAP-033 e CC-CAP-038 = ACL/segregazione server-side, Manager autorizzato e divieto escalation. **PR #203 ancora NON CONFORME e da verificare su nuova SHA**: [requisito vincolante](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). Gli stati storici PASS/PARTIAL/Owner del CSV **non cambiano** fino a collaudo/accettazione; non dedurre il PASS dalla CI precedente.
+
+---
+
+
+## PRECEDENZA OWNER 05/11/2026 — AGGIORNAMENTO SEMANTICO REQUISITI
+<!-- OWNER_CURRENT_2026_11_05 -->
+
+Questa sezione PREVALE sul riepilogo storico AUDIT-09 del 31/10 riportato sotto. Per la fase attuale: [ACTIVE-GOAL-ROUTER](ACTIVE-GOAL-ROUTER.md).
+
+**Modello ruoli approvato:** tre categorie funzionali: (1) Amministratore/Manager FULL PERMISSION, usato anche dalla segretaria; (2) Professionista con account personale; (3) Commercialista con accesso contabile limitato. CC Secretariat è un riferimento tecnico storico da allineare, NON una quarta categoria operativa per la segretaria.
+
+**Impatto sulla matrice:**
+- CC-CAP-002 / CC-EXT-004 / CC-EXT-009: gestione di anagrafica, email/contatti E account Frappe individuale dalla sola UI Professionisti, a cura di Full Permission; creazione/associazione utente, centro, ruolo, abilitazione e modifica. Il professionista operativo senza account non è un flusso finale approvato.
+- CC-CAP-003: anagrafica e creazione paziente dalla sola UI Pazienti; preferenza opposizione Sistema TS (non si oppone, si oppone, non registrata), persistenza e audit; no invio TS automatico né fusione implicita con opposizioni del singolo documento.
+- CC-CAP-033 / CC-CAP-038: controlli server-side, separazione tra centro e ruoli; niente escalation Full Permission per Professionista/Commercialista.
+- Archivi: solo attività amministrative/fiscali e altri archivi pertinenti, nessuna gestione duplicata di pazienti/professionisti.
+
+**Non alterare retroattivamente gli esiti AUDIT-09:** PASS storico riferito al perimetro di allora, NON prova del nuovo flusso di creazione account. La PR #203 rimane candidata, non automaticamente installata o OWNER_ACCEPTED. Nel CSV dei 110 requisiti, gli stati tecnici e Owner rimangono invariati fino a collaudo e approvazione.
+
+---
+
+
 ## STATO CORRENTE — 31/10/2026: AUDIT-09 #183 `OWNER_ACCEPTED` E PR #184 `MERGED`
 
 **Decisione Owner:** [accettazione funzionale #6541513366](https://github.com/2008hitch-afk/centrochange_core/issues/183#issuecomment-6541513366) dopo UAT LIVE STAGING; [collaudo Codex #6541330717](https://github.com/2008hitch-afk/centrochange_core/issues/183#issuecomment-6541330717) e [browser indipendente #6541441826](https://github.com/2008hitch-afk/centrochange_core/issues/183#issuecomment-6541441826). Release applicativa accettata `b58d6062d3a8cca61fdf991674f47ee2a54c1394` con [CI backend/frontend #41135396112](https://github.com/2008hitch-afk/centrochange_core/actions/runs/41135396112), [Frappe/Chromium #41135396094](https://github.com/2008hitch-afk/centrochange_core/actions/runs/41135396094) SUCCESS e [review indipendente da Codex #5722010965](https://github.com/2008hitch-afk/centrochange_core/pull/184#pullrequestreview-5722010965) APPROVED (review tecnica ChatGPT, non umana). [PR #184](https://github.com/2008hitch-afk/centrochange_core/pull/184) **MERGED** in `main` con commit `1d75917276c96b6fe7f61cf3939ce137c24b94a9`; il merge GitHub non equivale a deploy in produzione.

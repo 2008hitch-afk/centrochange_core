@@ -1,5 +1,20 @@
 # Centro Change — Capability Evaluation Matrix
 
+## DECISIONE OWNER 06/11/2026 — ATTIVAZIONE COMPLETA DEL NUOVO ACCOUNT
+
+Prevale sulle precedenti formulazioni: dalla sola pagina **Professionisti**, l'account **Amministratore/Manager Full Permission** crea e attiva in un passaggio nuovo `User` Frappe personale (`enabled=1`, `CC Professional`), centro e membership attivi, Healthcare Practitioner attivo/collegato, ACL coerenti e onboarding credenziali sicuro. Lo stesso Manager può disattivare/riattivare successivamente, senza autorizzazione Owner per ciascun inserimento dopo la consegna. **NON CONFORME** il flusso finale `new → Disabled`; [requisito PR #203](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). Test solo sintetici finché non vengono forniti i dati reali; decisione funzionale non equivale a implementazione, merge o deploy.
+
+---
+
+
+## DECISIONE OWNER VIGENTE 05/11/2026 — RUOLI E INTERFACCE
+<!-- OWNER_CURRENT_2026_11_05 -->
+
+Per CC-CAP-002/003/033/038/049: **Amministratore/Manager Full Permission (anche segreteria)**, **Professionista con account personale**, **Commercialista con accesso finanziario limitato**. La UI Professionisti consente al Full Permission di creare e gestire sia professionista sia utente Frappe individuale (ruolo, centro, stato). La UI Pazienti gestisce anagrafica e preferenza opposizione TS tracciata. Archivi non duplica questi percorsi. Modello professionista operativo senza account: **revocato**. Questa decisione non significa che codice, CI, UAT e produzione siano già allineati. Le classificazioni tecniche sottostanti restano valide solo nel loro perimetro storico; vedere [indice operativo](qa/ACTIVE-GOAL-ROUTER.md).
+
+---
+
+
 **Stato:** CANONICAL PLAN / RUNTIME VALIDATION COMPLETE — 40/40 TECHNICALLY DETERMINED  
 **Issue:** #5  
 **Test execution repository:** `2008hitch-afk/centrochange-testlab`

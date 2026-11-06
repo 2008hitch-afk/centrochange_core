@@ -1,5 +1,34 @@
 # Technical Decision Log — Centro Change
 
+## OWNER-2026-11-06 — PROVISIONING E ATTIVAZIONE AUTOMATICA COMPLETA (VIGENTE, PREVALE SU 05/11)
+
+**Decisione Owner vincolante.** L'account **Amministratore/Manager Full Permission** (anche segretaria) crea dalla sola pagina **Professionisti** un professionista **già completamente attivo** con operazione unica e coerente: nuovo `User` Frappe personale **abilitato**, ruolo `CC Professional`, `CC Center Membership` attiva nella sede selezionata, `Healthcare Practitioner` **Active** e con `user_id` collegato, ACL e audit aggiornati. Anche il percorso di riattivazione/disattivazione avviene dalla stessa scheda. L'eventuale primo accesso prevede solo **onboarding nativo e sicuro delle credenziali**, non un'ulteriore autorizzazione Owner o un account lasciato in stato Disabled. Nessun account condiviso, privilegio amministrativo al professionista o permesso contabile in eccesso. Transactionality, idempotenza, rollback su errore, permessi server-side e isolamento centro sono obbligatori.
+
+**Decisione precedente revocata:** la modalità finale `account_mode=new → User.enabled=0 / Healthcare Practitioner.Disabled` in attesa di autorizzazione Owner **non soddisfa** il requisito. Dopo la consegna il Manager ha l'autorizzazione operativa per creare/attivare account personali senza una nuova approvazione dell'Owner per ogni inserimento. **Prima della consegna** l'Owner fornisce i dati/email reali per il provisioning iniziale; durante sviluppo/test solo identità sintetiche, niente inviti/credenziali reali. Il gate Owner per deploy/merge resta obbligatorio e distinto.
+
+**Attuazione:** [PR #203 — requisito e prove richiesti](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). L'implementazione corrente va corretta; CI precedente non dimostra conformità, non dichiarare `OWNER_ACCEPTED` né `PASS_LIVE` senza nuova verifica.
+
+---
+
+
+## OWNER-2026-11-05 — MODELLO ACCOUNT E ANAGRAFICHE (VIGENTE)
+<!-- OWNER_CURRENT_2026_11_05 -->
+
+La presente decisione Owner prevale sulle ipotesi incompatibili precedenti; NON equivale a prova tecnica o autorizzazione al deploy.
+
+1. **Amministratore/Manager: Full Permission**, usato da segretaria e direzione (Administrator e/o CC Manager come riferimenti tecnici). La segretaria NON usa un quarto profilo limitato separato. Il ruolo legacy CC Secretariat va riconciliato senza concedere accessi impropri.
+2. **Professionista:** account Frappe individuale e permessi limitati alle informazioni autorizzate nel centro; mai account condivisi.
+3. **Commercialista:** account dedicato alle funzioni contabili/fiscali, non Full Permission (CC Finance da verificare con policy esistenti).
+4. Dalla sola UI **Professionisti**, il Full Permission crea/modifica anagrafica E account personale del professionista, con email, centro, ruolo, collegamento e abilitazione/disabilitazione. **Revocata** come modalità finale la creazione di professionisti operativi privi di account. Non creare/invitare account reali senza dati/autorizzazione Owner.
+5. Dalla sola UI **Pazienti**, il Full Permission crea/modifica anagrafica e preferenza opposizione Sistema TS con stato non registrato, persistenza/audit e separazione dalle opposizioni sui singoli documenti; nessuna trasmissione automatica.
+6. **Archivi** resta destinato agli archivi amministrativi/fiscali; niente duplicati operativi di Pazienti e Professionisti.
+7. L'Owner fornirà i dati reali dei professionisti prima della consegna. Ora solo test sintetici. La [PR #203](https://github.com/2008hitch-afk/centrochange_core/pull/203) è da verificare e accettare separatamente prima di aggiornare UAT; produzione invariata.
+
+Vedere [indice operativo](qa/ACTIVE-GOAL-ROUTER.md), [matrice funzionale](qa/FUNCTIONAL-COVERAGE-MATRIX.md), [tracker #156](https://github.com/2008hitch-afk/centrochange_core/issues/156).
+
+---
+
+
 Questo file registra **decisioni tecniche proposte o confermate** nel repository tecnico. Non sostituisce la validazione cliente dei requisiti funzionali.
 
 ## TD-001 — Piattaforma
