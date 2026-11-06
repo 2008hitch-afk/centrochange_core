@@ -2655,6 +2655,17 @@ test('AUDIT-06: UX-A06-01, UX-A06-02, UX-A06-06, UX-A06-11 Servizi, professionis
   await drawer.getByRole('button', { name: 'Chiudi' }).click()
 })
 
+test('la seduta 45/44 si paga alla seduta e non alla prenotazione', async ({ page }) => {
+  await mockApi(page, [], true, {}, { services: [{ name: 'SYNTHETIC-SESSION', cc_service_label: 'Seduta successiva', cc_service_item: 'ITEM-001', duration: 45, cc_price_snapshot: 44, cc_currency_snapshot: 'EUR' }] })
+  await page.goto('./')
+  await openSection(page, 'Agenda')
+  await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
+  const summary = page.getByRole('dialog', { name: 'Nuova prenotazione' }).locator('.booking-summary-card')
+  await expect(summary).toContainText('Tariffa della seduta (da pagare alla seduta):')
+  await expect(summary).toContainText('44,00')
+  await expect(summary).not.toContainText('Importo dovuto alla prenotazione')
+})
+
 test('AUDIT-06: UX-A06-04, UX-A06-08, UX-A06-09 Agenda prenotazione 24h, preview tariffa e breakdown pacchetto', async ({ page }, testInfo) => {
   await mockApi(page)
   await page.goto('./')
