@@ -17,6 +17,25 @@ def run():
     frappe.db.savepoint('cc156_acceptance')
     try:
         frappe.set_user(manager)
+        from centrochange_core.operations import notifications as notification_ops
+        alerts = notification_ops.pending_outcomes(center)
+        assert isinstance(alerts, list)
+        assert all(set(row) == {'date', 'practitioner', 'practitioner_name', 'count'} for row in alerts)
+        assert len({(row['date'], row['practitioner']) for row in alerts}) == len(alerts)
+        for limited_role in ('a', 'f', 't'):
+            frappe.set_user(data['fixture']['users'][limited_role]['name'])
+            try:
+                notification_ops.pending_outcomes(center)
+                raise AssertionError('Limited account can inspect manager outcome alerts')
+            except frappe.PermissionError:
+                pass
+        frappe.set_user('Guest')
+        try:
+            notification_ops.pending_outcomes(center)
+            raise AssertionError('Guest can inspect manager outcome alerts')
+        except frappe.PermissionError:
+            pass
+        frappe.set_user(manager)
         # Restored UAT fixtures may have advanced since the fresh CI seed.
         # Re-close a reopened session via the normal lifecycle; never patch its
         # state directly or bypass the approved daily closure rule.

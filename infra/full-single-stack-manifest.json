@@ -126,7 +126,7 @@
     "centrochange_core/finance/native_adapter.py": "fe0944038110fffcd0f961e4fac489cbe4544d896b8d7e33c6b569d1ed77db85",
     "centrochange_core/finance/native_reports.py": "b821ccdda5ec53cde2d567ae8ca2b7943e2021ff497c51095fc9ef26d1483f1b",
     "centrochange_core/finance/operational_receipts.py": "eb585bcf65caea7caefbfd6b7602addc7593f5862da9f27cde6f00d77a898239",
-    "centrochange_core/finance/operational_receipts_acceptance.py": "e3fccd6ee7a470a7f324209e3979f468a87985a6e8dc1c872212dbb499f674ad",
+    "centrochange_core/finance/operational_receipts_acceptance.py": "a6c8a7bdb53af07adb14f4f3d9236eec4b65ddc202d3e17001e5500ea95c2c42",
     "centrochange_core/finance/patient_report_acceptance.py": "84ffa76f0445cec11283b0a444e889d6d19a7d7a98b9fb16a3ba8c7b3c441db3",
     "centrochange_core/finance/patient_reporting.py": "5e835c86f6a4c5dbe70c2a8a271850ce0cadab33311c706a7534a813c1ae1ef0",
     "centrochange_core/finance/payments.py": "a4b16c1bf7226761c63c8b49212b69bf763d5eb8a2b050d7a8abbb2b23f9bdf9",
