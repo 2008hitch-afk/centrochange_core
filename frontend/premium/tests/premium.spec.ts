@@ -841,27 +841,22 @@ test('AUDIT-05: scheda sintetica non espone il codice tecnico come nome', async 
   await expect(drawer).not.toContainText('CC-HTTP-AbCd123456 a')
 })
 
-test('AUDIT-05: selettore Report professionisti usa la stessa identità leggibile', async ({ page }) => {
+test('Report professionisti mostra identità leggibile nel filtro', async ({ page }) => {
   const row = { name: 'PR-SYNTH', practitioner_name: 'CC-HTTP-AbCd123456 a', first_name: 'CC-HTTP-AbCd123456 a', status: 'Active' }
   await mockApi(page, [], true, {}, { practitioners: [row] })
   await page.goto('./#Report')
-  await page.getByRole('button', {name:'Analisi avanzata'}).click()
-  await page.getByRole('button', { name: 'Report professionista' }).click()
-  const select = page.getByRole('combobox', { name: 'Professionista report' })
+  const select = page.getByRole('combobox', { name: 'Professionista', exact: true })
   await expect(select).toContainText('Professionista di prova A')
   await expect(select).not.toContainText('CC-HTTP-AbCd123456 a')
 })
 
-test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo', async ({ page }, testInfo) => {
-  await mockApi(page, [], false, { cc_performed: 1 }, { roles: ['CC Secretariat'] })
-  await page.goto('./')
-  await openSection(page, 'Report')
-  await page.getByRole('button', {name:'Analisi avanzata'}).click()
-  await page.getByRole('button', { name: 'Report professionista' }).click()
-  await page.getByLabel('Professionista report').selectOption('PR-001')
-  await expect(page.locator('.professional-report').getByText('Sedute svolte')).toBeVisible()
+test('Report professionisti: ruolo operativo senza dati economici amministrativi', async ({ page }) => {
+  await mockApi(page, [], false, { cc_performed: 1 }, { roles: ['CC Professional'] })
+  await page.goto('./#Report')
+  await expect(page.getByRole('heading', {name:'Report professionista'})).toBeVisible()
+  await expect(page.getByText('Sedute svolte')).toBeVisible()
+  await expect(page.getByText('Incassato nel periodo')).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Compensi e fatture autorizzati' })).toHaveCount(0)
-  await page.screenshot({ path: `../../docs/evidence/issue-148/uat-report-professionisti-${testInfo.project.name}.png`, fullPage: true })
 })
 
 test('UAT Patient: nome reale prevale su alias demo, ID API invariati', async ({ page }, testInfo) => {
