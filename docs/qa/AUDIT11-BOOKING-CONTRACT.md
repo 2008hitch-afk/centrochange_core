@@ -25,7 +25,7 @@ Spacious light surface, Centro Change identity, rounded selectable cards, focuse
 
 ## 3. Business rules / security
 
-Only `sede` and `online`, only `Marco` and `Francesca`. Service titles in UI are named as requested: `Primo Incontro in Sede con Direttore + Prima Seduta` or `Primo Incontro Online con Direttore + Prima Seduta`, but **only the free meeting is booked** and this distinction is explicit. The paid full session duration/price is independent, to be scheduled by the secretary later. Do not display 44 € as the price of this booking.
+Only `sede` and `online`, only `Marco` and `Francesca`. The two services are **Primo colloquio conoscitivo — 20 minutes — Gratis** and **Seduta — 45 minutes — 44 €**. In sede and Online are modes of the first service, not additional services. The public flow books exactly one free meeting; the secretary books the paid session separately after the meeting. The information box may explain both moments, but 44 € must never be presented as the amount due for the public booking.
 
 Enforce server-side:
 - Mapping exists for two different Appointment Type IDs, private and operator-controlled, not Guest-provided.

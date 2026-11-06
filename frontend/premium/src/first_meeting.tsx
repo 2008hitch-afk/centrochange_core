@@ -128,14 +128,14 @@ export function FirstMeeting() {
             <label className={'booking-mode ' + (mode === 'sede' ? 'chosen' : '')}>
               <input type="radio" name="booking-mode" checked={mode === 'sede'} onChange={() => selectMode('sede')} />
               <span className="booking-option-icon"><MapPin size={24} aria-hidden="true" /></span>
-              <span className="booking-option-copy"><strong>Primo Incontro in Sede con Direttore + Prima Seduta</strong>
+              <span className="booking-option-copy"><strong>In sede</strong>
                 <small>Colloquio conoscitivo gratuito di 20 min in sede con il Direttore.</small></span>
               <span className="booking-option-check"><Check size={17} aria-hidden="true" /></span>
             </label>
             <label className={'booking-mode ' + (mode === 'online' ? 'chosen' : '')}>
               <input type="radio" name="booking-mode" checked={mode === 'online'} onChange={() => selectMode('online')} />
               <span className="booking-option-icon"><MonitorPlay size={24} aria-hidden="true" /></span>
-              <span className="booking-option-copy"><strong>Primo Incontro Online con Direttore + Prima Seduta</strong>
+              <span className="booking-option-copy"><strong>Online</strong>
                 <small>Colloquio conoscitivo gratuito di 20 min a distanza con il Direttore.</small></span>
               <span className="booking-option-check"><Check size={17} aria-hidden="true" /></span>
             </label>
@@ -144,7 +144,7 @@ export function FirstMeeting() {
             <div className="booking-includes-title"><Sparkles size={18} aria-hidden="true" /><strong>Cosa include il percorso</strong></div>
             <ul className="booking-includes-list">
               <li><strong>Primo colloquio conoscitivo di 20 minuti</strong> con uno dei due Direttori (<strong>gratuito</strong>).</li>
-              <li><strong>Prima seduta psicologica di 45 minuti</strong> con lo psicologo che i Direttori ritengono più indicato per la problematica; viene concordata/prenotata <strong>al termine del colloquio conoscitivo</strong>.</li>
+              <li><strong>Seduta di 45 minuti</strong> con il professionista concordato: sarà prenotata separatamente dalla segreteria dopo il colloquio.</li>
               <li><strong>Costo 44 €</strong>, da pagare <strong>alla seduta</strong>, non online.</li>
             </ul>
           </div>

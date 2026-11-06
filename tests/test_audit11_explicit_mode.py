@@ -87,7 +87,9 @@ class RequiredBookingModeTests(unittest.TestCase):
     def test_frontend_communicates_zero_euro_and_44_euro_next_session(self):
         code = (ROOT / "frontend/premium/src/first_meeting.tsx").read_text(encoding="utf-8")
         self.assertIn("Da pagare online", code)
-        self.assertIn("Prima seduta psicologica di 45 minuti", code)
+        self.assertIn("Seduta di 45 minuti", code)
+        self.assertIn("prenotata separatamente dalla segreteria dopo il colloquio", code)
+        self.assertNotIn("+ Prima Seduta", code)
         self.assertIn("44 €", code)
         self.assertIn("0 €", code)
         self.assertIn("da pagare <strong>alla seduta</strong>, non online", code)
