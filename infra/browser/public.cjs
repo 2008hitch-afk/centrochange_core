@@ -1,2 +1,38 @@
-const {chromium}=require('playwright'),assert=require('assert'),fs=require('fs');const fixture=JSON.parse(fs.readFileSync('/qa-fixture.json','utf8'));
-(async()=>{const routes=fixture.catalog?.['CC Public Booking Route']||[];assert(routes.length===1&&typeof routes[0]==='string'&&routes[0]);const browser=await chromium.launch({headless:true,args:['--host-resolver-rules=MAP centrochange.local 127.0.0.1','--no-proxy-server']});try{const context=await browser.newContext({locale:'it-IT',timezoneId:'Europe/Rome',viewport:{width:390,height:844}});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto((process.env.CC_BASE_URL||'http://centrochange.local:8082')+'/primo_incontro');await page.getByRole('heading',{name:'Prenota il primo incontro'}).waitFor();await page.locator('#route').selectOption({label:routes[0]});const date=new Date();date.setUTCDate(date.getUTCDate()+((8-date.getUTCDay())%7||7));await page.locator('#public-date').fill(date.toISOString().slice(0,10));await page.getByRole('button',{name:'Cerca orari'}).click();await page.waitForFunction(()=>document.querySelector('#slot').options.length>1);await page.locator('#slot').selectOption('0');await page.locator('[name=first_name]').fill(fixture.tag+' PUBLIC');await page.locator('[name=last_name]').fill('SYNTHETIC');await page.locator('[name=email]').fill(fixture.tag.toLowerCase()+'-browser-public-'+Date.now()+'@example.invalid');await page.locator('[name=sex]').selectOption('Female');const response=page.waitForResponse(r=>r.url().includes('public_booking.first_meeting'));await page.locator('#public-submit').click();assert((await response).ok());await page.getByText('Primo incontro prenotato. La segreteria dispone della prenotazione.').waitFor();await page.screenshot({path:'/qa-results/public-booking-mobile.png',fullPage:true});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));assert.deepStrictEqual(errors,[]);console.log(JSON.stringify({status:'PASS',checks:['Guest fixed-route available slots','synthetic first meeting through public form','confirmation visible','no mobile overflow','no application JavaScript exceptions']}));}finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1)});
+const {chromium}=require('playwright'),assert=require('assert'),fs=require('fs')
+const fixture=JSON.parse(fs.readFileSync('/qa-fixture.json','utf8'))
+;(async()=>{
+  const routes=fixture.catalog?.['CC Public Booking Route']||[]
+  assert(routes.length===1&&['Marco','Francesca'].includes(routes[0]),'Test must own exactly one public director route')
+  const browser=await chromium.launch({headless:true,args:['--host-resolver-rules=MAP centrochange.local 127.0.0.1','--no-proxy-server']})
+  try{
+    const context=await browser.newContext({locale:'it-IT',timezoneId:'Europe/Rome',viewport:{width:390,height:844}})
+    const page=await context.newPage(),errors=[]
+    page.on('pageerror',e=>errors.push(e.message))
+    await page.goto((process.env.CC_BASE_URL||'http://centrochange.local:8082')+'/primo_incontro')
+    await page.getByRole('heading',{name:'Prenota il tuo primo incontro'}).waitFor()
+    await page.getByRole('radio',{name:/^In sede/}).check()
+    await page.getByRole('button',{name:'Continua'}).click()
+    await page.getByRole('radio',{name:routes[0]}).check()
+    await page.getByRole('button',{name:'Continua'}).click()
+    const date=new Date()
+    date.setUTCDate(date.getUTCDate()+((8-date.getUTCDay())%7||7))
+    await page.getByRole('button',{name:'Cerca disponibilità'}).click()
+    const slot=page.getByRole('radio',{name:/\d\d:\d\d/}).first()
+    await slot.waitFor()
+    await slot.check()
+    await page.getByRole('button',{name:'Continua'}).click()
+    await page.getByRole('textbox',{name:/^Nome/}).fill(fixture.tag+' PUBLIC')
+    await page.getByRole('textbox',{name:'Cognome'}).fill('SYNTHETIC')
+    await page.getByRole('textbox',{name:'Email'}).fill(fixture.tag.toLowerCase()+'-browser-public-'+Date.now()+'@example.invalid')
+    await page.getByRole('combobox',{name:'Sesso anagrafico'}).selectOption('Female')
+    const response=page.waitForResponse(r=>r.url().includes('public_booking.first_meeting'))
+    await page.getByRole('button',{name:'Conferma primo incontro'}).click()
+    assert((await response).ok())
+    await page.getByRole('heading',{name:'Prenotazione registrata'}).waitFor()
+    assert(await page.getByText('20 minuti').count()>0)
+    await page.screenshot({path:'/qa-results/public-booking-mobile.png',fullPage:true})
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth))
+    assert.deepStrictEqual(errors,[])
+    console.log(JSON.stringify({status:'PASS',checks:['Guest two modes only','selected director slot','first meeting 20min free','secretary next session manual','mobile no overflow','no JS errors']}))
+  }finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exit(1)})

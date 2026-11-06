@@ -218,3 +218,17 @@ Il lavoro attuale è il **percorso di audit funzionali Premium React, una interf
 7. A GOAL concluso, aggiornare **questo indice + checkpoint + CSV + Issue**, registrando stato e prossimo GOAL **solo se esplicitamente autorizzato**. Non lasciare PR/fixture/backend incompiuti o prod dichiarata per inferenza.
 
 **Nota di conservazione:** è vietato sovrascrivere retroattivamente prove e decisioni storiche; correggere i riferimenti di navigazione e aggiungere checkpoint successivi datati. Il branch che contiene questo indice è documentale (#174) e non conferisce di per sé permesso di merge.
+
+---
+
+## CHECKPOINT STORICO — AUDIT-11 #201, PR #202 · 03/11/2026
+
+**Precedenza:** verificare GitHub LIVE, quindi [AUDIT-11 #201](https://github.com/2008hitch-afk/centrochange_core/issues/201), [PR #202](https://github.com/2008hitch-afk/centrochange_core/pull/202), e il tracker #156. Il branch dedicato `audit-11/public-first-meeting-two-mode` parte da `main=26d7dccdd2161291221039baf97be4e62bd5b9d4`. EMPV Factory v1.1 #199/#200 già integrata.
+
+**MANDATO ATTIVO:** solo sviluppo isolato/UI/API/test/review dell'unico AUDIT-11, con offerta pubblica **In sede oppure Online → Marco oppure Francesca → slot 20 min GRATUITO → conferma**; la prima seduta completa sarà prenotata **successivamente dalla segreteria**, non dal Guest. Riferimento UX: screenshot/URL Fresha forniti dall'Owner, design originale Centro Change. Utilizzare `docs/qa/AUDIT11-BOOKING-CONTRACT.md`, standard SOP v1.1 e Issue #201; niente duplicazione di AGENTS/skill su altre PR.
+
+**DATA/CATALOG GATE:** oggi `CC Public Booking Route` definisce Marco/Francesca ma non le due modalità. Per non cambiare DocType/schema il nuovo codice richiede `cc_public_first_meeting_types` in configurazione **privata** con due Appointment Type distinti, collegati ad attivi `CC Center Service`, nomi servizio che distinguono sede/online, `cc_first_meeting=1`, 20 min, 0 EUR. Se assente → FAIL CLOSED. La configurazione **non è autorizzata né installata** sul runtime: non dichiarare booking LIVE PASS fino a gate separato; mai inferire tipi dal costo 44 € dello screenshot.
+
+**STOP:** NO DEV/STAGING/production deploy, NO merge, NO schema/ruoli/DocPerm, NO dati reali/profili, NO provider email reali. La PR #202 è DRAFT; CI sintetica non prova Frappe reale né accettazione Owner.
+
+---

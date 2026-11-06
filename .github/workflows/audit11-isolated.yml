@@ -1,0 +1,45 @@
+name: AUDIT-11 isolated Frappe MariaDB (candidate-only)
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/audit11_clone.py"
+      - "infra/audit11_clone_backend.py"
+      - ".github/workflows/audit11-isolated.yml"
+      - "app/centrochange_core/centrochange_core/scheduling/public_booking.py"
+      - "app/centrochange_core/centrochange_core/scheduling/public_offer.py"
+      - "app/centrochange_core/centrochange_core/operations/booking_confirmation.py"
+      - "infra/full-single-stack-manifest.json"
+permissions:
+  contents: read
+concurrency:
+  group: audit11-isolated-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  isolated-audit11:
+    if: github.event.pull_request.number == 202 && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify approved source and candidate image recipe
+        run: python3 infra/verify_full_single_stack.py --source
+      - name: Build pinned single-stack Docker image on ephemeral CI only
+        run: |
+          docker build --progress=plain \
+            -f infra/Dockerfile.single-stack-full \
+            --build-arg SINGLE_STACK_SOURCE_SHA=${{ github.event.pull_request.head.sha }} \
+            -t cc201-audit11-ci:local .
+      - name: Frappe/MariaDB native isolated booking acceptance, no DEV contact
+        env:
+          CC_CLONE_IMAGE: cc201-audit11-ci:local
+        run: python3 infra/audit11_clone.py
+      - name: Enforce clean teardown
+        if: always()
+        run: |
+          test -z "$(docker ps -a --format '{{.Names}}' | grep '^cc183-clone-' || true)"
+          test -z "$(docker volume ls --format '{{.Name}}' | grep '^cc183-clone-' || true)"
+          test -z "$(docker network ls --format '{{.Name}}' | grep '^cc183-clone-' || true)"

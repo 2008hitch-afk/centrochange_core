@@ -1,14 +1,23 @@
 import { useRef, useState } from 'react'
-import { CalendarDays, Clock3, Mail, ArrowRight } from 'lucide-react'
-import { type Row, displayDate, money, requestKey, romeToday, schedule, time } from './api'
-import { Button, DateInput, Field, FormError } from './ui'
+import { ArrowLeft, ArrowRight, CalendarDays, Check, Mail, MapPin, MonitorPlay, ShieldCheck, Sparkles, UserRound } from 'lucide-react'
+import { type Row, displayDate, requestKey, romeToday, schedule, time } from './api'
+import { DateInput, Field, FormError } from './ui'
 
+type Mode = 'sede' | 'online'
+type Director = 'Marco' | 'Francesca'
 type Slot = { date: string; time: string }
-type Projection = { route: string; service: string; duration: number; price: number; currency: string; slots: Slot[] }
-const message = (error: unknown) => error instanceof Error ? error.message : 'Operazione non riuscita.'
+type Projection = {
+  route: Director; mode: Mode; service: string; duration: number
+  price: number; currency: string; slots: Slot[]
+}
+const modeNames: Record<Mode, string> = { sede: 'In sede', online: 'Online' }
+const steps = ['Modalità', 'Direttore', 'Data e ora', 'I tuoi dati']
+const errorText = (value: unknown) => value instanceof Error ? value.message : 'Prenotazione non riuscita. Riprova.'
 
 export function FirstMeeting() {
-  const [route, setRoute] = useState('Marco')
+  const [step, setStep] = useState(0)
+  const [mode, setMode] = useState<Mode | null>(null)
+  const [route, setRoute] = useState<Director | null>(null)
   const [start, setStart] = useState(romeToday())
   const [projection, setProjection] = useState<Projection | null>(null)
   const [selected, setSelected] = useState('')
@@ -18,28 +27,198 @@ export function FirstMeeting() {
   const [sex, setSex] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [confirmed, setConfirmed] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
   const generation = useRef(0)
   const keys = useRef<Record<string, string>>({})
+  const chosenSlot = projection?.slots.find(slot => slot.date + ' ' + slot.time === selected)
+
+  const invalidate = () => {
+    generation.current += 1
+    setProjection(null)
+    setSelected('')
+    setError('')
+    setBusy(false)
+  }
+  const selectMode = (value: Mode) => {
+    if (value !== mode) {
+      setMode(value); setRoute(null); invalidate()
+    }
+  }
+  const selectDirector = (value: Director) => {
+    if (value !== route) { setRoute(value); invalidate() }
+  }
   const search = async () => {
+    if (!mode || !route) return
     const id = ++generation.current
-    setBusy(true); setError(''); setProjection(null); setSelected('')
-    try { const result = await schedule<Projection>('public_booking.available_slots', { route, start_date: start }); if (generation.current === id) setProjection(result) }
-    catch (e) { if (generation.current === id) setError(message(e)) }
-    finally { if (generation.current === id) setBusy(false) }
+    setBusy(true); setError(''); setSelected(''); setProjection(null)
+    try {
+      const data = await schedule<Projection>('public_booking.available_slots',
+        { route, mode, start_date: start })
+      if (id !== generation.current) return
+      if (data.mode !== mode || data.route !== route || Number(data.duration) !== 20 ||
+        Number(data.price) !== 0 || data.currency !== 'EUR' || !Array.isArray(data.slots)) {
+        throw new Error('Il colloquio gratuito non è configurato correttamente. Contatta la segreteria.')
+      }
+      setProjection(data)
+    } catch (failure) {
+      if (id === generation.current) setError(errorText(failure))
+    } finally {
+      if (id === generation.current) setBusy(false)
+    }
   }
   const submit = async () => {
-    const slot = projection?.slots[Number(selected)]
-    if (!slot) return
-    const payload = { route, first_name: firstName.trim(), last_name: lastName.trim(), email: email.trim(), sex, appointment_date: slot.date, appointment_time: slot.time }
-    const key = JSON.stringify(payload)
+    if (!mode || !route || !chosenSlot || !projection || busy) return
+    const payload = {
+      mode, route, first_name: firstName.trim(), last_name: lastName.trim(),
+      email: email.trim(), sex, appointment_date: chosenSlot.date, appointment_time: chosenSlot.time
+    }
+    const identity = JSON.stringify(payload)
     setBusy(true); setError('')
     try {
-      const result = await schedule<Row>('public_booking.first_meeting', { ...payload, request_key: keys.current[key] ??= requestKey() }, true)
-      const confirmation = result.confirmation as Row | undefined
-      setConfirmed(`Primo incontro prenotato per ${displayDate(slot.date)} alle ${time(slot.time)}. ${confirmation?.state === 'Failed' ? 'Conferma email da ritentare dalla Direzione.' : 'Conferma registrata in simulazione. Nessuna email reale inviata.'}`)
-    } catch (e) { setError(message(e)) }
+      await schedule<Row>('public_booking.first_meeting',
+        { ...payload, request_key: keys.current[identity] ??= requestKey() }, true)
+      setConfirmed(true); setStep(4)
+    } catch (failure) { setError(errorText(failure)) }
     finally { setBusy(false) }
   }
-  return <main className="public-layout"><div className="public-brand"><img src={import.meta.env.BASE_URL + 'logo.webp'} alt="Centro Change" width="34" height="34" /><strong>centro<span>change</span></strong></div><div className="public-hero"><div className="eyebrow">IL PRIMO PASSO</div><h1>Iniziamo da qui, insieme.</h1><p>Scegli il professionista e l'orario più adatto a te. La segreteria ti aiuterà per gli incontri successivi.</p></div><section className="public-card"><div className="public-card-head"><span className="public-step">01</span><div><h2>Trova il tuo orario</h2><p>Disponibilità nei prossimi sette giorni dalla data scelta.</p></div></div><form onSubmit={e => { e.preventDefault(); void search() }}><div className="form-grid"><Field label="Professionista" required><select value={route} onChange={e => { setRoute(e.target.value); setProjection(null); setSelected('') }}><option>Marco</option><option>Francesca</option></select></Field><Field label="Dal" required><DateInput value={start} onChange={v => { setStart(v); setProjection(null); setSelected('') }} required /></Field></div><Button disabled={busy} type="submit"><CalendarDays size={17} /> {busy ? 'Ricerca…' : 'Cerca disponibilità'}</Button></form>{projection && <><div className="public-service"><Clock3 size={17} /> {projection.service} · {projection.duration} min · {money(projection.price, projection.currency)}</div>{projection.slots.length ? <div className="slot-grid" role="radiogroup" aria-label="Orari disponibili">{projection.slots.map((slot, i) => <button type="button" role="radio" aria-checked={selected === String(i)} key={slot.date + slot.time} onClick={() => setSelected(String(i))}>{displayDate(slot.date)}<strong>{time(slot.time)}</strong></button>)}</div> : <p className="public-empty">Nessun orario disponibile. Prova un altro periodo.</p>}</>}{error && <FormError error={error} />}</section>{selected && !confirmed && <section className="public-card"><div className="public-card-head"><span className="public-step">02</span><div><h2>I tuoi dati</h2><p>Solo le informazioni necessarie per la prenotazione.</p></div></div><form onSubmit={e => { e.preventDefault(); void submit() }}><div className="form-grid"><Field label="Nome" required><input autoComplete="given-name" maxLength={80} value={firstName} onChange={e => setFirstName(e.target.value)} required /></Field><Field label="Cognome" required><input autoComplete="family-name" maxLength={80} value={lastName} onChange={e => setLastName(e.target.value)} required /></Field></div><Field label="Email" required><input type="email" autoComplete="email" maxLength={140} value={email} onChange={e => setEmail(e.target.value)} required /></Field><Field label="Sesso" required><select value={sex} onChange={e => setSex(e.target.value)} required><option value="">Seleziona</option><option value="Female">Femmina</option><option value="Male">Maschio</option><option value="Other">Altro</option></select></Field><Button type="submit" disabled={busy}>{busy ? 'Prenotazione…' : 'Conferma primo incontro'} <ArrowRight size={17} /></Button></form></section>}{confirmed && <section className="public-card public-confirmation" role="status"><Mail /><h2>Prenotazione registrata</h2><p>{confirmed}</p></section>}<footer className="public-footer">Centro Change · Primo incontro</footer></main>
+  const next = () => {
+    if (step === 0 && mode || step === 1 && route || step === 2 && chosenSlot) {
+      setError(''); setStep(value => Math.min(value + 1, 3))
+    }
+  }
+  const back = () => {
+    if (step > 0 && step < 4) { setError(''); setStep(value => value - 1) }
+  }
+  const summary = <div className="booking-summary-content">
+    <div className="booking-summary-title">
+      <img src={import.meta.env.BASE_URL + 'logo.webp'} alt="" width="52" height="52" />
+      <div><strong>Centro Change</strong><span>Bergamo · Primo incontro</span></div>
+    </div>
+    <div className="booking-summary-divider" />
+    <div className="booking-summary-row"><span>Modalità</span><strong>{mode ? modeNames[mode] : 'Da scegliere'}</strong></div>
+    <div className="booking-summary-row"><span>Direttore</span><strong>{route ?? 'Da scegliere'}</strong></div>
+    <div className="booking-summary-row"><span>Giorno e ora</span><strong>{chosenSlot ? displayDate(chosenSlot.date) + ' · ' + time(chosenSlot.time) : 'Da scegliere'}</strong></div>
+    <div className="booking-summary-divider" />
+    <div className="booking-summary-row"><span>Colloquio conoscitivo 20 minuti</span><strong>Gratuito</strong></div>
+    <div className="booking-summary-divider" />
+    <div className="booking-summary-price"><strong>Da pagare online</strong><strong>0 €</strong></div>
+  </div>
+
+  return <main className="booking-public" id="cc-main">
+    <a className="booking-skip" href="#booking-content">Vai alla prenotazione</a>
+    <header className="booking-top">
+      <div className="booking-brand"><img src={import.meta.env.BASE_URL + 'logo.webp'} alt="" width="36" height="36" /><span>Centro Change</span></div>
+      <span className="booking-top-caption"><ShieldCheck size={17} aria-hidden="true" /> Prenotazione protetta</span>
+    </header>
+    <div className="booking-layout">
+      <div id="booking-content" className="booking-main" tabIndex={-1}>
+        {step < 4 && <nav className="booking-progress" aria-label="Avanzamento prenotazione">
+          {steps.map((label, i) => <span key={label} aria-current={step === i ? 'step' : undefined}
+            className={'booking-progress-item ' + (i <= step ? 'active' : '')}>
+            <span className="booking-progress-num">{i < step ? <Check size={15} aria-hidden="true" /> : i + 1}</span>
+            <span>{label}</span>
+          </span>)}
+        </nav>}
+        {step === 0 && <section className="booking-stage">
+          <p className="booking-eyebrow">IL TUO PRIMO PASSO</p>
+          <h1>Prenota il tuo primo incontro</h1>
+          <p className="booking-intro">Inizia con un colloquio conoscitivo gratuito di 20 minuti con uno dei Direttori del centro.</p>
+          <h2>Scegli come incontrarci</h2>
+          <div className="booking-mode-list" role="radiogroup" aria-label="Modalità del primo incontro">
+            <label className={'booking-mode ' + (mode === 'sede' ? 'chosen' : '')}>
+              <input type="radio" name="booking-mode" checked={mode === 'sede'} onChange={() => selectMode('sede')} />
+              <span className="booking-option-icon"><MapPin size={24} aria-hidden="true" /></span>
+              <span className="booking-option-copy"><strong>In sede</strong>
+                <small>Colloquio conoscitivo gratuito di 20 min in sede con il Direttore.</small></span>
+              <span className="booking-option-check"><Check size={17} aria-hidden="true" /></span>
+            </label>
+            <label className={'booking-mode ' + (mode === 'online' ? 'chosen' : '')}>
+              <input type="radio" name="booking-mode" checked={mode === 'online'} onChange={() => selectMode('online')} />
+              <span className="booking-option-icon"><MonitorPlay size={24} aria-hidden="true" /></span>
+              <span className="booking-option-copy"><strong>Online</strong>
+                <small>Colloquio conoscitivo gratuito di 20 min a distanza con il Direttore.</small></span>
+              <span className="booking-option-check"><Check size={17} aria-hidden="true" /></span>
+            </label>
+          </div>
+          <div className="booking-includes-box" aria-label="Cosa include il percorso">
+            <div className="booking-includes-title"><Sparkles size={18} aria-hidden="true" /><strong>Cosa include il percorso</strong></div>
+            <ul className="booking-includes-list">
+              <li><strong>Primo colloquio conoscitivo di 20 minuti</strong> con uno dei due Direttori (<strong>gratuito</strong>).</li>
+              <li><strong>Seduta di 45 minuti</strong> con il professionista concordato: sarà prenotata separatamente dalla segreteria dopo il colloquio.</li>
+              <li><strong>Costo 44 €</strong>, da pagare <strong>alla seduta</strong>, non online.</li>
+            </ul>
+          </div>
+          <button type="button" className="booking-primary" disabled={!mode} onClick={next}>Continua <ArrowRight size={18} aria-hidden="true" /></button>
+        </section>}
+        {step === 1 && <section className="booking-stage">
+          <p className="booking-eyebrow">SCEGLI CHI INCONTRARE</p>
+          <h1>Con quale Direttore vuoi parlare?</h1>
+          <p className="booking-intro">Seleziona Marco oppure Francesca: gli orari disponibili dipendono dal Direttore scelto.</p>
+          <div className="booking-director-list" role="radiogroup" aria-label="Direttore">
+            {(['Marco', 'Francesca'] as Director[]).map(name => <label key={name} className={'booking-director ' + (route === name ? 'chosen' : '')}>
+              <input type="radio" name="booking-director" checked={route === name} onChange={() => selectDirector(name)} />
+              <span className="booking-avatar"><UserRound size={23} aria-hidden="true" /></span>
+              <span><strong>{name}</strong><small>Direttore · Centro Change</small></span>
+              <span className="booking-option-check"><Check size={17} aria-hidden="true" /></span>
+            </label>)}
+          </div>
+          <div className="booking-actions"><button type="button" className="booking-secondary" onClick={back}><ArrowLeft size={17} aria-hidden="true" /> Indietro</button>
+            <button type="button" className="booking-primary" disabled={!route} onClick={next}>Continua <ArrowRight size={18} aria-hidden="true" /></button></div>
+        </section>}
+        {step === 2 && <section className="booking-stage">
+          <p className="booking-eyebrow">SCEGLI QUANDO</p>
+          <h1>Scegli giorno e orario</h1>
+          <p className="booking-intro">Disponibilità reale di {route} per il colloquio {mode === 'sede' ? 'in sede' : 'online'} di 20 minuti.</p>
+          <form className="booking-calendar-form" onSubmit={event => { event.preventDefault(); void search() }}>
+            <Field label="Mostra disponibilità a partire dal" required>
+              <DateInput required value={start} onChange={value => { setStart(value); invalidate() }} />
+            </Field>
+            <button className="booking-search" type="submit" disabled={busy}><CalendarDays size={18} aria-hidden="true" /> {busy ? 'Ricerca in corso…' : 'Cerca disponibilità'}</button>
+          </form>
+          {busy && <p className="booking-status" role="status">Stiamo cercando gli orari disponibili…</p>}
+          {projection && <div className="booking-availability">
+            <h2>Orari disponibili</h2>
+            {projection.slots.length ? <div className="booking-slot-grid" role="radiogroup" aria-label="Orari disponibili">
+              {projection.slots.map(slot => {
+                const value = slot.date + ' ' + slot.time
+                return <label key={value} className={'booking-slot ' + (selected === value ? 'chosen' : '')}>
+                  <input type="radio" name="booking-slot" checked={selected === value} onChange={() => setSelected(value)} />
+                  <span>{displayDate(slot.date)}</span><strong>{time(slot.time)}</strong>
+                </label>
+              })}
+            </div> : <p className="booking-status">Nessun orario disponibile. Prova un altro periodo o un altro Direttore.</p>}
+          </div>}
+          {error && <FormError error={error} />}
+          <div className="booking-actions"><button type="button" className="booking-secondary" onClick={back}><ArrowLeft size={17} aria-hidden="true" /> Indietro</button>
+            <button type="button" className="booking-primary" disabled={!chosenSlot || busy} onClick={next}>Continua <ArrowRight size={18} aria-hidden="true" /></button></div>
+        </section>}
+        {step === 3 && <section className="booking-stage">
+          <p className="booking-eyebrow">QUASI FATTO</p>
+          <h1>Completa la prenotazione</h1>
+          <p className="booking-intro">Inserisci i tuoi dati per confermare il primo colloquio.</p>
+          <form className="booking-details" onSubmit={event => { event.preventDefault(); void submit() }}>
+            <div className="booking-form-row"><Field label="Nome" required><input required autoComplete="given-name" maxLength={80} value={firstName} onChange={event => setFirstName(event.target.value)} /></Field>
+              <Field label="Cognome" required><input required autoComplete="family-name" maxLength={80} value={lastName} onChange={event => setLastName(event.target.value)} /></Field></div>
+            <Field label="Email" required><input required type="email" autoComplete="email" maxLength={140} value={email} onChange={event => setEmail(event.target.value)} /></Field>
+            <Field label="Sesso anagrafico" required><select required value={sex} onChange={event => setSex(event.target.value)}>
+              <option value="">Seleziona</option><option value="Female">Femmina</option><option value="Male">Maschio</option><option value="Other">Altro</option>
+            </select></Field>
+            <p className="booking-info"><ShieldCheck size={18} aria-hidden="true" /> I dati saranno utilizzati per gestire la richiesta di prenotazione secondo l'informativa del centro.</p>
+            {error && <FormError error={error} />}
+            <div className="booking-actions"><button type="button" className="booking-secondary" disabled={busy} onClick={back}><ArrowLeft size={17} aria-hidden="true" /> Indietro</button>
+              <button className="booking-primary" type="submit" disabled={busy}>{busy ? 'Prenotazione in corso…' : 'Conferma primo incontro'} <ArrowRight size={17} aria-hidden="true" /></button></div>
+          </form>
+        </section>}
+        {step === 4 && confirmed && <section className="booking-stage booking-success" role="status">
+          <span className="booking-success-icon"><Check size={32} aria-hidden="true" /></span>
+          <h1>Prenotazione registrata</h1>
+          <p>Il tuo colloquio conoscitivo gratuito di 20 minuti {mode === 'sede' ? 'in sede' : 'online'} con {route} è confermato per il <strong>{chosenSlot ? displayDate(chosenSlot.date) : ''}</strong> alle <strong>{chosenSlot ? time(chosenSlot.time) : ''}</strong>.</p>
+          <p><strong>Da pagare online: 0 €.</strong></p>
+          <p className="booking-success-note"><Mail size={18} aria-hidden="true" /> Le conferme via email sono abilitate solo quando il centro avrà completato la configurazione del servizio.</p>
+        </section>}
+      </div>
+      <aside className="booking-summary" aria-label="Riepilogo della prenotazione">{summary}</aside>
+    </div>
+    <footer className="booking-footer">Centro Change · Via Molino Baertsch 4, Bergamo</footer>
+  </main>
 }

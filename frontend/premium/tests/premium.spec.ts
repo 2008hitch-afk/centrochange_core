@@ -488,7 +488,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('finance.admin_queue.list_items') || method.endsWith('finance.fiscal.records')) message = []
     else if (method.endsWith('operations.workspace.management_context')) message = { memberships: [{ user: 'synthetic@example.invalid', active: 1 }], users: [{ name: 'synthetic@example.invalid', full_name: 'Utente Sintetico' }], practitioners: boot.practitioners }
     else if (method.endsWith('security.audit_view.events')) message = { events: [{ name: 'AUDIT-001', event_type: 'APPOINTMENT_RESCHEDULED', actor: 'direzione@example.invalid', event_time: today + ' 12:00:00', reference_doctype: 'Patient Appointment', reference_name: 'APP-001', reason: 'Riprogrammazione sintetica', before_state: JSON.stringify({ appointment_time: '09:00:00' }), after_state: JSON.stringify({ appointment_time: '10:00:00' }) }], has_more: false, offset: 0 }
-    else if (method.endsWith('scheduling.public_booking.available_slots')) message = { route: 'Marco', service: 'Primo incontro', duration: 60, price: 80, currency: 'EUR', slots: [{ date: today, time: '10:00:00' }] }
+    else if (method.endsWith('scheduling.public_booking.available_slots')) { const params = new URL(req.url()).searchParams; message = { route: params.get('route') || 'Marco', mode: params.get('mode') || 'sede', service: 'Colloquio conoscitivo gratuito', duration: 20, price: 0, currency: 'EUR', slots: [{ date: today, time: '10:00:00' }] } }
     else if (method.endsWith('scheduling.public_booking.first_meeting')) message = { name: 'APP-PUBLIC-001', confirmation: { state: 'Simulated Sent' } }
     else if (method.endsWith('frappe.client.get_list')) {
       const doctype = new URL(req.url()).searchParams.get('doctype')
@@ -1421,26 +1421,118 @@ test('nuova fattura usa bridge economico e bozza ERPNext con date canoniche', as
   expect(draft.body.request_key).toMatch(/^[a-f0-9]{32}$/)
 })
 
-test('primo incontro pubblico usa solo slot e servizio guest', async ({ page }, testInfo) => {
+test('AUDIT-11 guest sceglie modalità, Direttore, slot 20 minuti gratuiti e prenota solo colloquio', async ({ page }, testInfo) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)
   await page.goto('./public.html')
-  await expect(page.getByRole('heading', { name: 'Iniziamo da qui, insieme.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Prenota il tuo primo incontro' })).toBeVisible()
+  await expect(page.getByRole('radio', { name: /^In sede/ })).toBeVisible()
+  await expect(page.getByRole('radio', { name: /^Online/ })).toBeVisible()
+  await expect(page.getByText('+ Prima Seduta', { exact: false })).toHaveCount(0)
+  await expect(page.getByText('Seduta di 45 minuti')).toBeVisible()
+  await expect(page.getByText(/Costo 44 €/)).toBeVisible()
+  await expect(page.getByText('Prenota un appuntamento di gruppo')).toHaveCount(0)
+  await expect(page.getByText('Fai un regalo')).toHaveCount(0)
+  await page.getByRole('radio', { name: /^Online/ }).check()
+  await page.getByRole('button', { name: 'Continua' }).click()
+  await page.getByRole('radio', { name: /Francesca/ }).check()
+  await page.getByRole('button', { name: 'Continua' }).click()
+  const dateInput = page.locator('.booking-calendar-form input')
+  const searchButton = page.locator('.booking-calendar-form button.booking-search')
+  await expect(dateInput).toBeVisible()
+  await expect(searchButton).toBeVisible()
+  const dateBox = (await dateInput.boundingBox())!
+  const buttonBox = (await searchButton.boundingBox())!
+  if (page.viewportSize() && page.viewportSize()!.width >= 900) {
+    expect(Math.abs(dateBox.y - buttonBox.y)).toBeLessThanOrEqual(1.5)
+    expect(Math.abs(dateBox.height - buttonBox.height)).toBeLessThanOrEqual(1.5)
+    expect(dateBox.height).toBeGreaterThanOrEqual(46)
+    expect(dateBox.height).toBeLessThanOrEqual(50)
+  }
   await page.getByRole('button', { name: 'Cerca disponibilità' }).click()
-  await expect(page.getByRole('radio', { name: new RegExp('10:00') })).toBeVisible()
-  await page.screenshot({ path: `test-results/${testInfo.project.name}-first-meeting.png`, fullPage: true })
-  await page.getByRole('radio', { name: new RegExp('10:00') }).click()
+  await expect(page.getByRole('radio', { name: /10:00/ })).toBeVisible()
+  await page.screenshot({ path: 'test-results/' + testInfo.project.name + '-first-meeting.png', fullPage: true })
+  await page.getByRole('radio', { name: /10:00/ }).check()
+  await page.getByRole('button', { name: 'Continua' }).click()
+  await expect(page.getByText('Inserisci i tuoi dati per confermare il primo colloquio.')).toBeVisible()
   await page.getByRole('textbox', { name: /^Nome/ }).fill('SYNTHETIC Ada')
   await page.getByRole('textbox', { name: 'Cognome' }).fill('Test')
   await page.getByRole('textbox', { name: 'Email' }).fill('ada@example.invalid')
-  await page.getByRole('combobox', { name: 'Sesso' }).selectOption('Female')
+  await page.getByRole('combobox', { name: 'Sesso anagrafico' }).selectOption('Female')
   await page.getByRole('button', { name: 'Conferma primo incontro' }).click()
   await expect(page.getByRole('heading', { name: 'Prenotazione registrata' })).toBeVisible()
+  await expect(page.getByText(/colloquio conoscitivo gratuito di 20 minuti/i)).toBeVisible()
+  await expect(page.getByText(/Da pagare online: 0 €/i)).toBeVisible()
   const booking = writes.find(w => w.method.endsWith('scheduling.public_booking.first_meeting'))!
+  expect(booking.body).toMatchObject({ mode: 'online', route: 'Francesca', appointment_date: today })
   expect(booking.body).not.toHaveProperty('patient')
-  expect(booking.body.appointment_date).toBe(today)
+  expect(booking.body).not.toHaveProperty('appointment_type')
+  expect(booking.body).not.toHaveProperty('price')
   expect(booking.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
 })
+
+
+test('AUDIT-11 onsite Marco e cambio modalità invalidano lo slot precedente', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+  await page.goto('./public.html')
+  await page.getByRole('radio', { name: /^In sede/ }).check()
+  await page.getByRole('button', { name: 'Continua' }).click()
+  await page.getByRole('radio', { name: 'Marco' }).check()
+  await page.getByRole('button', { name: 'Continua' }).click()
+  await page.getByRole('button', { name: 'Cerca disponibilità' }).click()
+  await page.getByRole('radio', { name: /10:00/ }).check()
+  await page.getByRole('button', { name: 'Indietro' }).click()
+  await page.getByRole('radio', { name: 'Francesca' }).check()
+  await page.getByRole('button', { name: 'Continua' }).click()
+  await expect(page.getByRole('radio', { name: /10:00/ })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Continua' })).toBeDisabled()
+  await page.getByRole('button', { name: 'Cerca disponibilità' }).click()
+  await expect(page.getByRole('radio', { name: /10:00/ })).toBeVisible()
+  const calls = writes.filter(w => w.method.endsWith('scheduling.public_booking.first_meeting'))
+  expect(calls).toHaveLength(0)
+})
+
+
+test('AUDIT-11 date input e search button allineamento e responsive viewports', async ({ page }) => {
+  const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
+  await mockApi(page, writes)
+
+  for (const width of [1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('./public.html')
+    await page.getByRole('radio', { name: /^In sede/ }).check()
+    await page.getByRole('button', { name: 'Continua' }).click()
+    await page.getByRole('radio', { name: 'Marco' }).check()
+    await page.getByRole('button', { name: 'Continua' }).click()
+    const input = page.locator('.booking-calendar-form input')
+    const button = page.locator('.booking-calendar-form button.booking-search')
+    const inBox = (await input.boundingBox())!
+    const btnBox = (await button.boundingBox())!
+    expect(Math.abs(inBox.y - btnBox.y)).toBeLessThanOrEqual(1.5)
+    expect(Math.abs(inBox.height - btnBox.height)).toBeLessThanOrEqual(1.5)
+    expect(inBox.height).toBeGreaterThanOrEqual(46)
+    expect(inBox.height).toBeLessThanOrEqual(50)
+  }
+
+  for (const width of [390, 375]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.goto('./public.html')
+    await page.getByRole('radio', { name: /^In sede/ }).check()
+    await page.getByRole('button', { name: 'Continua' }).click()
+    await page.getByRole('radio', { name: 'Marco' }).check()
+    await page.getByRole('button', { name: 'Continua' }).click()
+    const form = page.locator('.booking-calendar-form')
+    const input = page.locator('.booking-calendar-form input')
+    const button = page.locator('.booking-calendar-form button.booking-search')
+    const inBox = (await input.boundingBox())!
+    const btnBox = (await button.boundingBox())!
+    const formBox = (await form.boundingBox())!
+    expect(btnBox.y).toBeGreaterThan(inBox.y + inBox.height)
+    expect(btnBox.width).toBeGreaterThanOrEqual(formBox.width - 40)
+  }
+})
+
 
 test('rettifica nota conserva riferimento alla versione precedente', async ({ page }) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []

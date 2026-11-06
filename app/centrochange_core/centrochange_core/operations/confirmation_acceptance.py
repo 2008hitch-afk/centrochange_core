@@ -12,17 +12,17 @@ def run():
     try:
         frappe.set_user('Guest')
         queues=frappe.db.count('Email Queue')
-        slots=available_slots('Marco',frappe.utils.add_days(frappe.utils.nowdate(),7))['slots']
+        slots=available_slots('Marco',frappe.utils.add_days(frappe.utils.nowdate(),7),mode='sede')['slots']
         assert len(slots)>1
         suffix=frappe.generate_hash(length=12)
-        payload={'route':'Marco','first_name':'SYNTHETIC Conferma','last_name':'Test','email':suffix+'@example.invalid','sex':'Other','appointment_date':slots[0]['date'],'appointment_time':slots[0]['time'],'request_key':'confirmation-'+suffix}
+        payload={'route':'Marco','mode':'sede','first_name':'SYNTHETIC Conferma','last_name':'Test','email':suffix+'@example.invalid','sex':'Other','appointment_date':slots[0]['date'],'appointment_time':slots[0]['time'],'request_key':'confirmation-'+suffix}
         result=first_meeting(**payload);assert result['confirmation']['state']=='Simulated Sent'
         assert first_meeting(**payload)['replay']
         outbox=frappe.get_doc('CC Booking Confirmation',{'appointment':result['name']})
         assert outbox.attempts==1 and outbox.communication
         assert frappe.db.count('Communication',{'reference_doctype':'Patient Appointment','reference_name':result['name'],'communication_medium':'Email'})==1
         assert 'Marco' in outbox.message and 'minuti' in outbox.message and 'HLC-PRAC' not in outbox.message and 'CC-HTTP-' not in outbox.message
-        remaining=available_slots('Marco',frappe.utils.add_days(frappe.utils.nowdate(),7))['slots'][0]
+        remaining=available_slots('Marco',frappe.utils.add_days(frappe.utils.nowdate(),7),mode='sede')['slots'][0]
         failed={**payload,'email':'failed-'+suffix+'@example.invalid','request_key':'failed-'+suffix,'appointment_date':remaining['date'],'appointment_time':remaining['time']}
         with patch('centrochange_core.operations.booking_confirmation._simulate',side_effect=RuntimeError('synthetic failure')):
             second=first_meeting(**failed)
