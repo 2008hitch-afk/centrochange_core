@@ -1012,9 +1012,10 @@ function LegacyReports({ boot, center, feedback, financeBoot, initialPatient }: 
 }
 
 export function Reports(props: Context & { financeBoot?: FinanceBoot | null; initialPatient?: string }) {
-  const [advanced, setAdvanced] = useState(false)
+  // The Owner-approved professional and customer dashboards are the only Report navigation.
+  // Keep the patient-specific legacy deep link for existing patient payment/report workflows.
   if (props.initialPatient) return <LegacyReports {...props} />
-  return advanced ? <><Button variant="secondary" onClick={() => setAdvanced(false)}>Torna ai report</Button><LegacyReports {...props} /></> : <><ReportDashboard boot={props.boot} financeBoot={props.financeBoot} center={props.center} feedback={props.feedback} /><Button variant="secondary" onClick={() => setAdvanced(true)}>Analisi avanzata</Button></>
+  return <ReportDashboard boot={props.boot} financeBoot={props.financeBoot} center={props.center} feedback={props.feedback} />
 }
 
 type FinanceTab = 'Riepilogo' | 'Fatture pazienti' | 'XML ricevuti' | 'Fatture fornitori' | 'Banca' | 'Professionisti' | 'Coda amministrativa' | 'SdI' | 'TS'
