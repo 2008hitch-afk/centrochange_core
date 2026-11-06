@@ -19,10 +19,15 @@ ASSET_LINK = "/home/frappe/frappe-bench/assets"  # pinned image build output
 REQUIRED = {
     "sites/apps.json", "sites/apps.txt", "sites/common_site_config.json",
     "sites/centrochange.local/site_config.json",
-    "sites/centrochange.local/private/uat/demo.json",
-    "sites/centrochange.local/builder_analytics.duckdb",
-    "sites/centrochange.local/touched_tables.json",
 }
+REQUIRED_DIRECTORIES = {"sites/centrochange.local/private/files", "sites/centrochange.local/public/files"}
+
+
+def _check_required(entries):
+    if any(entries.get(name, {}).get("kind") != "file" for name in REQUIRED):
+        raise ValueError("Missing required Site state")
+    if any(entries.get(name, {}).get("kind") != "dir" for name in REQUIRED_DIRECTORIES):
+        raise ValueError("Missing required Site file directory")
 
 
 def _digest(stream):
@@ -98,8 +103,7 @@ def tar_manifest(archive):
             entries[name] = entry
     if entries.get("sites", {}).get("kind") != "dir":
         raise ValueError("Missing sites root")
-    if any(entries.get(name, {}).get("kind") != "file" for name in REQUIRED):
-        raise ValueError("Missing required Site state, including private UAT manifest")
+    _check_required(entries)
     return {"format": 1, "entries": entries}
 
 
@@ -129,8 +133,7 @@ def tree_manifest(root):
         else:
             raise ValueError("Special file in Site tree")
     visit(root, "sites")
-    if any(entries.get(name, {}).get("kind") != "file" for name in REQUIRED):
-        raise ValueError("Missing required Site state, including private UAT manifest")
+    _check_required(entries)
     return {"format": 1, "entries": entries}
 
 
@@ -200,10 +203,10 @@ def load_manifest(path):
     return result
 
 
-def verify_bundle(archive, expected_components=None):
+def verify_bundle(archive, expected_components=None, *, temp_root=None):
     """Verify a decrypted outer checkpoint before any restore command runs."""
     files = {}
-    with tempfile.TemporaryDirectory(prefix="cc148-verify-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="cc148-verify-", dir=temp_root) as temporary:
         os.chmod(temporary, 0o700)
         with tarfile.open(archive, "r:") as source:
             for member in source:
@@ -259,7 +262,7 @@ def _file_digest(path):
         return _digest(data)
 
 
-def verify_encrypted(encrypted, key, inventory):
+def verify_encrypted(encrypted, key, inventory, *, temp_root=None):
     """Check ciphertext fingerprint, decrypt privately, then validate every member."""
     for value in (encrypted, key, inventory):
         path = Path(value).resolve()
@@ -274,7 +277,7 @@ def verify_encrypted(encrypted, key, inventory):
         raise ValueError("Encrypted checkpoint hash mismatch")
     if not report.get("components"):
         raise ValueError("Checkpoint inventory or private key mode invalid")
-    with tempfile.TemporaryDirectory(prefix="cc148-decrypt-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="cc148-decrypt-", dir=temp_root) as temporary:
         os.chmod(temporary, 0o700)
         home = Path(temporary) / "gnupg"
         home.mkdir(mode=0o700)
@@ -286,7 +289,7 @@ def verify_encrypted(encrypted, key, inventory):
         if result.returncode:
             raise ValueError("Checkpoint decryption failed")
         os.chmod(clear, 0o600)
-        return verify_bundle(clear, report["components"])
+        return verify_bundle(clear, report["components"], temp_root=temp_root)
 
 
 if __name__ == "__main__":

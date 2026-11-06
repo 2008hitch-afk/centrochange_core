@@ -25,6 +25,7 @@ class SiteCheckpointTests(unittest.TestCase):
         sites = self.root / "source" / "sites"
         (sites / "centrochange.local/private/uat").mkdir(parents=True)
         (sites / "centrochange.local/private/files").mkdir(parents=True)
+        (sites / "centrochange.local/public/files").mkdir(parents=True)
         (sites / "centrochange.local/indexes/web_routes").mkdir(parents=True)
         (sites / "centrochange.local/logs").mkdir(parents=True)
         for path, data in {
@@ -88,7 +89,7 @@ class SiteCheckpointTests(unittest.TestCase):
         self.assertGreaterEqual(result["files_checked"], 11)
         compare(self.manifest, tree_manifest(self.root / "restored"))
         (self.root / "restored/centrochange.local/private/uat/demo.json").unlink()
-        with self.assertRaisesRegex(ValueError, "Missing required Site state"):
+        with self.assertRaisesRegex(ValueError, "differs"):
             compare(self.manifest, tree_manifest(self.root / "restored"))
 
     def test_original_four_component_backup_is_incomplete(self):
@@ -139,6 +140,25 @@ class SiteCheckpointTests(unittest.TestCase):
                 altered = self._tar_entries({missing})
                 with self.assertRaises(ValueError):
                     compare(self.manifest, tar_manifest(altered))
+
+    def test_clean_site_without_optional_historical_files(self):
+        sites = self.root / "source" / "sites"
+        for name in ("centrochange.local/private/uat/demo.json", "centrochange.local/builder_analytics.duckdb", "centrochange.local/touched_tables.json"):
+            (sites / name).unlink()
+        current = tree_manifest(sites)
+        archive = self.root / "clean.tar"
+        with tarfile.open(archive, "w") as output:
+            output.add(sites, arcname="sites")
+        compare(current, tar_manifest(archive))
+        (sites / "centrochange.local/site_config.json").unlink()
+        with self.assertRaisesRegex(ValueError, "Missing required Site state"):
+            tree_manifest(sites)
+
+    def test_required_file_directories_are_not_optional(self):
+        sites = self.root / "source" / "sites"
+        shutil.rmtree(sites / "centrochange.local/private/files")
+        with self.assertRaisesRegex(ValueError, "Missing required Site file directory"):
+            tree_manifest(sites)
 
     def test_changed_content_fails_sha_comparison(self):
         restored = self.root / "restored"
