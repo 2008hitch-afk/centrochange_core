@@ -862,7 +862,7 @@ test('UAT Report professionisti: sedute disponibili, economia limitata al ruolo'
 test('UAT Patient: nome reale prevale su alias demo, ID API invariati', async ({ page }, testInfo) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   const demo_labels = { 'PAT-001': 'Paziente Sintetico', 'Paziente Sintetico': 'Paziente Sintetico', 'PR-001': 'Professionista 1', 'Dott.ssa Rossi': 'Professionista 1', 'SERV-001': 'Servizio 1', 'Prima visita': 'Servizio 1', 'CENTRO-A': 'Centro A' }
-  await mockApi(page, writes, true, {}, { demo_labels } as Partial<typeof boot>, null, { demo_labels: { 'PAT-001': 'Cliente 1', 'Paziente Sintetico': 'Cliente 1' } } as Partial<typeof financeBoot>)
+  await mockApi(page, writes, true, {}, { demo_labels, services: [{ name: 'SERV-001', cc_service_label: 'Seduta successiva', cc_service_item: 'ITEM-001', cc_price_snapshot: 44, cc_currency_snapshot: 'EUR', duration: 45 }] } as Partial<typeof boot>, null, { demo_labels: { 'PAT-001': 'Cliente 1', 'Paziente Sintetico': 'Cliente 1' } } as Partial<typeof financeBoot>)
   await page.goto('./')
   await expect(page.locator('.week-event').first()).toContainText('Paziente Sintetico')
   await expect(page.locator('.week-professional')).toContainText('Professionista 1')
@@ -875,7 +875,7 @@ test('UAT Patient: nome reale prevale su alias demo, ID API invariati', async ({
   await openSection(page, 'Professionisti')
   await expect(page.locator('tbody')).toContainText('Professionista 1')
   await openSection(page, 'Servizi')
-  await expect(page.locator('tbody')).toContainText('Servizio 1')
+  await expect(page.locator('tbody')).toContainText('Seduta')
   await openSection(page, 'Agenda')
   await page.getByRole('button', { name: 'Nuova prenotazione', exact: true }).click()
   await page.getByRole('dialog').getByRole('combobox', { name: 'Paziente' }).click()
