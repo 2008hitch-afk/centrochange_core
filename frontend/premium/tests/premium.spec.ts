@@ -546,6 +546,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
         results: [{ name: 'APP-001', status: 'Closed', performed: 1, paid: 1, economic_state: 'Due' }],
       }
     }
+    else if (method.endsWith('operations.notifications.pending_outcomes')) message = []
     else if (req.method() === 'POST') message = { name: 'SYNTHETIC-NEW' }
     else status = 404
     await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(status === 200 ? { message } : { exc: 'PermissionError' }) })
