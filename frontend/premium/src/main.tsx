@@ -90,7 +90,7 @@ function App() {
   const available = allViews.filter(v => v === 'Report' ? !!boot || !!financeBoot : v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : (roles.includes('CC Manager') && !!boot) || !!financeBoot : v === 'Notifiche' ? roles.includes('CC Manager') || roles.includes('CC Professional') || roles.includes('CC Secretariat') : ['Gestione accessi', 'Registro modifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
   const isPureProfessional = roles.includes('CC Professional') && !roles.includes('CC Manager') && !roles.includes('CC Secretariat') && !financeBoot?.can_write
   const adminViews = isPureProfessional ? ['Finanza', 'Gestione accessi', 'Registro modifiche'] : ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche']
-  const currentView = available.includes(view) ? view : available[0]
+  const currentView = available.includes(view) ? view : !boot && financeBoot ? 'Finanza' : available[0]
   useEffect(() => {
     if (loading || !currentView) return
     const canonical = '#' + encodeURIComponent(currentView)

@@ -501,6 +501,7 @@ async function mockApi(page: Page, writes: { method: string; body: Record<string
     else if (method.endsWith('operations.workspace.schedules')) message = [{ name: 'SCHED-001', practitioner: 'PR-001', time_slots: [{ day: 'Monday', from_time: '09:00:00', to_time: '18:00:00' }], absences: [] }]
     else if (method.endsWith('operations.reporting.summary')) message = { currencies: { EUR: { sessions: 1, performed: 0, due: 1, due_snapshot_amount: 80 } }, truncated: false }
     else if (method.endsWith('operations.reporting.sessions')) message = { appointments: [{ ...appointment, ...appointmentState, patient_first_name: 'Paziente', patient_last_name: 'Sintetico', practitioner_name: 'Dott.ssa Rossi', cc_service_label: 'Prima visita', mode_of_payment: 'POS' }], total: 1, truncated: false }
+    else if (method.endsWith('finance.report_dashboard.professional')) message = { appointments: [], total: 0, cash_cents: 0, remaining_cents: 0 }
     else if (method.endsWith('finance.operational_receipts.center_records')) message = []
     else if (method.endsWith('finance.reporting.summary')) message = { totals: { revenue_net: 600, collected: 400, receivable_outstanding: 200, purchase_net: 250, payable_outstanding: 80, expected_compensation: 120, unresolved_expectations: 0, sessions: 4 }, sales_invoices: [], purchase_invoices: [], scope_note: 'Dati sintetici.' }
     else if (method.endsWith('finance.patient_reporting.patient_view')) message = new URL(req.url()).searchParams.has('key')
@@ -1653,7 +1654,7 @@ test('sweep grafico delle sezioni operative e amministrative', async ({ page }, 
   await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeVisible()
   for (const section of sections) {
     await page.evaluate(value => { location.hash = encodeURIComponent(value) }, section)
-    await expect(page.getByRole('heading', { name: section, exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: section === 'Report' ? 'Report professionista' : section, exact: true })).toBeVisible()
     await expect(page.locator('.panel-loading')).toHaveCount(0)
     const slug = section.toLowerCase().replaceAll(' ', '-')
     await page.screenshot({ path: `test-results/${testInfo.project.name}-${slug}.png`, fullPage: true })
