@@ -466,3 +466,14 @@
 .patient-tab-summary .property-list dt, .professional-detail-page .property-list dt { width: auto; }
 .patient-tab-summary .property-list dd, .professional-detail-page .property-list dd { margin: 0; overflow-wrap: anywhere; }
 .professional-detail-page .modal .action-form { max-width: none; }
+
+/* Keep report controls and scrollable tables inside the available width. */
+.content, .panel, .report-drilldown, .report-currency, .report-group, .report-drilldown-header, .pagination-bar { min-width: 0; max-width: 100%; }
+.report-drilldown .table-scroll { max-width: 100%; overflow-x: auto; }
+@media (max-width: 760px) { .report-drilldown-header > *, .pagination-bar > * { min-width: 0; max-width: 100%; } .pagination-bar .button-group { width: 100%; } }
+
+.notification-outcome { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:12px 0; border-top:1px solid var(--line); }
+@media (max-width: 760px) {
+  .heading-action .button-group { flex-wrap: wrap; }
+  .heading-action .button-group > * { flex: 1 1 140px; min-width: 0; }
+}

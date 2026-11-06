@@ -85,3 +85,31 @@ def target(name):
     from centrochange_core.finance.guards import patient_context
     patient_context(notice.patient, notice.center)
     return {'patient':notice.patient, 'center':notice.center}
+
+@frappe.whitelist(methods=['GET'])
+def pending_outcomes(center):
+    """Live, deduplicated operational alerts; no patient or clinical data."""
+    from datetime import timedelta
+    from centrochange_core.security.guards import require_center, require_operational_center
+    from centrochange_core.operations.lifecycle import now_utc, start_utc
+    require_manager()
+    require_center(center)
+    require_operational_center(center)
+    now = now_utc()
+    from centrochange_core.operations.lifecycle import ROME
+    today = now.astimezone(ROME).date()
+    rows = current_rows('Patient Appointment', {
+        'cc_center': center, 'appointment_date': ['<=', today],
+        'cc_closure_state': ['in', ['Pending', 'Auto Locked', 'Reopened']],
+        'status': ['!=', 'Cancelled'],
+    }, fields=['appointment_date', 'appointment_time', 'duration', 'practitioner', 'practitioner_name'])
+    grouped = {}
+    for row in rows:
+        if not row.practitioner or start_utc(row) + timedelta(minutes=int(row.duration or 60)) > now:
+            continue
+        key = (str(row.appointment_date), row.practitioner)
+        if key not in grouped:
+            grouped[key] = {'date': key[0], 'practitioner': key[1],
+                            'practitioner_name': row.practitioner_name or '', 'count': 0}
+        grouped[key]['count'] += 1
+    return sorted(grouped.values(), key=lambda item: (item['date'], item['practitioner']), reverse=True)

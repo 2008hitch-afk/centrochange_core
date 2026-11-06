@@ -1249,6 +1249,8 @@ export function Notifications({ boot, center, feedback }: Context) {
   const isManager = boot.roles.includes('CC Manager')
   const personal = boot.roles.includes('CC Professional') && !isManager && !boot.roles.includes('CC Secretariat')
   const [rows, setRows] = useState<Row[]>([])
+  const [pendingOutcomes, setPendingOutcomes] = useState<Row[]>([])
+  const [pendingError, setPendingError] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reload, setReload] = useState(0)
@@ -1277,6 +1279,21 @@ export function Notifications({ boot, center, feedback }: Context) {
       })
     return () => { live = false }
   }, [center, personal, reload])
+
+  useEffect(() => {
+    if (!isManager || !center) { setPendingOutcomes([]); return }
+    let live = true
+    setPendingError('')
+    ops<Row[]>('notifications.pending_outcomes', { center }).then(items => { if (!Array.isArray(items)) throw new Error('Riepilogo esiti non disponibile.'); if (live) setPendingOutcomes(items) }).catch(cause => { if (live) { setPendingOutcomes([]); setPendingError(getError(cause)) } })
+    return () => { live = false }
+  }, [center, isManager, reload])
+
+  const openOutcome = (date: string) => {
+    const url = new URL(location.href)
+    url.searchParams.set('close_day', date)
+    url.hash = 'Agenda'
+    location.assign(url.toString())
+  }
 
   const openNotice = async (name: string) => {
     try {
@@ -1324,6 +1341,7 @@ export function Notifications({ boot, center, feedback }: Context) {
         title="Notifiche"
         subtitle={personal ? 'Promemoria e comunicazioni personali.' : 'Esiti e comunicazioni operative.'}
       />
+      {isManager && <section className="panel detail-section" aria-label="Esiti da verificare"><h2>Esiti da verificare</h2><p>Contatta il professionista per le sedute concluse senza esito.</p>{pendingError && <p role="alert">{pendingError}</p>}{!pendingError && !pendingOutcomes.length && <p>Nessun esito da verificare.</p>}{pendingOutcomes.map(item => <div className="notification-outcome" key={`${item.date}:${item.practitioner}`}><span><strong>{demoText(item.practitioner_name || item.practitioner)}</strong> · {displayDate(item.date)} · {String(item.count)} {Number(item.count) === 1 ? 'seduta senza esito' : 'sedute senza esito'}</span><Button variant="secondary" onClick={() => openOutcome(String(item.date))}>Apri situazione</Button></div>)}</section>}
       <section className={`panel${personal ? ' personal-notifications' : ''}`}>
         <div className="panel-toolbar">
           <div className="panel-title">

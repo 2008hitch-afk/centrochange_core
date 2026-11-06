@@ -2417,9 +2417,9 @@ test('AUDIT-05 UAT-05-34: seduta Auto Locked e Pending mostra Bloccata e Pagamen
   await page.goto('./#Report')
   await expect(page.getByRole('heading', { name: 'Report', exact: true })).toBeVisible()
   // Nella tabella di dettaglio:
-  // Stato seduta deve essere 'Bloccata'
+  // Stato seduta deve essere 'Esito da registrare'
   const table = page.locator('.report-drilldown')
-  await expect(table.getByText('Bloccata')).toBeVisible()
+  await expect(table.getByText('Esito da registrare')).toBeVisible()
   // Pagamento operativo deve essere 'Da definire' (NON 'Da incassare')
   await expect(table.getByText('Da definire')).toBeVisible()
   await expect(table.getByText('Da incassare')).toHaveCount(0)
@@ -3034,4 +3034,14 @@ test('ISSUE-156: card apre pagamenti e registra un importo parziale su due sedut
   expect(corrected.receipt).toBe('R1')
   await panel.getByRole('button', {name:'Vai alla seduta'}).first().click()
   await expect(page.locator('.patient-appointment-detail')).toContainText('Seduta sintetica')
+})
+
+test('Notifiche Manager mostrano gli esiti pendenti per professionista senza dati paziente', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.notifications.pending_outcomes*', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ message: [{ date: '2026-11-05', practitioner: 'PR-001', practitioner_name: 'Dott.ssa Rossi', count: 2 }] }) }))
+  await page.goto('./#Notifiche')
+  const alerts = page.getByRole('region', { name: 'Esiti da verificare' })
+  await expect(alerts).toContainText('Dott.ssa Rossi')
+  await expect(alerts).toContainText('2 sedute senza esito')
+  await expect(alerts.getByRole('button', { name: 'Apri situazione' })).toBeVisible()
 })
