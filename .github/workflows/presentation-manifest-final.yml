@@ -1,0 +1,38 @@
+name: Presentation dataset manifest parity final
+on:
+  push:
+    branches:
+      - feature/client-presentation-dataset-20261107
+    paths:
+      - .github/workflows/presentation-manifest-final.yml
+permissions:
+  contents: write
+jobs:
+  manifest:
+    if: github.repository == '2008hitch-afk/centrochange_core'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - name: Verify dataset and schema, then update approved manifest
+        run: |
+          python3 infra/verify_presentation_dataset.py
+          python3 -m py_compile app/centrochange_core/centrochange_core/uat/presentation_seed.py app/centrochange_core/centrochange_core/uat/presentation_acceptance.py
+          python3 infra/verify_full_single_stack.py --write-manifest
+          python3 infra/verify_full_single_stack.py --source
+          git add infra/full-single-stack-manifest.json
+          git diff --cached --check
+      - name: Publish branch manifest
+        run: |
+          if ! git diff --cached --quiet; then
+            git config user.name centrochange-ci
+            git config user.email centrochange-ci@users.noreply.github.com
+            git commit -m "build(uat): verify and pin guarded presentation candidate sources"
+            git push origin HEAD:feature/client-presentation-dataset-20261107
+          fi
