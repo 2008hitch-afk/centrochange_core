@@ -201,6 +201,89 @@ test('Nuovo paziente usa il servizio controllato e apre la scheda', async ({ pag
   expect(payload).toMatchObject({ center: 'CENTRO-A', first_name: 'SYNTHETIC Test', uid: 'SYNTHETIC-TEST-001', phone: '000123', mobile: '000456', practitioner: null, ts_preference: 'Opposed' })
 })
 
+
+test('Fiscal payer flow: default is the patient; existing Customer is reused by its scoped ID', async ({page}) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_creation_options*', route =>
+    route.fulfill({contentType:'application/json',body:JSON.stringify({message:{genders:['Female']}})}))
+  await page.route('**/api/method/centrochange_core.operations.profiles.fiscal_payers*', route =>
+    route.fulfill({contentType:'application/json',body:JSON.stringify({message:[
+      {name:'CUS-FAMILY',label:'Maria Bianchi',tax_hint:'••••1234'},
+      {name:'CUS-OTHER',label:'Maria Bianchi',tax_hint:'••••7890'}
+    ]})}))
+  const writes: Record<string,unknown>[] = []
+  await page.route('**/api/method/centrochange_core.operations.workspace.create_patient', route => {
+    writes.push(route.request().postDataJSON())
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({message:{name:'PAT-001',replay:false}})})
+  })
+  await page.goto('./#Pazienti')
+  await page.getByRole('button',{name:'Nuovo paziente'}).click()
+  const form=page.getByRole('dialog',{name:'Nuovo paziente'})
+  await expect(form.getByRole('radio',{name:'Il paziente stesso'})).toBeChecked()
+  await form.getByRole('radio',{name:"Un'altra persona già registrata"}).check()
+  await expect(form.getByLabel('Seleziona intestatario fiscale')).toBeVisible()
+  await expect(form.getByLabel('Seleziona intestatario fiscale').locator('option')).toHaveCount(3)
+  await form.getByLabel('Seleziona intestatario fiscale').selectOption('CUS-FAMILY')
+  await form.getByLabel(/^Nome/).fill('SYNTHETIC Elena')
+  await form.getByLabel('Cognome').fill('Bianchi')
+  await form.getByLabel('Sesso anagrafico').selectOption('Female')
+  await form.getByLabel('Identificativo sintetico').fill('SYNTHETIC-FAMILY-001')
+  await form.getByLabel('Motivo').fill('Creazione sintetica con intestatario condiviso')
+  await form.getByRole('button',{name:'Crea paziente'}).click()
+  await expect.poll(()=>writes.length).toBe(1)
+  expect(writes[0]).toMatchObject({payer_mode:'existing',payer_customer:'CUS-FAMILY'})
+  expect(writes[0]).not.toHaveProperty('payer_tax_id')
+})
+
+test('Fiscal payer flow: new payer collected inline and no second patient form opens', async ({page}) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_creation_options*', route =>
+    route.fulfill({contentType:'application/json',body:JSON.stringify({message:{genders:['Female']}})}))
+  let payload: Record<string, unknown>|undefined
+  await page.route('**/api/method/centrochange_core.operations.workspace.create_patient', route => {
+    payload=route.request().postDataJSON()
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({message:{name:'PAT-001'}})})
+  })
+  await page.goto('./#Pazienti')
+  await page.getByRole('button',{name:'Nuovo paziente'}).click()
+  const form=page.getByRole('dialog',{name:'Nuovo paziente'})
+  await form.getByRole('radio',{name:'Una nuova persona'}).check()
+  await form.getByLabel('Nome intestatario').fill('Maria')
+  await form.getByLabel('Cognome intestatario').fill('Verdi')
+  await form.getByLabel('Identificativo fiscale intestatario').fill('SYNTHETIC-CF-001')
+  await form.getByLabel(/^Nome/).fill('SYNTHETIC Anna')
+  await form.getByLabel('Cognome').fill('Verdi')
+  await form.getByLabel('Sesso anagrafico').selectOption('Female')
+  await form.getByLabel('Identificativo sintetico').fill('SYNTHETIC-ANNA-001')
+  await form.getByLabel('Motivo').fill('Creazione sintetica con nuovo intestatario')
+  await form.getByRole('button',{name:'Crea paziente'}).click()
+  await expect.poll(()=>payload!==undefined).toBe(true)
+  expect(payload).toMatchObject({payer_mode:'new',payer_first_name:'Maria',
+    payer_last_name:'Verdi',payer_tax_id:'SYNTHETIC-CF-001'})
+})
+
+test('Fiscal payer flow: manager sees linked payer name on Patient detail', async ({page}) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_detail*', route =>
+    route.fulfill({contentType:'application/json',body:JSON.stringify({message:{
+      name:'PAT-001',patient_name:'Paziente Sintetico',first_name:'Paziente',last_name:'Sintetico',
+      modified:'2026-11-07 10:00:00',active_assignment:true,
+      fiscal_customer:'CUS-FAMILY',fiscal_customer_label:'Maria Bianchi',fiscal_payer_external:true
+    }})}))
+  await page.route('**/api/method/centrochange_core.operations.profiles.fiscal_payers*', route =>
+    route.fulfill({contentType:'application/json',body:JSON.stringify({message:[
+      {name:'CUS-FAMILY',label:'Maria Bianchi',tax_hint:'••••1234'}
+    ]})}))
+  await page.goto('./#Pazienti')
+  await page.locator('tbody tr').first().click()
+  await expect(page.locator('.patient-detail-page')).toContainText('Intestatario fiscale')
+  await expect(page.locator('.patient-detail-page')).toContainText('Maria Bianchi')
+  await page.getByRole('button',{name:'Modifica intestatario fiscale'}).click()
+  const modal=page.getByRole('dialog',{name:'Intestatario fiscale'})
+  await expect(modal.getByRole('radio',{name:"Un'altra persona già registrata"})).toBeChecked()
+  await expect(modal.getByRole('button',{name:'Salva intestatario'})).toBeDisabled()
+})
+
 test('AUDIT-04 scheda paziente: profilo autorizzato, note e storico', async ({ page }, info) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)
