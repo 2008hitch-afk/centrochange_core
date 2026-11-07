@@ -68,7 +68,7 @@ def configure():
 		{"fieldname":"cc_center", "label":"Centro Change Center", "fieldtype":"Link", "options":"Branch"},
 	]})
 	create_custom_fields({'Patient':[{'fieldname':name,'label':label,'fieldtype':'Data','read_only':1,'hidden':1,**extra} for name,label,extra in [('cc_intake_key','Controlled Intake Key',{'unique':1}),('cc_intake_hash','Controlled Intake Payload Hash',{})]]})
-	create_custom_fields({'Patient':[{'fieldname':'cc_ts_preference','label':'Preferenza anagrafica Sistema TS','fieldtype':'Select','options':'\nNo Opposition\nOpposed','read_only':1,'hidden':1,'no_copy':1,'permlevel':1}]})
+	# A third-party fiscal payer must never be overwritten by Healthcare's Patient.on_update.\n	create_custom_fields({'Patient':[{'fieldname':'cc_external_payer','label':'Intestatario fiscale diverso dal paziente',\n		'fieldtype':'Check','default':'0','read_only':1,'hidden':1,'no_copy':1,'permlevel':1}]})\n	create_custom_fields({'Patient':[{'fieldname':'cc_ts_preference','label':'Preferenza anagrafica Sistema TS','fieldtype':'Select','options':'\nNo Opposition\nOpposed','read_only':1,'hidden':1,'no_copy':1,'permlevel':1}]})
 	create_custom_fields({'Healthcare Practitioner':[{'fieldname':'cc_profile_center','label':'Centro anagrafico','fieldtype':'Link','options':'Branch','read_only':1,'hidden':1,'no_copy':1,'permlevel':1}]})
 	# Override the complete Patient permission set, preserving deny-by-default for professionals.
 	permissions = {
