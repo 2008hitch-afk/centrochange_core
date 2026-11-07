@@ -236,7 +236,9 @@ def patient_ts_history(center, name):
 @frappe.whitelist(methods=['GET'])
 def patient_creation_options(center):
     manager(center)
-    return {'genders': frappe.get_all('Gender', pluck='name', order_by='name')}
+    from centrochange_core.operations.workspace import presentation_intake_enabled
+    return {'genders': frappe.get_all('Gender', pluck='name', order_by='name'),
+            'presentation_intake': bool(presentation_intake_enabled())}
 
 
 
