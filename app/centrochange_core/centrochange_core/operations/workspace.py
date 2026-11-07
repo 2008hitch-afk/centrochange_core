@@ -408,6 +408,7 @@ def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,la
     doc_values={'doctype':'Patient','first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,
                 'email':email,'mobile':mobile,'phone':phone,'invite_user':0,
                 'cc_intake_key':key,'cc_intake_hash':digest,'cc_external_payer':1 if payer_mode!='self' else 0,
+                'cc_fiscal_mapping_confirmed':1,
                 **({'customer':payer} if payer else {}),
                 **({'cc_ts_preference':ts_preference} if ts_preference is not None else {})}
     with internal_write('cc_patient_intake_write'), internal_write('cc_ts_preference_write'), internal_write('cc_finance_mapping_write'):
