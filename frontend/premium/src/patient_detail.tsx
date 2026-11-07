@@ -9,14 +9,12 @@ import { PatientPackages } from './patient_packages'
 import { saveArchive } from './scoped_api'
 import { Button, Chip, Empty, Field, FormError, Modal, Metric, DataTable, type Feedback } from './ui'
 
-type Profile = Row & { name: string; modified: string; first_name: string; last_name: string; email: string; mobile: string; phone: string; cc_ts_preference?: string | null; active_assignment: boolean }
+type Profile = Row & { name: string; modified: string; first_name: string; last_name: string; email: string; mobile: string; phone: string; cc_ts_preference?: string | null; active_assignment: boolean; fiscal_customer?: string | null; fiscal_customer_label?: string | null; fiscal_payer_external?: boolean }
 type History = { appointments: Row[]; truncated: boolean; settlements: Row[]; organizational_notes: Row[]; private_notes: Row[]; packages: Row[]; assignment_events?: Row[]; total_appointments?: number; page?: number; total_pages?: number }
 const patientIdentityPart = (value: unknown) => { const text = String(value ?? '').trim(); return /^(?:CC-(?:HTTP|MVP-POS)-|SYNTHETIC[-_]|PAT-[A-Z0-9-]+$)/i.test(text) ? '' : text }
 const tsPreferenceLabel = (value: unknown) => value === 'No Opposition' ? 'Non si oppone alla trasmissione' : value === 'Opposed' ? 'Si oppone alla trasmissione' : 'Informazione non registrata'
 const errorText = (cause: unknown) => cause instanceof Error ? cause.message : 'Operazione non riuscita.'
-const receiptMethodLabel = (value: unknown) => /^CC-MVP-POS-/i.test(String(value ?? '')) ? 'Carta POS' : /^CC-[A-Z0-9-]+/i.test(String(value ?? '')) ? 'Metodo non disponibile' : paymentMethodLabel(value)
-
-export function PatientDetail({ boot, financeBoot, patient, center, feedback, initialTab, onOpenReport, onClose, onSuccess }: {
+const receiptMethodLabel = (value: unknown) => /^CC-MVP-POS-/i.test(String(value ?? '')) ? 'Carta POexport function PatientDetail({ boot, financeBoot, patient, center, feedback, initialTab, onOpenReport, onClose, onSuccess }: {
   boot: Boot; financeBoot?: FinanceBoot | null; patient: Patient; center: string; feedback: Feedback;
   initialTab?: 'Riepilogo' | 'Sedute' | 'Assegnazioni' | 'Note' | 'Pacchetti' | 'Pagamenti';
   onOpenReport?: (patientId?: string) => void;
@@ -32,6 +30,18 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
   const [reason, setReason] = useState('')
   const [saving, setSaving] = useState(false)
   const saveKey = useRef(requestKey())
+  const payerKey = useRef(requestKey())
+  const [payerOpen,setPayerOpen] = useState(false)
+  const [payerMode,setPayerMode] = useState<'self'|'existing'|'new'>('self')
+  const [payerCustomer,setPayerCustomer] = useState('')
+  const [payerSearch,setPayerSearch] = useState('')
+  const [payerChoices,setPayerChoices] = useState<Array<{name:string;label:string;tax_hint?:string}>>([])
+  const [payerFirst,setPayerFirst] = useState('')
+  const [payerLast,setPayerLast] = useState('')
+  const [payerTaxId,setPayerTaxId] = useState('')
+  const [payerReason,setPayerReason] = useState('')
+  const [payerBusy,setPayerBusy] = useState(false)
+  const [payerError,setPayerError] = useState('')
   const [note, setNote] = useState('')
   const [notePrivate, setNotePrivate] = useState(false)
   const [corrects, setCorrects] = useState<string | null>(null)
@@ -40,6 +50,14 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
   const [tsHistory, setTsHistory] = useState<Row[]>([])
   const [tsHistoryError, setTsHistoryError] = useState('')
 
+  useEffect(() => {
+    if (!payerOpen || payerMode !== 'existing') return
+    let live = true
+    ops<Array<{name:string;label:string;tax_hint?:string}>>('profiles.fiscal_payers',{center,search:payerSearch})
+      .then(rows => {if(live) setPayerChoices(rows)})
+      .catch(cause => {if(live) setPayerError(errorText(cause))})
+    return () => {live = false}
+  }, [center,payerOpen,payerMode,payerSearch])
   const canViewPayments = Boolean(
     financeBoot &&
     !boot.roles.includes('CC Professional') &&
@@ -121,6 +139,21 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
   }
 
   const refresh = () => { setReload(value => value + 1); onSuccess() }
+  const savePayer = async () => {
+    if (!profile || !payerReason.trim()) return
+    setPayerBusy(true);setPayerError('')
+    try {
+      const fiscal = payerMode === 'existing' ? {payer_customer:payerCustomer}
+        : payerMode === 'new' ? {payer_first_name:payerFirst,payer_last_name:payerLast,payer_tax_id:payerTaxId}
+        : {}
+      await ops('profiles.patient_fiscal_payer_save',{
+        center,name:patient.name,payer_mode:payerMode,expected_version:profile.modified,
+        request_key:payerKey.current,reason:payerReason.trim(),...fiscal
+      },true)
+      setPayerOpen(false);feedback('Intestatario fiscale aggiornato.');refresh()
+    } catch(cause){setPayerError(errorText(cause))}
+    finally{setPayerBusy(false)}
+  }
   const save = async () => {
     if (!profile || !draft || !reason.trim()) return
     setSaving(true); setError('')
@@ -160,7 +193,10 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
     </section> : <>
     {loading && <p role="status">Caricamento scheda paziente…</p>}
     {error && <p className="inline-error" role="alert">{error}</p>}
-    {profile && <section className="detail-section patient-tab-summary"><h3>Anagrafica</h3>{historical && <p className="scope-note" role="status">Nessuna assegnazione attiva in questo centro. La scheda è consultabile come storico; per riprendere le operazioni, registra una nuova assegnazione autorizzata.</p>}<dl className="property-list"><div><dt>Nome</dt><dd>{patientIdentityPart(profile.first_name) || '—'}</dd></div><div><dt>Cognome</dt><dd>{patientIdentityPart(profile.last_name) || '—'}</dd></div><div><dt>Email</dt><dd>{profile.email || '—'}</dd></div><div><dt>Telefono</dt><dd>{profile.phone || '—'}</dd></div><div><dt>Cellulare</dt><dd>{profile.mobile || '—'}</dd></div>{manager && <div><dt>Preferenza anagrafica Sistema Tessera Sanitaria</dt><dd>{tsPreferenceLabel(profile.cc_ts_preference)}</dd></div>}</dl>{manager && <p className="scope-note">La preferenza anagrafica non modifica le scelte registrate per singole spese e non attiva trasmissioni.</p>}{manager && <details><summary>Storico preferenza TS</summary>{tsHistoryError && <p className="inline-error" role="alert">{tsHistoryError}</p>}{tsHistory.map((event, index) => <p key={index}>{displayDate(event.event_time)} · {auditActorName(event.actor)}: {tsPreferenceLabel(event.before)} → {tsPreferenceLabel(event.after)}</p>)}{!tsHistoryError && !tsHistory.length && <p>Nessuna variazione registrata.</p>}</details>}{manager && !historical && <Button variant="secondary" onClick={() => { saveKey.current = requestKey(); setDraft({ ...profile, first_name: patientIdentityPart(profile.first_name), last_name: patientIdentityPart(profile.last_name) }); setReason(''); setError('') }}>Modifica scheda</Button>}</section>}
+    {profile && <section className="detail-section patient-tab-summary"><h3>Anagrafica</h3>{historical && <p className="scope-note" role="status">Nessuna assegnazione attiva in questo centro. La scheda è consultabile come storico; per riprendere le operazioni, registra una nuova assegnazione autorizzata.</p>}<dl className="property-list"><div><dt>Nome</dt><dd>{patientIdentityPart(profile.first_name) || '—'}</dd></div><div><dt>Cognome</dt><dd>{patientIdentityPart(profile.last_name) || '—'}</dd></div><div><dt>Email</dt><dd>{profile.email || '—'}</dd></div><div><dt>Telefono</dt><dd>{profile.phone || '—'}</dd></div><div><dt>Cellulare</dt><dd>{profile.mobile || '—'}</dd></div>{manager && <div><dt>Intestatario fiscale</dt><dd>{profile.fiscal_customer_label || 'Da collegare'}</dd></div>}{manager && <div><dt>Preferenza anagrafica Sistema Tessera Sanitaria</dt><dd>{tsPreferenceLabel(profile.cc_ts_preference)}</dd></div>}</dl>{manager && <p className="scope-note">La preferenza anagrafica non modifica le scelte registrate per singole spese e non attiva trasmissioni.</p>}{manager && <details><summary>Storico preferenza TS</summary>{tsHistoryError && <p className="inline-error" role="alert">{tsHistoryError}</p>}{tsHistory.map((event, index) => <p key={index}>{displayDate(event.event_time)} · {auditActorName(event.actor)}: {tsPreferenceLabel(event.before)} → {tsPreferenceLabel(event.after)}</p>)}{!tsHistoryError && !tsHistory.length && <p>Nessuna variazione registrata.</p>}</details>}{manager && !historical && <Button variant="secondary" onClick={() => { saveKey.current = requestKey(); setDraft({ ...profile, first_name: patientIdentityPart(profile.first_name), last_name: patientIdentityPart(profile.last_name) }); setReason(''); setError('') }}>Modifica scheda</Button>}{manager && !historical && <Button variant="secondary" onClick={() => {
+  payerKey.current=requestKey();setPayerMode(profile.fiscal_payer_external?'existing':'self')
+  setPayerCustomer(profile.fiscal_customer||'');setPayerReason('');setPayerError('');setPayerOpen(true)
+}}>Modifica intestatario fiscale</Button>}</section>}
     {profile && history && <div className="patient-tab-assignments"><PatientAssignments boot={boot} patient={patient.name} center={center} feedback={feedback} onSuccess={refresh} /></div>}
     {history && <><section className="detail-section patient-tab-sessions"><h3>Sedute {history.total_appointments ? `(${history.total_appointments})` : ''}</h3>
       {history.total_pages && history.total_pages > 1 ? (
@@ -178,7 +214,30 @@ export function PatientDetail({ boot, financeBoot, patient, center, feedback, in
     </>}
     {canViewPayments && <PatientPaymentsTab patient={patient} center={center} boot={boot} canWrite={Boolean(financeBoot?.can_write)} onOpenReport={onOpenReport} onOpenSession={(row, button) => openAppointment(row, button)} />}
     </>}
-  </article>{draft && <Modal title="Modifica paziente" onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); void save() }}><Field label="Nome" required><input required value={draft.first_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, first_name: event.target.value }) }} /></Field><Field label="Cognome"><input value={draft.last_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, last_name: event.target.value }) }} /></Field><Field label="Email"><input type="email" value={draft.email ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, email: event.target.value }) }} /></Field><Field label="Cellulare"><input type="tel" value={draft.mobile ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, mobile: event.target.value }) }} /></Field><Field label="Telefono"><input type="tel" value={draft.phone ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, phone: event.target.value }) }} /></Field><Field label="Preferenza anagrafica Sistema Tessera Sanitaria"><select value={draft.cc_ts_preference ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, cc_ts_preference: event.target.value }) }}><option value="">Informazione non registrata</option><option value="No Opposition">Non si oppone alla trasmissione</option><option value="Opposed">Si oppone alla trasmissione</option></select></Field><Field label="Motivo" required><textarea required maxLength={500} value={reason} onChange={event => { saveKey.current = requestKey(); setReason(event.target.value) }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
+  </article>{draft && <Modal title="Modifica paziente" onClose={() => setDraft(null)}><form onSubmit={event => { event.preventDefault(); void save() }}><Field label="Nome" required><input required value={draft.first_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, first_name: event.target.value }) }} /></Field><Field label="Cognome"><input value={draft.last_name ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, last_name: event.target.value }) }} /></Field><Field label="Email"><input type="email" value={draft.email ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, email: event.target.value }) }} /></Field><Field label="Cellulare"><input type="tel" value={draft.mobile ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, mobile: event.target.value }) }} /></Field><Field label="Telefono"><input type="tel" value={draft.phone ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, phone: event.target.value }) }} /></Field><Field label="Preferenza anagrafica Sistema Tessera Sanitaria"><select value={draft.cc_ts_preference ?? ''} onChange={event => { saveKey.current = requestKey(); setDraft({ ...draft, cc_ts_preference: event.target.value }) }}><option value="">Informazione non registrata</option><option value="No Opposition">Non si oppone alla trasmissione</option><option value="Opposed">Si oppone alla trasmissione</option></select></Field><Field label="Motivo" required><textarea required maxLength={500} value={reason} onChange={event => { saveKey.current = requestKey(); setReason(event.target.value) }} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={() => setDraft(null)}>Annulla</Button><Button type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}{payerOpen && <Modal title="Intestatario fiscale" onClose={() => setPayerOpen(false)}><form onSubmit={e => {e.preventDefault();void savePayer()}}>
+  <p className="scope-note">La modifica è consentita soltanto in assenza di appuntamenti o documenti economici già registrati.</p>
+  <fieldset className="detail-section">
+    <legend>Chi è l'intestatario fiscale?</legend>
+    <label><input type="radio" name="edit-payer-mode" checked={payerMode==='self'} onChange={() => {setPayerMode('self');payerKey.current=requestKey()}} /> Il paziente stesso</label>
+    <label><input type="radio" name="edit-payer-mode" checked={payerMode==='existing'} onChange={() => {setPayerMode('existing');payerKey.current=requestKey()}} /> Un'altra persona già registrata</label>
+    <label><input type="radio" name="edit-payer-mode" checked={payerMode==='new'} onChange={() => {setPayerMode('new');payerKey.current=requestKey()}} /> Una nuova persona</label>
+  </fieldset>
+  {payerMode==='existing' && <>
+    <Field label="Cerca intestatario"><input value={payerSearch} onChange={e => {setPayerSearch(e.target.value);payerKey.current=requestKey()}} /></Field>
+    <Field label="Seleziona intestatario fiscale" required><select required value={payerCustomer} onChange={e => {setPayerCustomer(e.target.value);payerKey.current=requestKey()}}><option value="">Seleziona una persona</option>{payerChoices.map(row => <option value={row.name} key={row.name}>{row.label}{row.tax_hint?' · '+row.tax_hint:''}</option>)}</select></Field>
+  </>}
+  {payerMode==='new' && <>
+    <Field label="Nome intestatario" required><input required maxLength={140} value={payerFirst} onChange={e => {setPayerFirst(e.target.value);payerKey.current=requestKey()}} /></Field>
+    <Field label="Cognome intestatario" required><input required maxLength={140} value={payerLast} onChange={e => {setPayerLast(e.target.value);payerKey.current=requestKey()}} /></Field>
+    <Field label="Identificativo fiscale intestatario" required><input required maxLength={50} value={payerTaxId} onChange={e => {setPayerTaxId(e.target.value);payerKey.current=requestKey()}} /></Field>
+  </>}
+  <Field label="Motivo della modifica" required><textarea required value={payerReason} onChange={e => {setPayerReason(e.target.value);payerKey.current=requestKey()}} maxLength={500} /></Field>
+  <FormError error={payerError} />
+  <div className="form-actions"><Button type="button" variant="secondary" onClick={() => setPayerOpen(false)}>Annulla</Button><Button type="submit" disabled={payerBusy || !payerReason.trim() || (payerMode==='existing'&&!payerCustomer) || (payerMode==='new'&&(!payerFirst.trim()||!payerLast.trim()||!payerTaxId.trim()))}>{payerBusy?'Salvataggio…':'Salva intestatario'}</Button></div>
+</form></Modal>}</>
+}
+
+type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
 }
 
 function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport, onOpenSession }: {
