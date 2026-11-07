@@ -55,6 +55,21 @@ def run():
     verify("SCHEMA.native_Patient_customer",
            patient_meta.has_field("customer") and patient_meta.has_field("cc_external_payer")
            and patient_meta.has_field("cc_fiscal_mapping_confirmed"))
+    # Confirm Frappe is actually using the Centro Change extensions and permission hooks.
+    extension = frappe.get_hooks("extend_doctype_class") or {}
+    predicates = frappe.get_hooks("has_permission") or {}
+    patient_ext = extension.get("Patient", [])
+    appt_ext = extension.get("Patient Appointment", [])
+    verify("HOOKS.native_PatientMixin_active",
+           any("centrochange_core.security.mixins.PatientMixin" in str(x) for x in patient_ext))
+    verify("HOOKS.canonical_AppointmentMixin_active",
+           any("centrochange_core.scheduling.booking.AppointmentMixin" in str(x) for x in appt_ext))
+    verify("HOOKS.Patient_permission_guard",
+           "centrochange_core.security.permissions.patient_permission" in
+           str(predicates.get("Patient", [])))
+    verify("HOOKS.Appointment_permission_guard",
+           "centrochange_core.scheduling.booking.appointment_permission" in
+           str(predicates.get("Patient Appointment", [])))
     verify("SAFETY.seed_disabled", not flag("cc_presentation_seed"))
     verify("SAFETY.emails_muted", flag("mute_emails"))
     verify("SAFETY.HC_registration_SMS_disabled",
@@ -172,6 +187,24 @@ def run():
     group = frappe.db.get_single_value("Selling Settings", "customer_group")
     verify("ERPNext.customer_group_leaf",
            bool(group) and not bool(frappe.db.get_value("Customer Group", group, "is_group")))
+    # Verify native two-mode catalogue remains enabled; do not infer from a label alone.
+    modes = frappe.conf.get("cc_public_first_meeting_types") or {}
+    catalog_ok = isinstance(modes, dict) and set(modes) >= {"sede", "online"}
+    if catalog_ok:
+        identifiers = [modes["sede"], modes["online"]]
+        catalog_ok = all(isinstance(v, str) and v for v in identifiers) and len(set(identifiers)) == 2
+        for mode, name in (("sede", modes["sede"]), ("online", modes["online"])):
+            typ = frappe.db.get_value("Appointment Type", name,
+                ["default_duration", "cc_first_meeting", "cc_service_item"], as_dict=True)
+            service = frappe.db.get_value("CC Center Service",
+                {"center": center, "appointment_type": name}, "enabled")
+            label = (frappe.db.get_value("Item", typ.cc_service_item, "item_name")
+                     if typ and typ.cc_service_item else "")
+            if not (typ and typ.cc_first_meeting and int(typ.default_duration or 0) == 20
+                    and service and ("sede" in label.casefold() if mode == "sede"
+                                     else "online" in label.casefold())):
+                catalog_ok = False
+    verify("ERPNext.public_first_meeting_modes_preserved", catalog_ok)
     verify("ERPNext.Contanti_enabled",
            bool(frappe.db.get_value("Mode of Payment", "Contanti", "enabled")))
 
@@ -215,6 +248,8 @@ def run():
         appt_ids[item["id"]] = session.name
         doc_patient = patient_map[item["patient"]]
         service = recipe["services"][item["service"]]
+        if item["service"] == "FIRST" and catalog_ok and session.appointment_type != modes["sede"]:
+            matching = False
         if (session.practitioner != pro_ids.get(doc_patient["practitioner"])
                 or session.cc_center != center
                 or Decimal(str(session.cc_price_snapshot)) != Decimal(service["eur"])
