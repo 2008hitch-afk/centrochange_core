@@ -78,9 +78,112 @@ def patient_detail(center, name):
     doc = frappe.get_doc('Patient', bounded(name, 'Paziente'))
     doc.check_permission('read')
     active=_patient(center, doc, allow_historical=True)
+    fiscal = {}
+    if is_manager():
+        customer = doc.get('customer')
+        fiscal = {'fiscal_customer': customer, 'fiscal_payer_external': bool(doc.get('cc_external_payer')),
+                  'fiscal_customer_label': frappe.db.get_value('Customer',customer,'customer_name') if customer else None}
     return {**{field: doc.get(field) for field in ('name', 'patient_name', 'first_name', 'last_name', 'email', 'mobile', 'phone', 'modified')},
-            **({'cc_ts_preference': doc.get('cc_ts_preference')} if is_manager() else {}),
+            **({'cc_ts_preference': doc.get('cc_ts_preference')} if is_manager() else {}), **fiscal,
             'active_assignment':active}
+
+
+
+@frappe.whitelist(methods=['GET'])
+def fiscal_payers(center, search=''):
+    """Fiscal payer lookup restricted to exact current-center relationships."""
+    manager(center)
+    needle=bounded(search,'Ricerca intestatario',100,required=False).casefold()
+    from centrochange_core.operations.workspace import _fiscal_existing_in_center
+    patients=frappe.get_all('CC Patient Assignment',filters={'center':center},pluck='patient')
+    linked=frappe.get_all('Patient',filters={'name':['in',patients or ['']]},pluck='customer')
+    economic=frappe.get_all('CC Economic Source Link',filters={'center':center},pluck='customer')
+    names=sorted({value for value in linked+economic if value})
+    rows=frappe.get_all('Customer',filters={'name':['in',names or ['']]},
+                        fields=['name','customer_name','tax_id'],order_by='customer_name,name',page_length=501)
+    if len(rows)>500:
+        frappe.throw('Troppi intestatari: restringi il centro.')
+    result=[]
+    for row in rows:
+        label=str(row.customer_name or '')
+        if needle and needle not in label.casefold() and needle not in str(row.name).casefold() and needle not in str(row.tax_id or '').casefold():
+            continue
+        result.append({'name':row.name,'label':label,'tax_hint':('••••'+str(row.tax_id)[-4:]) if row.tax_id else ''})
+        if len(result)>=50:
+            break
+    return result
+
+
+@frappe.whitelist(methods=['POST'])
+def patient_fiscal_payer_save(center,name,payer_mode,expected_version,request_key,reason,
+                             payer_customer=None,payer_first_name=None,payer_last_name=None,payer_tax_id=None):
+    from hashlib import sha256
+    import json
+    from centrochange_core.security.audit import append,serialize,internal_write
+    from centrochange_core.security.lifecycle import lock
+    from centrochange_core.finance.guards import require_synthetic
+    from centrochange_core.operations.workspace import _fiscal_customer_create,_fiscal_existing_in_center
+
+    def apply():
+        manager(center);require_synthetic();lock()
+        mode=bounded(payer_mode,'Tipo intestatario',20)
+        if mode not in ('self','existing','new'):
+            frappe.throw('Intestatario fiscale non valido.')
+        selected=bounded(payer_customer,'Intestatario',140,required=False)
+        first=bounded(payer_first_name,'Nome intestatario',140,required=False)
+        last=bounded(payer_last_name,'Cognome intestatario',140,required=False)
+        tax_id=bounded(payer_tax_id,'Identificativo fiscale',50,required=False)
+        if mode=='existing' and (not selected or first or last or tax_id):
+            frappe.throw('Seleziona un intestatario già registrato.')
+        if mode=='new' and (selected or not first or not last or not tax_id):
+            frappe.throw('Compila i dati del nuovo intestatario fiscale.')
+        if mode=='self' and (selected or first or last or tax_id):
+            frappe.throw('Il paziente stesso non richiede altri dati.')
+        reason_text=bounded(reason,'Motivo',500)
+        digest=sha256(serialize([frappe.session.user,center,name,request_key]).encode()).hexdigest()
+        fingerprint=sha256(serialize([center,name,mode,selected,first,last,tax_id,expected_version]).encode()).hexdigest()
+        events=frappe.db.get_values('CC Audit Event',{'event_type':'PATIENT_FISCAL_PAYER_CHANGED','actor':frappe.session.user,
+                 'reference_name':name,'before_state':['like','%'+digest+'%']},
+                 fieldname=['before_state','after_state'],as_dict=True,for_update=True)
+        for event in events:
+            previous=json.loads(event.before_state)
+            if previous.get('request_key_hash')==digest:
+                if previous.get('fingerprint')!=fingerprint:
+                    frappe.throw('Chiave richiesta già utilizzata con dati diversi.')
+                doc=frappe.get_doc('Patient',name)
+                _patient(center,doc)
+                return {'name':name,'modified':str(doc.modified),'replay':True}
+        doc=frappe.get_doc('Patient',bounded(name,'Paziente'),for_update=True)
+        doc.check_permission('write')
+        _patient(center,doc)
+        if not expected_version or str(doc.modified)!=str(expected_version):
+            frappe.throw('La scheda è stata modificata: ricaricala.')
+        # The relationship can affect all centers; refuse changes once a session
+        # or economic source exists anywhere, not merely in the selected center.
+        if (frappe.db.exists('Patient Appointment',{'patient':doc.name})
+                or frappe.db.exists('CC Economic Source Link',{'patient':doc.name})
+                or frappe.db.exists('Sales Invoice',{'patient':doc.name})):
+            frappe.throw('Intestatario non modificabile con appuntamenti o documenti esistenti. Richiedi una rettifica amministrativa.')
+        before=doc.get('customer')
+        if mode=='existing':
+            next_customer=_fiscal_existing_in_center(center,selected)
+        elif mode=='new':
+            next_customer=_fiscal_customer_create(first+' '+last,tax_id)
+        else:
+            if not bool(doc.get('cc_external_payer')):
+                return {'name':doc.name,'modified':str(doc.modified),'replay':False}
+            next_customer=_fiscal_customer_create(doc.patient_name)
+        if next_customer==before and bool(doc.get('cc_external_payer'))==(mode!='self'):
+            return {'name':doc.name,'modified':str(doc.modified),'replay':False}
+        with internal_write('cc_finance_mapping_write'):
+            doc.customer=next_customer
+            doc.cc_external_payer=1 if mode!='self' else 0
+            doc.save()
+        append('PATIENT_FISCAL_PAYER_CHANGED','Patient',doc.name,
+               {'request_key_hash':digest,'fingerprint':fingerprint,'customer_hash':sha256(str(before).encode()).hexdigest()},
+               {'customer_hash':sha256(str(next_customer).encode()).hexdigest(),'external':mode!='self'},reason_text)
+        return {'name':doc.name,'modified':str(doc.modified),'replay':False}
+    return _atomic_provision(apply)()
 
 
 @frappe.whitelist(methods=['POST'])
