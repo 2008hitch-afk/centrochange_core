@@ -518,6 +518,7 @@ function AppointmentDetail({
 function NewPatient({ center, onClose, onCreated }: { center: string; onClose: () => void; onCreated: (patient: Patient) => void }) {
   const [draft, setDraft] = useState({ first_name: '', last_name: '', email: '', mobile: '', phone: '', sex: '', uid: '', ts_preference: '', reason: '' })
   const [genders, setGenders] = useState<string[]>([])
+  const [presentationIntake, setPresentationIntake] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [payerMode, setPayerMode] = useState<'self' | 'existing' | 'new'>('self')
@@ -528,7 +529,7 @@ function NewPatient({ center, onClose, onCreated }: { center: string; onClose: (
   const [payerLast, setPayerLast] = useState('')
   const [payerTaxId, setPayerTaxId] = useState('')
   const key = useRef(requestKey())
-  useEffect(() => { let live = true; ops<{ genders: string[] }>('profiles.patient_creation_options', { center }).then(result => { if (live) setGenders(result.genders) }).catch(e => { if (live) setError(getError(e)) }); return () => { live = false } }, [center])
+  useEffect(() => { let live = true; ops<{ genders: string[]; presentation_intake?: boolean }>('profiles.patient_creation_options', { center }).then(result => { if (live) {setGenders(result.genders);setPresentationIntake(Boolean(result.presentation_intake))} }).catch(e => { if (live) setError(getError(e)) }); return () => { live = false } }, [center])
   useEffect(() => {
     if (payerMode !== 'existing') return
     let live = true
@@ -552,14 +553,16 @@ function NewPatient({ center, onClose, onCreated }: { center: string; onClose: (
     } catch (e) { setError(getError(e)) } finally { setBusy(false) }
   }
   return <Modal title="Nuovo paziente" onClose={onClose}><form onSubmit={event => void submit(event)}>
-    <p className="scope-note">Ambiente sintetico: nome e identificativo iniziano con SYNTHETIC; email solo example.invalid.</p>
+    {!presentationIntake && <p className="scope-note">Ambiente sintetico: nome e identificativo iniziano con SYNTHETIC; email solo example.invalid.</p>}
     <Field label="Nome" required><input required maxLength={140} value={draft.first_name} onChange={e => change('first_name', e.target.value)} /></Field>
     <Field label="Cognome"><input maxLength={140} value={draft.last_name} onChange={e => change('last_name', e.target.value)} /></Field>
     <Field label="Sesso anagrafico" required><select required value={draft.sex} onChange={e => change('sex', e.target.value)}><option value="">Seleziona</option>{genders.map(value => <option key={value} value={value}>{value}</option>)}</select></Field>
-    <Field label="Identificativo sintetico" required><input required maxLength={140} value={draft.uid} onChange={e => change('uid', e.target.value)} /></Field>
-    <Field label="Email"><input type="email" maxLength={140} value={draft.email} onChange={e => change('email', e.target.value)} /></Field>
-    <Field label="Telefono"><input type="tel" maxLength={140} value={draft.phone} onChange={e => change('phone', e.target.value)} /></Field>
-    <Field label="Cellulare"><input type="tel" maxLength={140} value={draft.mobile} onChange={e => change('mobile', e.target.value)} /></Field>
+    {!presentationIntake && <>
+      <Field label="Identificativo sintetico" required><input required maxLength={140} value={draft.uid} onChange={e => change('uid', e.target.value)} /></Field>
+      <Field label="Email"><input type="email" maxLength={140} value={draft.email} onChange={e => change('email', e.target.value)} /></Field>
+      <Field label="Telefono"><input type="tel" maxLength={140} value={draft.phone} onChange={e => change('phone', e.target.value)} /></Field>
+      <Field label="Cellulare"><input type="tel" maxLength={140} value={draft.mobile} onChange={e => change('mobile', e.target.value)} /></Field>
+    </>}
     <fieldset className="detail-section">
       <legend><strong>Intestatario fiscale</strong></legend>
       <label><input type="radio" name="payer-mode" checked={payerMode === 'self'} onChange={() => choosePayer('self')} /> Il paziente stesso</label>
@@ -573,13 +576,13 @@ function NewPatient({ center, onClose, onCreated }: { center: string; onClose: (
       {payerMode === 'new' && <>
         <Field label="Nome intestatario" required><input required maxLength={140} value={payerFirst} onChange={e => {setPayerFirst(e.target.value);key.current=requestKey()}} /></Field>
         <Field label="Cognome intestatario" required><input required maxLength={140} value={payerLast} onChange={e => {setPayerLast(e.target.value);key.current=requestKey()}} /></Field>
-        <Field label="Identificativo fiscale intestatario" required><input required maxLength={50} value={payerTaxId} onChange={e => {setPayerTaxId(e.target.value);key.current=requestKey()}} /></Field>
+        {!presentationIntake && <Field label="Identificativo fiscale intestatario" required><input required maxLength={50} value={payerTaxId} onChange={e => {setPayerTaxId(e.target.value);key.current=requestKey()}} /></Field>}
       </>}
     </fieldset>
     <Field label="Sistema Tessera Sanitaria — trasmissione spese"><select value={draft.ts_preference} onChange={e => change('ts_preference', e.target.value)}><option value="">Informazione non registrata</option><option value="No Opposition">Non si oppone all'invio</option><option value="Opposed">Si oppone all'invio — non trasmettere</option></select></Field>
     <p className="scope-note">La preferenza non attiva invii e non modifica le scelte sulle singole spese.</p>
     <Field label="Motivo" required><textarea required maxLength={500} value={draft.reason} onChange={e => change('reason', e.target.value)} /></Field>
-    <FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Annulla</Button><Button type="submit" disabled={busy || !genders.length || (payerMode === 'existing' && !payerCustomer) || (payerMode === 'new' && (!payerFirst.trim() || !payerLast.trim() || !payerTaxId.trim()))}>{busy ? 'Salvataggio…' : 'Crea paziente'}</Button></div>
+    <FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Annulla</Button><Button type="submit" disabled={busy || !genders.length || (payerMode === 'existing' && !payerCustomer) || (payerMode === 'new' && (!payerFirst.trim() || !payerLast.trim() || (!presentationIntake && !payerTaxId.trim())))}>{busy ? 'Salvataggio…' : 'Crea paziente'}</Button></div>
   </form></Modal>
 }
 
