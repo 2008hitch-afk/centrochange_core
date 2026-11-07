@@ -301,6 +301,19 @@ def schedules(center):
 
 
 
+def presentation_intake_enabled():
+    """Only the expressly configured synthetic STAGING site may accept readable identities.
+
+    No real contact data, external messages, fiscal delivery or live production entry.
+    """
+    if (frappe.conf.get('cc_synthetic_dev') != 1
+            or frappe.conf.get('cc_presentation_intake') != 1
+            or frappe.conf.get('cc_presentation_site') != getattr(frappe.local, 'site', None)
+            or str(frappe.conf.get('mute_emails') or '') not in ('1', 'True', 'true')):
+        return False
+    return not frappe.db.get_single_value('Healthcare Settings', 'send_registration_msg')
+
+
 def _fiscal_customer_create(label, tax_id=None):
     """Create one synthetic Customer within the caller's locked transaction."""
     from centrochange_core.scoped_api import bounded
@@ -357,7 +370,16 @@ def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,la
     supplied_phone = phone is not None
     first_name=str(first_name or '').strip();last_name=str(last_name or '').strip();uid=str(uid or '').strip();email=str(email or '').strip().lower() or None
     mobile=str(mobile or '').strip();phone=str(phone or '').strip()
-    if not first_name.startswith(('SYNTHETIC','CC-HTTP-')) or not uid.startswith(('SYNTHETIC-','CC-HTTP-')):
+    presentation = presentation_intake_enabled()
+    if presentation:
+        if not first_name or mobile or phone or (email and not email.endswith('@presentation.example.invalid')):
+            frappe.throw('Per le anagrafiche di presentazione sono previsti nomi e recapiti non recapitabili, senza telefoni.')
+        if uid:
+            frappe.throw('L’identificativo interno del paziente viene generato automaticamente.')
+        if not request_key or len(request_key)>160:
+            frappe.throw('Indica una chiave valida per la creazione del paziente.')
+        uid = 'CC-PRESENTATION-' + sha256((str(center) + ':' + str(request_key)).encode()).hexdigest()[:30]
+    elif not first_name.startswith(('SYNTHETIC','CC-HTTP-')) or not uid.startswith(('SYNTHETIC-','CC-HTTP-')):
         frappe.throw('Nel DEV sono ammesse solo identità esplicitamente sintetiche.')
     if len(first_name)>140 or len(last_name)>140 or len(uid)>140 or len(mobile)>140 or len(phone)>140 or not frappe.db.exists('Gender',sex):
         frappe.throw('Compila i dati identificativi nei limiti previsti e seleziona un sesso valido.')
@@ -371,9 +393,11 @@ def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,la
     payer_first_name=bounded(payer_first_name,'Nome intestatario',140,required=False)
     payer_last_name=bounded(payer_last_name,'Cognome intestatario',140,required=False)
     payer_tax_id=bounded(payer_tax_id,'Identificativo fiscale',50,required=False)
+    if presentation and payer_tax_id:
+        frappe.throw('L’anagrafica di presentazione non prevede codici fiscali reali.')
     if payer_mode=='existing' and not payer_customer:
         frappe.throw('Seleziona un intestatario già registrato.')
-    if payer_mode=='new' and (not payer_first_name or not payer_last_name or not payer_tax_id):
+    if payer_mode=='new' and (not payer_first_name or not payer_last_name or (not payer_tax_id and not presentation)):
         frappe.throw('Compila nome, cognome e identificativo fiscale del nuovo intestatario.')
     if payer_mode=='self' and (payer_customer or payer_first_name or payer_last_name or payer_tax_id):
         frappe.throw('Non sono necessari dati di un secondo intestatario.')
