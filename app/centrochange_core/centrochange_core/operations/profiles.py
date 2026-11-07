@@ -178,6 +178,7 @@ def patient_fiscal_payer_save(center,name,payer_mode,expected_version,request_ke
         with internal_write('cc_finance_mapping_write'):
             doc.customer=next_customer
             doc.cc_external_payer=1 if mode!='self' else 0
+            doc.cc_fiscal_mapping_confirmed=1
             doc.save()
         append('PATIENT_FISCAL_PAYER_CHANGED','Patient',doc.name,
                {'request_key_hash':digest,'fingerprint':fingerprint,'customer_hash':sha256(str(before).encode()).hexdigest()},
