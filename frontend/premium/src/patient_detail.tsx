@@ -14,7 +14,9 @@ type History = { appointments: Row[]; truncated: boolean; settlements: Row[]; or
 const patientIdentityPart = (value: unknown) => { const text = String(value ?? '').trim(); return /^(?:CC-(?:HTTP|MVP-POS)-|SYNTHETIC[-_]|PAT-[A-Z0-9-]+$)/i.test(text) ? '' : text }
 const tsPreferenceLabel = (value: unknown) => value === 'No Opposition' ? 'Non si oppone alla trasmissione' : value === 'Opposed' ? 'Si oppone alla trasmissione' : 'Informazione non registrata'
 const errorText = (cause: unknown) => cause instanceof Error ? cause.message : 'Operazione non riuscita.'
-const receiptMethodLabel = (value: unknown) => /^CC-MVP-POS-/i.test(String(value ?? '')) ? 'Carta POexport function PatientDetail({ boot, financeBoot, patient, center, feedback, initialTab, onOpenReport, onClose, onSuccess }: {
+const receiptMethodLabel = (value: unknown) => /^CC-MVP-POS-/i.test(String(value ?? '')) ? 'Carta POS' : /^CC-[A-Z0-9-]+/i.test(String(value ?? '')) ? 'Metodo non disponibile' : paymentMethodLabel(value)
+
+export function PatientDetail({ boot, financeBoot, patient, center, feedback, initialTab, onOpenReport, onClose, onSuccess }: {
   boot: Boot; financeBoot?: FinanceBoot | null; patient: Patient; center: string; feedback: Feedback;
   initialTab?: 'Riepilogo' | 'Sedute' | 'Assegnazioni' | 'Note' | 'Pacchetti' | 'Pagamenti';
   onOpenReport?: (patientId?: string) => void;
@@ -235,9 +237,6 @@ const receiptMethodLabel = (value: unknown) => /^CC-MVP-POS-/i.test(String(value
   <FormError error={payerError} />
   <div className="form-actions"><Button type="button" variant="secondary" onClick={() => setPayerOpen(false)}>Annulla</Button><Button type="submit" disabled={payerBusy || !payerReason.trim() || (payerMode==='existing'&&!payerCustomer) || (payerMode==='new'&&(!payerFirst.trim()||!payerLast.trim()||!payerTaxId.trim()))}>{payerBusy?'Salvataggio…':'Salva intestatario'}</Button></div>
 </form></Modal>}</>
-}
-
-type="submit" disabled={saving}>{saving ? 'Salvataggio…' : 'Salva'}</Button></div></form></Modal>}</>
 }
 
 function PatientPaymentsTab({ patient, center, boot, canWrite, onOpenReport, onOpenSession }: {
