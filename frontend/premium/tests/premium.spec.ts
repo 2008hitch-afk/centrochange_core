@@ -284,6 +284,34 @@ test('Fiscal payer flow: manager sees linked payer name on Patient detail', asyn
   await expect(modal.getByRole('button',{name:'Salva intestatario'})).toBeDisabled()
 })
 
+test('Presentation intake: readable patient identity and automatic internal UID', async ({page}) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_creation_options*', route =>
+    route.fulfill({contentType:'application/json',body:JSON.stringify({message:{
+      genders:['Female'],presentation_intake:true
+    }})}))
+  let created: Record<string, unknown>|undefined
+  await page.route('**/api/method/centrochange_core.operations.workspace.create_patient', route => {
+    created=route.request().postDataJSON()
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({message:{name:'PAT-PRESENT-1'}})})
+  })
+  await page.goto('./#Pazienti')
+  await page.getByRole('button',{name:'Nuovo paziente'}).click()
+  const form=page.getByRole('dialog',{name:'Nuovo paziente'})
+  await expect(form.getByText('Ambiente sintetico:')).toHaveCount(0)
+  await expect(form.getByLabel('Identificativo sintetico')).toHaveCount(0)
+  await expect(form.getByLabel('Email',{exact:true})).toHaveCount(0)
+  await expect(form.getByLabel('Telefono',{exact:true})).toHaveCount(0)
+  await form.getByRole('textbox',{name:'Nome *',exact:true}).fill('Martina')
+  await form.getByRole('textbox',{name:'Cognome',exact:true}).fill('Verdi')
+  await form.getByLabel('Sesso anagrafico').selectOption('Female')
+  await form.getByLabel('Motivo').fill('Inserimento anagrafico autorizzato')
+  await form.getByRole('button',{name:'Crea paziente'}).click()
+  await expect.poll(()=>created!==undefined).toBe(true)
+  expect(created).toMatchObject({first_name:'Martina',last_name:'Verdi',uid:'',
+    email:'',mobile:'',phone:'',payer_mode:'self'})
+})
+
 test('AUDIT-04 scheda paziente: profilo autorizzato, note e storico', async ({ page }, info) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)
