@@ -1,0 +1,47 @@
+name: Presentation one-time premium parity
+on:
+  push:
+    branches: [feature/client-presentation-dataset-20261107]
+    paths: [.github/workflows/presentation-one-time-rebuild.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    if: github.repository == '2008hitch-afk/centrochange_core'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.1'
+          cache: npm
+          cache-dependency-path: frontend/premium/package-lock.json
+      - name: Typecheck and build premium React
+        working-directory: frontend/premium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Write exact file manifest and check consistency
+        run: |
+          python3 infra/verify_presentation_dataset.py
+          python3 -m py_compile app/centrochange_core/centrochange_core/uat/presentation_seed.py app/centrochange_core/centrochange_core/uat/presentation_acceptance.py app/centrochange_core/centrochange_core/operations/workspace.py app/centrochange_core/centrochange_core/operations/profiles.py
+          git add -A app/centrochange_core/centrochange_core/public/premium
+          python3 infra/verify_full_single_stack.py --write-manifest
+          python3 infra/verify_full_single_stack.py --source
+          git add infra/full-single-stack-manifest.json
+          git diff --cached --check
+      - name: Commit exact compiled bundle and manifest on feature branch only
+        run: |
+          if ! git diff --cached --quiet; then
+            git config user.name centrochange-ci
+            git config user.email centrochange-ci@users.noreply.github.com
+            git commit -m "build(uat): synchronize presentation patient form and source manifest"
+            git push origin HEAD:feature/client-presentation-dataset-20261107
+          fi
