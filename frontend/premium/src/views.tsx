@@ -520,13 +520,34 @@ function NewPatient({ center, onClose, onCreated }: { center: string; onClose: (
   const [genders, setGenders] = useState<string[]>([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [payerMode, setPayerMode] = useState<'self' | 'existing' | 'new'>('self')
+  const [payerCustomer, setPayerCustomer] = useState('')
+  const [payerSearch, setPayerSearch] = useState('')
+  const [payerOptions, setPayerOptions] = useState<Array<{name:string;label:string;tax_hint?:string}>>([])
+  const [payerFirst, setPayerFirst] = useState('')
+  const [payerLast, setPayerLast] = useState('')
+  const [payerTaxId, setPayerTaxId] = useState('')
   const key = useRef(requestKey())
   useEffect(() => { let live = true; ops<{ genders: string[] }>('profiles.patient_creation_options', { center }).then(result => { if (live) setGenders(result.genders) }).catch(e => { if (live) setError(getError(e)) }); return () => { live = false } }, [center])
+  useEffect(() => {
+    if (payerMode !== 'existing') return
+    let live = true
+    ops<Array<{name:string;label:string;tax_hint?:string}>>('profiles.fiscal_payers', {center, search:payerSearch})
+      .then(rows => { if (live) setPayerOptions(rows) })
+      .catch(e => { if (live) setError(getError(e)) })
+    return () => { live = false }
+  }, [center, payerMode, payerSearch])
+  const choosePayer = (mode: 'self' | 'existing' | 'new') => {
+    key.current = requestKey(); setPayerMode(mode); setPayerCustomer(''); setError('')
+  }
   const change = (field: keyof typeof draft, value: string) => { key.current = requestKey(); setDraft(old => ({ ...old, [field]: value })) }
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); setBusy(true); setError('')
     try {
-      const result = await ops<{ name: string }>('workspace.create_patient', { center, ...draft, practitioner: null, request_key: key.current }, true)
+      const fiscal = payerMode === 'existing' ? {payer_mode:payerMode, payer_customer:payerCustomer}
+        : payerMode === 'new' ? {payer_mode:payerMode, payer_first_name:payerFirst, payer_last_name:payerLast, payer_tax_id:payerTaxId}
+        : {payer_mode:'self'}
+      const result = await ops<{ name: string }>('workspace.create_patient', { center, ...draft, ...fiscal, practitioner: null, request_key: key.current }, true)
       onCreated({ name: result.name, patient_name: [draft.first_name, draft.last_name].filter(Boolean).join(' ') })
     } catch (e) { setError(getError(e)) } finally { setBusy(false) }
   }
@@ -539,10 +560,26 @@ function NewPatient({ center, onClose, onCreated }: { center: string; onClose: (
     <Field label="Email"><input type="email" maxLength={140} value={draft.email} onChange={e => change('email', e.target.value)} /></Field>
     <Field label="Telefono"><input type="tel" maxLength={140} value={draft.phone} onChange={e => change('phone', e.target.value)} /></Field>
     <Field label="Cellulare"><input type="tel" maxLength={140} value={draft.mobile} onChange={e => change('mobile', e.target.value)} /></Field>
+    <fieldset className="detail-section">
+      <legend><strong>Intestatario fiscale</strong></legend>
+      <label><input type="radio" name="payer-mode" checked={payerMode === 'self'} onChange={() => choosePayer('self')} /> Il paziente stesso</label>
+      <label><input type="radio" name="payer-mode" checked={payerMode === 'existing'} onChange={() => choosePayer('existing')} /> Un'altra persona già registrata</label>
+      <label><input type="radio" name="payer-mode" checked={payerMode === 'new'} onChange={() => choosePayer('new')} /> Una nuova persona</label>
+      {payerMode === 'self' && <p className="scope-note">I dati del paziente sono utilizzati anche per l'intestazione, senza ricompilarli.</p>}
+      {payerMode === 'existing' && <>
+        <Field label="Cerca intestatario fiscale"><input value={payerSearch} onChange={e => {setPayerSearch(e.target.value);key.current=requestKey()}} placeholder="Nome o identificativo fiscale" /></Field>
+        <Field label="Seleziona intestatario fiscale" required><select required value={payerCustomer} onChange={e => {setPayerCustomer(e.target.value);key.current=requestKey()}}><option value="">Seleziona una persona</option>{payerOptions.map(row => <option value={row.name} key={row.name}>{row.label}{row.tax_hint ? ' · '+row.tax_hint : ''}</option>)}</select></Field>
+      </>}
+      {payerMode === 'new' && <>
+        <Field label="Nome intestatario" required><input required maxLength={140} value={payerFirst} onChange={e => {setPayerFirst(e.target.value);key.current=requestKey()}} /></Field>
+        <Field label="Cognome intestatario" required><input required maxLength={140} value={payerLast} onChange={e => {setPayerLast(e.target.value);key.current=requestKey()}} /></Field>
+        <Field label="Identificativo fiscale intestatario" required><input required maxLength={50} value={payerTaxId} onChange={e => {setPayerTaxId(e.target.value);key.current=requestKey()}} /></Field>
+      </>}
+    </fieldset>
     <Field label="Sistema Tessera Sanitaria — trasmissione spese"><select value={draft.ts_preference} onChange={e => change('ts_preference', e.target.value)}><option value="">Informazione non registrata</option><option value="No Opposition">Non si oppone all'invio</option><option value="Opposed">Si oppone all'invio — non trasmettere</option></select></Field>
     <p className="scope-note">La preferenza non attiva invii e non modifica le scelte sulle singole spese.</p>
     <Field label="Motivo" required><textarea required maxLength={500} value={draft.reason} onChange={e => change('reason', e.target.value)} /></Field>
-    <FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Annulla</Button><Button type="submit" disabled={busy || !genders.length}>{busy ? 'Salvataggio…' : 'Crea paziente'}</Button></div>
+    <FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Annulla</Button><Button type="submit" disabled={busy || !genders.length || (payerMode === 'existing' && !payerCustomer) || (payerMode === 'new' && (!payerFirst.trim() || !payerLast.trim() || !payerTaxId.trim()))}>{busy ? 'Salvataggio…' : 'Crea paziente'}</Button></div>
   </form></Modal>
 }
 
