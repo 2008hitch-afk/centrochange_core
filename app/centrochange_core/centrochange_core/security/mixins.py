@@ -18,8 +18,16 @@ class PatientMixin:
 	def validate(self):
 		super().validate()
 		previous = self.get_doc_before_save()
-		if self.customer != (previous.customer if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
-			frappe.throw('Il collegamento paziente-cliente richiede il servizio Finance tracciato.',frappe.PermissionError)
+		changed_customer = self.customer != (previous.customer if previous else None)
+		changed_payer_kind = bool(self.get('cc_external_payer')) != (bool(previous.get('cc_external_payer')) if previous else False)
+		if (changed_customer or changed_payer_kind) and not frappe.flags.get('cc_finance_mapping_write'):
+			frappe.throw('Il collegamento paziente-cliente richiede il servizio Finance tracciato.', frappe.PermissionError)
+		if previous and (changed_customer or changed_payer_kind):
+			# Conservative guard: even an unbilled appointment may bind a fiscal obligation.
+			if (frappe.db.exists('Patient Appointment', {'patient': self.name})
+					or frappe.db.exists('CC Economic Source Link', {'patient': self.name})
+					or frappe.db.exists('Sales Invoice', {'patient': self.name})):
+				frappe.throw('Il paziente ha uno storico economico: serve una rettifica amministrativa separata.')
 		if (self.get('cc_ts_preference') or '') != ((previous.get('cc_ts_preference') or '') if previous else '') and not frappe.flags.get('cc_ts_preference_write'):
 			frappe.throw('La preferenza TS richiede il servizio anagrafico tracciato.', frappe.PermissionError)
 		if not frappe.flags.get('cc_patient_intake_write') and any((self.get(k) or None)!=((previous.get(k) or None) if previous else None) for k in ('cc_intake_key','cc_intake_hash')):
@@ -35,6 +43,19 @@ class PatientMixin:
 			if self.get(field) and (not previous or self.get(field) != previous.get(field)):
 				frappe.throw("Le informazioni cliniche appartengono a record riservati, non all’anagrafica condivisa.")
 
+	def update_linked_customer(self):
+		# Healthcare calls this on subsequent Patient.save() for single-customer links.
+		# An external payer must never receive the patient name or financial defaults.
+		if self.get('cc_external_payer'):
+			return self.update_patient_based_on_existing_customer()
+		return super().update_linked_customer()
+
+	def set_contact(self):
+		# Healthcare otherwise reuses and changes a third-party Customer Contact.
+		# Persist Patient mobile/email directly, without changing payer Contact.
+		if self.get('cc_external_payer'):
+			return
+		return super().set_contact()
 	def on_trash(self):
 		frappe.throw("La cancellazione del paziente richiede una procedura di conservazione separata.", frappe.PermissionError)
 
