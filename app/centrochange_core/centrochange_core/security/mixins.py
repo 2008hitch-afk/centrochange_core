@@ -20,9 +20,10 @@ class PatientMixin:
 		previous = self.get_doc_before_save()
 		changed_customer = self.customer != (previous.customer if previous else None)
 		changed_payer_kind = bool(self.get('cc_external_payer')) != (bool(previous.get('cc_external_payer')) if previous else False)
-		if (changed_customer or changed_payer_kind) and not frappe.flags.get('cc_finance_mapping_write'):
+		changed_confirmation = bool(self.get('cc_fiscal_mapping_confirmed')) != (bool(previous.get('cc_fiscal_mapping_confirmed')) if previous else False)
+		if (changed_customer or changed_payer_kind or changed_confirmation) and not frappe.flags.get('cc_finance_mapping_write'):
 			frappe.throw('Il collegamento paziente-cliente richiede il servizio Finance tracciato.', frappe.PermissionError)
-		if previous and (changed_customer or changed_payer_kind):
+		if previous and (changed_customer or changed_payer_kind or changed_confirmation):
 			# Conservative guard: even an unbilled appointment may bind a fiscal obligation.
 			if (frappe.db.exists('Patient Appointment', {'patient': self.name})
 					or frappe.db.exists('CC Economic Source Link', {'patient': self.name})
@@ -46,14 +47,14 @@ class PatientMixin:
 	def update_linked_customer(self):
 		# Healthcare calls this on subsequent Patient.save() for single-customer links.
 		# An external payer must never receive the patient name or financial defaults.
-		if self.get('cc_external_payer'):
+		if not self.get('cc_fiscal_mapping_confirmed') or self.get('cc_external_payer'):
 			return self.update_patient_based_on_existing_customer()
 		return super().update_linked_customer()
 
 	def set_contact(self):
 		# Healthcare otherwise reuses and changes a third-party Customer Contact.
 		# Persist Patient mobile/email directly, without changing payer Contact.
-		if self.get('cc_external_payer'):
+		if not self.get('cc_fiscal_mapping_confirmed') or self.get('cc_external_payer'):
 			return
 		return super().set_contact()
 	def on_trash(self):
