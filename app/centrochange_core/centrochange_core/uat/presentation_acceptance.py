@@ -102,6 +102,24 @@ def run():
     assert sum(a.cc_paid for a in sessions) == 8
     assert sum(a.cc_economic_state == "Waived" for a in free) == 7
     assert sum(a.cc_closure_state in ("Pending", "Auto Locked") for a in sessions) >= 10
+    # Verify an operator can add one more readable name after the initial load,
+    # without entering a technical UID, tax identity, phone number or real email.
+    from centrochange_core.operations.workspace import create_patient
+    if not frappe.conf.get("cc_presentation_intake"):
+        frappe.throw("Presentation intake must be enabled explicitly on the isolated site.")
+    old_customers = frappe.db.count("Customer")
+    increment = create_patient(center, "Martina", "Female", "", None,
+        "PRESENTATION-INCREMENTAL-001", "Anagrafica aggiuntiva su clone",
+        last_name="Verdi", payer_mode="self")
+    new_patient = frappe.get_doc("Patient", increment["name"])
+    assert new_patient.first_name == "Martina"
+    assert new_patient.uid.startswith("CC-PRESENTATION-")
+    assert new_patient.customer and frappe.db.count("Customer") == old_customers + 1
+    assert create_patient(center, "Martina", "Female", "", None,
+        "PRESENTATION-INCREMENTAL-001", "Anagrafica aggiuntiva su clone",
+        last_name="Verdi", payer_mode="self")["replay"]
+    assert frappe.db.count("Patient") == 19
+    assert frappe.db.count("Email Queue") == 0
     return {"status": "PASS", "counts": first["counts"], "replay": True,
             "customer_group": "Laura Caruso / 2 patients", "no_messages": True,
             "no_posted_accounting": True}
