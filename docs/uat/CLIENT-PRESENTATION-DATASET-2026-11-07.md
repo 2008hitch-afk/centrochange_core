@@ -1,6 +1,6 @@
 # Centro Change — Dataset di presentazione, novembre 2026
 
-**Stato:** progettato e versionato; **NON** automaticamente caricato sullo STAGING. La PR di questa fase è separata dalla SHA `51ed781b16550a0fd93aee968f44c3d761534429` attualmente installata.
+**STATO ATTUALE — 07/11/2026: STAGING POPOLATO E VERIFICATO DA CODEX.** La SHA realmente installata è `254af1505dc56ae9123ce64469f856cefabf61d4`; GitHub conferma **CI 3/3 PASS su questa SHA**. Codex riporta backup cifrato verificato e ripristinato su clone, `plan READY / apply PASS / inspect PASS`, conteggi **4/18/17/35**, 10 ricevute operative per **392 €**, zero documenti fiscali/email/SMS e smoke desktop/mobile PASS. Il flag `cc_presentation_seed` risulta disattivato dopo il caricamento. **Non eseguire nuovamente la procedura di importazione**: i passi sottostanti sono conservati come storico operativo e per eventuale nuova autorizzazione. La precedente SHA `51ed781b16550a0fd93aee968f44c3d761534429` è superata sullo STAGING. **Produzione invariata; PR #205 resta DRAFT senza merge.**
 
 ## Regole approvate
 
@@ -36,7 +36,7 @@ Procedura di riconciliazione **solo STAGING, dopo verifica del nome site e backu
 
 Non usare script che alterino la produzione; verificare sempre `site_config` e sede prima di ogni comando `set-config`. **Non confondere modifica delle impostazioni preliminari con completamento dell'importazione.**
 
-## Abilitazione esplicita, solo nel clone poi sullo STAGING
+## Procedura storica di primo caricamento — GIÀ ESEGUITA, NON RIPETERE
 
 Da parte dell'operatore con accesso al server, con identificativo del vero *site* Frappe (non indovinare il nome) e SHA-256 del backup già cifrato/verificato:
 
