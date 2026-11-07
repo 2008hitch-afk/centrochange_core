@@ -99,10 +99,41 @@ def _site_counts():
 def _services(center, data):
     from decimal import Decimal
     from centrochange_core.scheduling.booking import snapshot
+    from centrochange_core.scheduling.public_offer import (
+        PublicOfferError, configured_type, validate_free_offer,
+    )
+
     rows = frappe.get_all("CC Center Service", filters={"center": center, "enabled": 1},
                           fields=["appointment_type"], page_length=100)
+    active_types = {row.appointment_type for row in rows}
     resolved = {}
+
+    # There are intentionally TWO public 20-minute first meetings (in-person /
+    # online). Never disable either one to satisfy a one-label importer.
+    # Bind presentation bookings to the explicitly configured in-person type.
+    public_modes = frappe.conf.get("cc_public_first_meeting_types")
+    if public_modes is not None:
+        try:
+            modes = {mode: configured_type(public_modes, mode) for mode in ("sede", "online")}
+            for mode, appointment_type in modes.items():
+                if appointment_type not in active_types:
+                    frappe.throw("Il colloquio " + mode + " non è attivo nella sede selezionata.")
+                profile = frappe.get_doc("Appointment Type", appointment_type)
+                if not profile.cc_first_meeting:
+                    frappe.throw("Il servizio " + mode + " non è un primo colloquio.")
+                offer = snapshot(appointment_type, center)
+                validate_free_offer(offer, mode)
+                label = str(offer["cc_service_label"]).strip()
+                if label.casefold() != ("Primo colloquio conoscitivo in sede" if mode == "sede"
+                                        else "Primo colloquio conoscitivo online").casefold():
+                    frappe.throw("Rinomina il servizio " + mode + " con una descrizione chiara per il cliente.")
+        except PublicOfferError as exc:
+            frappe.throw("Catalogo colloqui pubblici non coerente: " + str(exc))
+        resolved["FIRST"] = modes["sede"]
+
     for item in data["services"]:
+        if item == "FIRST" and "FIRST" in resolved:
+            continue
         recipe = data["services"][item]
         matching = []
         for row in rows:
