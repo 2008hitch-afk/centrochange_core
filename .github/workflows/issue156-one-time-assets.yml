@@ -1,0 +1,47 @@
+name: Issue 156 one-time asset parity
+on:
+  push:
+    branches:
+      - issue-156/operational-receipts
+    paths:
+      - .github/workflows/issue156-one-time-assets.yml
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild-and-commit:
+    if: github.repository == '2008hitch-afk/centrochange_core' && github.ref == 'refs/heads/issue-156/operational-receipts'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.22.1'
+          cache: npm
+          cache-dependency-path: frontend/premium/package-lock.json
+      - name: Build pinned frontend
+        working-directory: frontend/premium
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Write and validate parity manifest
+        run: |
+          git add -A app/centrochange_core/centrochange_core/public/premium
+          python3 infra/verify_full_single_stack.py --write-manifest
+          python3 infra/verify_full_single_stack.py --source
+          git add infra/full-single-stack-manifest.json
+          git diff --cached --check
+      - name: Commit generated assets and manifest to working branch only
+        run: |
+          if ! git diff --cached --quiet; then
+            git config user.name "centrochange-ci"
+            git config user.email "centrochange-ci@users.noreply.github.com"
+            git commit -m "build(premium): synchronize fiscal-payer assets and verified source manifest"
+            git push origin HEAD:issue-156/operational-receipts
+          fi
