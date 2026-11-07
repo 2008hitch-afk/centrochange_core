@@ -79,7 +79,9 @@ def cleanup():
     log("Cleanup complete.")
 
 
-def setup_clone(seed_audit11_types=False):
+def setup_clone(seed_audit11_types=False, skip_uat_seed=False):
+    if skip_uat_seed and seed_audit11_types:
+        raise RuntimeError('Presentation clone cannot mix with an AUDIT-11 fixture')
     log("Setting up 100% standalone synthetic isolated environment for AUDIT-09 (zero DEV contact)...")
     cleanup()
 
@@ -196,8 +198,11 @@ with patch.object(collections, 'agree', historical_agree):
     demo.seed()
 CC_SYNTHETIC_SEED
 """
+    if skip_uat_seed:
+        # Reuse the pinned clone infrastructure without installing historical UAT patients.
+        bootstrap_script = bootstrap_script.split("env/bin/python - <<'CC_SYNTHETIC_SEED'", 1)[0]
     run_cmd(['docker', 'exec', '-i', BACKEND_CONTAINER, 'bash'], input_str=bootstrap_script)
-    log("Standalone synthetic Frappe site bootstrapped and seeded.")
+    log('Standalone synthetic Frappe site bootstrapped' + (' without patient fixtures.' if skip_uat_seed else ' and seeded.'))
 
     if seed_audit11_types:
         audit11_seed = """

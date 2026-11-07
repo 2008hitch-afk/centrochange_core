@@ -1,5 +1,15 @@
 # Centro Change — Capability Evaluation Matrix
 
+## STATO OWNER 07/11/2026 — DATASET DI PRESENTAZIONE (PR #205)
+
+**Funzionalità anagrafica paziente–intestatario fiscale:** approvata e installata SOLO nello STAGING con SHA `51ed781b16550a0fd93aee968f44c3d761534429`, CI originaria 3/3 PASS; non è un merge su `main` né una modifica a produzione.
+
+**Popolamento per il cliente:** Owner ha autorizzato la preparazione di un dataset presentabile di **4 professionisti con account personali, 18 pazienti, 17 intestatari fiscali e 35 appuntamenti**. Il codice di caricamento protetto, la ricetta e i test appartengono alla **[PR #205](https://github.com/2008hitch-afk/centrochange_core/pull/205)**, che è **SEPARATA e in stato DRAFT**, non installata sullo STAGING. I nomi sono fittizi ma leggibili; identificativi tecnici solo interni; nessuna comunicazione fiscale/email/SMS.
+
+**Blocco al rilascio dati:** è obbligatorio un test **PASS su clone reale Frappe/MariaDB**, seguito da backup cifrato verificato e verifica dei dati iniziali vuoti; solo allora un singolo caricamento STAGING via bench. Il modulo manuale Nuovo paziente conserva limiti/anagrafiche sintetiche e scritte tecniche da risolvere prima della dimostrazione al cliente. Non è previsto caricamento in produzione o seed automatico di sicurezza. Vedi [runbook dataset](uat/CLIENT-PRESENTATION-DATASET-2026-11-07.md).
+
+---
+
 ## DECISIONE OWNER 06/11/2026 — ATTIVAZIONE COMPLETA DEL NUOVO ACCOUNT
 
 Prevale sulle precedenti formulazioni: dalla sola pagina **Professionisti**, l'account **Amministratore/Manager Full Permission** crea e attiva in un passaggio nuovo `User` Frappe personale (`enabled=1`, `CC Professional`), centro e membership attivi, Healthcare Practitioner attivo/collegato, ACL coerenti e onboarding credenziali sicuro. Lo stesso Manager può disattivare/riattivare successivamente, senza autorizzazione Owner per ciascun inserimento dopo la consegna. **NON CONFORME** il flusso finale `new → Disabled`; [requisito PR #203](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). Test solo sintetici finché non vengono forniti i dati reali; decisione funzionale non equivale a implementazione, merge o deploy.
