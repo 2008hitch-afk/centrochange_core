@@ -217,3 +217,112 @@ def run():
         frappe.in_test = previous_test_mode
         frappe.set_user('Administrator')
         frappe.db.rollback(save_point='cc_profile_acceptance')
+
+
+
+def fiscal_patient_run():
+    """Real Frappe/MariaDB acceptance for Patient–Customer atomicity on a clone."""
+    from unittest.mock import patch
+    from centrochange_core.operations import workspace
+    demo.guard()
+    fixture = demo.read()['fixture']
+    center = fixture['centers'][0]
+    manager = fixture['users']['m']['name']
+    previous_test_mode = frappe.in_test
+    frappe.db.savepoint('cc_fiscal_patient_acceptance')
+    try:
+        frappe.in_test = True
+        frappe.set_user(manager)
+        female = frappe.db.get_value('Gender', {'name': 'Female'}, 'name') or frappe.db.get_value('Gender', {}, 'name')
+        assert female, 'Gender master missing from isolated clone'
+        customer_count = frappe.db.count('Customer')
+        patient_count = frappe.db.count('Patient')
+        email_count = frappe.db.count('Email Queue')
+
+        def args(serial, **overrides):
+            return {**{
+                'center': center, 'first_name': 'SYNTHETIC Fiscal ' + serial,
+                'last_name': 'Persona', 'sex': female, 'uid': 'SYNTHETIC-FISCAL-' + serial,
+                'practitioner': None, 'request_key': 'CI-FISCAL-' + serial,
+                'reason': 'Collaudo anagrafica fiscale in clone',
+                'email': None, 'mobile': None, 'phone': None,
+            }, **overrides}
+
+        # Case 1: self-payer; native Healthcare must assign exactly one Customer.
+        self_args = args('SELF', payer_mode='self')
+        self_result = workspace.create_patient(**self_args)
+        self_record = frappe.get_doc('Patient', self_result['name'])
+        assert self_record.customer and not self_record.get('cc_external_payer')
+        assert workspace.create_patient(**self_args)['replay']
+        assert frappe.db.count('Customer') == customer_count + 1
+
+        # Case 2: new payer within one transaction.
+        new_args = args('THIRD', payer_mode='new', payer_first_name='Maria',
+                        payer_last_name='Bianchi', payer_tax_id='CC-HTTP-CF-PAYER-001')
+        third_result = workspace.create_patient(**new_args)
+        third_record = frappe.get_doc('Patient', third_result['name'])
+        customer = third_record.customer
+        assert customer and third_record.get('cc_external_payer')
+        original_customer_name = frappe.db.get_value('Customer',customer,'customer_name')
+        assert original_customer_name == 'Maria Bianchi'
+        assert frappe.db.count('Customer') == customer_count + 2
+        assert workspace.create_patient(**new_args)['replay']
+        assert frappe.db.count('Customer') == customer_count + 2
+
+        # Upstream Healthcare would overwrite a sole third-party Customer here.
+        third_record.first_name = 'SYNTHETIC Fiscal Changed'
+        third_record.save()
+        assert frappe.db.get_value('Customer',customer,'customer_name') == original_customer_name
+
+        # Case 3: second Patient reuses existing Customer from this center.
+        shared_args = args('SHARED', payer_mode='existing',payer_customer=customer)
+        shared_result = workspace.create_patient(**shared_args)
+        shared = frappe.get_doc('Patient',shared_result['name'])
+        assert shared.customer == customer and shared.get('cc_external_payer')
+        assert frappe.db.count('Customer') == customer_count + 2
+        assert frappe.db.count('Patient',{'customer':customer}) == 2
+
+        # Case 4: identity collision cannot silently create another Customer.
+        try:
+            workspace.create_patient(**args('DUPLICATE',payer_mode='new',
+                payer_first_name='Maria',payer_last_name='Bianchi',payer_tax_id='CC-HTTP-CF-PAYER-001'))
+        except (frappe.ValidationError, frappe.PermissionError, frappe.DuplicateEntryError):
+            pass
+        else:
+            raise AssertionError('Duplicate fiscal identifier accepted')
+
+        # Case 5: failure after both inserts rolls back both masters and callbacks.
+        after_customers = frappe.db.count('Customer')
+        after_patients = frappe.db.count('Patient')
+        callback_count = len(frappe.db.after_commit._functions)
+        with patch('centrochange_core.security.lifecycle.set_assignment',
+                   side_effect=frappe.ValidationError('Injected assignment failure')):
+            try:
+                workspace.create_patient(**args('FAIL',payer_mode='new',
+                    payer_first_name='Mario',payer_last_name='Verdi',payer_tax_id='CC-HTTP-CF-FAIL'))
+            except frappe.ValidationError:
+                pass
+            else:
+                raise AssertionError('Expected atomic creation to fail')
+        assert frappe.db.count('Customer') == after_customers
+        assert frappe.db.count('Patient') == after_patients
+        assert len(frappe.db.after_commit._functions) == callback_count
+
+        # A forbidden role cannot provision Patient or see fiscal data.
+        frappe.set_user('Guest')
+        try:
+            workspace.create_patient(**args('GUEST',payer_mode='self'))
+        except (frappe.PermissionError, frappe.ValidationError):
+            pass
+        else:
+            raise AssertionError('Guest created a Patient')
+        frappe.set_user(manager)
+        assert frappe.db.count('Email Queue') == email_count
+        assert frappe.db.count('Patient') == patient_count + 3
+        return {'self_payer':'PASS', 'external_payer_no_overwrite':'PASS',
+                'shared_customer':'PASS', 'atomic_rollback':'PASS', 'idempotence':'PASS',
+                'unauthorized_denied':'PASS', 'no_email':'PASS'}
+    finally:
+        frappe.in_test = previous_test_mode
+        frappe.set_user('Administrator')
+        frappe.db.rollback(save_point='cc_fiscal_patient_acceptance')
