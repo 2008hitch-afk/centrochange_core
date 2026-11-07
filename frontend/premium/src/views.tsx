@@ -518,7 +518,7 @@ function AppointmentDetail({
 function NewPatient({ center, onClose, onCreated }: { center: string; onClose: () => void; onCreated: (patient: Patient) => void }) {
   const [draft, setDraft] = useState({ first_name: '', last_name: '', email: '', mobile: '', phone: '', sex: '', uid: '', ts_preference: '', reason: '' })
   const [genders, setGenders] = useState<string[]>([])
-  const [presentationIntake, setPresentationIntake] = useState(false)
+  const [presentationIntake, setPresentationIntake] = useState<boolean | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [payerMode, setPayerMode] = useState<'self' | 'existing' | 'new'>('self')
@@ -553,11 +553,11 @@ function NewPatient({ center, onClose, onCreated }: { center: string; onClose: (
     } catch (e) { setError(getError(e)) } finally { setBusy(false) }
   }
   return <Modal title="Nuovo paziente" onClose={onClose}><form onSubmit={event => void submit(event)}>
-    {!presentationIntake && <p className="scope-note">Ambiente sintetico: nome e identificativo iniziano con SYNTHETIC; email solo example.invalid.</p>}
+    {presentationIntake === false && <p className="scope-note">Ambiente sintetico: nome e identificativo iniziano con SYNTHETIC; email solo example.invalid.</p>}
     <Field label="Nome" required><input required maxLength={140} value={draft.first_name} onChange={e => change('first_name', e.target.value)} /></Field>
     <Field label="Cognome"><input maxLength={140} value={draft.last_name} onChange={e => change('last_name', e.target.value)} /></Field>
     <Field label="Sesso anagrafico" required><select required value={draft.sex} onChange={e => change('sex', e.target.value)}><option value="">Seleziona</option>{genders.map(value => <option key={value} value={value}>{value}</option>)}</select></Field>
-    {!presentationIntake && <>
+    {presentationIntake === false && <>
       <Field label="Identificativo sintetico" required><input required maxLength={140} value={draft.uid} onChange={e => change('uid', e.target.value)} /></Field>
       <Field label="Email"><input type="email" maxLength={140} value={draft.email} onChange={e => change('email', e.target.value)} /></Field>
       <Field label="Telefono"><input type="tel" maxLength={140} value={draft.phone} onChange={e => change('phone', e.target.value)} /></Field>
