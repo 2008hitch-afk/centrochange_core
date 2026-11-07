@@ -140,6 +140,10 @@ def _preflight(center, data):
         frappe.throw("Esistono già account della presentazione, ma manca il manifesto.")
     if not frappe.db.exists("Gender", "Male") or not frappe.db.exists("Gender", "Female"):
         frappe.throw("Configurare Gender Male e Female prima di procedere.")
+    # Fail before creating users/suppliers if ERPNext's selling defaults are not usable.
+    group = frappe.db.get_single_value("Selling Settings", "customer_group")
+    if not group or frappe.db.get_value("Customer Group", group, "is_group"):
+        frappe.throw("Configura un gruppo clienti ERPNext ordinario, non una categoria aggregata.")
     if not frappe.db.get_value("Mode of Payment", "Contanti", "enabled"):
         frappe.throw("Serve il metodo di pagamento informativo Contanti, attivo.")
     from centrochange_core.dev_bootstrap import COMPANY
