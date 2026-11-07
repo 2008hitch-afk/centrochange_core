@@ -1,0 +1,50 @@
+# Centro Change — Dataset di presentazione, novembre 2026
+
+**Stato:** progettato e versionato; **NON** automaticamente caricato sullo STAGING. La PR di questa fase è separata dalla SHA `51ed781b16550a0fd93aee968f44c3d761534429` attualmente installata.
+
+## Regole approvate
+
+- 4 professionisti con account Frappe personali distinti, abilitati, collegati alla sede. I loro recapiti iniziali sono `@presentation.example.invalid`; **non sono account consegnabili**. Quando l'Owner comunicherà le email reali, si userà il servizio autorizzato di cambio login, senza sostituire le anagrafiche professionali.
+- 18 pazienti con nomi italiani inventati, date di nascita fittizie e senza telefoni reali. 16 intestatari fiscali corrispondono al paziente; Alice Caruso e Pietro Caruso sono collegati a **un solo intestatario distinto**, Laura Caruso: 17 Customer unici. Nessun codice fiscale italiano verosimile o dato sanitario reale viene creato.
+- 35 appuntamenti dal 12 ottobre al 18 novembre 2026: 10 colloqui iniziali da 20 minuti a €0 e 25 sedute da 45 minuti a €44. Nessuna sovrapposizione professionista/paziente.
+- Storico sedute ordinarie: 8 pagate (€352), 2 parziali (€20 ciascuna, residuo €24 ciascuna), 3 da incassare (€44 ciascuna), 2 annullate senza addebito, 3 con esito da registrare; 7 future. Totale ricevute **operative**: €392, non fatturato fiscale. I colloqui: 7 storici chiusi gratuitamente e 3 futuri. Le future non devono generare automaticamente scaduti.
+- **Nessuna fattura, Payment Entry contabile, GL Entry, SdI, Sistema TS, email o SMS**. Le sole registrazioni economiche previste sono `CC Operational Receipt` e `CC Economic Source Link`, contabilmente non trasmesse.
+- Nessuna dicitura «Demo», «Test» o «Prova» nei nomi visibili. Il contrassegno di appartenenza vive **solo** in UID interni, recapiti non recapitabili e manifesto privato.
+- Un solo branch/sede **già esistente** e operativa, scelta esplicitamente dal responsabile; non creare nuove sedi. Non ripristinare o eliminare record preesistenti.
+
+**Unica ricetta dati:** `app/centrochange_core/centrochange_core/uat/presentation_dataset_v1.json`. Validazione offline: `python3 infra/verify_presentation_dataset.py`. Caricatore bench: `centrochange_core.uat.presentation_seed`, non accessibile via HTTP.
+
+## Blocco prima della scrittura (obbligatorio)
+
+1. **Clone isolato dello STAGING**: applicare codice e migrazioni della PR; eseguire `plan`, `apply`, `inspect` e prove reali di agenda, anagrafica fiscale, Report professionista/cliente e incassi. Verificare valori €0/20m e €44/45m, 17 Customer, 35 appuntamenti, email zero, documenti fiscali zero. Ripristinare/eliminare **solo il clone** al termine. Un semplice test offline o una CI 3/3 PASS **non sostituisce** il collaudo del caricamento.
+2. CI e manifest del branch allineati. Non cambiare produzione o fare merge in main.
+3. Prima dello STAGING: effettuare e verificare realmente un **backup cifrato**. Il suo SHA-256 è attestato nella configurazione; tale attestazione non sostituisce il controllo del backup. Confermare che il DB live sia ancora vuoto per Patient, Healthcare Practitioner, Customer, Patient Appointment, CC Operational Receipt, CC Economic Source Link, Sales Invoice, Payment Entry, GL Entry.
+4. Verificare configurazione della sede esistente: servizi **univoci** per nome/durata/prezzo, prezzi EUR, fascia settimanale disponibile, `Mode of Payment: Contanti` attivo, società `Centro Change SYNTHETIC DEV` predefinita. Se non coincidono, **fermarsi**: non forzare silenziosamente importi, tipi di appuntamento o configurazioni del cliente.
+5. L'importazione del calendario è valida **solo prima del 9 novembre 2026**. Se posticipata, revisionare date e rifare i test. Il sistema deve rifiutare ricette scadute.
+
+## Abilitazione esplicita, solo nel clone poi sullo STAGING
+
+Da parte dell'operatore con accesso al server, con identificativo del vero *site* Frappe (non indovinare il nome) e SHA-256 del backup già cifrato/verificato:
+
+```bash
+bench --site "$SITE" set-config cc_presentation_seed 1
+bench --site "$SITE" set-config cc_presentation_site "$SITE"
+bench --site "$SITE" set-config mute_emails 1
+bench --site "$SITE" set-config cc_presentation_backup_sha256 "$BACKUP_SHA256"
+# cc_synthetic_dev deve già essere 1: non attivarlo su siti reali o produzione.
+bench --site "$SITE" execute centrochange_core.uat.presentation_seed.plan --kwargs "{"center":"$CENTER"}"
+# Trascrivere l'intero digest del piano e approvarlo esplicitamente.
+bench --site "$SITE" execute centrochange_core.uat.presentation_seed.apply --kwargs "{"center":"$CENTER","approval_sha256":"$DATASET_SHA256","backup_sha256":"$BACKUP_SHA256"}"
+bench --site "$SITE" execute centrochange_core.uat.presentation_seed.inspect
+bench --site "$SITE" set-config cc_presentation_seed 0
+```
+
+Il caricatore richiede `Administrator`, nome site esatto, `cc_synthetic_dev=1`, email disattivate, SMS e tariffa d'ingresso disabilitati, database inizialmente vuoto e digest approvato. Gestisce un lock esclusivo, transazioni, rollback, un manifesto locale 0600 e replay senza duplicazione. **Non** esporre `apply` come endpoint web. Non è previsto un reset automatico: in caso di errore, procedere solo con ripristino da backup o procedura di pulizia limitata ai record identificati e approvata separatamente.
+
+## Verifica UI prima della presentazione
+
+Controllare su desktop e mobile: agenda mensile/settimanale; anagrafiche professionisti; scheda di Alice/Pietro con lo stesso intestatario Laura; 17 righe raggruppate nel Report cliente; sedute chiuse, parzialmente incassate, non incassate, annullate e future; assenza di importi addebitati per colloqui gratuiti; posizioni economiche e CSV.
+
+**Limite da risolvere prima di mostrare il flusso Nuovo paziente al cliente:** la UI corrente mantiene ancora la dicitura «Ambiente sintetico» e il backend richiede prefissi UID/nome tecnici per nuovi inserimenti manuali. La ricetta bench crea nomi leggibili, ma non modifica queste restrizioni della form. Non occultare la dicitura senza prima avere un flusso di inserimento realmente funzionante e sicuro. L'eventuale prova completa di creazione manuale richiede una correzione UI/backend distinta e testata.
+
+**Non dichiarare STAGING popolato** senza prova di `inspect` dal sito e riscontri browser.
