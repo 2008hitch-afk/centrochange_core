@@ -4,6 +4,7 @@ import { CalendarDays, UsersRound, Clock3, ChartNoAxesCombined, WalletCards, Bel
 import { type Boot, type FinanceBoot, ops, finance, call } from './api'
 import { Agenda, Patients, Professionals, ServiceCatalog, Availability, Reports, FinanceView, Access, Notifications } from './views'
 import { AuditLog } from './audit_log'
+import { ReportDashboard } from './report_dashboard'
 import { MasterArchive, syntheticArchive } from './master_archive'
 import { ScopedArchive } from './scoped_archive'
 import { configureDemoLabels } from './demo_labels'
@@ -24,6 +25,9 @@ function fromHash(): View {
   }
   catch { return 'Agenda' }
 }
+
+// React uses CC Manager as its existing UI capability label; the server remains authoritative.
+const uiCapabilities = (boot: Boot): Boot => boot.is_manager && !boot.roles.includes('CC Manager') ? {...boot, roles:[...boot.roles, 'CC Manager']} : boot
 
 function App() {
   const [view, setView] = useState<View>(fromHash)
@@ -66,7 +70,7 @@ function App() {
     setLoading(true); setError(''); setBoot(null); setFinanceBoot(null)
     Promise.allSettled([ops<Boot>('workspace.bootstrap', center ? { center } : {}), finance<FinanceBoot>('reporting.bootstrap', center ? { center } : {})]).then(([o, f]) => {
       if (!live) return
-      if (o.status === 'fulfilled') setBoot(o.value)
+      if (o.status === 'fulfilled') setBoot(uiCapabilities(o.value))
       if (f.status === 'fulfilled') setFinanceBoot(f.value)
       if (!center) { const selected = o.status === 'fulfilled' ? o.value.center : f.status === 'fulfilled' ? f.value.center : ''; if (selected) { const url = new URL(location.href); url.searchParams.set('center', selected); history.replaceState(null, '', url); hydratedCenter.current = selected; setCenter(selected) } }
       if (o.status === 'rejected' && f.status === 'rejected') setError('Nessuna area disponibile per questo account. Verifica assegnazione e ruolo.')
@@ -83,10 +87,10 @@ function App() {
     return () => removeEventListener('popstate', onPopState)
   }, [center])
   const roles = boot?.roles ?? []
-  const available = allViews.filter(v => v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : !!boot || !!financeBoot : v === 'Notifiche' ? roles.includes('CC Manager') || roles.includes('CC Professional') || roles.includes('CC Secretariat') : ['Gestione accessi', 'Registro modifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
+  const available = allViews.filter(v => v === 'Report' ? !!boot || !!financeBoot : v === 'Finanza' ? !!financeBoot : v === 'Archivi' ? syntheticArchive ? (roles.includes('CC Manager') || !!financeBoot?.can_write) : (roles.includes('CC Manager') && !!boot) || !!financeBoot : v === 'Notifiche' ? roles.includes('CC Manager') || roles.includes('CC Professional') || roles.includes('CC Secretariat') : ['Gestione accessi', 'Registro modifiche'].includes(v) ? roles.includes('CC Manager') : !!boot)
   const isPureProfessional = roles.includes('CC Professional') && !roles.includes('CC Manager') && !roles.includes('CC Secretariat') && !financeBoot?.can_write
   const adminViews = isPureProfessional ? ['Finanza', 'Gestione accessi', 'Registro modifiche'] : ['Finanza', 'Archivi', 'Gestione accessi', 'Registro modifiche']
-  const currentView = available.includes(view) ? view : available[0]
+  const currentView = available.includes(view) ? view : !boot && financeBoot ? 'Finanza' : available[0]
   useEffect(() => {
     if (loading || !currentView) return
     const canonical = '#' + encodeURIComponent(currentView)
@@ -131,7 +135,7 @@ function App() {
     setView('Report')
   }
   const feedback = (message: string, fail = false) => { if (fail) setError(message); else { setNotice(message); setError('') } }
-  const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(fresh) }
+  const refreshBoot = async () => { if (!center) return; const fresh = await ops<Boot>('workspace.bootstrap', { center }); setBoot(uiCapabilities(fresh)) }
   const changeCenter = (next: string) => { if (next === center) return; const url = new URL(location.href); url.searchParams.set('center', next); url.searchParams.delete('patient'); url.searchParams.delete('tab'); url.searchParams.delete('practitioner'); url.searchParams.delete('archive'); url.searchParams.delete('archive_record'); url.searchParams.delete('archive_kind'); history.replaceState(null, '', url); hydratedCenter.current = ''; setBoot(null); setFinanceBoot(null); setCenter(next) }
   const logout = async () => {
     setLoggingOut(true); setUserMenuOpen(false)
@@ -161,6 +165,7 @@ function App() {
         {!loading && currentView === 'Servizi' && boot && <ServiceCatalog boot={boot} center={center} />}
         {!loading && currentView === 'Disponibilità' && boot && <Availability boot={boot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Report' && boot && <Reports boot={boot} center={center} feedback={feedback} financeBoot={financeBoot} initialPatient={reportPatient} />}
+        {!loading && currentView === 'Report' && !boot && financeBoot && <ReportDashboard financeOnly boot={{center, centers: financeBoot.centers, patients: [], practitioners: [], services: [], packages: [], payment_methods: [], roles: []}} financeBoot={financeBoot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Finanza' && financeBoot && <FinanceView boot={financeBoot} center={center} feedback={feedback} />}
         {!loading && currentView === 'Archivi' && (boot || financeBoot) && (syntheticArchive ? boot && <MasterArchive boot={boot} financeBoot={financeBoot} center={center} /> : <ScopedArchive boot={boot} financeBoot={financeBoot} center={center} />)}
         {!loading && currentView === 'Gestione accessi' && boot && <Access boot={boot} center={center} feedback={feedback} />}

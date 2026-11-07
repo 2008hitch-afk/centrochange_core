@@ -210,26 +210,8 @@ def reschedule(appointment,appointment_date,appointment_time,reason):
 
 
 def _payment_blockers(doc,appointment_date,appointment_time):
-	"""Recompute the payment hold for the proposed slot, across patient centers."""
-	from centrochange_core.finance.collections import _booking_debts
-	from centrochange_core.operations.lifecycle import ROME,start_utc
-	at=start_utc(SimpleNamespace(appointment_date=getdate(appointment_date),
-		appointment_time=get_time(appointment_time))).astimezone(ROME)
-	return sorted((debt for debt in _booking_debts(doc.patient)
-		if debt['name']!=doc.name and debt['deadline']<at),
-		key=lambda debt:(debt['doctype'],debt['name']))
-
-
-def _payment_override_allowed(patient,debts):
-	from centrochange_core.finance.guards import allowed,patient_context
-	if not allowed(write=True):
-		return False
-	try:
-		for center in sorted({debt['center'] for debt in debts}):
-			patient_context(patient,center,True)
-	except frappe.PermissionError:
-		return False
-	return True
+	# Unpaid ordinary balances never block moving an appointment.
+	return []
 
 
 @frappe.whitelist(methods=['GET'])

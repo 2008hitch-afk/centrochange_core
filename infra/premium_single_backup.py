@@ -41,39 +41,39 @@ def outside_repository(path):
     return path
 
 
-def verify(expected_container, expected_image):
+def verify(expected_container, expected_image, *, container=CONTAINER):
     if not re.fullmatch(r"[0-9a-f]{64}", expected_container):
         raise ValueError("Full expected container ID required")
     if not re.fullmatch(r"sha256:[0-9a-f]{64}", expected_image):
         raise ValueError("Full expected image ID required")
-    actual = run(["docker", "inspect", CONTAINER, "--format", "{{.Id}} {{.Image}}"])
+    actual = run(["docker", "inspect", container, "--format", "{{.Id}} {{.Image}}"])
     if actual != f"{expected_container} {expected_image}":
         raise RuntimeError("DEV container/image fingerprint changed")
     check = "import json; p='/home/frappe/frappe-bench/sites/centrochange.local/site_config.json'; print(int(bool(json.load(open(p)).get('cc_synthetic_dev'))))"
-    if run(["docker", "exec", CONTAINER, "python3", "-c", check]) != "1":
+    if run(["docker", "exec", container, "python3", "-c", check]) != "1":
         raise RuntimeError("Synthetic DEV flag absent; aborting backup")
 
 
-def live_site_manifest():
+def live_site_manifest(*, container=CONTAINER):
     """Independent, read-only scan inside DEV; stdout stays in this process."""
     source = (Path(__file__).parent / "premium_site_checkpoint.py").read_text()
     remote = ("import json,sys; scope={'__name__':'site_inventory'}; "
               "exec(sys.stdin.read(),scope); "
               "print(json.dumps(scope['tree_manifest']('/home/frappe/frappe-bench/sites')))" )
-    result = subprocess.run(["docker", "exec", "-i", CONTAINER, "python3", "-c", remote],
+    result = subprocess.run(["docker", "exec", "-i", container, "python3", "-c", remote],
                             input=source, text=True, capture_output=True, check=False)
     if result.returncode:
         raise RuntimeError("Read-only original Site inventory failed")
     return json.loads(result.stdout)
 
 
-def checkpoint(destination, key_directory, expected_container, expected_image):
+def checkpoint(destination, key_directory, expected_container, expected_image, *, container=CONTAINER, volatile_root=None):
     destination, key_directory = outside_repository(destination), outside_repository(key_directory)
     if destination == key_directory or destination in key_directory.parents or key_directory in destination.parents:
         raise ValueError("Key directory must be separate from checkpoint directory")
     if not shutil.which("gpg"):
         raise RuntimeError("GnuPG unavailable")
-    verify(expected_container, expected_image)
+    verify(expected_container, expected_image, container=container)
     destination.mkdir(parents=True, exist_ok=True, mode=0o700)
     key_directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(destination, 0o700)
@@ -82,16 +82,41 @@ def checkpoint(destination, key_directory, expected_container, expected_image):
     remote = f"/tmp/cc148-single-stack-checkpoint-{nonce}"
     job = Path(tempfile.mkdtemp(prefix="cc148-checkpoint-", dir=destination))
     os.chmod(job, 0o700)
-    raw = job / "raw"
-    archive = job / "backup.tar"
+    if volatile_root is not None:
+        volatile_root = Path(volatile_root).resolve(strict=True)
+        if not volatile_root.is_dir() or run(['stat', '-f', '-c', '%T', str(volatile_root)]) != 'tmpfs':
+            raise ValueError('Volatile checkpoint working directory must be tmpfs')
+        work = Path(tempfile.mkdtemp(prefix='cc148-volatile-', dir=volatile_root))
+        os.chmod(work, 0o700)
+    else:
+        work = job
+    raw = work / "raw"
+    archive = work / "backup.tar"
     encrypted = job / "backup.tar.gpg"
     key = key_directory / f"{job.name}.key"
-    home = job / "gnupg"
+    home = work / "gnupg"
     backup_started = False
     try:
         backup_started = True
-        run(["docker", "exec", CONTAINER, "bench", "--site", SITE, "backup", "--with-files", "--compress", "--ignore-backup-conf", "--backup-path", remote])
-        run(["docker", "cp", f"{CONTAINER}:{remote}", str(raw)])
+        run(["docker", "exec", container, "bench", "--site", SITE, "backup", "--with-files", "--compress", "--ignore-backup-conf", "--backup-path", remote])
+        # docker cp cannot reliably read a container tmpfs mount. Stream the
+        # native backup from inside the container into the private work area.
+        transfer = work / "native-transfer.tar"
+        with transfer.open("xb") as output:
+            stream_code = ("import os,sys,tarfile; p=sys.argv[1]; "
+                           "t=tarfile.open(fileobj=sys.stdout.buffer,mode='w|'); "
+                           "[t.add(os.path.join(p,n),arcname=n,recursive=False) "
+                           "for n in sorted(os.listdir(p))]; t.close()")
+            copied = subprocess.run(
+                ["docker", "exec", container, "python3", "-c", stream_code, remote],
+                stdout=output, stderr=subprocess.DEVNULL, check=False)
+        if copied.returncode:
+            raise RuntimeError("Native backup stream failed")
+        validate_native_archive(transfer)
+        raw.mkdir(mode=0o700)
+        with tarfile.open(transfer, "r:") as source:
+            source.extractall(raw, filter="data")
+        transfer.unlink()
         os.chmod(raw, 0o700)
         files = list(raw.iterdir())
         kinds = {
@@ -115,20 +140,20 @@ def checkpoint(destination, key_directory, expected_container, expected_image):
         # The Frappe-native files tarballs omit private/uat and other Site state.
         # Stream the *whole* sites volume, then take a second read-only snapshot.
         # Any concurrent change, including a changing log, blocks this checkpoint.
-        original_before = live_site_manifest()
-        site_archive = job / "site-tree.tar"
-        repeat_archive = job / "site-tree-repeat.tar"
+        original_before = live_site_manifest(container=container)
+        site_archive = work / "site-tree.tar"
+        repeat_archive = work / "site-tree-repeat.tar"
         for target in (site_archive, repeat_archive):
             with target.open("xb") as output:
                 copied = subprocess.run(
-                    ["docker", "exec", CONTAINER, "tar", "-C", "/home/frappe/frappe-bench", "-cf", "-", "sites"],
+                    ["docker", "exec", container, "tar", "-C", "/home/frappe/frappe-bench", "-cf", "-", "sites"],
                     stdout=output, stderr=subprocess.DEVNULL, check=False)
             if copied.returncode:
                 raise RuntimeError("Full Site snapshot failed")
         site_manifest = tar_manifest(site_archive)
         compare(original_before, site_manifest)
         compare(site_manifest, tar_manifest(repeat_archive))
-        compare(original_before, live_site_manifest())
+        compare(original_before, live_site_manifest(container=container))
         repeat_archive.unlink()
         manifest_file = raw / "site-manifest.json"
         with manifest_file.open("x", encoding="utf-8") as output:
@@ -143,7 +168,7 @@ def checkpoint(destination, key_directory, expected_container, expected_image):
             for p in files:
                 output.add(p, arcname=p.name, recursive=False)
         os.chmod(archive, 0o600)
-        verify_bundle(archive)
+        verify_bundle(archive, temp_root=work if volatile_root is not None else None)
         with os.fdopen(os.open(key, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600), "w") as stream:
             stream.write(secrets.token_urlsafe(64))
         home.mkdir(mode=0o700)
@@ -163,11 +188,13 @@ def checkpoint(destination, key_directory, expected_container, expected_image):
     finally:
         if raw.exists():
             shutil.rmtree(raw)
-        (job / "site-tree.tar").unlink(missing_ok=True)
-        (job / "site-tree-repeat.tar").unlink(missing_ok=True)
+        (work / "site-tree.tar").unlink(missing_ok=True)
+        (work / "site-tree-repeat.tar").unlink(missing_ok=True)
         archive.unlink(missing_ok=True)
+        if work != job:
+            shutil.rmtree(work, ignore_errors=True)
         if backup_started:
-            cleanup = subprocess.run(["docker", "exec", CONTAINER, "rm", "-r", "--", remote], capture_output=True, check=False)
+            cleanup = subprocess.run(["docker", "exec", container, "rm", "-r", "--", remote], capture_output=True, check=False)
             if cleanup.returncode and sys.exc_info()[0] is None:
                 raise RuntimeError("Remote temporary checkpoint cleanup failed")
 

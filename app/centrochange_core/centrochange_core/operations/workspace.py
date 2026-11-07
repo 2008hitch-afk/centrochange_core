@@ -232,7 +232,7 @@ def bootstrap(center=None):
     require_actor()
     available=operational_centers()
     if not available:
-        return {'centers':[],'patients':[],'practitioners':[],'services':[],'payment_methods':[],'roles':roles(),'demo_labels':{}}
+        return {'centers':[],'patients':[],'practitioners':[],'services':[],'payment_methods':[],'roles':roles(),'is_manager':is_manager(),'demo_labels':{}}
     center=center or available[0].name
     require_center(center)
     if center not in [row.name for row in available]:
@@ -242,17 +242,32 @@ def bootstrap(center=None):
             fields=['name','patient_name','first_name','last_name'],page_length=500,order_by='patient_name')
     except frappe.PermissionError:
         patients=[]
-    memberships=current_rows('CC Center Membership',{'center':center,'active':1},pluck='user')
-    filters={'status':'Active','user_id':['in',memberships or ['']]}
+    from centrochange_core.security.guards import practitioner_names_for_center
+    names=practitioner_names_for_center(center)
+    filters={'status':'Active','name':['in',names or ['']]}
     if 'CC Professional' in roles() and not is_manager():
-        filters['name']=practitioner_for() or ''
+        own=practitioner_for()
+        filters['name']=['in',[own] if own in names else ['']]
     practitioners=current_rows('Healthcare Practitioner',filters,fields=['name','practitioner_name'])
     profiles=current_rows('CC Center Service',{'center':center,'enabled':1},pluck='appointment_type')
     from centrochange_core.scheduling.booking import snapshot
+    from centrochange_core.scheduling.public_offer import configured_type, validate_free_offer, PublicOfferError
+    public_center=bool(frappe.db.exists('CC Public Booking Route',{'center':center,'enabled':1}))
     services=[]
     for profile in profiles:
         try:
-            services.append({'name':profile,**snapshot(profile,center)})
+            service={'name':profile,**snapshot(profile,center)}
+            for mode in ('sede','online'):
+                try:
+                    if (profile == configured_type(frappe.conf.get('cc_public_first_meeting_types'), mode)
+                            and frappe.db.get_value('Appointment Type',profile,'cc_first_meeting')):
+                        validate_free_offer(service,mode)
+                        service['configured_first_meeting_mode']=mode
+                        if public_center:
+                            service['public_first_meeting_mode']=mode
+                except PublicOfferError:
+                    pass
+            services.append(service)
         except frappe.ValidationError:
             # Incomplete catalog is unavailable, never silently priced at zero.
             pass
@@ -264,7 +279,7 @@ def bootstrap(center=None):
             packages.append({**row,'label':frappe.db.get_value('CC Package Template',row.template,'title'),**_balance(row.name)})
     from centrochange_core.uat.display import operational_aliases
     return {'center':center,'centers':available,'patients':patients,'practitioners':practitioners,'services':services,
-        'packages':packages,'payment_methods':current_rows('Mode of Payment',{'enabled':1},pluck='name'),'roles':roles(),
+        'packages':packages,'payment_methods':current_rows('Mode of Payment',{'enabled':1},pluck='name'),'roles':roles(),'is_manager':is_manager(),
         'demo_labels':operational_aliases(center,patients,practitioners,services,packages,available,is_manager())}
 
 
@@ -285,30 +300,93 @@ def schedules(center):
     return result
 
 
+
+def _fiscal_customer_create(label, tax_id=None):
+    """Create one synthetic Customer within the caller's locked transaction."""
+    from centrochange_core.scoped_api import bounded
+    label = bounded(label, 'Intestatario fiscale', 140)
+    tax_id = bounded(tax_id, 'Identificativo fiscale', 50, required=False) or None
+    if tax_id and frappe.db.exists('Customer', {'tax_id': tax_id}):
+        frappe.throw('Esiste già un intestatario con questo identificativo. Selezionalo dall’elenco.')
+    values = {
+        'doctype': 'Customer', 'customer_name': label, 'customer_type': 'Individual',
+        'customer_group': frappe.db.get_single_value('Selling Settings', 'customer_group'),
+        'territory': frappe.db.get_single_value('Selling Settings', 'territory'),
+    }
+    if tax_id:
+        values['tax_id'] = tax_id
+    return frappe.get_doc(values).insert(ignore_permissions=True, ignore_mandatory=True).name
+
+
+def _fiscal_existing_in_center(center, customer):
+    """No Customer search outside the selected center, even for a manager."""
+    allowed = frappe.get_all('CC Patient Assignment', filters={'center': center}, pluck='patient')
+    links = frappe.get_all('Patient', filters={'name': ['in', allowed or ['']]}, pluck='customer')
+    economic = frappe.get_all('CC Economic Source Link', filters={'center': center}, pluck='customer')
+    if not customer or customer not in set(links + economic):
+        frappe.throw('Intestatario non disponibile per questo centro.', frappe.PermissionError)
+    if not frappe.db.exists('Customer', customer):
+        frappe.throw('Intestatario fiscale inesistente.')
+    return customer
+
+
 @frappe.whitelist(methods=['POST'])
-def create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name=None,email=None):
-    # Reuse the central native Patient and assignment services; no clinical master is added.
-    from centrochange_core.security.audit import atomic
-    return atomic(_create_patient)(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email)
+def create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name=None,email=None,mobile=None,phone=None,ts_preference=None,
+                   payer_mode='self',payer_customer=None,payer_first_name=None,payer_last_name=None,payer_tax_id=None):
+    # Healthcare native Patient/Customer hooks are kept; the service controls
+    # which Customer exists before Patient.insert() to avoid a duplicate.
+    from centrochange_core.operations.profiles import _atomic_provision
+    return _atomic_provision(_create_patient)(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email,mobile,phone,ts_preference,
+                                              payer_mode,payer_customer,payer_first_name,payer_last_name,payer_tax_id)
 
 
-def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email):
+def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email,mobile=None,phone=None,ts_preference=None,
+                    payer_mode='self',payer_customer=None,payer_first_name=None,payer_last_name=None,payer_tax_id=None):
     from hashlib import sha256
     from centrochange_core.security.audit import append,internal_write,serialize
     from centrochange_core.security.lifecycle import lock,set_assignment
-    from centrochange_core.security.guards import require_operations
+    from centrochange_core.security.guards import require_operations,require_manager,require_center
     from centrochange_core.finance.guards import require_synthetic
-    lock();require_operations(center);require_synthetic()
+    from centrochange_core.scoped_api import bounded
+    lock();require_operations(center);require_center(center);require_manager();require_synthetic()
+    if frappe.db.get_single_value('Healthcare Settings', 'send_registration_msg'):
+        frappe.throw('Creazione sospesa: la notifica SMS di registrazione è attiva.')
+    if ts_preference is not None and ts_preference not in ('', 'No Opposition', 'Opposed'):
+        frappe.throw('Preferenza Tessera Sanitaria non valida.')
+    supplied_mobile = mobile is not None
+    supplied_phone = phone is not None
     first_name=str(first_name or '').strip();last_name=str(last_name or '').strip();uid=str(uid or '').strip();email=str(email or '').strip().lower() or None
+    mobile=str(mobile or '').strip();phone=str(phone or '').strip()
     if not first_name.startswith(('SYNTHETIC','CC-HTTP-')) or not uid.startswith(('SYNTHETIC-','CC-HTTP-')):
         frappe.throw('Nel DEV sono ammesse solo identità esplicitamente sintetiche.')
-    if len(first_name)>140 or len(last_name)>140 or len(uid)>140 or not frappe.db.exists('Gender',sex):
+    if len(first_name)>140 or len(last_name)>140 or len(uid)>140 or len(mobile)>140 or len(phone)>140 or not frappe.db.exists('Gender',sex):
         frappe.throw('Compila i dati identificativi nei limiti previsti e seleziona un sesso valido.')
     if email and (not email.endswith('@example.invalid') or len(email)>140 or not frappe.utils.validate_email_address(email)):
-        frappe.throw('È consentita solo una email demo valida del dominio example.invalid.')
-    if not request_key or len(request_key)>160:frappe.throw('Indica un identificativo valido per la creazione del paziente.')
+        frappe.throw('È consentita solo una email sintetica del dominio example.invalid.')
+    if not request_key or len(request_key)>160:frappe.throw('Indica una chiave valida per la creazione del paziente.')
+    payer_mode=bounded(payer_mode,'Modalità intestatario',20)
+    if payer_mode not in ('self','existing','new'):
+        frappe.throw('Seleziona un intestatario fiscale valido.')
+    payer_customer=bounded(payer_customer,'Intestatario',140,required=False)
+    payer_first_name=bounded(payer_first_name,'Nome intestatario',140,required=False)
+    payer_last_name=bounded(payer_last_name,'Cognome intestatario',140,required=False)
+    payer_tax_id=bounded(payer_tax_id,'Identificativo fiscale',50,required=False)
+    if payer_mode=='existing' and not payer_customer:
+        frappe.throw('Seleziona un intestatario già registrato.')
+    if payer_mode=='new' and (not payer_first_name or not payer_last_name or not payer_tax_id):
+        frappe.throw('Compila nome, cognome e identificativo fiscale del nuovo intestatario.')
+    if payer_mode=='self' and (payer_customer or payer_first_name or payer_last_name or payer_tax_id):
+        frappe.throw('Non sono necessari dati di un secondo intestatario.')
+    if payer_mode=='existing' and (payer_first_name or payer_last_name or payer_tax_id):
+        frappe.throw('Per un intestatario esistente seleziona soltanto la persona.')
+    if payer_mode=='new' and payer_customer:
+        frappe.throw('Non selezionare un intestatario esistente per crearne uno nuovo.')
     key=sha256(serialize([frappe.session.user,center,request_key]).encode()).hexdigest()
-    payload={'center':center,'first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,'email':email,'practitioner':practitioner}
+    payload={'center':center,'first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,'email':email,'practitioner':practitioner,
+             'payer_mode':payer_mode,'payer_customer':payer_customer,'payer_first_name':payer_first_name,
+             'payer_last_name':payer_last_name,'payer_tax_id':payer_tax_id,
+             **({'mobile': mobile} if supplied_mobile else {}), **({'phone': phone} if supplied_phone else {}),
+             **({'ts_preference': ts_preference} if ts_preference is not None else {})}
     digest=sha256(serialize(payload).encode()).hexdigest()
     old=frappe.db.get_value('Patient',{'cc_intake_key':key},['name','cc_intake_hash'],as_dict=True,for_update=True)
     if old:
@@ -318,10 +396,33 @@ def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,la
         return {'name':old.name,'replay':True}
     if frappe.db.exists('Patient',{'uid':uid}):
         frappe.throw('L’identità esiste già: cerca l’UID esatto e assegna esplicitamente il paziente.')
-    with internal_write('cc_patient_intake_write'):
-        doc=frappe.get_doc({'doctype':'Patient','first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,'email':email,
-            'invite_user':0,'cc_intake_key':key,'cc_intake_hash':digest}).insert(ignore_permissions=True)
+    payer=None
+    if payer_mode=='existing':
+        payer=_fiscal_existing_in_center(center,payer_customer)
+    if payer_mode=='new':
+        payer=_fiscal_customer_create(' '.join([payer_first_name,payer_last_name]),payer_tax_id)
+    # When Healthcare's automatic Customer creation is disabled, self mode
+    # must still produce one unambiguous mapping in this same transaction.
+    if payer_mode=='self' and not frappe.db.get_single_value('Healthcare Settings','link_customer_to_patient'):
+        payer=_fiscal_customer_create(' '.join([first_name,last_name]))
+    doc_values={'doctype':'Patient','first_name':first_name,'last_name':last_name,'sex':sex,'uid':uid,
+                'email':email,'mobile':mobile,'phone':phone,'invite_user':0,
+                'cc_intake_key':key,'cc_intake_hash':digest,'cc_external_payer':1 if payer_mode!='self' else 0,
+                'cc_fiscal_mapping_confirmed':1,
+                **({'customer':payer} if payer else {}),
+                **({'cc_ts_preference':ts_preference} if ts_preference is not None else {})}
+    with internal_write('cc_patient_intake_write'), internal_write('cc_ts_preference_write'), internal_write('cc_finance_mapping_write'):
+        doc=frappe.get_doc(doc_values).insert(ignore_permissions=True)
+    # Healthcare's after_insert / on_update may have filled the Customer link
+    # using db.set_value; reload to inspect the actual persisted relationship.
+    doc.reload()
+    if not doc.customer or (payer and doc.customer != payer):
+        frappe.throw('Collegamento fiscale incoerente: la creazione è stata annullata.')
+    if ts_preference is not None:
+        append('PATIENT_TS_PREFERENCE_CHANGED','Patient',doc.name,{'preference':''},{'preference':ts_preference},reason)
     set_assignment(doc.name,center,practitioner,1,reason)
+    append('PATIENT_FISCAL_PAYER_LINKED','Patient',doc.name,None,
+           {'center':center,'payer_kind':payer_mode,'customer_hash':sha256(doc.customer.encode()).hexdigest()},reason)
     append('PATIENT_INTAKE_CREATED','Patient',doc.name,None,{'center':center,'payload_hash':digest},reason)
     return {'name':doc.name,'replay':False}
 

@@ -8,6 +8,7 @@ on:
       - issue-148/premium-react-frontend
       - issue-190/access-audit
       - issue-75/coordinated-premium-ux
+      - audit-11/public-first-meeting-two-mode
   workflow_dispatch:
 
 permissions:

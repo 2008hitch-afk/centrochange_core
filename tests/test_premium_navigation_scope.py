@@ -37,7 +37,8 @@ class NavigationScopeTests(unittest.TestCase):
         self.frappe.whitelist = lambda **kwargs: lambda fn: fn
         self.frappe.get_list = self.get_list
         self.frappe.get_all = self.get_list
-        self.frappe.db = types.SimpleNamespace(get_value=lambda *args, **kwargs: None)
+        self.frappe.conf = {}
+        self.frappe.db = types.SimpleNamespace(get_value=lambda *args, **kwargs: None, exists=lambda *args, **kwargs: False)
         utils = types.ModuleType('frappe.utils')
         utils.getdate = lambda value: value
         utils.get_time = lambda value: value
@@ -50,10 +51,15 @@ class NavigationScopeTests(unittest.TestCase):
         guards.operational_centers = lambda: self.centers if self.manager else self.centers[:1]
         guards.patient_contexts = lambda: {(name, center) for center, names in self.assignments.items() for name in names}
         guards.practitioner_for = lambda: 'PRO-A'
+        guards.practitioner_names_for_center = lambda center: [row.name for row in self.practitioners if row.user_id in self.memberships[center]]
         notes = types.ModuleType('centrochange_core.operations.notes')
         notes.require_context = lambda *args: None
         booking = types.ModuleType('centrochange_core.scheduling.booking')
         booking.snapshot = lambda *args: {}
+        offer = types.ModuleType('centrochange_core.scheduling.public_offer')
+        offer.configured_type = lambda *args: None
+        offer.validate_free_offer = lambda *args: None
+        offer.PublicOfferError = ValueError
         packages = types.ModuleType('centrochange_core.operations.packages')
         packages._balance = lambda *args: {}
         packages.balance = lambda *args: {}
@@ -68,6 +74,7 @@ class NavigationScopeTests(unittest.TestCase):
             'centrochange_core.operations.notes': notes,
             'centrochange_core.scheduling': types.ModuleType('centrochange_core.scheduling'),
             'centrochange_core.scheduling.booking': booking,
+            'centrochange_core.scheduling.public_offer': offer,
             'centrochange_core.operations.packages': packages,
             'centrochange_core.uat': types.ModuleType('centrochange_core.uat'),
             'centrochange_core.uat.display': display,
@@ -95,9 +102,8 @@ class NavigationScopeTests(unittest.TestCase):
             return self.memberships[filters['center']]
         if doctype == 'Healthcare Practitioner':
             return [row for row in self.practitioners
-                    if row.user_id in filters['user_id'][1]
-                    and row.status == filters['status']
-                    and (not filters.get('name') or row.name == filters['name'])]
+                    if row.name in filters['name'][1]
+                    and row.status == filters['status']]
         if doctype == 'Mode of Payment':
             return []
         return []

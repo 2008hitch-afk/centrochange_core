@@ -72,7 +72,7 @@
 .period-presets button{border:1px solid #dfe7ef;background:#fff;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;color:#344b65}
 .period-presets button:hover{background:#f8fbfe;border-color:#b9d5ec}
 .period-presets button.selected{background:#2787ca;color:#fff;border-color:#2787ca;font-weight:600}
-.report-drilldown{margin-top:24px;padding-top:16px;border-top:1px solid #e8edf3}
+.report-drilldown{margin-top:24px;padding:16px 20px 20px;border-top:1px solid #e8edf3}
 .report-drilldown-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
 .report-drilldown-header h3{margin:0;font-size:14px;color:#284462}
 .clickable-row{cursor:pointer}
@@ -170,7 +170,7 @@
 .summary-card.text-good strong { color: #16a34a; }
 .summary-card.text-neutral strong { color: #64748b; }
 .summary-card.text-warn strong { color: #d97706; }
-.day-closure-list { display: flex; flex-direction: column; gap: 12px; max-height: 480px; overflow-y: auto; padding-right: 4px; }
+.day-closure-list { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .day-closure-card { background: #fff; border: 1px solid #dce5ee; border-radius: 10px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
 .day-closure-card.is-closed { background: #f8fafc; opacity: 0.85; border-color: #e2e8f0; }
 .day-closure-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
@@ -435,3 +435,66 @@
 .booking-skip{position:absolute;left:-9999px;top:0}.booking-skip:focus{z-index:1000;left:12px;top:12px;background:white;color:#164366;padding:12px;border-radius:10px}
 @media(max-width:900px){.booking-layout{grid-template-columns:minmax(0,1fr);max-width:730px;gap:24px}.booking-summary{position:static;order:2}.booking-progress{margin-bottom:26px}}
 @media(max-width:540px){.booking-top{height:68px;padding:0 18px}.booking-top-caption{font-size:0}.booking-top-caption svg{width:20px;height:20px}.booking-layout{padding:24px 16px 0;gap:20px}.booking-progress{gap:10px}.booking-progress-item{font-size:0}.booking-progress-item[aria-current=step]{font-size:12px}.booking-progress-num{font-size:12px}.booking-stage h1{font-size:28px}.booking-intro{font-size:14px}.booking-mode,.booking-director{padding:16px;border-radius:14px;gap:12px}.booking-calendar-form{grid-template-columns:1fr;gap:14px;padding:16px;border-radius:14px}.booking-calendar-form .field input{height:46px;min-height:46px;max-height:46px;padding:0 14px}.booking-calendar-form .booking-search{width:100%;height:46px;min-height:46px;max-height:46px}.booking-option-icon{width:45px;height:45px;flex-basis:45px}.booking-option-copy strong{font-size:14px}.booking-option-copy small{font-size:12px}.booking-option-check{width:21px;height:21px}.booking-slot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.booking-form-row{grid-template-columns:1fr}.booking-actions{gap:10px;margin-top:24px}.booking-primary,.booking-secondary,.booking-search{font-size:13.5px;min-height:46px;padding:11px 16px;border-radius:12px}.booking-summary{padding:20px;border-radius:16px}.booking-success{padding:24px 20px;border-radius:16px}.booking-footer{margin-top:32px}}
+
+/* Centro Change operational hierarchy, aligned with the approved concept. */
+.sidebar{background:#1c4176;border-right-color:#183761}
+.sidebar .brand strong,.sidebar .sidebar-foot strong{color:#fff}
+.sidebar .brand small,.sidebar .sidebar-label,.sidebar .sidebar-foot small{color:#c5d7ef}
+.sidebar .nav-item{color:#e0ebf9}
+.sidebar .nav-item:hover{background:#28568e;color:#fff}
+.sidebar .nav-item.active{background:#377de1;color:#fff}
+.sidebar .nav-dot{background:#fff}
+.sidebar .sidebar-foot{border-top-color:#496a95}
+.patient-tab-payments .table-wrap{overflow-x:auto;border:1px solid #dce6f2;border-radius:12px}
+.patient-tab-payments table{width:100%;border-collapse:collapse;text-align:left}
+.patient-tab-payments th{background:#eff5fc;color:#435978;font-size:12px;padding:12px}
+.patient-tab-payments td{padding:12px;border-top:1px solid #e7edf5;vertical-align:top}
+.patient-tab-payments td small{display:block;color:#60738e;margin-top:3px}
+.patient-tab-payments details summary{cursor:pointer;color:#2765b4;font-weight:600}
+.patient-tab-payments td .patient-back{display:block;margin-top:6px}
+
+/* Patient sections follow the three task-oriented tabs. */
+.patient-detail-page[data-active-tab=Riepilogo] :is(.patient-tab-sessions,.patient-tab-notes,.patient-tab-packages){display:block}
+.patient-detail-page[data-active-tab=Assegnazioni] :is(.patient-tab-notes,.patient-tab-packages,.patient-tab-sessions){display:none}
+.patient-tab-payments .receipt-detail{min-width:7rem;max-width:24rem;overflow-wrap:anywhere;white-space:normal}.patient-tab-payments .receipt-detail p{margin:.5rem 0}.patient-tab-payments td{min-width:0}
+
+.receipt-detail{overflow-wrap:anywhere;word-break:break-word}.receipt-detail p{margin:.5rem 0}
+
+/* Shared reading density for patient and professional profiles. */
+.patient-tab-summary .property-list, .professional-detail-page .property-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; max-width: none; }
+.patient-tab-summary .property-list > div, .professional-detail-page .property-list > div { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; padding: 14px 16px; border: 1px solid #e3eaf1; border-radius: 10px; background: #f8fafc; }
+.patient-tab-summary .property-list dt, .professional-detail-page .property-list dt { width: auto; }
+.patient-tab-summary .property-list dd, .professional-detail-page .property-list dd { margin: 0; overflow-wrap: anywhere; }
+.professional-detail-page .modal .action-form { max-width: none; }
+
+/* Keep report controls and scrollable tables inside the available width. */
+.content, .panel, .report-drilldown, .report-currency, .report-group, .report-drilldown-header, .pagination-bar { min-width: 0; max-width: 100%; }
+.report-drilldown .table-scroll { max-width: 100%; overflow-x: auto; }
+@media (max-width: 760px) { .report-drilldown-header > *, .pagination-bar > * { min-width: 0; max-width: 100%; } .pagination-bar .button-group { width: 100%; } }
+
+.notification-outcome { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:12px 0; border-top:1px solid var(--line); }
+@media (max-width: 760px) {
+  .heading-action .button-group { flex-wrap: wrap; }
+  .heading-action .button-group > * { flex: 1 1 140px; min-width: 0; }
+}
+
+@media (max-width: 1100px) { .page-heading { flex-wrap: wrap; } .heading-action { min-width: 0; max-width: 100%; } .heading-action .button-group { flex-wrap: wrap; } }
+
+@media (max-width: 1100px) { .panel-toolbar { flex-wrap: wrap; } .toolbar-left, .toolbar-right { flex-wrap: wrap; min-width: 0; max-width: 100%; } }
+@media (min-width: 761px) and (max-width: 1100px) {
+  .practitioner-multi-popover { left: 0; right: auto; }
+}
+
+.catalog-diagnostics { margin: 16px 22px 0; color: #596d80; font-size: 13px; }
+.catalog-diagnostics summary { cursor: pointer; }
+
+.customer-status-chart{padding:20px;border:1px solid var(--line);border-radius:12px;margin:20px 0;background:#f8fbff}.customer-status-chart h3{margin:0 0 16px}.customer-chart-row{display:grid;grid-template-columns:minmax(100px,160px) minmax(0,1fr) auto;align-items:center;gap:12px;margin:10px 0}.customer-chart-track{height:10px;border-radius:8px;background:#e3edf7;overflow:hidden}.customer-chart-track>span{display:block;height:100%;border-radius:8px;background:#3899eb}
+.report-approved-filters { margin-bottom: 18px; }
+.report-approved-metrics { margin: 0 0 18px; }
+.report-approved-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.report-approved-charts .panel { min-width: 0; }
+@media (max-width: 760px) { .report-approved-charts { grid-template-columns: 1fr; } }
+.report-approved-filters,.report-approved-charts .panel,.report-approved-table { padding: 20px; }
+.report-donut {width:128px;height:128px;border-radius:50%;display:grid;place-items:center;margin:12px auto;}
+.report-donut span {width:80px;height:80px;border-radius:50%;background:white;display:grid;align-content:center;text-align:center;font-size:24px;font-weight:700;}
+.report-donut small {font-size:12px;font-weight:400;}

@@ -1,7 +1,8 @@
 """Offline unit and contract tests for AUDIT-06: Servizi, catalogo, prezzi e disponibilità.
 Covers CC-CAP-007, CC-CAP-011, CC-CAP-012, CC-CAP-013, CC-EXT-010.
 """
-from datetime import date, time
+from datetime import date, datetime, time
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 import importlib.util
 import json
@@ -206,6 +207,7 @@ class Audit06ServicesCatalogueAvailabilityTests(unittest.TestCase):
 
         self.audit = types.ModuleType('centrochange_core.security.audit')
         self.audit.atomic = lambda fn: fn
+        self.audit.retry_deadlock_once = lambda fn: fn
         self.audit.serialize = lambda v: json.dumps(v, sort_keys=True, default=str, separators=(',', ':'))
         self.audit.append = lambda event, doctype, name, before, after, reason: self.db.events.append((event, doctype, name, before, after, reason))
 
@@ -229,6 +231,7 @@ class Audit06ServicesCatalogueAvailabilityTests(unittest.TestCase):
         self.guards.enabled = lambda user=None: True
         self.guards.roles = lambda user=None: self.user_roles
         self.guards.centers = lambda user=None: [self.current_center]
+        self.guards.practitioner_in_center = lambda doc, center: bool(doc.user_id and center in self.guards.centers(doc.user_id))
         self.guards.practitioner_for = lambda user=None: 'PRO-1'
         self.guards.patient_contexts = lambda: {('PAT-1', self.current_center)}
         self.guards.current_rows = lambda doctype, filters=None, fields=None, pluck=None: fake_get_all(doctype, filters, pluck, fields)
@@ -609,7 +612,7 @@ class Audit06ServicesCatalogueAvailabilityTests(unittest.TestCase):
         self.assertEqual(snap['cc_price_snapshot'], Decimal('70.00'))
         self.assertEqual(snap['cc_currency_snapshot'], 'EUR')
         self.assertEqual(snap['duration'], 50)
-        self.assertEqual(snap['cc_booking_date'], date.today())
+        self.assertEqual(snap['cc_booking_date'], datetime.now(ZoneInfo('Europe/Rome')).date())
 
     def test_cap013_historical_appointment_preserves_snapshot_on_catalog_update(self):
         """Demonstrates CC-CAP-013: booked appointment snapshot is immutable; catalog updates do not mutate history."""

@@ -1,5 +1,15 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## DECISIONE OWNER 06/11/2026 — DUE SERVIZI, DUE PRENOTAZIONI
+
+Per i requisiti di catalogo e prenotazione vigenti: primo colloquio conoscitivo gratuito di 20 minuti (in sede oppure online, prenotabile dal pubblico) e seduta distinta di 45 minuti / 44 € (prenotata successivamente dal Manager). Le modalità sono configurazioni tecniche del colloquio, non servizi aggiuntivi. Nessuna seconda prenotazione automatica. La CI e le prove sintetiche non equivalgono a `PASS_LIVE UAT` o `OWNER_ACCEPTED`.
+
+## RIESAME TECNICO 06/11/2026 — RECUPERO E IDENTITÀ PROFESSIONISTI
+
+La candidata #203 contiene rigenerazione auditata del primo accesso e modifica separata della email di accesso tramite rename Frappe; le verifiche sintetiche non costituiscono collaudo UAT né accettazione Owner. Le annotazioni di non conformità sottostanti descrivono i candidati precedenti. Stati e accettazioni storiche del CSV restano invariati.
+
+---
+
 ## PRECEDENZA OWNER 06/11/2026 — CC-CAP-002 E PERMESSI DI ATTIVAZIONE
 
 **Nuova decisione Owner (prevale sul 05/11):** Amministratore/Manager Full Permission, segretaria inclusa, dalla sola UI **Professionisti** deve **creare e attivare completamente** in un'unica operazione un nuovo `User` Frappe personale con `enabled=1`, ruolo `CC Professional`, membership centro attiva, Healthcare Practitioner Active/collegato e ACL riconciliate; deve poter disattivare/riattivare dalla stessa scheda. È **revocato** il flusso di creazione finale «account nuovo inattivo, attivazione tramite ulteriore autorizzazione Owner». Nessuna approvazione Owner per ogni nuovo professionista dopo il rilascio; credenziali personali tramite onboarding sicuro. Prove sintetiche durante lo sviluppo, nessuna email reale né autorizzazione implicita a deploy.
@@ -336,3 +346,12 @@ Il confronto con il modello dati esistente precede qualsiasi proposta futura: Pa
 - Alla fine di ogni sessione Codex aggiorna nel commento della issue attiva: commit/branch, risultato, test, evidenza, blocchi, prossimo passo concreto; il prossimo agente deve poter riprendere senza chat.
 - Le PR aperte (compresa #150) non vengono automaticamente fuse per accelerare l'audit. Le decisioni di merge, uso server, cambio schema/policy, dati reali, provider e produzione mantengono i propri gate.
 - Questo documento si aggiorna **insieme** alle prove dell'area, non prima di averle ottenute.
+
+### Anagrafiche operative e preferenza TS — lavoro in corso
+
+| ID | Stato candidato | Evidenza e limiti |
+| --- | --- | --- |
+| CC-CAP-049 | PARTIAL | Preferenza anagrafica distinta dalle scelte per singola spesa, senza invio automatico; persistenza, audit e negazione scrittura diretta verificati su clone sintetico Frappe. Migrazione e collaudo UAT non eseguiti. |
+| CC-CAP-005 | PARTIAL | Test API di accesso limitato allo storico su clone; la creazione paziente sintetica, modifica e ricarica sono verificate su clone desktop/mobile, con audit e dinieghi API; l’email professionista è gestita tramite Contact nativo e verificata su clone con storico, conflitto di concorrenza e diniego dei contatti condivisi; nella candidata le voci duplicate Pazienti e Professionisti sono state rimosse dagli Archivi, conservando dati e API. Decisione Owner più recente: ogni professionista operativo richiede un account Frappe personale, distinto, abilitato e autorizzato per il centro; la precedente decisione di attivazione senza account è revocata. Decisione Owner del 06/11: Manager crea e attiva User personale e professionista in un unico flusso oppure associa un account autorizzato; primo accesso con token nativo, senza invio automatico. Evidenze limitate al clone sintetico; collaudo UAT non eseguito. Nessun invito o account reale è stato creato durante lo sviluppo. |
+
+Il candidato non è accettato né autorizzato al rilascio. UAT rilevato su `2005f6c`; non dedurre accettazione Owner dalle prove su clone.

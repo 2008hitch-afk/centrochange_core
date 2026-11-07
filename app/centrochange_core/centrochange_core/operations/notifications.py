@@ -67,3 +67,49 @@ def retry(name,reason):
         doc.update({'state':'Pending','retry_limit':doc.attempts+5,'last_error':None}).save(ignore_permissions=True)
     append('NOTIFICATION_RETRY',doc.doctype,name,None,{'state':'Pending'},reason)
     return {'name':name,'replay':False}
+
+@frappe.whitelist(methods=['GET'])
+def target(name):
+    """Resolve historical payment notices only after checking both records' scope."""
+    doc = frappe.get_doc('CC Notification', name)
+    doc.check_permission('read')
+    if doc.kind == 'CLOSURE_REMINDER':
+        parts = (doc.event_key or '').split(':')
+        if len(parts) >= 3 and parts[0] == 'closure-reminder':
+            return {'day_closure':parts[1]}
+        return None
+    if doc.reference_doctype != 'CC Payment Notice' or not doc.reference_name:
+        return None
+    notice = frappe.get_doc('CC Payment Notice', doc.reference_name)
+    notice.check_permission('read')
+    from centrochange_core.finance.guards import patient_context
+    patient_context(notice.patient, notice.center)
+    return {'patient':notice.patient, 'center':notice.center}
+
+@frappe.whitelist(methods=['GET'])
+def pending_outcomes(center):
+    """Live, deduplicated operational alerts; no patient or clinical data."""
+    from datetime import timedelta
+    from centrochange_core.security.guards import require_center, require_operational_center
+    from centrochange_core.operations.lifecycle import now_utc, start_utc
+    require_manager()
+    require_center(center)
+    require_operational_center(center)
+    now = now_utc()
+    from centrochange_core.operations.lifecycle import ROME
+    today = now.astimezone(ROME).date()
+    rows = current_rows('Patient Appointment', {
+        'cc_center': center, 'appointment_date': ['<=', today],
+        'cc_closure_state': ['in', ['Pending', 'Auto Locked', 'Reopened']],
+        'status': ['!=', 'Cancelled'],
+    }, fields=['appointment_date', 'appointment_time', 'duration', 'practitioner', 'practitioner_name'])
+    grouped = {}
+    for row in rows:
+        if not row.practitioner or start_utc(row) + timedelta(minutes=int(row.duration or 60)) > now:
+            continue
+        key = (str(row.appointment_date), row.practitioner)
+        if key not in grouped:
+            grouped[key] = {'date': key[0], 'practitioner': key[1],
+                            'practitioner_name': row.practitioner_name or '', 'count': 0}
+        grouped[key]['count'] += 1
+    return sorted(grouped.values(), key=lambda item: (item['date'], item['practitioner']), reverse=True)

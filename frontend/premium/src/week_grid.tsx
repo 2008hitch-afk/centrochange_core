@@ -1,5 +1,5 @@
 import { type Appointment, type Row, displayDate, time, romeToday } from './api'
-import { demoPatient, demoText } from './demo_labels'
+import { demoPatient, demoText, serviceLabel } from './demo_labels'
 
 type Resource = { id: string; title: string }
 type Positioned = { row: Appointment; top: number; height: number; lane: number; lanes: number }
@@ -61,7 +61,7 @@ export function WeekGrid({ days, resources, rows, schedules, onSelect, onBook }:
             return <div className={`week-cell ${isOff ? 'week-cell-off' : ''}`} key={day} data-date={day} data-practitioner={resource.id}>
               {hasAbsence && <div className="week-absence-block" title="Assenza registrata">Assenza / Non disponibile</div>}
               {isOff && !hasAbsence && <div className="week-off-indicator" aria-hidden="true">Non in servizio</div>}
-              <div className="week-sessions">{position(visible.filter(row => row.practitioner === resource.id && row.appointment_date === day), first).map(({ row, top, height: eventHeight, lane, lanes }) => <button key={row.name} className={`week-event ${row.status === 'Cancelled' ? 'event-cancelled' : row.cc_performed ? 'event-done' : 'event-booked'}`} data-time={time(row.appointment_time)} style={{ top: `${top}px`, height: `${eventHeight}px`, left: `${lane * 100 / lanes}%`, width: `${100 / lanes}%` }} onClick={() => onSelect(row)} aria-label={`${time(row.appointment_time)} ${demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name)} · ${demoText(row.cc_service_label) || 'Seduta'}`}><time>{time(row.appointment_time)}</time><strong>{demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name)}</strong><span>{demoText(row.cc_service_label) || 'Seduta'}</span></button>)}</div>
+              <div className="week-sessions">{position(visible.filter(row => row.practitioner === resource.id && row.appointment_date === day), first).map(({ row, top, height: eventHeight, lane, lanes }) => <button key={row.name} className={`week-event ${row.status === 'Cancelled' ? 'event-cancelled' : row.cc_performed ? 'event-done' : 'event-booked'}`} data-time={time(row.appointment_time)} style={{ top: `${top}px`, height: `${eventHeight}px`, left: `${lane * 100 / lanes}%`, width: `${100 / lanes}%` }} onClick={() => onSelect(row)} aria-label={`${time(row.appointment_time)} ${demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name)} · ${serviceLabel(row.cc_service_label) || 'Seduta'}`}><time>{time(row.appointment_time)}</time><strong>{demoPatient(row.patient, row.patient_name, row.patient_first_name, row.patient_last_name)}</strong><span>{serviceLabel(row.cc_service_label) || 'Seduta'}</span></button>)}</div>
               <button className="week-add" aria-label={`Nuova prenotazione ${demoText(resource.title)} ${displayDate(day)}`} onClick={() => onBook(day, resource.id)}>+</button>
             </div>
           })}

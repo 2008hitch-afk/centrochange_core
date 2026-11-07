@@ -18,8 +18,19 @@ class PatientMixin:
 	def validate(self):
 		super().validate()
 		previous = self.get_doc_before_save()
-		if self.customer != (previous.customer if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
-			frappe.throw('Il collegamento paziente-cliente richiede il servizio Finance tracciato.',frappe.PermissionError)
+		changed_customer = self.customer != (previous.customer if previous else None)
+		changed_payer_kind = bool(self.get('cc_external_payer')) != (bool(previous.get('cc_external_payer')) if previous else False)
+		changed_confirmation = bool(self.get('cc_fiscal_mapping_confirmed')) != (bool(previous.get('cc_fiscal_mapping_confirmed')) if previous else False)
+		if (changed_customer or changed_payer_kind or changed_confirmation) and not frappe.flags.get('cc_finance_mapping_write'):
+			frappe.throw('Il collegamento paziente-cliente richiede il servizio Finance tracciato.', frappe.PermissionError)
+		if previous and (changed_customer or changed_payer_kind or changed_confirmation):
+			# Conservative guard: even an unbilled appointment may bind a fiscal obligation.
+			if (frappe.db.exists('Patient Appointment', {'patient': self.name})
+					or frappe.db.exists('CC Economic Source Link', {'patient': self.name})
+					or frappe.db.exists('Sales Invoice', {'patient': self.name})):
+				frappe.throw('Il paziente ha uno storico economico: serve una rettifica amministrativa separata.')
+		if (self.get('cc_ts_preference') or '') != ((previous.get('cc_ts_preference') or '') if previous else '') and not frappe.flags.get('cc_ts_preference_write'):
+			frappe.throw('La preferenza TS richiede il servizio anagrafico tracciato.', frappe.PermissionError)
 		if not frappe.flags.get('cc_patient_intake_write') and any((self.get(k) or None)!=((previous.get(k) or None) if previous else None) for k in ('cc_intake_key','cc_intake_hash')):
 			frappe.throw('L’identità del paziente richiede il servizio di ingresso tracciato.',frappe.PermissionError)
 		from centrochange_core.scheduling.public_booking import SERVICE_USER
@@ -33,6 +44,19 @@ class PatientMixin:
 			if self.get(field) and (not previous or self.get(field) != previous.get(field)):
 				frappe.throw("Le informazioni cliniche appartengono a record riservati, non all’anagrafica condivisa.")
 
+	def update_linked_customer(self):
+		# Healthcare calls this on subsequent Patient.save() for single-customer links.
+		# An external payer must never receive the patient name or financial defaults.
+		if not self.get('cc_fiscal_mapping_confirmed') or self.get('cc_external_payer'):
+			return self.update_patient_based_on_existing_customer()
+		return super().update_linked_customer()
+
+	def set_contact(self):
+		# Healthcare otherwise reuses and changes a third-party Customer Contact.
+		# Persist Patient mobile/email directly, without changing payer Contact.
+		if not self.get('cc_fiscal_mapping_confirmed') or self.get('cc_external_payer'):
+			return
+		return super().set_contact()
 	def on_trash(self):
 		frappe.throw("La cancellazione del paziente richiede una procedura di conservazione separata.", frappe.PermissionError)
 
@@ -41,12 +65,16 @@ class PractitionerMixin:
 	def validate(self):
 		self.user_id = self.user_id or None
 		previous = self.get_doc_before_save()
+		if (self.get('cc_profile_center') or '') != ((previous.get('cc_profile_center') or '') if previous else '') and not frappe.flags.get('cc_practitioner_center_write'):
+			frappe.throw('Il centro anagrafico richiede il servizio autorizzato.', frappe.PermissionError)
 		if self.supplier != (previous.supplier if previous else None) and not frappe.flags.get('cc_finance_mapping_write'):
 			frappe.throw('Il collegamento professionista-fornitore richiede il servizio Finance tracciato.',frappe.PermissionError)
 		if not previous:
 			require_manager()
 		elif (previous.user_id != self.user_id or previous.status != self.status) and not frappe.flags.get("cc_permission_write"):
 			frappe.throw("Le modifiche allo stato del professionista richiedono il servizio autorizzato.", frappe.PermissionError)
+		if self.status == "Active" and not self.user_id:
+			frappe.throw("Un professionista attivo richiede un account personale abilitato.")
 		if self.user_id and (not enabled(self.user_id) and self.status == "Active"):
 			frappe.throw("Un professionista attivo richiede un account abilitato.")
 		super().validate()

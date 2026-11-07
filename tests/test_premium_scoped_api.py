@@ -99,6 +99,7 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe.utils = types.SimpleNamespace(validate_email_address=lambda value: '@' in value)
         self.audit = types.ModuleType('centrochange_core.security.audit')
         self.audit.atomic = lambda fn: fn
+        self.audit.retry_deadlock_once = lambda fn: fn
         self.audit.serialize = lambda value: json.dumps(value, sort_keys=True, default=str, separators=(',', ':'))
         self.audit.append = lambda event, doctype, name, before, after, reason: self.db.events.append((event, before, after))
         self.guards = types.ModuleType('centrochange_core.security.guards')
@@ -108,6 +109,7 @@ class ScopedApiTest(unittest.TestCase):
         self.guards.is_manager = lambda: self.role_allowed
         self.guards.patient_contexts = lambda: {('PAT-A', 'A')}
         self.guards.practitioner_for = lambda: 'PRO-A'
+        self.guards.practitioner_names_for_center = lambda center: ['PRO-A'] if center == 'A' else []
         self.guards.roles = lambda: ['CC Manager'] if self.role_allowed else ['CC Professional']
         self.lifecycle = types.ModuleType('centrochange_core.security.lifecycle')
         self.lifecycle.lock = lambda: setattr(self, 'locked', self.locked + 1)
@@ -153,6 +155,14 @@ class ScopedApiTest(unittest.TestCase):
         self.mutate()
         with self.assertRaises(Invalid):
             self.mutate(value='Diverso')
+        self.assertEqual(self.db.doc.writes, 1)
+
+    def test_same_key_rejects_changed_contact_fingerprint(self):
+        args = ('item', 'A', 'Item', 'ITEM-A', {'item_name': 'Nuovo nome'}, ('item_name',), 'v1', 'CONTACT-KEY', 'motivo')
+        self.api.mutate(*args, fingerprint_extra={'email': 'uno@example.invalid'})
+        self.assertTrue(self.api.mutate(*args, fingerprint_extra={'email': 'uno@example.invalid'})['replay'])
+        with self.assertRaises(Invalid):
+            self.api.mutate(*args, fingerprint_extra={'email': 'altro@example.invalid'})
         self.assertEqual(self.db.doc.writes, 1)
 
     def test_stale_version_denied_without_write(self):
@@ -225,6 +235,13 @@ class ScopedApiTest(unittest.TestCase):
         self.assertEqual(len(self.db.events), 1)
         with self.assertRaises(Invalid):
             self.api.create('create', 'A', 'Item', {'item_name': 'Altro'}, ('item_name',), 'KC', 'motivo')
+
+    def test_create_replay_rejects_changed_contact(self):
+        args = ('create', 'A', 'Item', {'item_name': 'Nuovo'}, ('item_name',), 'KC-EMAIL', 'motivo')
+        self.api.create(*args, fingerprint_extra={'email':'uno@example.invalid'})
+        self.assertTrue(self.api.create(*args, fingerprint_extra={'email':'uno@example.invalid'})['replay'])
+        with self.assertRaises(Invalid):
+            self.api.create(*args, fingerprint_extra={'email':'due@example.invalid'})
 
     def test_payment_read_scope_and_print_permission(self):
         utils = types.ModuleType('frappe.utils')
@@ -360,7 +377,9 @@ class ScopedApiTest(unittest.TestCase):
         profiles = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(profiles)
         self.db.doc = FakeDoc('Patient', 'PAT-A', first_name='Persona', last_name='Prova', email='a@example.invalid', customer='CUS-A')
-        result = profiles.patient_save('A', 'PAT-A', 'Persona nuova', 'Prova', 'b@example.invalid', 'v1', 'K-PAT', 'motivo')
+        result = profiles.patient_save('A', 'PAT-A', 'Persona nuova', 'Prova', 'b@example.invalid', 'v1', 'K-PAT', 'motivo', mobile='12345', phone='67890')
+        self.assertEqual(self.db.doc.get('mobile'), '12345')
+        self.assertEqual(self.db.doc.get('phone'), '67890')
         self.assertEqual(result['name'], 'PAT-A')
         self.assertEqual(self.db.doc.get('customer'), 'CUS-A')
         self.assertEqual(self.db.doc.writes, 1)
@@ -383,8 +402,20 @@ class ScopedApiTest(unittest.TestCase):
             profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-EXTRA', 'motivo', customer='CUS-B')
         self.role_allowed = False
         with self.assertRaises(Denied):
-            profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-PRO', 'motivo')
+            profiles.patient_save('A', 'PAT-A', 'Persona', 'Prova', 'a@example.invalid', 'v1', 'K-PRO', 'motivo', mobile='111', phone='222')
         self.assertEqual(self.db.doc.writes, 0)
+
+    def test_ts_preference_rejects_unknown_values_and_hides_from_professional(self):
+        spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
+        profiles = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(profiles)
+        self.db.doc = FakeDoc('Patient', 'PAT-A', cc_ts_preference='Opposed')
+        with self.assertRaises(Invalid):
+            profiles.patient_save('A', 'PAT-A', 'Persona', '', '', 'v1', 'K-TS', 'motivo', ts_preference='consent')
+        self.assertEqual(self.db.doc.writes, 0)
+        self.assertEqual(profiles.patient_detail('A', 'PAT-A')['cc_ts_preference'], 'Opposed')
+        self.role_allowed = False
+        self.assertNotIn('cc_ts_preference', profiles.patient_detail('A', 'PAT-A'))
 
     def test_profile_optional_nulls_are_preserved(self):
         spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
@@ -410,7 +441,7 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe.get_all = lambda doctype, **kwargs: ['pro@example.invalid']
         result = profiles.practitioners('A', 20, 0, 'Rossi')
         self.assertEqual(result['rows'][0].name, 'PRO-A')
-        self.assertEqual(observed['filters']['user_id'], ['in', ['pro@example.invalid']])
+        self.assertEqual(observed['filters']['name'], ['in', ['PRO-A']])
         self.assertEqual(observed['page_length'], 21)
         self.assertEqual(observed['or_filters']['first_name'], ['like', '%Rossi%'])
         with self.assertRaises(Invalid):

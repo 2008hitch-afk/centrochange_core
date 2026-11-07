@@ -33,7 +33,7 @@ export function demoText(value: unknown): string {
   if (labels[original] != null) return labels[original]
   const fixture = /^CC-HTTP-[A-Za-z0-9]{10}\s+(SESSION|PACKAGE)$/i.exec(original.trim())
   if (fixture) return fixture[1].toUpperCase() === 'SESSION' ? 'Servizio di prova' : 'Pacchetto di prova'
-  return original
+  return original.replace(/\s*\+\s*Prima Seduta\b/gi, '')
 }
 
 // Patient and Customer may share an identifier. A demo alias is not a real
@@ -77,4 +77,12 @@ export function demoCustomer(identifier: unknown, fallback: unknown): string {
 export function demoMatches(value: unknown, query: string): boolean {
   const term = query.trim().toLocaleLowerCase('it-IT')
   return !term || `${String(value ?? '')} ${demoText(value)}`.toLocaleLowerCase('it-IT').includes(term)
+}
+
+export const serviceLabel = (value: unknown) => {
+  const original = String(value ?? '')
+  const label = demoText(value)
+  const first = /^Primo Incontro (Online|in Sede) con Direttore(?: \+ Prima Seduta)?$/i.exec(original) || /^Primo Incontro (Online|in Sede) con Direttore$/i.exec(label)
+  if (first) return `Primo colloquio conoscitivo · ${first[1].toLocaleLowerCase('it-IT')}`
+  return /^Seduta successiva$/i.test(original) || /^Seduta successiva$/i.test(label) ? 'Seduta' : label
 }

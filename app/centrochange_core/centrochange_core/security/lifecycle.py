@@ -98,7 +98,8 @@ def set_assignment(patient, center, practitioner=None, active=1, reason=None):
 		frappe.throw("Lo stato dell’assegnazione non è valido.")
 	if practitioner and active:
 		identity = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
-		if identity.status != "Active" or not identity.user_id or not enabled(identity.user_id) or center not in centers(identity.user_id):
+		from centrochange_core.security.guards import practitioner_in_center
+		if identity.status != "Active" or not practitioner_in_center(identity, center):
 			frappe.throw("Il professionista deve essere attivo e assegnato a questa sede.")
 	filters = {"patient": patient, "center": center, "practitioner": practitioner or ["is", "not set"]}
 	name = frappe.db.get_value("CC Patient Assignment", filters, for_update=True)
@@ -141,17 +142,37 @@ def set_practitioner_state(practitioner, active, reason):
 	require_manager()
 	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
 	active = _active_value(active)
-	if active not in (0, 1) or doc.user_id in (None, "", "Guest", "Administrator"):
+	if active not in (0, 1) or doc.user_id in ("Guest", "Administrator"):
 		frappe.throw("Serve un account operativo valido e collegato.")
+	if not doc.user_id:
+		if active:
+			frappe.throw('Per attivare il professionista collega prima un account personale abilitato.', frappe.PermissionError)
+		if not doc.get('cc_profile_center'):
+			frappe.throw('Serve un centro anagrafico autorizzato.')
+		before = {'status': doc.status, 'enabled': None}
+		after = {'status': 'Active' if active else 'Disabled', 'enabled': None}
+		if before != after:
+			with internal_write('cc_permission_write'):
+				doc.status = after['status']
+				doc.save(ignore_permissions=True)
+			append('PRACTITIONER_STATE', doc.doctype, doc.name, before, after, reason)
+		return after
 	user = frappe.get_doc("User", doc.user_id, for_update=True)
 	if "CC Professional" not in roles(user.name):
 		frappe.throw("L’account non appartiene a un professionista Centro Change.")
+	from centrochange_core.security.guards import personal_professional
+	if active and not personal_professional(user.name):
+		frappe.throw('L’account contiene ruoli aggiuntivi e non può essere riattivato.', frappe.PermissionError)
+	if active and doc.get('cc_profile_center') and not frappe.db.exists('CC Center Membership', {'user':user.name, 'center':doc.get('cc_profile_center'), 'active':1}):
+		frappe.throw('L’account personale non è autorizzato per il centro.', frappe.PermissionError)
 	before = {"status": doc.status, "enabled": user.enabled}
 	after = {"status": "Active" if active else "Disabled", "enabled": active}
-	if before == after:
+	if before == after and (active or not user.reset_password_key):
 		return after
 	with internal_write("cc_permission_write"):
 		user.enabled = active
+		if not active:
+			user.reset_password_key = None
 		user.save(ignore_permissions=True)
 		doc.status = after["status"]
 		doc.save(ignore_permissions=True)
@@ -162,12 +183,22 @@ def set_practitioner_state(practitioner, active, reason):
 
 @frappe.whitelist(methods=["POST"])
 @atomic
-def replace_principal(practitioner, new_user, reason):
+def replace_principal(practitioner, new_user, reason, confirm_email=None):
 	lock()
 	require_manager()
 	doc = frappe.get_doc("Healthcare Practitioner", practitioner, for_update=True)
-	if new_user in ("Administrator", "Guest") or not enabled(new_user) or "CC Professional" not in roles(new_user):
+	from centrochange_core.security.guards import personal_professional
+	if new_user in ("Administrator", "Guest") or not enabled(new_user) or not personal_professional(new_user):
 		frappe.throw("Il sostituto deve essere un professionista Centro Change attivo.")
+	profile_center = doc.get("cc_profile_center")
+	if profile_center and not frappe.db.exists("CC Center Membership", {"user": new_user, "center": profile_center, "active": 1}):
+		frappe.throw("L’account deve essere autorizzato per il centro del professionista.", frappe.PermissionError)
+	# Legacy callers can continue using the previous matching-contact proof;
+	# the operational UI supplies an explicit login confirmation when the
+	# independently maintained contact address is different.
+	confirmed = str(confirm_email or doc.email_id or '').strip().lower()
+	if not confirmed or confirmed != (frappe.db.get_value('User', new_user, 'email') or '').strip().lower():
+		frappe.throw("Conferma l'email dell'account personale selezionato.", frappe.PermissionError)
 	old_user = doc.user_id
 	if old_user == new_user:
 		return {"user": new_user}
@@ -212,6 +243,11 @@ def practitioner_updated(doc, method=None):
 
 
 def user_updated(doc, method=None):
+	previous = doc.get_doc_before_save()
+	if previous and previous.enabled == doc.enabled and previous.user_type == doc.user_type and {row.role for row in previous.roles} == {row.role for row in doc.roles}:
+		# Password reset and contact changes do not alter ACLs. In particular,
+		# Frappe's token-authorized Guest reset cannot perform manager-only ACL writes.
+		return
 	if doc.name not in ("Administrator", "Guest") and (
 		frappe.db.exists("Healthcare Practitioner", {"user_id": doc.name})
 		or frappe.db.exists("CC Center Membership", {"user": doc.name})

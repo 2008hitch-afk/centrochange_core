@@ -20,7 +20,8 @@ def require_practitioner(practitioner, center):
 				frappe.throw('Non puoi consultare la disponibilità di un altro professionista.',frappe.PermissionError)
 		else:
 			require_operations(center)
-	if not doc.user_id or center not in centers(doc.user_id):
+	from centrochange_core.security.guards import practitioner_in_center
+	if not practitioner_in_center(doc,center):
 		frappe.throw('Il professionista deve avere un’appartenenza attiva alla sede.')
 	return doc
 

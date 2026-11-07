@@ -104,6 +104,17 @@ def _settlement(doc,paid,mode,reason):
 	rows=current_settlements(doc.name)
 	if rows and rows[0].paid==paid and (rows[0].mode_of_payment or None)==(mode or None):
 		return rows[0].name
+	from centrochange_core.finance.operational_receipts import has_allocation
+	if has_allocation(doc.name):
+		frappe.throw('Questa seduta ha incassi allocati: la modifica richiede una rettifica autorizzata.')
+	# Preserve the legacy binary marker for free, covered, waived and already-paid
+	# historical sessions: none proves that a positive amount was received.
+	from decimal import Decimal
+	amount = Decimal(str(doc.get('cc_price_snapshot') or 0))
+	if paid and doc.cc_economic_state == 'Due' and amount > 0 and not cint(doc.cc_paid):
+		from centrochange_core.finance.operational_receipts import record_from_authorized_closure
+		record_from_authorized_closure(doc, mode, reason)
+		return current_settlements(doc.name)[0].name
 	if not reason or not reason.strip():
 		frappe.throw('Indica il motivo della registrazione del pagamento.')
 	sequence=cint(doc.cc_settlement_revision)+1
@@ -155,6 +166,9 @@ def waive(appointment,reason):
 	lock()
 	doc=_doc(appointment)
 	require_operations(doc.cc_center)
+	from centrochange_core.finance.operational_receipts import has_allocation
+	if has_allocation(doc.name):
+		frappe.throw('La seduta ha incassi allocati e richiede una rettifica autorizzata.')
 	if doc.cc_economic_state=='Waived':
 		return {'name':doc.name,'replay':True}
 	if doc.cc_economic_state not in ('Due','Package Covered'):
@@ -174,6 +188,9 @@ def reopen(appointment,reason):
 	lock()
 	doc=_doc(appointment)
 	require_operations(doc.cc_center)
+	from centrochange_core.finance.operational_receipts import has_allocation
+	if has_allocation(doc.name):
+		frappe.throw('La seduta ha incassi allocati e richiede una rettifica autorizzata.')
 	if doc.cc_closure_state=='Reopened':
 		return {'name':doc.name,'replay':True}
 	if doc.cc_closure_state not in ('Closed','Auto Locked'):

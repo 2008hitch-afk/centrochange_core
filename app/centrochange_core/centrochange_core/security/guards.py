@@ -99,12 +99,32 @@ def current_rows(doctype, filters=None, fields=None, pluck=None):
 		for_update=bool(frappe.flags.get("cc_permission_current_read")))
 
 
+def practitioner_names_for_center(center):
+	"""Include direct profiles and legacy user memberships without granting access."""
+	users = [user for user in current_rows('CC Center Membership', {'center': center, 'active': 1}, pluck='user') if user]
+	legacy = current_rows('Healthcare Practitioner', {'user_id': ['in', users]}, pluck='name') if users else []
+	direct = current_rows('Healthcare Practitioner', {'cc_profile_center': center}, pluck='name')
+	return list(set(legacy) | set(direct))
+
+
+def practitioner_in_center(doc, center):
+	if doc.user_id:
+		return bool(enabled(doc.user_id) and center in centers(doc.user_id))
+	return False
+
+
 def roles(user=None):
 	user=user or frappe.session.user
 	if frappe.flags.get("cc_permission_current_read"):
 		names=current_rows("Has Role", {"parent":user,"parenttype":"User"}, pluck="role")
 		return [name for name in names if not frappe.db.get_value("Role",name,"disabled",for_update=True)]
 	return frappe.get_roles(user)
+
+
+def personal_professional(user):
+	"""A newly associated principal must not carry administrative privileges."""
+	user_roles = set(roles(user))
+	return 'CC Professional' in user_roles and not user_roles.difference({'CC Professional', 'All', 'Guest', 'Desk User'})
 
 
 def patient_contexts(user=None):
