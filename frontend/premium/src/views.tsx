@@ -317,7 +317,7 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
   <div className="booking-summary-card">
     <div className="booking-summary-row"><span><strong>Servizio:</strong> {serviceLabel(selectedService?.cc_service_label) || selectedService?.name || '—'}</span><span><strong>Durata:</strong> {duration} min</span></div>
     <div className="booking-summary-row"><span><strong>Tariffa corrente di listino:</strong> {listPrice != null ? money(listPrice, currency) : '—'}</span><span><strong>{!selectedPackage && duration === 45 && listPrice === 44 && currency === 'EUR' ? 'Tariffa della seduta (da pagare alla seduta):' : 'Importo previsto per la seduta:'}</strong> <strong style={{ color: amountDue === 0 ? '#15803d' : '#0f172a' }}>{amountDue != null ? money(amountDue, currency) : '—'}</strong></span></div>
-    {selectedPackage ? (
+    {selectedPackage && (
       <div className="booking-package-card">
         <div><strong>Copertura pacchetto:</strong> {demoText(selectedPackage.label || selectedPackage.name)}</div>
         <div style={{ marginTop: 4 }}>• Unità disponibili: <strong>{packageUnitsAvailable}</strong> {packageUnitsAvailable === 1 ? 'seduta' : 'sedute'}</div>
@@ -325,8 +325,6 @@ function Booking({ boot, center, onClose, onSuccess, feedback, date, initialPrac
         <div>• Disponibilità residua prevista: <strong>{packageUnitsAfter}</strong> {packageUnitsAfter === 1 ? 'seduta' : 'sedute'}</div>
         <div style={{ marginTop: 6, fontSize: 11, color: '#047857' }}>Nota contabile: la prenotazione riserva 1 seduta dal pacchetto. Il consumo effettivo avviene alla chiusura della seduta.</div>
       </div>
-    ) : (
-      <div style={{ marginTop: 4, fontSize: 12, color: '#64748b' }}>La tariffa di listino verrà registrata come snapshot economico per questa seduta.</div>
     )}
   </div>
   <Field label="Nota organizzativa (facoltativa)"><textarea value={reason} onChange={e => setReason(e.target.value)} maxLength={2000} rows={3} /></Field><FormError error={error} /><div className="form-actions"><Button type="button" variant="secondary" onClick={onClose}>Annulla</Button><Button disabled={busy || !patient || !practitioner || !service} type="submit">{busy ? 'Salvataggio…' : 'Conferma prenotazione'}</Button></div></form></Modal>
