@@ -335,9 +335,9 @@ def create_patient(center,first_name,sex,uid,practitioner,request_key,reason,las
                    payer_mode='self',payer_customer=None,payer_first_name=None,payer_last_name=None,payer_tax_id=None):
     # Healthcare native Patient/Customer hooks are kept; the service controls
     # which Customer exists before Patient.insert() to avoid a duplicate.
-    from centrochange_core.security.audit import atomic
-    return atomic(_create_patient)(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email,mobile,phone,ts_preference,
-                                  payer_mode,payer_customer,payer_first_name,payer_last_name,payer_tax_id)
+    from centrochange_core.operations.profiles import _atomic_provision
+    return _atomic_provision(_create_patient)(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email,mobile,phone,ts_preference,
+                                              payer_mode,payer_customer,payer_first_name,payer_last_name,payer_tax_id)
 
 
 def _create_patient(center,first_name,sex,uid,practitioner,request_key,reason,last_name,email,mobile=None,phone=None,ts_preference=None,
