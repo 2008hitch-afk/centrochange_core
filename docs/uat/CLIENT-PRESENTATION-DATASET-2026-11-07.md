@@ -19,8 +19,22 @@
 1. **Clone isolato dello STAGING**: applicare codice e migrazioni della PR; eseguire `plan`, `apply`, `inspect` e prove reali di agenda, anagrafica fiscale, Report professionista/cliente e incassi. Verificare valori €0/20m e €44/45m, 17 Customer, 35 appuntamenti, email zero, documenti fiscali zero. Ripristinare/eliminare **solo il clone** al termine. Un semplice test offline o una CI 3/3 PASS **non sostituisce** il collaudo del caricamento.
 2. CI e manifest del branch allineati. Non cambiare produzione o fare merge in main.
 3. Prima dello STAGING: effettuare e verificare realmente un **backup cifrato**. Il suo SHA-256 è attestato nella configurazione; tale attestazione non sostituisce il controllo del backup. Confermare che il DB live sia ancora vuoto per Patient, Healthcare Practitioner, Customer, Patient Appointment, CC Operational Receipt, CC Economic Source Link, Sales Invoice, Payment Entry, GL Entry.
-4. Verificare configurazione della sede esistente: servizi **univoci** per nome/durata/prezzo, prezzi EUR, fascia settimanale disponibile, `Mode of Payment: Contanti` attivo, società `Centro Change SYNTHETIC DEV` predefinita. Se non coincidono, **fermarsi**: non forzare silenziosamente importi, tipi di appuntamento o configurazioni del cliente.
+4. Verificare configurazione della sede esistente: due primi colloqui distinti e validi (in sede/online, ciascuno €0/20m), una sola Seduta €44/45m, prezzi EUR, fascia settimanale disponibile, `Mode of Payment: Contanti` attivo, società `Centro Change SYNTHETIC DEV` predefinita. Se non coincidono, **fermarsi**: non forzare silenziosamente importi, tipi di appuntamento o configurazioni del cliente.
 5. L'importazione del calendario è valida **solo prima del 9 novembre 2026**. Se posticipata, revisionare date e rifare i test. Il sistema deve rifiutare ricette scadute.
+
+## Correzione prerequisiti STAGING — 07/11/2026
+
+Il primo tentativo di Codex ha correttamente **bloccato l'importazione senza modificare lo STAGING**. Erano assenti il gruppo Customer predefinito, il metodo di pagamento Contanti abilitato e `mute_emails=1`. Il sito offre inoltre due tipi nativi di primo colloquio (**in sede e online**), entrambi necessari alla prenotazione pubblica: **non cancellarne o disattivarne nessuno per far passare il caricatore**.
+
+Procedura di riconciliazione **solo STAGING, dopo verifica del nome site e backup cifrato verificato**, senza record anagrafici:
+
+1. ERPNext → `Customer Group`: scegliere o creare la categoria foglia `Clienti Centro Change` (`is_group=0`), sotto una radice già valida. In `Selling Settings` impostarla come gruppo clienti predefinito. Non cambiare la società e non creare Customer veri.
+2. ERPNext → `Mode of Payment`: abilitare il metodo `Contanti` di tipo `Cash`, o crearlo **soltanto se assente**; non registrare pagamenti, fatture o movimenti contabili.
+3. Configurazione **del solo site STAGING**, senza toccare `common_site_config.json` o la produzione: `bench --site "$SITE" set-config mute_emails 1`; verificare SMS Healthcare e qualsiasi trasmissione TS/SdI già disabilitati. Il loader deve arrestarsi se invii email o SMS risultano abilitati.
+4. Con i due servizi pubblici già collegati tramite `cc_public_first_meeting_types.sede` e `.online`, mantenere entrambi attivi in `CC Center Service` nella sede selezionata, durata 20m e prezzo €0 EUR. Rendere i nomi **dei rispettivi Item** leggibili: `Primo colloquio conoscitivo in sede` e `Primo colloquio conoscitivo online`. Non cambiare ID dei tipi, i collegamenti pubblici o i prezzi. Il loader ora convalida entrambe le modalità e usa esplicitamente **in sede** per le dieci prenotazioni della presentazione. `Seduta` deve restare l'unica corrispondenza attiva a €44 EUR / 45m.
+5. Riprovarne la sola fase di `plan` (nessuna scrittura). Se manca una mappatura pubblica o resta un catalogo ambiguo, non forzare e non creare duplicati. Solo dopo preflight PASS e conferma CI sulla nuova SHA procedere a `apply` una volta.
+
+Non usare script che alterino la produzione; verificare sempre `site_config` e sede prima di ogni comando `set-config`. **Non confondere modifica delle impostazioni preliminari con completamento dell'importazione.**
 
 ## Abilitazione esplicita, solo nel clone poi sullo STAGING
 
@@ -32,9 +46,9 @@ bench --site "$SITE" set-config cc_presentation_site "$SITE"
 bench --site "$SITE" set-config mute_emails 1
 bench --site "$SITE" set-config cc_presentation_backup_sha256 "$BACKUP_SHA256"
 # cc_synthetic_dev deve già essere 1: non attivarlo su siti reali o produzione.
-bench --site "$SITE" execute centrochange_core.uat.presentation_seed.plan --kwargs "{"center":"$CENTER"}"
+bench --site "$SITE" execute centrochange_core.uat.presentation_seed.plan --kwargs "{\"center\":\"$CENTER\"}"
 # Trascrivere l'intero digest del piano e approvarlo esplicitamente.
-bench --site "$SITE" execute centrochange_core.uat.presentation_seed.apply --kwargs "{"center":"$CENTER","approval_sha256":"$DATASET_SHA256","backup_sha256":"$BACKUP_SHA256"}"
+bench --site "$SITE" execute centrochange_core.uat.presentation_seed.apply --kwargs "{\"center\":\"$CENTER\",\"approval_sha256\":\"$DATASET_SHA256\",\"backup_sha256\":\"$BACKUP_SHA256\"}"
 bench --site "$SITE" execute centrochange_core.uat.presentation_seed.inspect
 bench --site "$SITE" set-config cc_presentation_seed 0
 # Soltanto dopo collaudo specifico sul clone e verifiche invii disabilitati:
