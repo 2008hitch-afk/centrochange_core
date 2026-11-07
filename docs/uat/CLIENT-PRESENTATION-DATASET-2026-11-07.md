@@ -37,6 +37,8 @@ bench --site "$SITE" execute centrochange_core.uat.presentation_seed.plan --kwar
 bench --site "$SITE" execute centrochange_core.uat.presentation_seed.apply --kwargs "{"center":"$CENTER","approval_sha256":"$DATASET_SHA256","backup_sha256":"$BACKUP_SHA256"}"
 bench --site "$SITE" execute centrochange_core.uat.presentation_seed.inspect
 bench --site "$SITE" set-config cc_presentation_seed 0
+# Soltanto dopo collaudo specifico sul clone e verifiche invii disabilitati:
+bench --site "$SITE" set-config cc_presentation_intake 1
 ```
 
 Il caricatore richiede `Administrator`, nome site esatto, `cc_synthetic_dev=1`, email disattivate, SMS e tariffa d'ingresso disabilitati, database inizialmente vuoto e digest approvato. Gestisce un lock esclusivo, transazioni, rollback, un manifesto locale 0600 e replay senza duplicazione. **Non** esporre `apply` come endpoint web. Non è previsto un reset automatico: in caso di errore, procedere solo con ripristino da backup o procedura di pulizia limitata ai record identificati e approvata separatamente.
@@ -45,6 +47,8 @@ Il caricatore richiede `Administrator`, nome site esatto, `cc_synthetic_dev=1`, 
 
 Controllare su desktop e mobile: agenda mensile/settimanale; anagrafiche professionisti; scheda di Alice/Pietro con lo stesso intestatario Laura; 17 righe raggruppate nel Report cliente; sedute chiuse, parzialmente incassate, non incassate, annullate e future; assenza di importi addebitati per colloqui gratuiti; posizioni economiche e CSV.
 
-**Limite da risolvere prima di mostrare il flusso Nuovo paziente al cliente:** la UI corrente mantiene ancora la dicitura «Ambiente sintetico» e il backend richiede prefissi UID/nome tecnici per nuovi inserimenti manuali. La ricetta bench crea nomi leggibili, ma non modifica queste restrizioni della form. Non occultare la dicitura senza prima avere un flusso di inserimento realmente funzionante e sicuro. L'eventuale prova completa di creazione manuale richiede una correzione UI/backend distinta e testata.
+**Flusso «Nuovo paziente» della presentazione:** questa PR aggiunge una modalità specifica per lo STAGING sintetico configurato esplicitamente con `cc_presentation_intake=1`, `cc_presentation_site` corrispondente al sito, `cc_synthetic_dev=1`, `mute_emails=1`, invii Healthcare disabilitati. Soltanto con tutte le condizioni attive il form mostra nomi leggibili senza UID o avvisi tecnici e il backend genera l'identificativo interno. L'inserimento di telefoni/email reali e identificativi fiscali reali resta vietato; le preferenze TS non attivano trasmissioni. Verificare col clone reale e test browser prima di abilitare sullo STAGING. Se il flag non è attivo, il precedente flusso tecnico resta in vigore senza rilassamenti.
+
+**L'opzione di inserimento leggibile non autorizza l'inserimento di dati personali reali:** per nuovi pazienti manuali del cliente servono dati inventati, senza recapiti recapitabili. Disattivare `cc_presentation_intake` al termine della presentazione o prima di un qualsiasi ingresso operativo con dati reali, da pianificare separatamente con protezioni appropriate.
 
 **Non dichiarare STAGING popolato** senza prova di `inspect` dal sito e riscontri browser.
