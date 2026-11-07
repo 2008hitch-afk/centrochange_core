@@ -276,6 +276,7 @@
     "centrochange_core/uat/acceptance.py": "0d9337ee0abc848c506d79302a51cfa2cc2233d3f64e9a21c0801da0b870ede7",
     "centrochange_core/uat/demo.py": "e66fe6b3c8f6d420e3c280fb11733cf0a909df3f72c75f8512963fcedb0e11af",
     "centrochange_core/uat/display.py": "3e64632882321d9cea05122dfee4d65681376274cf8d3046785dd372923403cd",
+    "centrochange_core/uat/presentation_acceptance.py": "daad4b69b7336494b0a56c1ecdb8ee7acd28966d712a15192c8844d21df8d6ec",
     "centrochange_core/uat/presentation_dataset_v1.json": "60d0d3f2c77eae75388d704f81c6a205f1ef946db4912513afea2cbadd245e33",
     "centrochange_core/uat/presentation_seed.py": "47738d47a72d9fb2496417283ee78db87aee97b694cbf52ffbd589b87f18022b",
     "centrochange_core/www/404.html": "4d0947653b32ca7c1e251b569fae10b1ef5501a6b87355ad6238eed94c3cdf13",
