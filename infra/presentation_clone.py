@@ -23,6 +23,7 @@ def bench(*args):
 try:
     clone.setup_clone(skip_uat_seed=True)
     bench("set-config", "cc_presentation_seed", "1")
+    bench("set-config", "cc_presentation_intake", "1")
     bench("set-config", "cc_presentation_site", clone.CLONE_SITE)
     bench("set-config", "mute_emails", "1")
     bench("set-config", "cc_presentation_backup_sha256", "a" * 64)
