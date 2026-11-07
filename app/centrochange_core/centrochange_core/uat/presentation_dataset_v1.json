@@ -1,0 +1,673 @@
+{
+  "schema": "centrochange-presentation-v1",
+  "site_scope": "STAGING ONLY; private bench-only guarded seed; never production",
+  "as_of": "2026-11-07",
+  "ownership_tag": "CC-PRESENTATION-20261107-V1",
+  "center": "existing operational Centro Change branch selected explicitly at runtime (no new Branch)",
+  "currency": "EUR",
+  "fiscal_mode": "NO real identifiers, invoicing, email/SMS, TS, SdI or external payments",
+  "services": {
+    "FIRST": {
+      "label": "Primo colloquio conoscitivo",
+      "minutes": 20,
+      "eur": "0.00"
+    },
+    "SESSION": {
+      "label": "Seduta",
+      "minutes": 45,
+      "eur": "44.00"
+    }
+  },
+  "availability": {
+    "timezone": "Europe/Rome",
+    "morning": [
+      "09:00",
+      "13:00"
+    ],
+    "afternoon": [
+      "14:00",
+      "18:00"
+    ]
+  },
+  "professionals": [
+    {
+      "id": "PR01",
+      "first_name": "Giulia",
+      "last_name": "Moretti",
+      "gender": "Female",
+      "weekdays": [
+        "Monday",
+        "Wednesday",
+        "Friday"
+      ],
+      "email": "giulia.moretti@presentation.example.invalid"
+    },
+    {
+      "id": "PR02",
+      "first_name": "Andrea",
+      "last_name": "Ricci",
+      "gender": "Male",
+      "weekdays": [
+        "Tuesday",
+        "Thursday"
+      ],
+      "email": "andrea.ricci@presentation.example.invalid"
+    },
+    {
+      "id": "PR03",
+      "first_name": "Elena",
+      "last_name": "Bianchi",
+      "gender": "Female",
+      "weekdays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday"
+      ],
+      "email": "elena.bianchi@presentation.example.invalid"
+    },
+    {
+      "id": "PR04",
+      "first_name": "Marco",
+      "last_name": "Ferri",
+      "gender": "Male",
+      "weekdays": [
+        "Wednesday",
+        "Friday",
+        "Saturday"
+      ],
+      "email": "marco.ferri@presentation.example.invalid"
+    }
+  ],
+  "patients": [
+    {
+      "id": "P01",
+      "first_name": "Sofia",
+      "last_name": "Romano",
+      "gender": "Female",
+      "dob": "1994-03-14",
+      "practitioner": "PR01",
+      "payer": "F01",
+      "email": "p01@presentation.example.invalid"
+    },
+    {
+      "id": "P02",
+      "first_name": "Luca",
+      "last_name": "Romano",
+      "gender": "Male",
+      "dob": "1988-11-02",
+      "practitioner": "PR02",
+      "payer": "F02",
+      "email": "p02@presentation.example.invalid"
+    },
+    {
+      "id": "P03",
+      "first_name": "Chiara",
+      "last_name": "Esposito",
+      "gender": "Female",
+      "dob": "1999-06-08",
+      "practitioner": "PR03",
+      "payer": "F03",
+      "email": "p03@presentation.example.invalid"
+    },
+    {
+      "id": "P04",
+      "first_name": "Alessandro",
+      "last_name": "Conti",
+      "gender": "Male",
+      "dob": "1984-09-19",
+      "practitioner": "PR04",
+      "payer": "F04",
+      "email": "p04@presentation.example.invalid"
+    },
+    {
+      "id": "P05",
+      "first_name": "Martina",
+      "last_name": "De Luca",
+      "gender": "Female",
+      "dob": "1991-01-27",
+      "practitioner": "PR01",
+      "payer": "F05",
+      "email": "p05@presentation.example.invalid"
+    },
+    {
+      "id": "P06",
+      "first_name": "Davide",
+      "last_name": "Greco",
+      "gender": "Male",
+      "dob": "1987-05-22",
+      "practitioner": "PR02",
+      "payer": "F06",
+      "email": "p06@presentation.example.invalid"
+    },
+    {
+      "id": "P07",
+      "first_name": "Francesca",
+      "last_name": "Rinaldi",
+      "gender": "Female",
+      "dob": "1996-08-17",
+      "practitioner": "PR03",
+      "payer": "F07",
+      "email": "p07@presentation.example.invalid"
+    },
+    {
+      "id": "P08",
+      "first_name": "Matteo",
+      "last_name": "Lombardi",
+      "gender": "Male",
+      "dob": "1993-02-05",
+      "practitioner": "PR04",
+      "payer": "F08",
+      "email": "p08@presentation.example.invalid"
+    },
+    {
+      "id": "P09",
+      "first_name": "Sara",
+      "last_name": "Ferraro",
+      "gender": "Female",
+      "dob": "1989-12-03",
+      "practitioner": "PR01",
+      "payer": "F09",
+      "email": "p09@presentation.example.invalid"
+    },
+    {
+      "id": "P10",
+      "first_name": "Federico",
+      "last_name": "Galli",
+      "gender": "Male",
+      "dob": "1982-07-13",
+      "practitioner": "PR02",
+      "payer": "F10",
+      "email": "p10@presentation.example.invalid"
+    },
+    {
+      "id": "P11",
+      "first_name": "Valentina",
+      "last_name": "Costa",
+      "gender": "Female",
+      "dob": "1998-10-24",
+      "practitioner": "PR03",
+      "payer": "F11",
+      "email": "p11@presentation.example.invalid"
+    },
+    {
+      "id": "P12",
+      "first_name": "Riccardo",
+      "last_name": "Mancini",
+      "gender": "Male",
+      "dob": "1979-04-04",
+      "practitioner": "PR04",
+      "payer": "F12",
+      "email": "p12@presentation.example.invalid"
+    },
+    {
+      "id": "P13",
+      "first_name": "Elisa",
+      "last_name": "Barbieri",
+      "gender": "Female",
+      "dob": "1990-09-30",
+      "practitioner": "PR01",
+      "payer": "F13",
+      "email": "p13@presentation.example.invalid"
+    },
+    {
+      "id": "P14",
+      "first_name": "Tommaso",
+      "last_name": "Fontana",
+      "gender": "Male",
+      "dob": "1995-07-11",
+      "practitioner": "PR02",
+      "payer": "F14",
+      "email": "p14@presentation.example.invalid"
+    },
+    {
+      "id": "P15",
+      "first_name": "Camilla",
+      "last_name": "Rizzo",
+      "gender": "Female",
+      "dob": "1985-03-29",
+      "practitioner": "PR03",
+      "payer": "F15",
+      "email": "p15@presentation.example.invalid"
+    },
+    {
+      "id": "P16",
+      "first_name": "Stefano",
+      "last_name": "Morelli",
+      "gender": "Male",
+      "dob": "1992-08-23",
+      "practitioner": "PR04",
+      "payer": "F16",
+      "email": "p16@presentation.example.invalid"
+    },
+    {
+      "id": "P17",
+      "first_name": "Alice",
+      "last_name": "Caruso",
+      "gender": "Female",
+      "dob": "2001-06-13",
+      "practitioner": "PR01",
+      "payer": "F17",
+      "email": "p17@presentation.example.invalid"
+    },
+    {
+      "id": "P18",
+      "first_name": "Pietro",
+      "last_name": "Caruso",
+      "gender": "Male",
+      "dob": "1998-02-10",
+      "practitioner": "PR02",
+      "payer": "F17",
+      "email": "p18@presentation.example.invalid"
+    }
+  ],
+  "payers": [
+    {
+      "id": "F01",
+      "kind": "patient_self",
+      "patient": "P01",
+      "display_name": "Sofia Romano"
+    },
+    {
+      "id": "F02",
+      "kind": "patient_self",
+      "patient": "P02",
+      "display_name": "Luca Romano"
+    },
+    {
+      "id": "F03",
+      "kind": "patient_self",
+      "patient": "P03",
+      "display_name": "Chiara Esposito"
+    },
+    {
+      "id": "F04",
+      "kind": "patient_self",
+      "patient": "P04",
+      "display_name": "Alessandro Conti"
+    },
+    {
+      "id": "F05",
+      "kind": "patient_self",
+      "patient": "P05",
+      "display_name": "Martina De Luca"
+    },
+    {
+      "id": "F06",
+      "kind": "patient_self",
+      "patient": "P06",
+      "display_name": "Davide Greco"
+    },
+    {
+      "id": "F07",
+      "kind": "patient_self",
+      "patient": "P07",
+      "display_name": "Francesca Rinaldi"
+    },
+    {
+      "id": "F08",
+      "kind": "patient_self",
+      "patient": "P08",
+      "display_name": "Matteo Lombardi"
+    },
+    {
+      "id": "F09",
+      "kind": "patient_self",
+      "patient": "P09",
+      "display_name": "Sara Ferraro"
+    },
+    {
+      "id": "F10",
+      "kind": "patient_self",
+      "patient": "P10",
+      "display_name": "Federico Galli"
+    },
+    {
+      "id": "F11",
+      "kind": "patient_self",
+      "patient": "P11",
+      "display_name": "Valentina Costa"
+    },
+    {
+      "id": "F12",
+      "kind": "patient_self",
+      "patient": "P12",
+      "display_name": "Riccardo Mancini"
+    },
+    {
+      "id": "F13",
+      "kind": "patient_self",
+      "patient": "P13",
+      "display_name": "Elisa Barbieri"
+    },
+    {
+      "id": "F14",
+      "kind": "patient_self",
+      "patient": "P14",
+      "display_name": "Tommaso Fontana"
+    },
+    {
+      "id": "F15",
+      "kind": "patient_self",
+      "patient": "P15",
+      "display_name": "Camilla Rizzo"
+    },
+    {
+      "id": "F16",
+      "kind": "patient_self",
+      "patient": "P16",
+      "display_name": "Stefano Morelli"
+    },
+    {
+      "id": "F17",
+      "kind": "external",
+      "display_name": "Laura Caruso",
+      "relationship": "Familiare di Alice e Pietro",
+      "patients": [
+        "P17",
+        "P18"
+      ]
+    }
+  ],
+  "appointments": [
+    {
+      "id": "A01",
+      "service": "FIRST",
+      "patient": "P01",
+      "date": "2026-10-12",
+      "time": "09:00",
+      "state": "past_completed"
+    },
+    {
+      "id": "A02",
+      "service": "FIRST",
+      "patient": "P02",
+      "date": "2026-10-13",
+      "time": "10:00",
+      "state": "past_completed"
+    },
+    {
+      "id": "A03",
+      "service": "FIRST",
+      "patient": "P03",
+      "date": "2026-10-14",
+      "time": "11:00",
+      "state": "past_completed"
+    },
+    {
+      "id": "A04",
+      "service": "FIRST",
+      "patient": "P04",
+      "date": "2026-10-16",
+      "time": "09:00",
+      "state": "past_completed"
+    },
+    {
+      "id": "A05",
+      "service": "FIRST",
+      "patient": "P05",
+      "date": "2026-10-19",
+      "time": "10:00",
+      "state": "past_completed"
+    },
+    {
+      "id": "A06",
+      "service": "FIRST",
+      "patient": "P06",
+      "date": "2026-10-20",
+      "time": "11:00",
+      "state": "past_completed"
+    },
+    {
+      "id": "A07",
+      "service": "FIRST",
+      "patient": "P07",
+      "date": "2026-10-21",
+      "time": "09:00",
+      "state": "past_completed"
+    },
+    {
+      "id": "A08",
+      "service": "FIRST",
+      "patient": "P16",
+      "date": "2026-11-11",
+      "time": "09:00",
+      "state": "future"
+    },
+    {
+      "id": "A09",
+      "service": "FIRST",
+      "patient": "P17",
+      "date": "2026-11-13",
+      "time": "10:00",
+      "state": "future"
+    },
+    {
+      "id": "A10",
+      "service": "FIRST",
+      "patient": "P18",
+      "date": "2026-11-12",
+      "time": "11:00",
+      "state": "future"
+    },
+    {
+      "id": "A11",
+      "service": "SESSION",
+      "patient": "P01",
+      "date": "2026-10-16",
+      "time": "11:00",
+      "state": "paid"
+    },
+    {
+      "id": "A12",
+      "service": "SESSION",
+      "patient": "P02",
+      "date": "2026-10-22",
+      "time": "09:00",
+      "state": "paid"
+    },
+    {
+      "id": "A13",
+      "service": "SESSION",
+      "patient": "P03",
+      "date": "2026-10-15",
+      "time": "11:00",
+      "state": "paid"
+    },
+    {
+      "id": "A14",
+      "service": "SESSION",
+      "patient": "P04",
+      "date": "2026-10-21",
+      "time": "14:00",
+      "state": "paid"
+    },
+    {
+      "id": "A15",
+      "service": "SESSION",
+      "patient": "P05",
+      "date": "2026-10-23",
+      "time": "09:00",
+      "state": "paid"
+    },
+    {
+      "id": "A16",
+      "service": "SESSION",
+      "patient": "P06",
+      "date": "2026-10-22",
+      "time": "10:00",
+      "state": "paid"
+    },
+    {
+      "id": "A17",
+      "service": "SESSION",
+      "patient": "P07",
+      "date": "2026-10-22",
+      "time": "11:00",
+      "state": "paid"
+    },
+    {
+      "id": "A18",
+      "service": "SESSION",
+      "patient": "P08",
+      "date": "2026-10-24",
+      "time": "10:00",
+      "state": "paid"
+    },
+    {
+      "id": "A19",
+      "service": "SESSION",
+      "patient": "P09",
+      "date": "2026-10-26",
+      "time": "09:00",
+      "state": "partial",
+      "paid_eur": "20.00"
+    },
+    {
+      "id": "A20",
+      "service": "SESSION",
+      "patient": "P10",
+      "date": "2026-10-27",
+      "time": "09:00",
+      "state": "partial",
+      "paid_eur": "20.00"
+    },
+    {
+      "id": "A21",
+      "service": "SESSION",
+      "patient": "P11",
+      "date": "2026-10-28",
+      "time": "10:00",
+      "state": "unpaid"
+    },
+    {
+      "id": "A22",
+      "service": "SESSION",
+      "patient": "P12",
+      "date": "2026-10-30",
+      "time": "09:00",
+      "state": "unpaid"
+    },
+    {
+      "id": "A23",
+      "service": "SESSION",
+      "patient": "P13",
+      "date": "2026-11-02",
+      "time": "09:00",
+      "state": "unpaid"
+    },
+    {
+      "id": "A24",
+      "service": "SESSION",
+      "patient": "P14",
+      "date": "2026-11-03",
+      "time": "10:00",
+      "state": "cancelled_timely"
+    },
+    {
+      "id": "A25",
+      "service": "SESSION",
+      "patient": "P15",
+      "date": "2026-11-04",
+      "time": "11:00",
+      "state": "cancelled_timely"
+    },
+    {
+      "id": "A26",
+      "service": "SESSION",
+      "patient": "P01",
+      "date": "2026-10-26",
+      "time": "11:00",
+      "state": "outcome_pending"
+    },
+    {
+      "id": "A27",
+      "service": "SESSION",
+      "patient": "P03",
+      "date": "2026-10-26",
+      "time": "14:00",
+      "state": "outcome_pending"
+    },
+    {
+      "id": "A28",
+      "service": "SESSION",
+      "patient": "P05",
+      "date": "2026-11-04",
+      "time": "09:00",
+      "state": "outcome_pending"
+    },
+    {
+      "id": "A29",
+      "service": "SESSION",
+      "patient": "P01",
+      "date": "2026-11-09",
+      "time": "09:00",
+      "state": "future"
+    },
+    {
+      "id": "A30",
+      "service": "SESSION",
+      "patient": "P02",
+      "date": "2026-11-10",
+      "time": "10:00",
+      "state": "future"
+    },
+    {
+      "id": "A31",
+      "service": "SESSION",
+      "patient": "P04",
+      "date": "2026-11-11",
+      "time": "11:00",
+      "state": "future"
+    },
+    {
+      "id": "A32",
+      "service": "SESSION",
+      "patient": "P13",
+      "date": "2026-11-13",
+      "time": "09:00",
+      "state": "future"
+    },
+    {
+      "id": "A33",
+      "service": "SESSION",
+      "patient": "P16",
+      "date": "2026-11-18",
+      "time": "09:00",
+      "state": "future"
+    },
+    {
+      "id": "A34",
+      "service": "SESSION",
+      "patient": "P17",
+      "date": "2026-11-16",
+      "time": "09:00",
+      "state": "future"
+    },
+    {
+      "id": "A35",
+      "service": "SESSION",
+      "patient": "P18",
+      "date": "2026-11-17",
+      "time": "09:00",
+      "state": "future"
+    }
+  ],
+  "expected_counts": {
+    "professionals": 4,
+    "professional_accounts": 4,
+    "patients": 18,
+    "payers": 17,
+    "appointments": 35,
+    "first_meetings": 10,
+    "sessions": 25,
+    "completed_interviews": 7,
+    "future_interviews": 3,
+    "paid_sessions": 8,
+    "partial_sessions": 2,
+    "unpaid_sessions": 3,
+    "cancelled_sessions": 2,
+    "pending_outcome_sessions": 3,
+    "future_sessions": 7
+  }
+}
