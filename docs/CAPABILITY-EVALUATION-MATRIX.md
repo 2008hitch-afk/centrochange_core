@@ -1,12 +1,14 @@
 # Centro Change — Capability Evaluation Matrix
 
-## STATO OWNER 07/11/2026 — DATASET DI PRESENTAZIONE (PR #205)
+## STATO OPERATIVO 07/11/2026 — STAGING POPOLATO (PR #205)
 
-**Funzionalità anagrafica paziente–intestatario fiscale:** approvata e installata SOLO nello STAGING con SHA `51ed781b16550a0fd93aee968f44c3d761534429`, CI originaria 3/3 PASS; non è un merge su `main` né una modifica a produzione.
+**STAGING attuale:** `https://centro-uat.empv.it/premium`, **SHA installata `254af1505dc56ae9123ce64469f856cefabf61d4`**. Questa è la versione di riferimento per la presentazione; la precedente `51ed781b16550a0fd93aee968f44c3d761534429` è **STORICA/SUPERATA sullo STAGING**, pur essendo stata la prima versione del collegamento fiscale Patient–Customer.
 
-**Popolamento per il cliente:** Owner ha autorizzato la preparazione di un dataset presentabile di **4 professionisti con account personali, 18 pazienti, 17 intestatari fiscali e 35 appuntamenti**. Il codice di caricamento protetto, la ricetta e i test appartengono alla **[PR #205](https://github.com/2008hitch-afk/centrochange_core/pull/205)**, che è **SEPARATA e in stato DRAFT**, non installata sullo STAGING. I nomi sono fittizi ma leggibili; identificativi tecnici solo interni; nessuna comunicazione fiscale/email/SMS.
+**Conferma caricamento:** Codex ha riferito `plan READY`, `apply PASS`, `inspect PASS` su STAGING, con **4 professionisti e 4 account individuali attivi, 18 pazienti, 17 intestatari fiscali, 35 appuntamenti (10 colloqui gratuiti/25 sedute)**; **10 ricevute operative per 392 €**; nessuna Sales Invoice, Payment Entry, GL, email, SMS o trasmissione fiscale registrata. Il backup cifrato è stato **verificato con ripristino su clone isolato**. Codex ha riferito smoke browser desktop/mobile per agenda, pazienti, intestatari, pagamenti e Report cliente. Questi dati di esecuzione sono un **report dell'operatore**, non una nuova interrogazione diretta del database da GitHub.
 
-**Blocco al rilascio dati:** è obbligatorio un test **PASS su clone reale Frappe/MariaDB**, seguito da backup cifrato verificato e verifica dei dati iniziali vuoti; solo allora un singolo caricamento STAGING via bench. Il modulo manuale Nuovo paziente conserva limiti/anagrafiche sintetiche e scritte tecniche da risolvere prima della dimostrazione al cliente. Non è previsto caricamento in produzione o seed automatico di sicurezza. Vedi [runbook dataset](uat/CLIENT-PRESENTATION-DATASET-2026-11-07.md).
+**Verifica indipendente GitHub:** CI della SHA installata **3/3 PASS**: `dataset-offline`, `frontend-synthetic`, `presentation-clone`.
+
+**Vincoli:** la [PR #205](https://github.com/2008hitch-afk/centrochange_core/pull/205) resta **DRAFT**, nessun merge su `main` e nessun rilascio in produzione. `cc_presentation_seed` è stato disattivato dopo l'importazione, secondo il resoconto dell'operatore. Il limite del **9/11/2026** riguarda soltanto l'avvio di un nuovo import del dataset originario: **i dati caricati persistono oltre tale data**. Nessun nuovo seed/reimportazione senza nuova approvazione. Per procedura e riconciliazione storica vedere [runbook dataset](uat/CLIENT-PRESENTATION-DATASET-2026-11-07.md).
 
 ---
 
