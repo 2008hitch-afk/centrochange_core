@@ -26,26 +26,40 @@ def prepare():
         "parent_customer_group": root}).insert(ignore_permissions=True)
     frappe.db.set_single_value("Selling Settings", "customer_group", child.name)
 
+    import json
+    from pathlib import Path
+    modes = {}
     for key, spec in presentation_seed._fixture()["services"].items():
-        item = frappe.get_doc({"doctype": "Item", "item_code": "CC-PRESENT-" + key,
-            "item_name": spec["label"], "item_group": "Services", "stock_uom": "Nos",
-            "is_stock_item": 0, "is_sales_item": 1}).insert(ignore_permissions=True)
-        profile = frappe.get_doc({"doctype": "Appointment Type",
-            "appointment_type": "CC-PRESENT-" + key, "allow_booking_for": "Practitioner",
-            "default_duration": spec["minutes"], "cc_service_item": item.name,
-            "cc_first_meeting": int(key == "FIRST")}).insert(ignore_permissions=True)
-        frappe.get_doc({"doctype": "Item Price", "item_code": item.name,
-            "price_list": price_list.name, "price_list_rate": spec["eur"],
-            "currency": "EUR", "valid_from": "2020-01-01"}).insert(ignore_permissions=True)
-        frappe.get_doc({"doctype": "CC Center Service", "center": branch.name,
-            "appointment_type": profile.name, "enabled": 1}).insert(ignore_permissions=True)
+        variants = [("sede", "Primo colloquio conoscitivo in sede"),
+                    ("online", "Primo colloquio conoscitivo online")] if key == "FIRST" else [(None, spec["label"])]
+        for mode, label in variants:
+            suffix = key + ("-" + mode.upper() if mode else "")
+            item = frappe.get_doc({"doctype": "Item", "item_code": "CC-PRESENT-" + suffix,
+                "item_name": label, "item_group": "Services", "stock_uom": "Nos",
+                "is_stock_item": 0, "is_sales_item": 1}).insert(ignore_permissions=True)
+            profile = frappe.get_doc({"doctype": "Appointment Type",
+                "appointment_type": "CC-PRESENT-" + suffix, "allow_booking_for": "Practitioner",
+                "default_duration": spec["minutes"], "cc_service_item": item.name,
+                "cc_first_meeting": int(key == "FIRST")}).insert(ignore_permissions=True)
+            frappe.get_doc({"doctype": "Item Price", "item_code": item.name,
+                "price_list": price_list.name, "price_list_rate": spec["eur"],
+                "currency": "EUR", "valid_from": "2020-01-01"}).insert(ignore_permissions=True)
+            frappe.get_doc({"doctype": "CC Center Service", "center": branch.name,
+                "appointment_type": profile.name, "enabled": 1}).insert(ignore_permissions=True)
+            if mode:
+                modes[mode] = profile.name
+    # Persist site-local two-mode public mapping across the next bench process.
+    site_config = Path(frappe.get_site_path("site_config.json"))
+    cfg = json.loads(site_config.read_text(encoding="utf-8"))
+    cfg["cc_public_first_meeting_types"] = modes
+    site_config.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
     if not frappe.db.exists("Mode of Payment", "Contanti"):
         frappe.get_doc({"doctype": "Mode of Payment", "mode_of_payment": "Contanti",
             "type": "Cash", "enabled": 1}).insert(ignore_permissions=True)
     frappe.db.set_single_value("Healthcare Settings", "send_registration_msg", 0)
     frappe.db.set_single_value("Healthcare Settings", "collect_registration_fee", 0)
     frappe.db.commit()
-    return {"center": branch.name, "services": 2, "state": "EMPTY"}
+    return {"center": branch.name, "services": 3, "state": "EMPTY"}
 
 
 def run():
@@ -94,7 +108,7 @@ def run():
     appointments = frappe.get_all("Patient Appointment", fields=[
         "cc_service_label", "cc_price_snapshot", "duration", "appointment_date",
         "cc_closure_state", "cc_economic_state", "cc_performed", "cc_paid"])
-    free = [a for a in appointments if a.cc_service_label == "Primo colloquio conoscitivo"]
+    free = [a for a in appointments if a.cc_service_label == "Primo colloquio conoscitivo in sede"]
     sessions = [a for a in appointments if a.cc_service_label == "Seduta"]
     assert len(free) == 10 and len(sessions) == 25
     assert all(a.duration == 20 and a.cc_price_snapshot == 0 for a in free)
