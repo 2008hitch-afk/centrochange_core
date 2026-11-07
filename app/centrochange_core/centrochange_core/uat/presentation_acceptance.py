@@ -16,6 +16,16 @@ def prepare():
     price_list = frappe.get_doc({"doctype": "Price List", "price_list_name": "Listino Centro Change",
          "enabled": 1, "selling": 1, "currency": "EUR"}).insert(ignore_permissions=True)
     frappe.db.set_value("Branch", branch.name, "cc_price_list", price_list.name)
+    # ERPNext default Selling Settings may still point to the *group* root.
+    # Create a dedicated leaf only on this disposable clone, not in STAGING.
+    root = frappe.db.get_value("Customer Group", {"is_group": 1, "parent_customer_group": ["is", "not set"]}, "name")
+    if not root:
+        frappe.throw("Manca la radice Gruppo clienti di ERPNext nel clone.")
+    child = frappe.get_doc({"doctype": "Customer Group",
+        "customer_group_name": "Clienti Centro Change", "is_group": 0,
+        "parent_customer_group": root}).insert(ignore_permissions=True)
+    frappe.db.set_single_value("Selling Settings", "customer_group", child.name)
+
     for key, spec in presentation_seed._fixture()["services"].items():
         item = frappe.get_doc({"doctype": "Item", "item_code": "CC-PRESENT-" + key,
             "item_name": spec["label"], "item_group": "Services", "stock_uom": "Nos",
