@@ -26,6 +26,8 @@ try:
         'execute','centrochange_core.finance.operational_receipts_acceptance.concurrent_reversal']))
     print(clone.run_cmd(['docker','exec',clone.BACKEND_CONTAINER,'bench','--site',clone.CLONE_SITE,
         'execute','centrochange_core.operations.practitioner_center_acceptance.run']))
+    print(clone.run_cmd(['docker','exec',clone.BACKEND_CONTAINER,'bench','--site',clone.CLONE_SITE,
+        'execute','centrochange_core.operations.practitioner_center_acceptance.fiscal_patient_run']))
     subprocess.run([sys.executable, str(clone.ROOT_DIR / 'infra/issue156_http.py')], check=True)
 finally:
     clone.cleanup()
