@@ -37,3 +37,5 @@ jobs:
             git commit -m "build(uat): synchronize reviewed presentation source manifest"
             git push origin HEAD:feature/client-presentation-dataset-20261107
           fi
+
+# Rerun after allowlisting the reviewed presentation files.
