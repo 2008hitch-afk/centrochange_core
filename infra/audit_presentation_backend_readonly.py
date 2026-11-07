@@ -184,6 +184,28 @@ def run():
            all(any(m.user == person["email"] and m.center == center and m.active
                    for m in memberships) for person in all_pros)
            and all(practitioner.cc_profile_center == center for practitioner in pros))
+    # Exercise the actual Frappe document permission hooks, without impersonation
+    # or writes: each professional must read their own patient, not another's;
+    # Customer fiscal masters must remain outside professional visibility.
+    role_isolation = len(pro_ids) == 4 and len(patient_ids) == 18
+    if role_isolation:
+        for professional in all_pros:
+            user = professional["email"]
+            own = next((patient_ids[p["id"]] for p in all_patients
+                        if p["practitioner"] == professional["id"]), None)
+            foreign = next((patient_ids[p["id"]] for p in all_patients
+                            if p["practitioner"] != professional["id"]), None)
+            own_doc = frappe.get_doc("Patient", own) if own else None
+            foreign_doc = frappe.get_doc("Patient", foreign) if foreign else None
+            if (not own_doc or not foreign_doc
+                    or not frappe.has_permission("Patient", "read", doc=own_doc, user=user)
+                    or frappe.has_permission("Patient", "read", doc=foreign_doc, user=user)
+                    or frappe.has_permission("Customer", "read",
+                                             doc=frappe.get_doc("Customer", own_doc.customer),
+                                             user=user)):
+                role_isolation = False
+    verify("PERMISSIONS.professional_patient_scope_and_fiscal_denial", role_isolation)
+
     group = frappe.db.get_single_value("Selling Settings", "customer_group")
     verify("ERPNext.customer_group_leaf",
            bool(group) and not bool(frappe.db.get_value("Customer Group", group, "is_group")))
