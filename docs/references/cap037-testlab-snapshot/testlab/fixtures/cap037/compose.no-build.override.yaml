@@ -1,0 +1,18 @@
+# CAP037 only: remove the product compose build stanza so every service uses
+# the already asserted image supplied by CAP040_IMAGE. This is necessary for
+# `docker compose run` as well as `up --no-build`.
+services:
+  configurator:
+    build: !reset null
+  backend:
+    build: !reset null
+  frontend:
+    build: !reset null
+  websocket:
+    build: !reset null
+  queue-short:
+    build: !reset null
+  queue-long:
+    build: !reset null
+  scheduler:
+    build: !reset null

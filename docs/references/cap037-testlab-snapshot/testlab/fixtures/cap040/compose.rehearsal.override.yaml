@@ -1,0 +1,35 @@
+# CC-CAP-040 isolated deploy rehearsal overlay.
+# This file MUST be combined with the clean-cloned centrochange_core/infra/compose.yaml.
+# It deliberately replaces every globally named project resource so the rehearsal cannot
+# attach to or overwrite centrochange-dev resources.
+name: ${CAP040_PROJECT:?CAP040_PROJECT is required}
+
+services:
+  configurator:
+    image: ${CAP040_IMAGE:?CAP040_IMAGE is required}
+  backend:
+    image: ${CAP040_IMAGE:?CAP040_IMAGE is required}
+  frontend:
+    image: ${CAP040_IMAGE:?CAP040_IMAGE is required}
+  websocket:
+    image: ${CAP040_IMAGE:?CAP040_IMAGE is required}
+  queue-short:
+    image: ${CAP040_IMAGE:?CAP040_IMAGE is required}
+  queue-long:
+    image: ${CAP040_IMAGE:?CAP040_IMAGE is required}
+  scheduler:
+    image: ${CAP040_IMAGE:?CAP040_IMAGE is required}
+
+volumes:
+  centrochange-dev-db-data:
+    name: ${CAP040_PROJECT:?CAP040_PROJECT is required}-db-data
+  centrochange-dev-sites:
+    name: ${CAP040_PROJECT:?CAP040_PROJECT is required}-sites
+  centrochange-dev-redis-cache-data:
+    name: ${CAP040_PROJECT:?CAP040_PROJECT is required}-redis-cache-data
+  centrochange-dev-redis-queue-data:
+    name: ${CAP040_PROJECT:?CAP040_PROJECT is required}-redis-queue-data
+
+networks:
+  centrochange-dev-net:
+    name: ${CAP040_PROJECT:?CAP040_PROJECT is required}-net
