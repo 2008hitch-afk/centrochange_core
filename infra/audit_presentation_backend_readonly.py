@@ -189,7 +189,7 @@ def run():
             pro_active = False
             role_ok = False
     verify("PROFESSIONAL.login_enabled_supplier_mapped",
-           len(pro_ids) == 4 and pro_active and len(pro_by_email) == 4)
+           len(pro_ids) == 4 and pro_active and len({p.user_id for p in seed_pros if p.user_id}) == 4)
     verify("PROFESSIONAL.correct_Frappe_role", role_ok)
     centers = {r.center for r in assignments if r.active}
     center = next(iter(centers)) if len(centers) == 1 else None
