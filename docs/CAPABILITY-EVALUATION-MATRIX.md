@@ -1,5 +1,19 @@
 # Centro Change — Capability Evaluation Matrix
 
+## COLLAUDO CLIENTE 09/11/2026 — A PASS / B NO-GO, ROTTE PUBBLICHE ASSENTI
+
+**Gate A — ACCOUNT PROFESSIONISTA: PASS, 4/4 desktop e mobile sul clone isolato.** Codex ha verificato login/logout reale di **Giulia Moretti, Andrea Ricci, Elena Bianchi e Marco Ferri**, Agenda personale, paziente assegnato, disponibilità, lettura note, report, e blocco degli accessi ai pazienti dei colleghi e al report economico Manager. Credenziali sintetiche generate **solo sul clone**, nessuna alterazione agli account STAGING.
+
+**Gate B — PRENOTAZIONE ONLINE: NO-GO, 0/4 combinazioni.** Sullo STAGING **mancano entrambe le righe `CC Public Booking Route` per `Marco` e `Francesca`**. La pagina Guest renderizza su desktop/mobile e mostra entrambe le modalità; i due servizi `sede` e `online`, gratuiti, 20 minuti, risultano configurati. Nessun test POST di booking è stato eseguito perché sarebbe artificiale inventare le associazioni mancanti. **Non dichiarare pronto per la presentazione al cliente.**
+
+**Decisione organizzativa richiesta all'Owner:** per ciascuna route `Marco` e `Francesca`, identificare **l'esatto Healthcare Practitioner responsabile e abilitato nel centro**. Nel dataset dimostrativo i soli quattro sono Giulia Moretti, Andrea Ricci, Elena Bianchi e Marco Ferri: non compare alcuna `Francesca`; non assumere che Marco Ferri coincida col direttore Marco. Se Francesca è un quinto professionista, il dataset/dichiarazione di 4 account non può essere cambiato senza approvazione esplicita. Se i nomi pubblici sono solo segnaposto, serve decisione esplicita per cambiarli su UI/API e relativi test. **Non creare rotte con ID a caso o associarle per somiglianza del nome.**
+
+**Dopo la decisione:** backup cifrato STAGING; inserire le due rotte con manager autorizzato, puntando soltanto a professionisti esistenti e attivi, centro coerente, senza nuovi pazienti, appuntamenti, invii o modifiche contabili; verificare proiezione `available_slots` per tutte e quattro le combinazioni, e test POST guest E2E solo su clone isolato. Consolidare risultati e screenshot prima di dare GO. Non modificare produzione o fare merge.
+
+**Baseline invariata secondo Codex:** SHA STAGING `6e982a2715dc3aec89b3f7c65e52c3aa995d45a8`; 4 professionisti, 18 Patient, 17 Customer, 35 appuntamenti, 10 ricevute per €392. Nessun dato STAGING modificato. Percorsi screenshot forniti da Codex sono temporanei sul server (`/tmp/cc156-...`), non asset GitHub; conservarli privatamente.
+
+---
+
 ## GO/NO-GO CLIENTE — ACCOUNT PROFESSIONISTA POI PRENOTAZIONE ONLINE (09/11/2026)
 
 **Stato: VERIFICHE OPERATIVE DA ESEGUIRE, NON ANCORA APPROVATO PER PRESENTAZIONE.**
