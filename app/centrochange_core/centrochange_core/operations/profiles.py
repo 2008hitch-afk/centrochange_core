@@ -250,6 +250,13 @@ def practitioners(center, limit=50, offset=0, search=''):
     search = bounded(search, 'Ricerca', 100, required=False)
     from centrochange_core.security.guards import practitioner_names_for_center
     names = practitioner_names_for_center(center)
+    # Director practitioner links exist for booking and calendar filtering,
+    # but director accounts belong to the administrative interface only.
+    routes = frappe.get_all('CC Public Booking Route',
+        filters={'center': center, 'route': ['in', ['Marco', 'Francesca']]}, pluck='practitioner')
+    director_names = {name for name in routes if name in names and
+        (user := frappe.db.get_value('Healthcare Practitioner', name, 'user_id')) and is_manager(user)}
+    names = [name for name in names if name not in director_names]
     filters = {'name': ['in', names or ['']]}
     if not is_manager():
         own = practitioner_for()

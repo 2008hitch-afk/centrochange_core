@@ -429,6 +429,19 @@ class ScopedApiTest(unittest.TestCase):
         profiles.practitioner_save('A', 'PRO-A', 'Nuovo', None, 'v1', 'K-NULL-PRO', 'motivo')
         self.assertIsNone(self.db.doc.get('last_name'))
 
+    def test_director_manager_is_not_listed_as_professional(self):
+        spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
+        profiles = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(profiles)
+        self.guards.practitioner_names_for_center = lambda center: ['PRO-A', 'DIRECTOR']
+        self.frappe.get_all = lambda doctype, **kwargs: ['DIRECTOR'] if doctype == 'CC Public Booking Route' else []
+        observed = {}
+        self.frappe.get_list = lambda doctype, **kwargs: observed.update(kwargs) or []
+        with patch.object(profiles, 'is_manager', side_effect=lambda user=None: user in (None, 'director@example.invalid')):
+            with patch.object(self.db, 'get_value', return_value='director@example.invalid', create=True):
+                profiles.practitioners('A')
+        self.assertEqual(observed['filters']['name'], ['in', ['PRO-A']])
+
     def test_practitioner_search_is_server_scoped_and_bounded(self):
         spec = importlib.util.spec_from_file_location('centrochange_core.operations.profiles', ROOT / 'operations/profiles.py')
         profiles = importlib.util.module_from_spec(spec)

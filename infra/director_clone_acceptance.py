@@ -31,6 +31,13 @@ for name in ('Marco','Francesca'):
  set_schedule(r['name'],center,[{'day':day,'from_time':'10:00:00','to_time':'12:00:00'}],'Solo clone sintetico')
  print('DIRECTOR_PASS',name)
 assert {x:frappe.db.count(x) for x in expected}==before
+from centrochange_core.operations.profiles import practitioners as professional_list
+from centrochange_core.operations.workspace import bootstrap
+names={row.name for row in professional_list(center)['rows']}
+assert all(practitioner not in names for practitioner, _ in ids.values())
+calendar_names={row.name for row in bootstrap(center)['practitioners']}
+assert all(practitioner in calendar_names for practitioner, _ in ids.values())
+print('ADMIN_CALENDAR_PROFILE_ISOLATION_PASS')
 from centrochange_core.finance.report_dashboard import professional as finance_report
 admin_ids={x.name for x in agenda(center,'2026-11-01','2026-11-30')['appointments']}
 for name in ('Marco','Francesca'):
