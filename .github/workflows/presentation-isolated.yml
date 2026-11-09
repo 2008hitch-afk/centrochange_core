@@ -23,7 +23,9 @@ jobs:
         run: |
           python3 infra/verify_presentation_dataset.py
           python3 -m unittest discover -s tests -p 'test_presentation_*.py'
+          python3 -m unittest discover -s tests -p 'test_native_healthcare_scheduler.py'
           python3 -m py_compile infra/audit_presentation_backend_readonly.py
+          python3 -m py_compile app/centrochange_core/centrochange_core/scheduling/native_scheduler.py
           python3 -m py_compile app/centrochange_core/centrochange_core/uat/presentation_seed.py app/centrochange_core/centrochange_core/uat/presentation_acceptance.py infra/presentation_clone.py infra/test_audit09_isolated_clone.py
           python3 infra/verify_full_single_stack.py --source
 
