@@ -40,6 +40,20 @@ class ReadOnlyBackendAuditTest(unittest.TestCase):
         for snippet in required:
             self.assertIn(snippet, source)
 
+    def test_time_normalization_matches_frappe_and_recipe(self):
+        import importlib.util
+        from datetime import time, timedelta
+        spec = importlib.util.spec_from_file_location("cc_readonly_audit_time", AUDIT)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        for sample in ("9:00", "09:00", "9:00:00", time(9, 0),
+                       timedelta(hours=9)):
+            self.assertEqual(module.normalize_hhmm(sample), "09:00")
+        self.assertEqual(module.normalize_hhmm("14:30:00"), "14:30")
+        for invalid in ("25:00", "9:61", "foo"):
+            with self.assertRaises(ValueError):
+                module.normalize_hhmm(invalid)
+
     def test_audit_is_not_an_endpoint(self):
         source = AUDIT.read_text(encoding="utf-8")
         self.assertNotIn("@frappe.whitelist", source)
