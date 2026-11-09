@@ -1,5 +1,21 @@
 # Centro Change — Capability Evaluation Matrix
 
+## GO/NO-GO CLIENTE — ACCOUNT PROFESSIONISTA POI PRENOTAZIONE ONLINE (09/11/2026)
+
+**Stato: VERIFICHE OPERATIVE DA ESEGUIRE, NON ANCORA APPROVATO PER PRESENTAZIONE.**
+
+L'audit backend generale 47/47 PASS non equivale a login UI né a prenotazione Guest completa. Il dataset ha quattro User Frappe `@presentation.example.invalid`, ma l'autenticazione reale e la navigazione desktop/mobile di ciascuno vanno collaudate. La prenotazione pubblica utilizza due direttori espliciti `Marco` / `Francesca`, due modalità `sede` / `online` e un account di servizio dedicato; non assumere che il caricamento 4/18/17/35 abbia abilitato automaticamente tutte le route.
+
+**Gate A:** lettura account, ruoli, appartenenza e permessi; quattro accessi reali UI su clone con credenziali sintetiche, agenda e soli pazienti propri, note, disponibilità, report, divieti di accesso cross-professionista e dati fiscali; scritture soltanto nel clone.
+
+**Gate B:** route pubbliche/servizi/slot attivi e corretti sullo STAGING in sola lettura; prenotazioni Guest reali soltanto nel clone per tutte le combinazioni modalità × direttore, 20 minuti €0, conferme simulate, replay/idempotenza, conflitti, 0 invii e nessuna seduta successiva generata.
+
+**Gate C (presentazione):** A e B PASS, UI desktop/mobile e testi/indirizzo coerenti, database STAGING invariato, nessun dato personale reale. Se manca la route Francesca o l'account di servizio, riportarlo come **blocco**, senza associare automaticamente professionisti o modificare la produzione.
+
+**Strumenti e istruzioni:** `infra/qa_professional_public_readonly.py` (bench console, sola lettura), `tests/test_presentation_professional_public_readonly.py`, `docs/uat/PROFESSIONAL-AND-ONLINE-BOOKING-GO-NOGO-2026-11-09.md` nella PR #205. Non cambiare la SHA installata `6e982a...` solo per il controllo; usare un file temporaneo. Nessun nuovo seed.
+
+---
+
 ## STATO OPERATIVO 09/11/2026 — AUDIT BACKEND CHIUSO, STAGING SHA 6e982a27
 
 **STAGING installato secondo il resoconto operativo Codex:** `6e982a2715dc3aec89b3f7c65e52c3aa995d45a8`; gestionale accessibile su `https://centro-uat.empv.it/premium`. Migrazione Frappe eseguita, backup cifrato verificato con **ripristino su clone isolato**.
