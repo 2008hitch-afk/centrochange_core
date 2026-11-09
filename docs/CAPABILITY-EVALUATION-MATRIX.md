@@ -1,6 +1,22 @@
 # Centro Change — Capability Evaluation Matrix
 
-## AUDIT 09/11/2026 — INTEGRITÀ DATI OK, JOB GIORNALIERO DA CORREGGERE
+## STATO OPERATIVO 09/11/2026 — AUDIT BACKEND CHIUSO, STAGING SHA 6e982a27
+
+**STAGING installato secondo il resoconto operativo Codex:** `6e982a2715dc3aec89b3f7c65e52c3aa995d45a8`; gestionale accessibile su `https://centro-uat.empv.it/premium`. Migrazione Frappe eseguita, backup cifrato verificato con **ripristino su clone isolato**.
+
+**Audit sul database STAGING dopo il rilascio, eseguito da Codex:** **47 PASS / 0 FAIL**, compresi normalizzazione orari, isolamento e permessi, Patient→Customer, Healthcare, ERPNext, fonti economiche, ricevute e report. Numero record **immutato** prima/dopo: 4 professionisti, 18 pazienti, 17 Customer, 35 Patient Appointment, 10 CC Operational Receipt, 35 CC Economic Source Link. Zero Email Queue, log SMS, transazioni fiscali, Sales Invoice, Payment Entry e GL Entry. `mute_emails` ancora attivo; nessun nuovo popolamento.
+
+**Scheduler post-migrazione riferito da Codex:** il solo job nativo Healthcare `patient_appointment.update_appointment_status` è **disattivato**, mentre `centrochange_core.operations.automation.catch_up` è **attivo**. L'`AppointmentMixin.validate` non è stato indebolito. I due PermissionError del job Healthcare dell'8–9/11 sono **storici, precedenti alla correzione**: monitorare eventuali nuove ricorrenze dopo il rilascio.
+
+**Errore residuo distinto:** `ConnectionError` del controllo aggiornamenti Frappe dell'8/11, attribuito da Codex alla risoluzione DNS all'interno della rete Docker; **non equivale a un errore dei flussi Patient/Customer o incassi**. Da investigare operativamente solo se si ripete, senza allentare la sicurezza.
+
+**Evidenza indipendente da GitHub:** sulla SHA installata `6e982a...` `dataset-offline`, `frontend-synthetic`, `presentation-clone` **3/3 PASS**. I conteggi live, l'audit e il ripristino backup provengono invece dal **resoconto dell'operatore server**, non da accesso diretto della chat al DB.
+
+**Vincoli:** PR #205 resta DRAFT, `main` e produzione invariati; non ripetere il seed. Le sezioni storiche qui sotto sono conservate come cronologia, **non descrivono lo stato attuale**.
+
+---
+
+## STORICO — AUDIT 09/11/2026 — INTEGRITÀ DATI OK, JOB GIORNALIERO DA CORREGGERE
 
 **Staging installato (invariato):** `254af1505dc56ae9123ce64469f856cefabf61d4`; 4 professionisti, 18 pazienti, 17 Customer, 35 appuntamenti, 10 ricevute per 392€.
 
