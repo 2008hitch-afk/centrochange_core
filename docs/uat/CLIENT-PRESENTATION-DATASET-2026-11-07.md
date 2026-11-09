@@ -1,5 +1,9 @@
 # Centro Change — Dataset di presentazione, novembre 2026
 
+**STATO CORRENTE — 09/11/2026: STAGING POPOLATO, AUDIT BACKEND 47 PASS / 0 FAIL.** Codex ha riportato installazione della SHA `6e982a2715dc3aec89b3f7c65e52c3aa995d45a8`, migrazione Frappe, backup cifrato con ripristino su clone, job giornaliero Healthcare in conflitto disattivato e catch-up Centro Change attivo. Conteggi invariati: **4 professionisti, 18 pazienti, 17 Customer, 35 appuntamenti, 35 collegamenti economici, 10 ricevute per 392€**, senza email/SMS/fatture/movimenti/invii fiscali. GitHub conferma CI **3/3 PASS sulla SHA installata**; audit live e backup sono attestati dall'operatore. Il caricatore resta disabilitato, **non ripetere il popolamento**. Nessun merge o deploy produzione. L'errore storico DNS del job Frappe update-check (08/11) è separato.
+
+**STORICO DEL PRIMO RILASCIO:**
+
 **STATO ATTUALE — 07/11/2026: STAGING POPOLATO E VERIFICATO DA CODEX.** La SHA realmente installata è `254af1505dc56ae9123ce64469f856cefabf61d4`; GitHub conferma **CI 3/3 PASS su questa SHA**. Codex riporta backup cifrato verificato e ripristinato su clone, `plan READY / apply PASS / inspect PASS`, conteggi **4/18/17/35**, 10 ricevute operative per **392 €**, zero documenti fiscali/email/SMS e smoke desktop/mobile PASS. Il flag `cc_presentation_seed` risulta disattivato dopo il caricamento. **Non eseguire nuovamente la procedura di importazione**: i passi sottostanti sono conservati come storico operativo e per eventuale nuova autorizzazione. La precedente SHA `51ed781b16550a0fd93aee968f44c3d761534429` è superata sullo STAGING. **Produzione invariata; PR #205 resta DRAFT senza merge.**
 
 ## Regole approvate
