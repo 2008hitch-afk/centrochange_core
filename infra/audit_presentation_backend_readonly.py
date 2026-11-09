@@ -13,6 +13,17 @@ import json
 import sys
 
 
+def normalize_hhmm(value):
+    """Normalize Frappe DB time/timedelta and recipe strings to HH:MM."""
+    parts = str(value).split(":")
+    if len(parts) < 2:
+        raise ValueError("Expected an appointment time with hours and minutes")
+    hour, minute = int(parts[0]), int(parts[1])
+    if not (0 <= hour < 24 and 0 <= minute < 60):
+        raise ValueError("Invalid appointment time")
+    return f"{hour:02d}:{minute:02d}"
+
+
 def run():
     import frappe
 
@@ -46,7 +57,9 @@ def run():
     pro_map = {r["id"]: r for r in all_pros}
     payer_map = {r["id"]: r for r in recipe["payers"]}
     as_date = lambda value: str(value)[:10]
-    as_time = lambda value: str(value)[:5]
+    # Frappe can return a datetime.time, timedelta, or unpadded "9:00:00".
+    # Compare time components, never raw string prefixes ("9:00" != "09:00").
+    as_time = normalize_hhmm
 
     apps = set(frappe.get_installed_apps())
     verify("STACK.ERPNext+Healthcare+CentroChange",
