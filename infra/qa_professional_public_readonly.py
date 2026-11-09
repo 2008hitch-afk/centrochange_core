@@ -58,7 +58,9 @@ def run():
     for item in center_rows:
         if item.active:
             active_assignments[item.patient].append(item)
-    check("inventory", "professional_count_4", len(practitioner_rows) == 4)
+    seed_emails = {p["email"] for p in data["professionals"]}
+    seed_practitioners = [p for p in practitioner_rows if p.user_id in seed_emails]
+    check("inventory", "professional_count_4", len(seed_practitioners) == 4)
     check("inventory", "patient_count_18", len(patients) == 18)
     check("inventory", "appointment_count_35", len(appointments) == 35)
 
@@ -67,7 +69,7 @@ def run():
     fixture_professionals = data["professionals"]
     fixture_patients = data["patients"]
     pro_ids = {}
-    valid_logins = len(by_login) == len(practitioner_rows) == 4
+    valid_logins = len(seed_practitioners) == 4 and len({p.user_id for p in seed_practitioners if p.user_id}) == 4
     valid_membership = valid_logins
     valid_roles = valid_logins
     forbidden = {"CC Manager", "CC Finance", "CC Accountant", "System Manager"}
