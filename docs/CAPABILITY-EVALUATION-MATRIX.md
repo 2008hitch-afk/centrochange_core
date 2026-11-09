@@ -1,5 +1,19 @@
 # Centro Change — Capability Evaluation Matrix
 
+## DECISIONE OWNER 09/11/2026 — DIRETTORI MARCO E FRANCESCA
+
+**VIGENTE, prevale sulle vecchie ipotesi di mapping.** Marco e Francesca sono i **due direttori**, non i professionisti del dataset esistente. Per ciascuno serve **un User Frappe personale abilitato con ruolo full-permission `CC Manager`**, collegato uno-a-uno a un **Healthcare Practitioner attivo** nella sede e a una **CC Center Membership attiva**. I due account mantengono pieno accesso all'app Centro Change, inclusa amministrazione/finanza e agenda generale; non vanno ridotti a `CC Professional`. Il Manager usato dalla segreteria/amministrazione vede tutte le prenotazioni.
+
+**Agenda unica, due visualizzazioni:** `Marco` → suo Practitioner; `Francesca` → suo Practitioner. Ogni prenotazione è **un solo Patient Appointment** da 20 minuti €0; compare sia nell'Agenda personale del direttore sia nell'Agenda generale dell'amministrazione, senza duplicati. Le due modalità `sede` e `online` restano distinte; nessuna seduta €44 o invio reale automatico.
+
+**Implementazione necessaria:** il generico `practitioner_create` attribuisce soltanto `CC Professional` e `personal_professional` vieta privilegi elevati: sviluppare un **provisioning direttore separato, manager-only, atomico, con audit**, User `CC Manager`, Healthcare Practitioner/Supplier, centro, orari e route `CC Public Booking Route`. Verificare che `reconcile_user`/Frappe `User Permission` non restringano l'Agenda full del direttore; collaudo login manager, full-scope e filtro propria agenda desktop/mobile, oltre a 4 combinazioni Guest booking E2E su clone.
+
+**Identità e dati:** l'Owner ha indicato solo i nomi Marco e Francesca, non email/cognomi; in STAGING utilizzare soltanto account dimostrativi `@presentation.example.invalid`, senza inventare cognomi o recapitare credenziali via email, con futura sostituzione delle identità tramite onboarding autorizzato. `Marco Ferri` NON va associato al direttore Marco né cancellato: è un professionista fittizio con appuntamenti/assegnazioni/fonti economiche. L'Owner ha proposto di valutarne la rimozione solo se necessaria; **per ora preservarlo**. I due direttori si aggiungono ai quattro professionisti del dataset; gli audit devono distinguere i 4 record seed-owned da due ulteriori identità, preservando i 18 Patient, 17 Customer, 35 Appointment, 10 receipts (€392) e 35 source link.
+
+**Stato attuale:** 4/4 account professionista PASS, prenotazione 0/4 NO-GO finché non esistono due director account+Practitioner+route; nessun deploy o seed autorizzato in questa sola nota.
+
+---
+
 ## COLLAUDO CLIENTE 09/11/2026 — A PASS / B NO-GO, ROTTE PUBBLICHE ASSENTI
 
 **Gate A — ACCOUNT PROFESSIONISTA: PASS, 4/4 desktop e mobile sul clone isolato.** Codex ha verificato login/logout reale di **Giulia Moretti, Andrea Ricci, Elena Bianchi e Marco Ferri**, Agenda personale, paziente assegnato, disponibilità, lettura note, report, e blocco degli accessi ai pazienti dei colleghi e al report economico Manager. Credenziali sintetiche generate **solo sul clone**, nessuna alterazione agli account STAGING.
