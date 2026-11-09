@@ -87,6 +87,20 @@ def run():
     verify("SAFETY.emails_muted", flag("mute_emails"))
     verify("SAFETY.HC_registration_SMS_disabled",
            not bool(frappe.db.get_single_value("Healthcare Settings", "send_registration_msg")))
+    # Frappe v16 syncs both jobs, but only the CC catch-up may own statuses.
+    native_method = (
+        "healthcare.healthcare.doctype.patient_appointment."
+        "patient_appointment.update_appointment_status"
+    )
+    cc_method = "centrochange_core.operations.automation.catch_up"
+    native_jobs = frappe.get_all("Scheduled Job Type",
+        filters={"method": native_method}, fields=["name", "stopped"], page_length=3)
+    cc_jobs = frappe.get_all("Scheduled Job Type",
+        filters={"method": cc_method}, fields=["name", "stopped"], page_length=3)
+    verify("SCHEDULER.native_Healthcare_daily_status_stopped",
+           len(native_jobs) == 1 and bool(native_jobs[0].stopped))
+    verify("SCHEDULER.CentroChange_catch_up_active",
+           len(cc_jobs) == 1 and not bool(cc_jobs[0].stopped))
 
     disallowed = ("Sales Invoice", "Purchase Invoice", "Payment Entry", "GL Entry",
                   "Email Queue", "CC Fiscal Transaction", "CC Fiscal Attempt")
