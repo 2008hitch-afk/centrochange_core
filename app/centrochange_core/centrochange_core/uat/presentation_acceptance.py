@@ -70,13 +70,21 @@ def run():
     assert len(centers) == 1
     center = centers[0]
     data = presentation_seed._fixture()
-    plan = presentation_seed.plan(center)
-    assert plan["status"] == "READY"
-    backup = frappe.conf.get("cc_presentation_backup_sha256")
-    first = presentation_seed.apply(center, plan["dataset_sha256"], backup)
-    assert first["status"] == "PASS"
-    replay = presentation_seed.apply(center, plan["dataset_sha256"], backup)
-    assert replay["status"] == "EXISTS"
+    # Only the throwaway CI clone uses the historical approved fixture clock.
+    # The live STAGING seeder retains its hard stop after 8 Nov 2026.
+    from unittest.mock import patch
+    from centrochange_core.scheduling.native_scheduler import inspect as scheduler_inspect
+    scheduler = scheduler_inspect()
+    assert scheduler["native_count"] == 1 and scheduler["native_stopped"], scheduler
+    assert scheduler["cc_catch_up_count"] == 1 and scheduler["cc_catch_up_active"], scheduler
+    with patch.object(presentation_seed, "datetime", presentation_seed.HistoricalBookingClock):
+        plan = presentation_seed.plan(center)
+        assert plan["status"] == "READY"
+        backup = frappe.conf.get("cc_presentation_backup_sha256")
+        first = presentation_seed.apply(center, plan["dataset_sha256"], backup)
+        assert first["status"] == "PASS"
+        replay = presentation_seed.apply(center, plan["dataset_sha256"], backup)
+        assert replay["status"] == "EXISTS"
     state = presentation_seed.inspect()
     assert state["status"] == "EXISTS"
 
