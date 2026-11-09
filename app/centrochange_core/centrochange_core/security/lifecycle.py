@@ -44,7 +44,8 @@ def reconcile_user(user):
 		for permission in current_rows("User Permission", filters={"user": user, "allow": "Healthcare Practitioner"},
 			fields=["for_value"]):
 			remove_user_permission("Healthcare Practitioner", permission.for_value, user, ignore_permissions=True)
-		if enabled(user):
+		# A director retains full center scope even when linked to a personal practitioner.
+		if enabled(user) and not is_manager(user):
 			for name in current_rows("Healthcare Practitioner", filters={"user_id": user, "status": "Active"}, pluck="name"):
 				add_user_permission("Healthcare Practitioner", name, user, ignore_permissions=True)
 	frappe.clear_cache(user=user)

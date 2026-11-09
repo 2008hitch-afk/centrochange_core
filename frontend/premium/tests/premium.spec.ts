@@ -284,6 +284,34 @@ test('Fiscal payer flow: manager sees linked payer name on Patient detail', asyn
   await expect(modal.getByRole('button',{name:'Salva intestatario'})).toBeDisabled()
 })
 
+test('Presentation intake: readable patient identity and automatic internal UID', async ({page}) => {
+  await mockApi(page)
+  await page.route('**/api/method/centrochange_core.operations.profiles.patient_creation_options*', route =>
+    route.fulfill({contentType:'application/json',body:JSON.stringify({message:{
+      genders:['Female'],presentation_intake:true
+    }})}))
+  let created: Record<string, unknown>|undefined
+  await page.route('**/api/method/centrochange_core.operations.workspace.create_patient', route => {
+    created=route.request().postDataJSON()
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({message:{name:'PAT-PRESENT-1'}})})
+  })
+  await page.goto('./#Pazienti')
+  await page.getByRole('button',{name:'Nuovo paziente'}).click()
+  const form=page.getByRole('dialog',{name:'Nuovo paziente'})
+  await expect(form.getByText('Ambiente sintetico:')).toHaveCount(0)
+  await expect(form.getByLabel('Identificativo sintetico')).toHaveCount(0)
+  await expect(form.getByLabel('Email',{exact:true})).toHaveCount(0)
+  await expect(form.getByLabel('Telefono',{exact:true})).toHaveCount(0)
+  await form.getByRole('textbox',{name:'Nome *',exact:true}).fill('Martina')
+  await form.getByRole('textbox',{name:'Cognome',exact:true}).fill('Verdi')
+  await form.getByLabel('Sesso anagrafico').selectOption('Female')
+  await form.getByLabel('Motivo').fill('Inserimento anagrafico autorizzato')
+  await form.getByRole('button',{name:'Crea paziente'}).click()
+  await expect.poll(()=>created!==undefined).toBe(true)
+  expect(created).toMatchObject({first_name:'Martina',last_name:'Verdi',uid:'',
+    email:'',mobile:'',phone:'',payer_mode:'self'})
+})
+
 test('AUDIT-04 scheda paziente: profilo autorizzato, note e storico', async ({ page }, info) => {
   const writes: { method: string; body: Record<string, unknown>; headers: Record<string, string> }[] = []
   await mockApi(page, writes)
@@ -1476,6 +1504,48 @@ test('AUDIT-02 menu utente usa logout Frappe e footer coerente', async ({ page }
   await expect(page).toHaveURL(/\/login\?redirect-to=\/premium/)
   const logout = writes.find(write => write.method === 'logout')
   expect(logout?.headers['x-frappe-csrf-token']).toBe('synthetic-test-token')
+})
+
+test('logout recupera un CSRF scaduto solo dopo rifiuto esplicito', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./')
+  const tokens: string[] = []
+  await page.route('**/api/method/logout', async route => {
+    tokens.push(route.request().headers()['x-frappe-csrf-token'] || '')
+    await route.fulfill(tokens.length === 1
+      ? { status: 400, json: { exc_type: 'CSRFTokenError' } }
+      : { status: 200, json: { message: 'ok' } })
+  })
+  await page.route('**/premium', route => route.fulfill({ status: 200, contentType: 'text/html',
+    body: '<html><head><meta name="csrf-token" content="fresh-synthetic-token"></head></html>' }))
+  if (testInfo.project.name === 'mobile') {
+    await page.getByRole('button', { name: 'Apri menu' }).click()
+    await page.getByRole('button', { name: 'Esci', exact: true }).first().click()
+  } else {
+    await page.getByRole('button', { name: 'Menu utente' }).click()
+    await page.getByRole('button', { name: 'Esci', exact: true }).last().click()
+  }
+  await expect(page).toHaveURL(/\/login\?redirect-to=\/premium/)
+  expect(tokens).toEqual(['synthetic-test-token', 'fresh-synthetic-token'])
+})
+
+test('logout non ripete un errore generico di autorizzazione', async ({ page }, testInfo) => {
+  await mockApi(page)
+  await page.goto('./')
+  let attempts = 0
+  await page.route('**/api/method/logout', async route => {
+    attempts++
+    await route.fulfill({ status: 403, json: { exc_type: 'PermissionError' } })
+  })
+  if (testInfo.project.name === 'mobile') {
+    await page.getByRole('button', { name: 'Apri menu' }).click()
+    await page.getByRole('button', { name: 'Esci', exact: true }).first().click()
+  } else {
+    await page.getByRole('button', { name: 'Menu utente' }).click()
+    await page.getByRole('button', { name: 'Esci', exact: true }).last().click()
+  }
+  await expect(page.getByRole('alert')).toContainText('Uscita non riuscita')
+  expect(attempts).toBe(1)
 })
 
 test('AUDIT-02 utente solo Finanza riceve landing e URL consentiti', async ({ page }, testInfo) => {

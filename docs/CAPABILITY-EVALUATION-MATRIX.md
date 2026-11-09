@@ -1,5 +1,89 @@
 # Centro Change — Capability Evaluation Matrix
 
+## DECISIONE OWNER 09/11/2026 — DIRETTORI MARCO E FRANCESCA
+
+**VIGENTE, prevale sulle vecchie ipotesi di mapping.** Marco e Francesca sono i **due direttori**, non i professionisti del dataset esistente. Per ciascuno serve **un User Frappe personale abilitato con ruolo full-permission `CC Manager`**, collegato uno-a-uno a un **Healthcare Practitioner attivo** nella sede e a una **CC Center Membership attiva**. I due account mantengono pieno accesso all'app Centro Change, inclusa amministrazione/finanza e agenda generale; non vanno ridotti a `CC Professional`. Il Manager usato dalla segreteria/amministrazione vede tutte le prenotazioni.
+
+**Agenda unica, due visualizzazioni:** `Marco` → suo Practitioner; `Francesca` → suo Practitioner. Ogni prenotazione è **un solo Patient Appointment** da 20 minuti €0; compare sia nell'Agenda personale del direttore sia nell'Agenda generale dell'amministrazione, senza duplicati. Le due modalità `sede` e `online` restano distinte; nessuna seduta €44 o invio reale automatico.
+
+**Implementazione necessaria:** il generico `practitioner_create` attribuisce soltanto `CC Professional` e `personal_professional` vieta privilegi elevati: sviluppare un **provisioning direttore separato, manager-only, atomico, con audit**, User `CC Manager`, Healthcare Practitioner/Supplier, centro, orari e route `CC Public Booking Route`. Verificare che `reconcile_user`/Frappe `User Permission` non restringano l'Agenda full del direttore; collaudo login manager, full-scope e filtro propria agenda desktop/mobile, oltre a 4 combinazioni Guest booking E2E su clone.
+
+**Identità e dati:** l'Owner ha indicato solo i nomi Marco e Francesca, non email/cognomi; in STAGING utilizzare soltanto account dimostrativi `@presentation.example.invalid`, senza inventare cognomi o recapitare credenziali via email, con futura sostituzione delle identità tramite onboarding autorizzato. `Marco Ferri` NON va associato al direttore Marco né cancellato: è un professionista fittizio con appuntamenti/assegnazioni/fonti economiche. L'Owner ha proposto di valutarne la rimozione solo se necessaria; **per ora preservarlo**. I due direttori si aggiungono ai quattro professionisti del dataset; gli audit devono distinguere i 4 record seed-owned da due ulteriori identità, preservando i 18 Patient, 17 Customer, 35 Appointment, 10 receipts (€392) e 35 source link.
+
+**Stato attuale:** 4/4 account professionista PASS, prenotazione 0/4 NO-GO finché non esistono due director account+Practitioner+route; nessun deploy o seed autorizzato in questa sola nota.
+
+---
+
+## COLLAUDO CLIENTE 09/11/2026 — A PASS / B NO-GO, ROTTE PUBBLICHE ASSENTI
+
+**Gate A — ACCOUNT PROFESSIONISTA: PASS, 4/4 desktop e mobile sul clone isolato.** Codex ha verificato login/logout reale di **Giulia Moretti, Andrea Ricci, Elena Bianchi e Marco Ferri**, Agenda personale, paziente assegnato, disponibilità, lettura note, report, e blocco degli accessi ai pazienti dei colleghi e al report economico Manager. Credenziali sintetiche generate **solo sul clone**, nessuna alterazione agli account STAGING.
+
+**Gate B — PRENOTAZIONE ONLINE: NO-GO, 0/4 combinazioni.** Sullo STAGING **mancano entrambe le righe `CC Public Booking Route` per `Marco` e `Francesca`**. La pagina Guest renderizza su desktop/mobile e mostra entrambe le modalità; i due servizi `sede` e `online`, gratuiti, 20 minuti, risultano configurati. Nessun test POST di booking è stato eseguito perché sarebbe artificiale inventare le associazioni mancanti. **Non dichiarare pronto per la presentazione al cliente.**
+
+**Decisione organizzativa richiesta all'Owner:** per ciascuna route `Marco` e `Francesca`, identificare **l'esatto Healthcare Practitioner responsabile e abilitato nel centro**. Nel dataset dimostrativo i soli quattro sono Giulia Moretti, Andrea Ricci, Elena Bianchi e Marco Ferri: non compare alcuna `Francesca`; non assumere che Marco Ferri coincida col direttore Marco. Se Francesca è un quinto professionista, il dataset/dichiarazione di 4 account non può essere cambiato senza approvazione esplicita. Se i nomi pubblici sono solo segnaposto, serve decisione esplicita per cambiarli su UI/API e relativi test. **Non creare rotte con ID a caso o associarle per somiglianza del nome.**
+
+**Dopo la decisione:** backup cifrato STAGING; inserire le due rotte con manager autorizzato, puntando soltanto a professionisti esistenti e attivi, centro coerente, senza nuovi pazienti, appuntamenti, invii o modifiche contabili; verificare proiezione `available_slots` per tutte e quattro le combinazioni, e test POST guest E2E solo su clone isolato. Consolidare risultati e screenshot prima di dare GO. Non modificare produzione o fare merge.
+
+**Baseline invariata secondo Codex:** SHA STAGING `6e982a2715dc3aec89b3f7c65e52c3aa995d45a8`; 4 professionisti, 18 Patient, 17 Customer, 35 appuntamenti, 10 ricevute per €392. Nessun dato STAGING modificato. Percorsi screenshot forniti da Codex sono temporanei sul server (`/tmp/cc156-...`), non asset GitHub; conservarli privatamente.
+
+---
+
+## GO/NO-GO CLIENTE — ACCOUNT PROFESSIONISTA POI PRENOTAZIONE ONLINE (09/11/2026)
+
+**Stato: VERIFICHE OPERATIVE DA ESEGUIRE, NON ANCORA APPROVATO PER PRESENTAZIONE.**
+
+L'audit backend generale 47/47 PASS non equivale a login UI né a prenotazione Guest completa. Il dataset ha quattro User Frappe `@presentation.example.invalid`, ma l'autenticazione reale e la navigazione desktop/mobile di ciascuno vanno collaudate. La prenotazione pubblica utilizza due direttori espliciti `Marco` / `Francesca`, due modalità `sede` / `online` e un account di servizio dedicato; non assumere che il caricamento 4/18/17/35 abbia abilitato automaticamente tutte le route.
+
+**Gate A:** lettura account, ruoli, appartenenza e permessi; quattro accessi reali UI su clone con credenziali sintetiche, agenda e soli pazienti propri, note, disponibilità, report, divieti di accesso cross-professionista e dati fiscali; scritture soltanto nel clone.
+
+**Gate B:** route pubbliche/servizi/slot attivi e corretti sullo STAGING in sola lettura; prenotazioni Guest reali soltanto nel clone per tutte le combinazioni modalità × direttore, 20 minuti €0, conferme simulate, replay/idempotenza, conflitti, 0 invii e nessuna seduta successiva generata.
+
+**Gate C (presentazione):** A e B PASS, UI desktop/mobile e testi/indirizzo coerenti, database STAGING invariato, nessun dato personale reale. Se manca la route Francesca o l'account di servizio, riportarlo come **blocco**, senza associare automaticamente professionisti o modificare la produzione.
+
+**Strumenti e istruzioni:** `infra/qa_professional_public_readonly.py` (bench console, sola lettura), `tests/test_presentation_professional_public_readonly.py`, `docs/uat/PROFESSIONAL-AND-ONLINE-BOOKING-GO-NOGO-2026-11-09.md` nella PR #205. Non cambiare la SHA installata `6e982a...` solo per il controllo; usare un file temporaneo. Nessun nuovo seed.
+
+---
+
+## STATO OPERATIVO 09/11/2026 — AUDIT BACKEND CHIUSO, STAGING SHA 6e982a27
+
+**STAGING installato secondo il resoconto operativo Codex:** `6e982a2715dc3aec89b3f7c65e52c3aa995d45a8`; gestionale accessibile su `https://centro-uat.empv.it/premium`. Migrazione Frappe eseguita, backup cifrato verificato con **ripristino su clone isolato**.
+
+**Audit sul database STAGING dopo il rilascio, eseguito da Codex:** **47 PASS / 0 FAIL**, compresi normalizzazione orari, isolamento e permessi, Patient→Customer, Healthcare, ERPNext, fonti economiche, ricevute e report. Numero record **immutato** prima/dopo: 4 professionisti, 18 pazienti, 17 Customer, 35 Patient Appointment, 10 CC Operational Receipt, 35 CC Economic Source Link. Zero Email Queue, log SMS, transazioni fiscali, Sales Invoice, Payment Entry e GL Entry. `mute_emails` ancora attivo; nessun nuovo popolamento.
+
+**Scheduler post-migrazione riferito da Codex:** il solo job nativo Healthcare `patient_appointment.update_appointment_status` è **disattivato**, mentre `centrochange_core.operations.automation.catch_up` è **attivo**. L'`AppointmentMixin.validate` non è stato indebolito. I due PermissionError del job Healthcare dell'8–9/11 sono **storici, precedenti alla correzione**: monitorare eventuali nuove ricorrenze dopo il rilascio.
+
+**Errore residuo distinto:** `ConnectionError` del controllo aggiornamenti Frappe dell'8/11, attribuito da Codex alla risoluzione DNS all'interno della rete Docker; **non equivale a un errore dei flussi Patient/Customer o incassi**. Da investigare operativamente solo se si ripete, senza allentare la sicurezza.
+
+**Evidenza indipendente da GitHub:** sulla SHA installata `6e982a...` `dataset-offline`, `frontend-synthetic`, `presentation-clone` **3/3 PASS**. I conteggi live, l'audit e il ripristino backup provengono invece dal **resoconto dell'operatore server**, non da accesso diretto della chat al DB.
+
+**Vincoli:** PR #205 resta DRAFT, `main` e produzione invariati; non ripetere il seed. Le sezioni storiche qui sotto sono conservate come cronologia, **non descrivono lo stato attuale**.
+
+---
+
+## STORICO — AUDIT 09/11/2026 — INTEGRITÀ DATI OK, JOB GIORNALIERO DA CORREGGERE
+
+**Staging installato (invariato):** `254af1505dc56ae9123ce64469f856cefabf61d4`; 4 professionisti, 18 pazienti, 17 Customer, 35 appuntamenti, 10 ricevute per 392€.
+
+**Auditor Codex (sola lettura):** 43 PASS e 2 FAIL script su 45 check. I due FAIL discendono entrambi dalla formattazione degli orari `9:00` vs `09:00`; la verifica indipendente normalizzata sul DB ha confermato tutti i 35 appuntamenti e i loro stati. I link Patient–Customer, Frappe User/practitioner, Supplier/Cost Center, Economic Source, ricevute e report hanno superato la riconciliazione; nessun dato scritto durante l'audit.
+
+**Problema reale ancora aperto sullo STAGING:** `healthcare...patient_appointment.update_appointment_status` ha fallito l'8 e il 9 novembre con `PermissionError` su `AppointmentMixin.validate`. Il job nativo salva appuntamenti con stati automatici che aggirano il flusso Centro Change, ed è quindi correttamente bloccato. Il job privato Centro Change `operations.automation.catch_up` è già preposto al blocco automatico delle sedute con audit. Un terzo job di verifica aggiornamenti Frappe ha avuto `ConnectionError` di rete indipendente dai record.
+
+**Correzioni proposte sulla PR #205, ancora NON installate:** lo script audit normalizza `HH:MM`; una nuova configurazione `scheduling.native_scheduler.configure` chiamata `after_migrate` (dopo `sync_jobs` Frappe) arresta **solo** il `Scheduled Job Type` nativo in conflitto (`stopped=1`) e verifica attivo il job di `automation.catch_up`. **Nessuna deroga a `AppointmentMixin.validate`**. Nuovi test unitari e verifica su clone. Non eseguire di nuovo il seeder né correggere gli stati sullo STAGING. Per deploy servono CI/clone PASS sulla nuova SHA, backup cifrato, migrazione controllata, query scheduler e nuovo audit 0 FAIL; produzione intatta.
+
+---
+
+## STATO OPERATIVO 07/11/2026 — STAGING POPOLATO (PR #205)
+
+**STAGING attuale:** `https://centro-uat.empv.it/premium`, **SHA installata `254af1505dc56ae9123ce64469f856cefabf61d4`**. Questa è la versione di riferimento per la presentazione; la precedente `51ed781b16550a0fd93aee968f44c3d761534429` è **STORICA/SUPERATA sullo STAGING**, pur essendo stata la prima versione del collegamento fiscale Patient–Customer.
+
+**Conferma caricamento:** Codex ha riferito `plan READY`, `apply PASS`, `inspect PASS` su STAGING, con **4 professionisti e 4 account individuali attivi, 18 pazienti, 17 intestatari fiscali, 35 appuntamenti (10 colloqui gratuiti/25 sedute)**; **10 ricevute operative per 392 €**; nessuna Sales Invoice, Payment Entry, GL, email, SMS o trasmissione fiscale registrata. Il backup cifrato è stato **verificato con ripristino su clone isolato**. Codex ha riferito smoke browser desktop/mobile per agenda, pazienti, intestatari, pagamenti e Report cliente. Questi dati di esecuzione sono un **report dell'operatore**, non una nuova interrogazione diretta del database da GitHub.
+
+**Verifica indipendente GitHub:** CI della SHA installata **3/3 PASS**: `dataset-offline`, `frontend-synthetic`, `presentation-clone`.
+
+**Vincoli:** la [PR #205](https://github.com/2008hitch-afk/centrochange_core/pull/205) resta **DRAFT**, nessun merge su `main` e nessun rilascio in produzione. `cc_presentation_seed` è stato disattivato dopo l'importazione, secondo il resoconto dell'operatore. Il limite del **9/11/2026** riguarda soltanto l'avvio di un nuovo import del dataset originario: **i dati caricati persistono oltre tale data**. Nessun nuovo seed/reimportazione senza nuova approvazione. Per procedura e riconciliazione storica vedere [runbook dataset](uat/CLIENT-PRESENTATION-DATASET-2026-11-07.md).
+
+---
+
 ## DECISIONE OWNER 06/11/2026 — ATTIVAZIONE COMPLETA DEL NUOVO ACCOUNT
 
 Prevale sulle precedenti formulazioni: dalla sola pagina **Professionisti**, l'account **Amministratore/Manager Full Permission** crea e attiva in un passaggio nuovo `User` Frappe personale (`enabled=1`, `CC Professional`), centro e membership attivi, Healthcare Practitioner attivo/collegato, ACL coerenti e onboarding credenziali sicuro. Lo stesso Manager può disattivare/riattivare successivamente, senza autorizzazione Owner per ciascun inserimento dopo la consegna. **NON CONFORME** il flusso finale `new → Disabled`; [requisito PR #203](https://github.com/2008hitch-afk/centrochange_core/pull/203#issuecomment-6671993943). Test solo sintetici finché non vengono forniti i dati reali; decisione funzionale non equivale a implementazione, merge o deploy.
