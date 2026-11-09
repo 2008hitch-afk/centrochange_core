@@ -255,7 +255,8 @@ def practitioners(center, limit=50, offset=0, search=''):
     routes = frappe.get_all('CC Public Booking Route',
         filters={'center': center, 'route': ['in', ['Marco', 'Francesca']]}, pluck='practitioner')
     director_names = {name for name in routes if name in names and
-        (user := frappe.db.get_value('Healthcare Practitioner', name, 'user_id')) and is_manager(user)}
+        (user := frappe.db.get_value('Healthcare Practitioner', name, 'user_id')) and
+        (user == 'Administrator' or 'CC Manager' in roles(user))}
     names = [name for name in names if name not in director_names]
     filters = {'name': ['in', names or ['']]}
     if not is_manager():

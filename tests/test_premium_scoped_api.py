@@ -437,7 +437,7 @@ class ScopedApiTest(unittest.TestCase):
         self.frappe.get_all = lambda doctype, **kwargs: ['DIRECTOR'] if doctype == 'CC Public Booking Route' else []
         observed = {}
         self.frappe.get_list = lambda doctype, **kwargs: observed.update(kwargs) or []
-        with patch.object(profiles, 'is_manager', side_effect=lambda user=None: user in (None, 'director@example.invalid')):
+        with patch.object(profiles, 'roles', side_effect=lambda user=None: ['CC Manager'] if user == 'director@example.invalid' else []):
             with patch.object(self.db, 'get_value', return_value='director@example.invalid', create=True):
                 profiles.practitioners('A')
         self.assertEqual(observed['filters']['name'], ['in', ['PRO-A']])

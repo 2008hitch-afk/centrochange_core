@@ -165,7 +165,7 @@
     "centrochange_core/operations/packages.py": "00f972240ebf4ea4340376dbb0455ce9caa1ba19c3b03300d9f0fdfc54b9971d",
     "centrochange_core/operations/permissions.py": "62131aa584265447a2d5389664df539d3992ef740dd574316a985fbbe2bb3304",
     "centrochange_core/operations/practitioner_center_acceptance.py": "28f7713b23d0d4a8431b4f6f9dc381717cfc114c9c1fe68561b1c097a27b8ce2",
-    "centrochange_core/operations/profiles.py": "ad2063fad4fb87ee6137ffc8180766e5e1340b62887df6e9cdffd1a1c490ab9c",
+    "centrochange_core/operations/profiles.py": "ca87fbd0513acddd037c2fc7a751e50a2a55f4191603f9d1d5d1133fb5e56f91",
     "centrochange_core/operations/reporting.py": "cc63e6e09683f3c4f957a8c0b62de64f4f7e02430743d4362e6f0c822931a4fa",
     "centrochange_core/operations/search_acceptance.py": "8d050fec56a8f7918ea60744733bb49c685f6f13ef703691782f67e9b08cddc2",
     "centrochange_core/operations/surfaces_acceptance.py": "e312319a869c732a6d967c64b09db307817e8e3cdbce8eb270d145b439c0e03e",
