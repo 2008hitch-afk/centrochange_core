@@ -1,5 +1,17 @@
 # Centro Change — Capability Evaluation Matrix
 
+## AUDIT 09/11/2026 — INTEGRITÀ DATI OK, JOB GIORNALIERO DA CORREGGERE
+
+**Staging installato (invariato):** `254af1505dc56ae9123ce64469f856cefabf61d4`; 4 professionisti, 18 pazienti, 17 Customer, 35 appuntamenti, 10 ricevute per 392€.
+
+**Auditor Codex (sola lettura):** 43 PASS e 2 FAIL script su 45 check. I due FAIL discendono entrambi dalla formattazione degli orari `9:00` vs `09:00`; la verifica indipendente normalizzata sul DB ha confermato tutti i 35 appuntamenti e i loro stati. I link Patient–Customer, Frappe User/practitioner, Supplier/Cost Center, Economic Source, ricevute e report hanno superato la riconciliazione; nessun dato scritto durante l'audit.
+
+**Problema reale ancora aperto sullo STAGING:** `healthcare...patient_appointment.update_appointment_status` ha fallito l'8 e il 9 novembre con `PermissionError` su `AppointmentMixin.validate`. Il job nativo salva appuntamenti con stati automatici che aggirano il flusso Centro Change, ed è quindi correttamente bloccato. Il job privato Centro Change `operations.automation.catch_up` è già preposto al blocco automatico delle sedute con audit. Un terzo job di verifica aggiornamenti Frappe ha avuto `ConnectionError` di rete indipendente dai record.
+
+**Correzioni proposte sulla PR #205, ancora NON installate:** lo script audit normalizza `HH:MM`; una nuova configurazione `scheduling.native_scheduler.configure` chiamata `after_migrate` (dopo `sync_jobs` Frappe) arresta **solo** il `Scheduled Job Type` nativo in conflitto (`stopped=1`) e verifica attivo il job di `automation.catch_up`. **Nessuna deroga a `AppointmentMixin.validate`**. Nuovi test unitari e verifica su clone. Non eseguire di nuovo il seeder né correggere gli stati sullo STAGING. Per deploy servono CI/clone PASS sulla nuova SHA, backup cifrato, migrazione controllata, query scheduler e nuovo audit 0 FAIL; produzione intatta.
+
+---
+
 ## STATO OPERATIVO 07/11/2026 — STAGING POPOLATO (PR #205)
 
 **STAGING attuale:** `https://centro-uat.empv.it/premium`, **SHA installata `254af1505dc56ae9123ce64469f856cefabf61d4`**. Questa è la versione di riferimento per la presentazione; la precedente `51ed781b16550a0fd93aee968f44c3d761534429` è **STORICA/SUPERATA sullo STAGING**, pur essendo stata la prima versione del collegamento fiscale Patient–Customer.
