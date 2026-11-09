@@ -1,0 +1,46 @@
+name: AUDIT-09 final remediation pinned image package
+
+on:
+  pull_request:
+    branches: [main]
+    paths: [.github/workflows/audit09-final-package.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'issue-183/package-10c2c87'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: b58d6062d3a8cca61fdf991674f47ee2a54c1394
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify pinned source
+        run: |
+          test "$(git rev-parse HEAD)" = b58d6062d3a8cca61fdf991674f47ee2a54c1394
+          test -z "$(git status --porcelain)"
+          python3 infra/verify_full_single_stack.py --source
+      - name: Build immutable candidate on ephemeral runner
+        run: docker build --progress=plain -f infra/Dockerfile.single-stack-full --build-arg SINGLE_STACK_SOURCE_SHA=b58d6062d3a8cca61fdf991674f47ee2a54c1394 -t cc183-audit09:b58d606 .
+      - name: Attest identity, assets and export
+        run: |
+          test "$(docker image inspect cc183-audit09:b58d606 --format '{{ index .Config.Labels "centrochange.source" }}')" = b58d6062d3a8cca61fdf991674f47ee2a54c1394
+          docker run --rm --entrypoint sh cc183-audit09:b58d606 -c 'test -s /home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/public/premium/app.js && test -s /home/frappe/frappe-bench/apps/centrochange_core/centrochange_core/public/premium/app.css'
+          docker image inspect cc183-audit09:b58d606 --format '{{.Id}} {{.Size}} {{ index .Config.Labels "centrochange.source" }}' > image-identity.txt
+          docker save cc183-audit09:b58d606 | gzip -1 > cc183-audit09-b58d606.docker.tar.gz
+          sha256sum cc183-audit09-b58d606.docker.tar.gz > package.sha256
+          gzip -t cc183-audit09-b58d606.docker.tar.gz
+          ls -lh cc183-audit09-b58d606.docker.tar.gz
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cc183-audit09-image-b58d606
+          path: |
+            cc183-audit09-b58d606.docker.tar.gz
+            package.sha256
+            image-identity.txt
+          compression-level: 0
+          retention-days: 2
