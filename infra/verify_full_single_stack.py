@@ -47,7 +47,7 @@ PREMIUM_ADDED = {
     'centrochange_core/public/premium/app.css',
     'centrochange_core/public/premium/public.js',
     'centrochange_core/public/premium/logo.webp',
-    'centrochange_core/public/premium/style-ByqXzz4J.js',
+    'centrochange_core/public/premium/style-BBsmdVsS.js',
     'centrochange_core/scheduling/public_offer.py',
     'centrochange_core/scheduling/native_scheduler.py',
     'centrochange_core/public/css/login_v1.css',

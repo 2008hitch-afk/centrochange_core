@@ -36,7 +36,27 @@ export async function call<T>(method: string, args: Row = {}, write = false): Pr
   let response: Response
   try { response = await fetch(write ? url : `${url}?${query}`, options) }
   catch { throw new Error('Connessione non disponibile. Riprova.') }
-  const payload = await response.json().catch(() => ({}))
+  let payload = await response.json().catch(() => ({}))
+  // Frappe rejects an invalid CSRF token before executing the requested write.
+  // A concurrent first page load can rotate the session token; refresh the
+  // authenticated same-origin shell and retry that rejected request once only.
+  if (write && (response.status === 400 || response.status === 403) && payload.exc_type === 'CSRFTokenError') {
+    let fresh: Response
+    try { fresh = await fetch('/premium', { credentials: 'same-origin', cache: 'no-store' }) }
+    catch { throw new Error('Connessione non disponibile. Riprova.') }
+    if (!fresh.ok || fresh.redirected || new URL(fresh.url).origin !== location.origin) {
+      throw new Error('Sessione scaduta. Accedi di nuovo.')
+    }
+    const token = new DOMParser().parseFromString(await fresh.text(), 'text/html')
+      .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content
+    if (!token) throw new Error('Sessione scaduta. Accedi di nuovo.')
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+    if (meta) meta.content = token
+    headers['X-Frappe-CSRF-Token'] = token
+    try { response = await fetch(url, options) }
+    catch { throw new Error('Connessione non disponibile. Riprova.') }
+    payload = await response.json().catch(() => ({}))
+  }
   if (!response.ok || payload.exc) {
     if (response.status === 401 || response.status === 403) {
       if (await sessionExpired()) {
