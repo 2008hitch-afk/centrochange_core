@@ -1,5 +1,15 @@
 # Centro Change — Audit backend Frappe, Healthcare, ERPNext (sola lettura)
 
+## Esito definitivo — 09/11/2026
+
+Codex ha eseguito l'audit dopo l'installazione della SHA `6e982a2715dc3aec89b3f7c65e52c3aa995d45a8`: **47 PASS, 0 FAIL**. La correzione orari `9:00`/`09:00` ha eliminato i due falsi negativi precedenti; i 35 appuntamenti e i loro stati corrispondono alla ricetta. I 35 collegamenti economici, i 18 Patient→17 Customer, i 4 professionisti e le 10 ricevute (€392) risultano coerenti. Le autorizzazioni sono state verificate e gli stati contabili e di invio restano vuoti.
+
+La migrazione ha disattivato il job nativo Healthcare che interferiva con `AppointmentMixin.validate`; `centrochange_core.operations.automation.catch_up` resta attivo. I due job falliti l'8–9/11 sono **antecedenti** alla correzione. Il `ConnectionError` del controllo aggiornamenti Frappe dell'8/11 è un evento storico DNS distinto, da seguire solo se ricorrente.
+
+Backup cifrato e restore su clone: **PASS secondo report operatore**. GitHub: CI **3/3 PASS** sulla SHA installata, verificata indipendentemente. Database e produzione non modificati dalla sola attività documentale. **Questo audit è concluso: non eseguire di nuovo se non richiesto e non utilizzare il seeder.** Le istruzioni sottostanti descrivono la procedura originale e non autorizzano un nuovo deploy.
+
+---
+
 **Situazione iniziale, 07/11/2026:** STAGING già popolato da Codex alla SHA installata
 \`254af1505dc56ae9123ce64469f856cefabf61d4\`. Non effettuare un altro seed:
 \`presentation_seed.apply\` NON deve essere invocato. PR #205 DRAFT, produzione intatta.
