@@ -30,5 +30,14 @@ try:
     print(bench("execute", "centrochange_core.uat.presentation_acceptance.prepare"))
     print(bench("execute", "centrochange_core.uat.presentation_acceptance.run"))
     print(bench("execute", "centrochange_core.uat.presentation_seed.inspect"))
+    # This CI clone has one additional patient created by presentation_acceptance.
+    # Explicit flags prevent the destructive booking acceptance on shared sites.
+    bench("set-config", "cc_director_clone_test", "1")
+    bench("set-config", "cc_director_clone_ci", "1")
+    from pathlib import Path
+    director_test = Path(__file__).with_name('director_clone_acceptance.py').read_text()
+    print(clone.run_cmd(["docker", "exec", "-i", "-w", "/home/frappe/frappe-bench",
+                         clone.BACKEND_CONTAINER, "/home/frappe/frappe-bench/env/bin/python", "-"],
+                        input_str=director_test))
 finally:
     clone.cleanup()

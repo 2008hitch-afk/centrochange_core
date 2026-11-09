@@ -10,7 +10,8 @@ from centrochange_core.operations.directors import provision
 from centrochange_core.scheduling.availability import set_schedule
 from centrochange_core.scheduling.public_booking import available_slots,first_meeting
 from centrochange_core.operations.workspace import agenda
-expected={'Patient':18,'Customer':17,'Patient Appointment':35,'CC Operational Receipt':10,'CC Economic Source Link':35}
+extra = int(frappe.conf.get('cc_director_clone_ci') == 1)
+expected={'Patient':18+extra,'Customer':17+extra,'Patient Appointment':35,'CC Operational Receipt':10,'CC Economic Source Link':35}
 before={x:frappe.db.count(x) for x in expected};assert before==expected,before
 center=frappe.db.get_value('CC Patient Assignment',{'active':1},'center')
 date=(datetime.now(ZoneInfo('Europe/Rome')).date()+timedelta(days=2));day=date.strftime('%A');ids={}
