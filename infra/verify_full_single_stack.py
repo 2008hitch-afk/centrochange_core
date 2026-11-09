@@ -29,6 +29,7 @@ PREMIUM_ADDED = {
     'centrochange_core/centro_change_core/doctype/cc_operational_receipt/cc_operational_receipt.json',
     'centrochange_core/catalog.py', 'centrochange_core/scoped_api.py',
     'centrochange_core/operations/profiles.py',
+    'centrochange_core/operations/directors.py',
     'centrochange_core/operations/practitioner_center_acceptance.py',
     'centrochange_core/uat/display.py',
     'centrochange_core/uat/presentation_seed.py',

@@ -136,7 +136,10 @@ def run():
     receipts = frappe.get_all("CC Operational Receipt",
         fields=["name", "patient", "center", "receipt_date", "mode_of_payment", "allocations"],
         page_length=1000)
-    counts = {"professionals": len(pros), "patients": len(ps),
+    seed_logins = {person["email"] for person in all_pros}
+    seed_pros = [p for p in pros if p.user_id in seed_logins]
+    extra_pros = [p for p in pros if p.user_id not in seed_logins]
+    counts = {"professionals": len(seed_pros), "professionals_total": len(pros), "patients": len(ps),
               "customers": len(cs), "appointments": len(appts),
               "assignments": len(assignments), "economic_sources": len(sources),
               "operational_receipts": len(receipts)}
@@ -145,6 +148,16 @@ def run():
                 "economic_sources": 35, "operational_receipts": 10}
     for kind, number in expected.items():
         verify("CARDINALITY." + kind, counts[kind] == number, counts[kind], number)
+
+    # The four original seed profiles remain distinct from the two directors.
+    allowed_directors = {'marco.direzione@presentation.example.invalid': 'Marco',
+                         'francesca.direzione@presentation.example.invalid': 'Francesca'}
+    directors_ok = not extra_pros or (len(extra_pros) == 2 and
+        {p.user_id for p in extra_pros} == set(allowed_directors) and all(
+            p.status == 'Active' and 'CC Manager' in frappe.get_roles(p.user_id)
+            and frappe.db.get_value('CC Public Booking Route', allowed_directors[p.user_id], 'practitioner') == p.name
+            for p in extra_pros))
+    verify('SECURITY.directors_distinct_from_seed', directors_ok, len(extra_pros), '0 or 2 authorized directors')
 
     patients = {r.uid: r for r in ps if r.uid}
     patient_ids = {}

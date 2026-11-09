@@ -1,5 +1,14 @@
 # Centro Change — Matrice requisiti ↔ UI Premium ↔ backend (audit #157)
 
+## DIRETTORI E PRENOTAZIONE — decisione Owner 09/11/2026
+
+Per CC-CAP-002 / CC-EXT-004 / CC-EXT-009 e CC-CAP-033 / CC-CAP-038, Marco e Francesca sono due identità personali `CC Manager`, ciascuna collegata a un Practitioner distinto. Mantengono visibilità amministrativa e finanziaria completa e possono filtrare la propria Agenda; le restrizioni dei normali `CC Professional` restano operative. Marco direttore è distinto dal professionista sintetico Marco Ferri.
+
+Le rotte pubbliche sono `Marco` e `Francesca`; sede e online restano modalità del solo colloquio 20 minuti / 0 €. La disponibilità è configurata dalla schermata amministrativa, e in assenza di fasce non esistono slot prenotabili. La seduta ordinaria successiva resta separata. I riferimenti storici che assimilano i direttori a normali `CC Professional` sono superati da questa decisione.
+
+**Stato:** sviluppo e verifiche sul clone in corso; nessuna accettazione Owner o verifica UAT implicita.
+
+
 ## DECISIONE OWNER 06/11/2026 — DUE SERVIZI, DUE PRENOTAZIONI
 
 Per i requisiti di catalogo e prenotazione vigenti: primo colloquio conoscitivo gratuito di 20 minuti (in sede oppure online, prenotabile dal pubblico) e seduta distinta di 45 minuti / 44 € (prenotata successivamente dal Manager). Le modalità sono configurazioni tecniche del colloquio, non servizi aggiuntivi. Nessuna seconda prenotazione automatica. La CI e le prove sintetiche non equivalgono a `PASS_LIVE UAT` o `OWNER_ACCEPTED`.
