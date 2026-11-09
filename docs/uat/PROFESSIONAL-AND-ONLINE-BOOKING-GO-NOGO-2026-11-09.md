@@ -1,5 +1,17 @@
 # Centro Change — Verifiche obbligatorie prima della presentazione (09/11/2026)
 
+## Esito operativo 09/11/2026
+
+**A — ACCOUNT PROFESSIONISTA: PASS** (clone isolato; 4/4 sia desktop sia mobile). Giulia Moretti, Andrea Ricci, Elena Bianchi e Marco Ferri: login/logout, Agenda, pazienti assegnati, disponibilità, note e report PASS; letture di pazienti altrui e report economico Manager NEGATE. Credenziali create soltanto nel clone.
+
+**B — PRENOTAZIONE ONLINE: NO-GO**. Le due modalità pubbliche 20 minuti/€0 e la UI desktop/mobile esistono, ma in STAGING **non esiste alcuna `CC Public Booking Route` attiva per Marco o Francesca**, quindi 0/4 combinazioni disponibili. Codex non ha eseguito prenotazioni POST nel clone perché inventare le rotte avrebbe invalidato il test di configurazione effettiva. Nessun record dello STAGING mutato; SHA e conteggi invariati.
+
+**Decisione Owner bloccante:** quale *esatto Healthcare Practitioner* deve ricevere la route `Marco` e quale la route `Francesca`? I quattro account dimostrativi non includono `Francesca`; `Marco Ferri` non è automaticamente il direttore pubblico. Non associare, creare, rinominare né aggiungere un quinto account senza la decisione.
+
+**Prossimo gate:** dopo identificazione e autorizzazione dei due target, Codex configura le due `CC Public Booking Route` sullo STAGING con backup e account manager, senza nuovo seed; poi testa GET slot delle 4 combinazioni e POST guest soltanto su clone isolato con le stesse rotte e regole. Solo dopo 4/4 PASS e senza effetti esterni si può dare GO alla presentazione.
+
+---
+
 **Ordine vincolante:** 1. account professionista; 2. prenotazione online; 3. presentazione cliente.
 
 **STAGING attuale:** https://centro-uat.empv.it/premium, SHA installata 6e982a2715dc3aec89b3f7c65e52c3aa995d45a8, database già popolato (4 professionisti, 18 pazienti, 17 Customer, 35 appuntamenti, 10 ricevute per €392, 35 fonti economiche). Non effettuare nuovo seed, migrazione o cambio SHA solo per test.
