@@ -11,6 +11,9 @@ after_install = ["centrochange_core.security.install.configure", "centrochange_c
 before_migrate = ["centrochange_core.security.install.ensure_roles", "centrochange_core.finance.install.ensure_roles"]
 after_migrate = ["centrochange_core.security.install.configure", "centrochange_core.operations.install.configure", "centrochange_core.finance.install.configure"]
 after_migrate.append("centrochange_core.operations.client_landing.configure_existing_users")
+# Frappe 16 syncs Scheduled Job Type before after_migrate. Disable the native
+# Healthcare daily status writer; CC automation.catch_up owns session lifecycle.
+after_migrate.append("centrochange_core.scheduling.native_scheduler.configure")
 add_to_apps_screen = [{"name": "centrochange_core", "title": "Centro Change", "route": "/app/cc-unified-desk", "has_permission": "centrochange_core.operations.client_landing.app_visible"}]
 before_request = ["centrochange_core.finance.request_guard.before_request", "centrochange_core.security.diagnostics.before_request", "centrochange_core.security.api.before_request", "centrochange_core.operations.notes.request_guard"]
 
